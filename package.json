@@ -1,0 +1,11 @@
+{
+  "name": "eedhalal",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "public:serve": "node scripts/public-server.mjs",
+    "backend:dev": "node backend/server.mjs",
+    "seo:build": "node scripts/seo-build.mjs",
+    "seo:check": "node scripts/seo-check.mjs"
+  }
+}

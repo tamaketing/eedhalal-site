@@ -1,0 +1,44 @@
+[
+    {
+        "name": "ข้าวหมกไก่ต้นตำรับ",
+        "description": "ข้าวหมกหอมเครื่องเทศสูตรดั้งเดิม เสิร์ฟพร้อมไก่นุ่มและน้ำจิ้มสูตรเด็ด",
+        "price": 85,
+        "image": "https://images.unsplash.com/photo-1633945274405-b6c8069047b0?q=80&w=800&auto=format&fit=crop",
+        "tag": "Best Seller"
+    },
+    {
+        "name": "กะเพราเนื้อสับไข่ดาว",
+        "description": "กะเพราเนื้อวัวแท้รสจัดจ้าน ผัดแบบแห้ง หอมกลิ่นกะเพราป่า",
+        "price": 95,
+        "image": "https://images.unsplash.com/photo-1562967914-608f82629710?q=80&w=800&auto=format&fit=crop",
+        "tag": "Spicy"
+    },
+    {
+        "name": "ไก่ทอดหาดใหญ่เซ็ต",
+        "description": "ไก่ทอดกรอบนอกนุ่มใน หอมหอมเจียว ทานคู่กับข้าวเหนียวนุ่มๆ",
+        "price": 89,
+        "image": "https://images.unsplash.com/photo-1569058242253-92a9c71f9867?q=80&w=800&auto=format&fit=crop",
+        "tag": "Recommended"
+    },
+    {
+        "name": "แกงเขียวหวานไก่โรตี",
+        "description": "แกงเขียวหวานรสเข้มข้น กะทิสด เสิร์ฟพร้อมแผ่นโรตีทอดกรอบ",
+        "price": 120,
+        "image": "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?q=80&w=800&auto=format&fit=crop",
+        "tag": "Premium"
+    },
+    {
+        "name": "มัสมั่นเนื้อนุ่ม",
+        "description": "มัสมั่นเนื้อตุ๋นจนเปื่อย รสชาติหวานนำเค็มตาม หอมถั่วและมันฝรั่ง",
+        "price": 150,
+        "image": "https://images.unsplash.com/photo-1585933334452-f1e1cbea9aac?q=80&w=800&auto=format&fit=crop",
+        "tag": "Chef Special"
+    },
+    {
+        "name": "สลัดแขกสูตรพรีเมียม",
+        "description": "ผักสดกรอบ ราดน้ำสะเต๊ะรสเข้มข้น โรยด้วยไข่ต้มและเต้าหู้ทอด",
+        "price": 75,
+        "image": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=800&auto=format&fit=crop",
+        "tag": "Healthy"
+    }
+]

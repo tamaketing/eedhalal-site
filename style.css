@@ -1,0 +1,29 @@
+﻿body {
+    font-family: 'Kanit', sans-serif;
+    scroll-behavior: smooth;
+}
+
+.halal-gradient {
+    background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+}
+
+.food-card:hover {
+    transform: translateY(-8px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-number {
+    -webkit-text-stroke: 1px #059669;
+    color: transparent;
+}
+
+.logo-box {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.9rem;
+    background: linear-gradient(135deg, #059669, #047857);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(5, 150, 105, 0.28);
+}

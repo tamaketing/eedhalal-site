@@ -1,0 +1,308 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบบัญชาการหลังบ้าน | Bento Command</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+  <div id="app">
+    <div v-if="toast.show" class="fixed top-4 right-4 z-50 px-4 py-3 rounded-xl text-sm font-bold shadow-lg"
+      :class="toast.type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'">
+      {{ toast.message }}
+    </div>
+
+    <section v-if="!isAuthenticated" class="login-wrap">
+      <div class="login-card">
+        <h1 class="text-2xl font-black text-white mb-2">ระบบบัญชาการหลังบ้าน</h1>
+        <p class="text-sm text-slate-400 mb-6">เข้าสู่ระบบเพื่อจัดการร้าน</p>
+        <form class="space-y-4" @submit.prevent="doLogin">
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">ชื่อผู้ใช้</label>
+            <input v-model="loginForm.username" class="login-input" autocomplete="username" placeholder="admin">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">รหัสผ่าน</label>
+            <input v-model="loginForm.password" type="password" class="login-input" autocomplete="current-password" placeholder="admin123">
+          </div>
+          <p v-if="loginError" class="text-sm text-rose-400">{{ loginError }}</p>
+          <button type="submit" class="btn btn-primary w-full">เข้าสู่ระบบ</button>
+        </form>
+      </div>
+    </section>
+
+    <div v-else class="flex h-screen overflow-hidden">
+      <aside class="w-20 md:w-64 bg-custom-dark border-r border-custom flex flex-col shrink-0">
+        <div class="p-6 flex items-center gap-3">
+          <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shrink-0">
+            <i data-lucide="flame" class="text-white w-5 h-5"></i>
+          </div>
+          <span class="font-bold text-xl tracking-tight text-white hidden md:block">Bento Command</span>
+        </div>
+
+        <nav class="flex-1 px-4 mt-6 space-y-2">
+          <button
+            v-for="item in menuItems"
+            :key="item.id"
+            @click="activeTab = item.id"
+            :class="['w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all', activeTab === item.id ? 'bg-orange-500 text-white' : 'hover:bg-slate-800 text-slate-400']"
+          >
+            <i :data-lucide="item.icon" class="w-5 h-5"></i>
+            <span class="font-medium hidden md:block">{{ item.label }}</span>
+          </button>
+        </nav>
+
+        <div class="p-4 border-t border-custom">
+          <button class="btn btn-ghost w-full" @click="doLogout">ออกจากระบบ</button>
+        </div>
+      </aside>
+
+      <main class="flex-1 flex flex-col overflow-y-auto h-screen p-4 md:p-8">
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">{{ tabTitle }}</h1>
+            <p class="text-slate-500 text-sm italic">สถานะ: กำลังรันระบบ | เวลา: {{ currentTime }}</p>
+          </div>
+          <div class="text-xs text-slate-500">โหมดข้อมูล: ออเดอร์จาก API จริง</div>
+        </header>
+
+        <section v-if="activeTab === 'dashboard'" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div v-for="(m, i) in metrics" :key="i" class="bg-custom-dark p-5 rounded-3xl border border-custom">
+              <div class="flex justify-between items-start mb-4">
+                <div class="p-3 bg-slate-800/50 rounded-2xl">
+                  <i :data-lucide="m.icon" class="w-5 h-5"></i>
+                </div>
+                <div :class="['flex items-center text-xs font-bold', m.positive ? 'text-green-500' : 'text-rose-500']">{{ m.trend }}</div>
+              </div>
+              <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{{ m.label }}</p>
+              <h3 class="text-2xl font-black text-white mt-1 tracking-tight">{{ m.value }}</h3>
+            </div>
+          </div>
+
+          <div class="bg-custom-dark rounded-3xl border border-custom p-6">
+            <h2 class="text-lg font-bold text-white mb-4">กราฟกำไรจำลองวันนี้</h2>
+            <div class="h-52 flex items-end gap-2">
+              <div v-for="(h, i) in chartData" :key="i" class="flex-1 bg-slate-800 rounded-lg overflow-hidden">
+                <div class="w-full bg-gradient-to-t from-orange-600 to-orange-400" :style="{ height: h + '%' }"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section v-if="activeTab === 'orders'" class="bg-custom-dark rounded-3xl border border-custom overflow-hidden">
+          <div class="p-6 border-b border-custom flex justify-between items-center gap-4">
+            <div>
+              <h2 class="font-bold text-white">รายการออเดอร์ทั้งหมด</h2>
+              <p class="text-xs text-slate-500 mt-1">อัปเดตล่าสุด: {{ lastOrdersLoadedAt || '-' }}</p>
+            </div>
+            <button class="btn btn-ghost text-xs" @click="loadOrders" :disabled="isOrdersLoading">
+              {{ isOrdersLoading ? 'กำลังโหลด...' : 'รีโหลด' }}
+            </button>
+          </div>
+          <div v-if="ordersError" class="px-6 py-3 text-sm text-rose-400 border-b border-custom">{{ ordersError }}</div>
+          <div v-if="isOrdersLoading" class="px-6 py-4 text-sm text-slate-400">กำลังโหลดออเดอร์จากระบบ...</div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="text-slate-500 text-[10px] uppercase font-black tracking-widest border-b border-custom">
+                  <th class="px-6 py-4">ID / เวลา</th>
+                  <th class="px-6 py-4">ชื่อลูกค้า</th>
+                  <th class="px-6 py-4">รายการ</th>
+                  <th class="px-6 py-4">ประเภท</th>
+                  <th class="px-6 py-4">สถานะ</th>
+                  <th class="px-6 py-4">คำสั่งด่วน</th>
+                  <th class="px-6 py-4">อัปเดตสถานะ</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/50">
+                <tr v-for="order in orders" :key="order.id" class="hover:bg-slate-800/30 transition-colors">
+                  <td class="px-6 py-4"><span class="text-white font-bold block text-sm">{{ order.id }}</span><span class="text-[10px] text-slate-500">{{ formatOrderTime(order) }}</span></td>
+                  <td class="px-6 py-4">{{ order.customer?.name || '-' }}</td>
+                  <td class="px-6 py-4 text-xs text-slate-400">{{ formatOrderItems(order) }}</td>
+                  <td class="px-6 py-4"><span class="px-2 py-1 bg-slate-800 rounded text-[10px]">{{ formatOrderType(order) }}</span></td>
+                  <td class="px-6 py-4">
+                    <span class="px-2 py-1 bg-slate-800 rounded text-[10px]">{{ statusToThai(order.status) }}</span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex flex-wrap gap-2">
+                      <button class="px-2 py-1 rounded text-[10px] bg-emerald-700 text-white disabled:opacity-50" :disabled="isUpdatingById[order.id]" @click="confirmOrder(order)">ยืนยัน</button>
+                      <button class="px-2 py-1 rounded text-[10px] bg-rose-700 text-white disabled:opacity-50" :disabled="isUpdatingById[order.id]" @click="rejectSlip(order)">ตีกลับ</button>
+                      <button class="px-2 py-1 rounded text-[10px] bg-amber-600 text-white disabled:opacity-50" :disabled="isUpdatingById[order.id]" @click="markSlipReceived(order)">รับออเดอร์แล้ว</button>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex flex-col gap-2 min-w-[220px]">
+                      <select class="login-input !py-1 !px-2 text-xs" v-model="statusDraftById[order.id]" :disabled="isUpdatingById[order.id]">
+                        <option v-for="status in STATUS_OPTIONS" :key="status" :value="status">{{ statusToThai(status) }}</option>
+                      </select>
+                      <input class="login-input !py-1 !px-2 text-xs" v-model="noteDraftById[order.id]" :disabled="isUpdatingById[order.id]" placeholder="หมายเหตุแอดมิน">
+                      <button class="btn btn-primary text-xs disabled:opacity-50" :disabled="isUpdatingById[order.id]" @click="updateOrderStatus(order)">
+                        {{ isUpdatingById[order.id] ? 'กำลังบันทึก...' : 'อัปเดตสถานะ' }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section v-if="activeTab === 'customers'" class="space-y-4">
+          <div class="flex justify-end">
+            <button class="btn btn-primary" @click="addCustomer">เพิ่มลูกค้า</button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <article v-for="c in customers" :key="c.id" class="bg-custom-dark border border-custom rounded-3xl p-6">
+              <div class="flex justify-between items-start mb-3">
+                <h3 class="text-lg font-bold text-white">{{ c.name }}</h3>
+                <button class="text-rose-400 text-xs" @click="deleteCustomer(c)">ลบ</button>
+              </div>
+              <p class="text-xs text-slate-500">{{ c.phone || '-' }}</p>
+              <p class="text-xs text-slate-500 mb-4">{{ c.address || '-' }}</p>
+              <div class="grid grid-cols-2 gap-3 text-sm">
+                <div><p class="text-[10px] text-slate-500 uppercase">ยอดรวม</p><p class="font-bold text-green-500">฿{{ c.totalSpent }}</p></div>
+                <div><p class="text-[10px] text-slate-500 uppercase">ล่าสุด</p><p class="font-bold text-white">{{ c.lastOrder }}</p></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <div v-if="isCustomerModalOpen" class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div class="w-full max-w-lg bg-custom-dark border border-custom rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-white">เพิ่มลูกค้าใหม่</h3>
+              <button class="text-slate-400 hover:text-white" @click="closeCustomerModal">ปิด</button>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">ชื่อ-นามสกุล</label>
+                <input v-model="newCustomerForm.name" class="login-input" placeholder="เช่น สมชาย ใจดี">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">เบอร์โทร</label>
+                <input v-model="newCustomerForm.phone" class="login-input" placeholder="08xxxxxxxx">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">ที่อยู่จัดส่ง</label>
+                <textarea v-model="newCustomerForm.address" class="login-input min-h-[88px]" placeholder="บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด"></textarea>
+              </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+              <button class="btn btn-ghost" @click="closeCustomerModal">ยกเลิก</button>
+              <button class="btn btn-primary" @click="submitNewCustomer">บันทึกลูกค้า</button>
+            </div>
+          </div>
+        </div>
+
+        <section v-if="activeTab === 'menu'" class="bg-custom-dark rounded-3xl border border-custom overflow-hidden">
+          <div class="p-6 border-b border-custom flex justify-between items-center">
+            <h2 class="font-bold text-white">จัดการเมนู</h2>
+            <button class="btn btn-primary" @click="openMenuModal">เพิ่มเมนู</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="text-slate-500 text-[10px] uppercase font-black tracking-widest border-b border-custom">
+                  <th class="px-6 py-4">รูป/ชื่อเมนู</th>
+                  <th class="px-6 py-4">ต้นทุน</th>
+                  <th class="px-6 py-4">ราคาขาย</th>
+                  <th class="px-6 py-4">Margin</th>
+                  <th class="px-6 py-4">สถานะ</th>
+                  <th class="px-6 py-4"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/50">
+                <tr v-for="item in menu" :key="item.id" class="hover:bg-slate-800/30 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <img :src="item.image" :alt="item.name" class="w-12 h-12 rounded-lg object-cover bg-slate-800">
+                      <div>
+                        <p class="font-bold">{{ item.name }}</p>
+                        <p class="text-[10px] text-slate-500">{{ item.image ? 'มีรูปภาพ' : 'ไม่มีรูปภาพ' }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">฿{{ item.cost }}</td>
+                  <td class="px-6 py-4">฿{{ item.price }}</td>
+                  <td class="px-6 py-4">{{ calcMargin(item) }}</td>
+                  <td class="px-6 py-4">{{ item.status }}</td>
+                  <td class="px-6 py-4 text-right">
+                    <button class="text-orange-400 text-xs mr-3" @click="openEditMenuModal(item)">แก้ไข</button>
+                    <button class="text-rose-400 text-xs" @click="deleteMenuItem(item)">ลบ</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div v-if="isMenuModalOpen" class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div class="w-full max-w-lg bg-custom-dark border border-custom rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-white">{{ editingMenuId ? 'แก้ไขเมนู' : 'เพิ่มเมนูใหม่' }}</h3>
+              <button class="text-slate-400 hover:text-white" @click="closeMenuModal">ปิด</button>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">ชื่อเมนู</label>
+                <input v-model="newMenuForm.name" class="login-input" placeholder="เช่น กะเพราเนื้อวากิว">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">อัปโหลดรูปภาพเมนู (จำเป็น)</label>
+                <input type="file" accept="image/*" class="login-input" @change="onMenuImageFileChange">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">หรือลิงก์รูปภาพเมนู</label>
+                <input v-model="newMenuForm.image" class="login-input" placeholder="https://...">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-slate-300 mb-1">ต้นทุน</label>
+                  <input v-model="newMenuForm.cost" type="number" min="0" class="login-input" placeholder="45">
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-300 mb-1">ราคาขาย</label>
+                  <input v-model="newMenuForm.price" type="number" min="0" class="login-input" placeholder="129">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">สถานะ</label>
+                <select v-model="newMenuForm.status" class="login-input">
+                  <option value="ใช้งาน">ใช้งาน</option>
+                  <option value="ซ่อน">ซ่อน</option>
+                </select>
+              </div>
+              <div v-if="newMenuForm.image" class="pt-1">
+                <p class="text-xs text-slate-400 mb-2">ตัวอย่างรูป</p>
+                <img :src="newMenuForm.image" alt="ตัวอย่างรูปเมนู" class="w-full h-36 object-cover rounded-lg bg-slate-800">
+              </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+              <button class="btn btn-ghost" @click="closeMenuModal">ยกเลิก</button>
+              <button class="btn btn-primary" @click="submitNewMenu">{{ editingMenuId ? 'บันทึกการแก้ไข' : 'บันทึกเมนู' }}</button>
+            </div>
+          </div>
+        </div>
+
+        <section v-if="activeTab === 'stats'" class="bg-custom-dark rounded-3xl border border-custom p-6">
+          <h2 class="text-lg font-bold text-white mb-3">รายงานสรุป</h2>
+          <p class="text-slate-300">จำนวนออเดอร์ทั้งหมด: {{ orders.length }}</p>
+          <p class="text-slate-300">จำนวนลูกค้า: {{ customers.length }}</p>
+          <p class="text-slate-300">จำนวนเมนู: {{ menu.length }}</p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="./admin.js"></script>
+</body>
+</html>

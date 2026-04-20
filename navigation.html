@@ -1,0 +1,77 @@
+﻿<nav class="fixed w-full z-50 bg-white/80 backdrop-blur-lg border-b border-slate-100">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+        <!-- Logo -->
+        <a href="index.html#home" class="flex items-center space-x-2">
+            <div class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
+                <span class="text-white font-bold text-xl">E</span>
+            </div>
+            <div class="text-2xl font-bold tracking-tight text-emerald-800 uppercase">eedhalal</div>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <div class="hidden md:flex space-x-8 font-medium text-slate-600">
+            <a href="index.html#home" class="hover:text-emerald-600 transition">หน้าแรก</a>
+            <a href="popular-menu.html" class="hover:text-emerald-600 transition">เมนูยอดนิยม</a>
+            <a href="order-steps.html" class="hover:text-emerald-600 transition">วิธีสั่งอาหาร</a>
+            <a href="corporate.html" class="hover:text-emerald-600 transition">ลูกค้าองค์กร</a>
+            <a href="contact.html" class="hover:text-emerald-600 transition">ติดต่อเรา</a>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center space-x-4">
+            <a href="https://lin.ee/CfvqJTd" target="_blank"
+                class="hidden sm:flex bg-emerald-600 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-emerald-700 transition items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                        d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.121.303.079.778.039 1.085l-.171 1.027c-.053.303-.242 1.185 1.039.646 1.281-.538 6.915-4.071 9.428-6.968 1.728-1.921 2.571-3.982 2.571-5.99z" />
+                </svg>
+                สั่งผ่าน LINE
+            </a>
+
+            <button onclick="toggleCartDrawer()"
+                class="relative p-2 text-slate-600 hover:text-emerald-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span id="nav-cart-badge"
+                    class="absolute top-0 right-0 bg-rose-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white hidden">0</span>
+            </button>
+
+            <!-- Mobile Menu Toggle -->
+            <button id="mobile-menu-btn" class="md:hidden text-slate-600 p-2 focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path id="menu-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6h16M4 12h16m-7 6h7" />
+                    <path id="close-icon" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Drawer -->
+    <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-slate-100 animate-slide-down">
+        <div class="px-4 py-8 space-y-4">
+            <a href="index.html#home"
+                class="mobile-link block text-lg font-medium text-slate-700 hover:text-emerald-600 transition">หน้าแรก</a>
+            <a href="popular-menu.html"
+                class="mobile-link block text-lg font-medium text-slate-700 hover:text-emerald-600 transition">เมนูยอดนิยม</a>
+            <a href="order-steps.html"
+                class="mobile-link block text-lg font-medium text-slate-700 hover:text-emerald-600 transition">วิธีสั่งอาหาร</a>
+            <a href="corporate.html"
+                class="mobile-link block text-lg font-medium text-slate-700 hover:text-emerald-600 transition">ลูกค้าองค์กร</a>
+            <a href="contact.html"
+                class="mobile-link block text-lg font-medium text-slate-700 hover:text-emerald-600 transition">ติดต่อเรา</a>
+            <hr class="border-slate-100">
+            <a href="https://lin.ee/CfvqJTd" target="_blank"
+                class="flex items-center justify-center bg-emerald-600 text-white w-full py-4 rounded-xl font-bold">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                        d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.121.303.079.778.039 1.085l-.171 1.027c-.053.303-.242 1.185 1.039.646 1.281-.538 6.915-4.071 9.428-6.968 1.728-1.921 2.571-3.982 2.571-5.99z" />
+                </svg>
+                สั่งผ่าน LINE
+            </a>
+        </div>
+    </div>
+</nav>

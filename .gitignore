@@ -1,0 +1,7 @@
+backend/node_modules/
+backend/data/app-db.json
+data/app-db.json
+nul
+.DS_Store
+Thumbs.db
+.opencode/
