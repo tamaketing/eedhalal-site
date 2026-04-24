@@ -68,7 +68,6 @@ function getInlineNavigationFallback() {
         <div class="hidden md:flex space-x-8 font-normal text-slate-600">
             <a href="index.html#home" class="hover:text-emerald-600 transition">หน้าแรก</a>
             <a href="popular-menu.html" class="hover:text-emerald-600 transition">เมนูยอดนิยม</a>
-            <a href="khao-mok-order.html" class="hover:text-emerald-600 transition">ข้าวหมกพรีออเดอร์</a>
             <a href="order-steps.html" class="hover:text-emerald-600 transition">วิธีสั่งอาหาร</a>
             <a href="corporate.html" class="hover:text-emerald-600 transition">ลูกค้าองค์กร</a>
             <a href="contact.html" class="hover:text-emerald-600 transition">ติดต่อเรา</a>
@@ -99,7 +98,6 @@ function getInlineNavigationFallback() {
         <div class="px-4 py-8 space-y-4">
             <a href="index.html#home" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">หน้าแรก</a>
             <a href="popular-menu.html" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">เมนูยอดนิยม</a>
-            <a href="khao-mok-order.html" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">ข้าวหมกพรีออเดอร์</a>
             <a href="order-steps.html" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">วิธีสั่งอาหาร</a>
             <a href="corporate.html" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">ลูกค้าองค์กร</a>
             <a href="contact.html" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">ติดต่อเรา</a>
@@ -146,6 +144,7 @@ function getInlineFooterFallback() {
             <h4 class="text-emerald-900 font-bold mb-6 text-sm uppercase tracking-widest">บริการของเรา</h4>
             <ul class="space-y-4 text-sm text-slate-500">
                 <li><a href="delivery.html" class="hover:text-emerald-600 transition">ข้าวกล่องเดลิเวอรี่</a></li>
+                <li><a href="khao-mok-order.html" class="hover:text-emerald-600 transition">ข้าวหมกพรีออเดอร์</a></li>
                 <li><a href="catering.html" class="hover:text-emerald-600 transition">จัดเลี้ยงสัมมนา</a></li>
                 <li><a href="hospital-orders.html" class="hover:text-emerald-600 transition">ออเดอร์โรงพยาบาล</a></li>
                 <li><a href="buffet-menu.html" class="hover:text-emerald-600 transition">เมนูบุฟเฟต์</a></li>
