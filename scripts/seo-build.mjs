@@ -65,7 +65,7 @@ const PAGES = [
     file: 'order-steps.html',
     path: '/order-steps.html',
     title: 'วิธีสั่งอาหาร | EED HALAL',
-    description: 'ขั้นตอนสั่งอาหาร EED HALAL แบบครบจบ ตั้งแต่เลือกเมนู กดยืนยันออเดอร์ ไปจนถึงติดตามสถานะผ่าน LINE',
+    description: 'ขั้นตอนสั่งอาหาร EED HALAL แบบครบจบ ตั้งแต่เลือกเมนู กรอกข้อมูล ส่งออเดอร์ทาง LINE และรอทีมงานยืนยันคิวจัดส่ง',
     ogType: 'article'
   },
   {
@@ -137,7 +137,7 @@ const PAGES = [
     file: 'faq.html',
     path: '/faq.html',
     title: 'คำถามที่พบบ่อย | EED HALAL',
-    description: 'รวมคำถามที่พบบ่อยเกี่ยวกับการสั่งอาหาร การชำระเงิน การจัดส่ง และบริการของ EED HALAL',
+    description: 'รวมคำถามที่พบบ่อยเกี่ยวกับการสั่งอาหาร การยืนยันออเดอร์ การจัดส่ง และบริการของ EED HALAL',
     ogType: 'article',
     schema: [
       {
@@ -268,8 +268,6 @@ function buildSitemapXml() {
 
 const ROBOTS_TXT = `User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /api/
 
 Sitemap: ${BASE_URL}/sitemap.xml
 `;

@@ -68,11 +68,19 @@ function getInlineNavigationFallback() {
         <div class="hidden md:flex space-x-8 font-normal text-slate-600">
             <a href="index.html#home" class="hover:text-emerald-600 transition">หน้าแรก</a>
             <a href="popular-menu.html" class="hover:text-emerald-600 transition">เมนูยอดนิยม</a>
+            <a href="khao-mok-order.html" class="hover:text-emerald-600 transition">สั่งข้าวหมก (20+)</a>
             <a href="order-steps.html" class="hover:text-emerald-600 transition">วิธีสั่งอาหาร</a>
             <a href="corporate.html" class="hover:text-emerald-600 transition">ลูกค้าองค์กร</a>
             <a href="contact.html" class="hover:text-emerald-600 transition">ติดต่อเรา</a>
         </div>
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-4">
+            <a href="https://lin.ee/CfvqJTd" target="_blank"
+                class="hidden sm:flex bg-emerald-600 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-emerald-700 transition items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.121.303.079.778.039 1.085l-.171 1.027c-.053.303-.242 1.185 1.039.646 1.281-.538 6.915-4.071 9.428-6.968 1.728-1.921 2.571-3.982 2.571-5.99z" />
+                </svg>
+                ส่งออเดอร์ทาง LINE
+            </a>
             <button onclick="toggleCartDrawer()" class="relative p-2 text-slate-600 hover:text-emerald-600 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -91,9 +99,18 @@ function getInlineNavigationFallback() {
         <div class="px-4 py-8 space-y-4">
             <a href="index.html#home" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">หน้าแรก</a>
             <a href="popular-menu.html" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">เมนูยอดนิยม</a>
+            <a href="khao-mok-order.html" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">สั่งข้าวหมก (20+)</a>
             <a href="order-steps.html" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">วิธีสั่งอาหาร</a>
             <a href="corporate.html" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">ลูกค้าองค์กร</a>
             <a href="contact.html" class="mobile-link block text-lg font-normal text-slate-700 hover:text-emerald-600 transition">ติดต่อเรา</a>
+            <hr class="border-slate-100">
+            <a href="https://lin.ee/CfvqJTd" target="_blank"
+                class="flex items-center justify-center bg-emerald-600 text-white w-full py-4 rounded-xl font-bold">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.121.303.079.778.039 1.085l-.171 1.027c-.053.303-.242 1.185 1.039.646 1.281-.538 6.915-4.071 9.428-6.968 1.728-1.921 2.571-3.982 2.571-5.99z" />
+                </svg>
+                ส่งออเดอร์ทาง LINE
+            </a>
         </div>
     </div>
 </nav>
@@ -487,7 +504,7 @@ function setCartSubmitState(isSubmitting) {
     if (!submitBtn) return;
     submitBtn.disabled = isSubmitting;
     submitBtn.classList.toggle('opacity-70', isSubmitting);
-    submitBtn.textContent = isSubmitting ? 'กำลังเปิด LINE...' : 'ส่งรายการทาง LINE';
+    submitBtn.textContent = isSubmitting ? 'กำลังเปิด LINE...' : 'ส่งออเดอร์ทาง LINE';
 }
 
 function buildStaticOrderReference() {
@@ -557,7 +574,7 @@ function showStaticOrderRedirectOverlay(referenceId, shareUrl, message) {
                 <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3"/><path stroke-linecap="round" stroke-linejoin="round" d="M3.05 11a9 9 0 111.99 5.66"/></svg>
             </div>
             <h3 class="text-xl font-black text-slate-900 mb-2">เปิด LINE พร้อมข้อความสั่งซื้อแล้ว</h3>
-            <p class="text-slate-500 text-sm mb-2">หาก LINE ไม่เปิดอัตโนมัติ ใช้ปุ่มด้านล่างเพื่อเปิดใหม่หรือคัดลอกข้อความสั่งซื้อ</p>
+            <p class="text-slate-500 text-sm mb-2">ส่งข้อความนี้หาเราใน LINE เพื่อให้ทีมงานยืนยันรายการ ค่าส่ง และเวลาจัดส่งกลับ</p>
             <p class="text-slate-400 text-xs mb-6">รหัสอ้างอิง: <span class="font-bold text-slate-700">${referenceId}</span></p>
             <div class="space-y-3 mb-4">
                 <a href="${shareUrl}" target="_blank" rel="noopener noreferrer"
@@ -570,7 +587,7 @@ function showStaticOrderRedirectOverlay(referenceId, shareUrl, message) {
                     คัดลอกข้อความสั่งซื้อ
                 </button>
             </div>
-            <p class="text-[11px] text-slate-400 mb-4">ข้อความสั่งซื้อจะถูกเก็บไว้ในหน้านี้ชั่วคราว หากเปิด LINE ไม่สำเร็จให้กดคัดลอกแล้วส่งหาเราเอง</p>
+            <p class="text-[11px] text-slate-400 mb-4">ข้อความสั่งซื้อจะถูกเก็บไว้ในหน้านี้ชั่วคราว หาก LINE ไม่เปิดสำเร็จให้กดคัดลอกแล้วส่งหาเราเองได้ทันที</p>
             <details class="mb-4 rounded-2xl bg-slate-50 p-4 text-left">
                 <summary class="cursor-pointer text-sm font-bold text-slate-700">ดูข้อความสั่งซื้อ</summary>
                 <pre class="mt-3 whitespace-pre-wrap break-words text-xs text-slate-500">${message}</pre>
@@ -701,7 +718,7 @@ function updateCartUI() {
     if (submitBtn) {
         submitBtn.disabled = cartSubmitting || count === 0;
         if (!cartSubmitting) {
-            submitBtn.textContent = 'ส่งรายการทาง LINE';
+            submitBtn.textContent = 'ส่งออเดอร์ทาง LINE';
         }
     }
 
@@ -822,7 +839,7 @@ function initCartUI() {
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
             <div>
                 <h2 class="text-xl font-black text-slate-900">ตะกร้าสินค้า</h2>
-                <p class="text-xs text-slate-500">กรอกข้อมูลแล้วส่งรายการทาง LINE</p>
+                <p class="text-xs text-slate-500">กรอกข้อมูลแล้วส่งออเดอร์ทาง LINE</p>
             </div>
             <button onclick="toggleCartDrawer(false)" class="p-2 hover:bg-slate-100 rounded-xl transition-colors">
                 <i data-lucide="x" class="w-6 h-6"></i>
@@ -848,7 +865,7 @@ function initCartUI() {
                 </div>
                 <p id="cart-min-hint" class="hidden text-xs font-semibold text-center"></p>
                 <button id="cart-submit-btn" type="submit" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black text-base shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all disabled:opacity-60">
-                    ส่งรายการทาง LINE
+                    ส่งออเดอร์ทาง LINE
                 </button>
             </div>
         </form>
