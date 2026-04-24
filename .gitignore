@@ -1,6 +1,4 @@
-backend/node_modules/
-backend/data/app-db.json
-data/app-db.json
+_site/
 nul
 .DS_Store
 Thumbs.db

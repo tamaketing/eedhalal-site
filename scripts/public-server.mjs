@@ -1,16 +1,16 @@
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
+const imageDir = path.resolve(rootDir, 'img');
 
 const host = process.env.HOST;
 const urlHost = host || 'localhost';
 const port = Number(process.env.PORT || 5500);
-const apiProxyTarget = (process.env.API_PROXY_TARGET || 'http://127.0.0.1:80').replace(/\/$/, '');
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -38,61 +38,16 @@ function getContentType(filePath) {
   return MIME_TYPES[ext] || 'application/octet-stream';
 }
 
-async function readRequestBody(req) {
-  const chunks = [];
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  return chunks.length > 0 ? Buffer.concat(chunks) : undefined;
-}
+function sanitizeUploadFilename(rawFilename) {
+  const baseName = path.basename(String(rawFilename || '').trim());
+  const sanitized = baseName.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const ext = path.extname(sanitized).toLowerCase();
 
-async function proxyApiRequest(req, res, requestUrl) {
-  const upstreamUrl = `${apiProxyTarget}${requestUrl.pathname}${requestUrl.search}`;
-  const headers = {};
-
-  for (const [key, value] of Object.entries(req.headers)) {
-    if (value == null) continue;
-    const lowerKey = key.toLowerCase();
-    if (lowerKey === 'host' || lowerKey === 'connection' || lowerKey === 'content-length') {
-      continue;
-    }
-    headers[key] = Array.isArray(value) ? value.join(', ') : String(value);
+  if (!sanitized || !ext || !['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext)) {
+    return '';
   }
 
-  const method = req.method || 'GET';
-  const body = method === 'GET' || method === 'HEAD' ? undefined : await readRequestBody(req);
-
-  let upstreamResponse;
-  try {
-    upstreamResponse = await fetch(upstreamUrl, {
-      method,
-      headers,
-      body
-    });
-  } catch (_error) {
-    res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-    res.end(JSON.stringify({
-      ok: false,
-      message: 'backend_unreachable',
-      hint: 'Backend API is unavailable. Start npm run backend:dev and reload.'
-    }));
-    return;
-  }
-
-  const responseBody = Buffer.from(await upstreamResponse.arrayBuffer());
-  const responseHeaders = {};
-
-  upstreamResponse.headers.forEach((value, key) => {
-    const lowerKey = key.toLowerCase();
-    if (lowerKey === 'connection' || lowerKey === 'transfer-encoding' || lowerKey === 'content-length') {
-      return;
-    }
-    responseHeaders[key] = value;
-  });
-
-  responseHeaders['Cache-Control'] = 'no-store';
-  res.writeHead(upstreamResponse.status, responseHeaders);
-  res.end(responseBody);
+  return sanitized;
 }
 
 async function resolveFilePath(urlPathname) {
@@ -128,8 +83,38 @@ const server = createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url || '/', `http://${urlHost}:${port}`);
 
-    if (requestUrl.pathname.startsWith('/api/')) {
-      await proxyApiRequest(req, res, requestUrl);
+    // Handle Image Upload (Local only)
+    if (req.method === 'POST' && requestUrl.pathname === '/upload') {
+      const filename = sanitizeUploadFilename(req.headers['x-filename']);
+      if (!filename) {
+        res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Invalid X-Filename header');
+        return;
+      }
+
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+      if (buffer.length === 0) {
+        res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Empty upload body');
+        return;
+      }
+
+      const targetPath = path.resolve(imageDir, filename);
+      if (!targetPath.startsWith(imageDir)) {
+        res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Invalid upload path');
+        return;
+      }
+
+      await writeFile(targetPath, buffer);
+      console.log(`[Upload] Saved: img/${filename}`);
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ path: `img/${filename}` }));
       return;
     }
 
@@ -146,12 +131,13 @@ const server = createServer(async (req, res) => {
       'Cache-Control': 'no-cache'
     });
     res.end(content);
-  } catch (_error) {
+  } catch (error) {
+    console.error('[Server Error]', error);
     res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Internal Server Error');
   }
 });
 
 server.listen(port, host, () => {
-  console.log(`Public server running at http://${urlHost}:${port}/`);
+  console.log(`Static preview server running at http://${urlHost}:${port}/`);
 });

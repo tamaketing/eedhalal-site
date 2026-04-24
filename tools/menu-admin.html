@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner Menu Admin | EED HALAL</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7f2;
+      --surface: #ffffff;
+      --surface-alt: #edf6ee;
+      --text: #183022;
+      --muted: #5f7266;
+      --accent: #177245;
+      --accent-strong: #0f5a35;
+      --border: #d8e3d8;
+      --danger: #b93838;
+      --shadow: 0 18px 48px rgba(23, 114, 69, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(23, 114, 69, 0.12), transparent 28%),
+        linear-gradient(180deg, #f7fbf6 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px 72px;
+    }
+
+    .hero,
+    .toolbar,
+    .card,
+    .notice {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1;
+    }
+
+    .hero p,
+    .notice,
+    .meta {
+      color: var(--muted);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+      font-size: 13px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--surface-alt);
+      color: var(--accent-strong);
+      font-weight: 700;
+    }
+
+    .toolbar {
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .secondary {
+      background: #eff4ef;
+      color: var(--text);
+    }
+
+    .danger {
+      background: #fff1f1;
+      color: var(--danger);
+    }
+
+    .notice {
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat {
+      background: var(--surface-alt);
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stat-value {
+      margin-top: 6px;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      padding: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .menu-fields {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field-wide {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+
+    .preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 18px;
+      background: #f8fbf8;
+      border: 1px solid var(--border);
+    }
+
+    .preview img {
+      width: 72px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 16px;
+      background: #dde8dd;
+      flex-shrink: 0;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        padding: 20px 14px 56px;
+      }
+
+      .hero,
+      .toolbar,
+      .card,
+      .notice {
+        border-radius: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <h1>Owner Menu Admin</h1>
+      <p>ใช้เครื่องมือนี้บนเครื่องเจ้าของร้านเพื่อแก้ชื่อเมนู ราคา รายละเอียด และรูป จากนั้น export เป็นไฟล์ <code>menu.json</code> สำหรับ commit และ deploy ขึ้นเว็บจริง</p>
+      <div class="meta">
+        <span class="pill">Local-only tool</span>
+        <span class="pill">ไม่ถูก deploy ไป GitHub Pages</span>
+        <span class="pill">เปิดผ่าน <code>npm run public:serve</code></span>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">จำนวนเมนู</div>
+          <div class="stat-value" id="stat-count">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">ราคาเฉลี่ย</div>
+          <div class="stat-value" id="stat-average">0 บาท</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">สถานะข้อมูล</div>
+          <div class="stat-value" id="stat-source">-</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="toolbar-row">
+        <div class="actions">
+          <button id="reload-source-btn" class="secondary" type="button">โหลดจาก menu.json</button>
+          <button id="save-draft-btn" class="secondary" type="button">บันทึก Draft Local</button>
+          <button id="reset-draft-btn" class="danger" type="button">ล้าง Draft</button>
+        </div>
+        <div class="actions">
+          <button id="add-item-btn" class="secondary" type="button">เพิ่มเมนู</button>
+          <button id="export-btn" class="primary" type="button">Export menu.json</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="status-banner" class="notice">กำลังโหลดข้อมูล...</div>
+
+    <section id="menu-list" class="grid"></section>
+  </main>
+
+  <script type="module" src="./menu-admin.js"></script>
+</body>
+</html>
