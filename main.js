@@ -207,44 +207,8 @@ function getInlineMenuFallback() {
 
 const MENU_STORAGE_KEY = 'eedhalal.menu.v1';
 const DEFAULT_MENU_IMAGE = '/img/chef-profile.jpg';
-const LINE_OA_LINK = 'https://lin.ee/CfvqJTd';
 const LINE_OA_DIRECT_LINK = 'https://line.me/R/ti/p/@eedhalal';
 const CONTACT_PHONE_DISPLAY = '098-871-5179';
-const CONTACT_PHONE_LINK = 'tel:+66988715179';
-let activePromotionsCache = [];
-
-function resolveApiBase() {
-    if (window.__EEDHALAL_API_BASE__) {
-        return String(window.__EEDHALAL_API_BASE__).replace(/\/$/, '');
-    }
-
-    if (window.location.protocol === 'file:') {
-        return 'http://127.0.0.1:80';
-    }
-
-    const host = window.location.hostname;
-    const port = window.location.port;
-    const isLocalHost = host === 'localhost' || host === '127.0.0.1';
-    if (isLocalHost && port !== String(window.location.port)) {
-        return `${window.location.protocol}//${host}:80`;
-    }
-
-    return '';
-}
-
-const API_BASE = resolveApiBase();
-
-function isStaticFrontendMode() {
-    if (typeof window.__EEDHALAL_STATIC_FRONTEND__ === 'boolean') {
-        return window.__EEDHALAL_STATIC_FRONTEND__;
-    }
-
-    const host = String(window.location.hostname || '').toLowerCase();
-    const isLocalHost = !host || host === 'localhost' || host === '127.0.0.1';
-    return !API_BASE && !isLocalHost && window.location.protocol !== 'file:';
-}
-
-const STATIC_FRONTEND_MODE = isStaticFrontendMode();
 
 function createMenuItemId() {
     if (window.crypto && typeof window.crypto.randomUUID === 'function') {
@@ -296,41 +260,27 @@ function writeMenuToStorage(menu) {
     }
 }
 
-async function fetchMenuFromApi() {
-    if (STATIC_FRONTEND_MODE) return [];
+async function fetchMenuFile() {
     try {
-        const res = await fetch(`${API_BASE}/api/menu`);
-        if (!res.ok) return [];
-        const payload = await res.json();
-        return normalizeMenuList(payload?.items || []);
+        const raw = await safeFetchFirst(['menu.json', '../menu.json']);
+        if (!raw) return [];
+        return normalizeMenuList(JSON.parse(raw));
     } catch (error) {
         return [];
     }
 }
 
-async function fetchPromotionsFromApi() {
-    if (STATIC_FRONTEND_MODE) return [];
-    try {
-        const res = await fetch(`${API_BASE}/api/promotions`);
-        if (!res.ok) return [];
-        const payload = await res.json();
-        return Array.isArray(payload?.promotions) ? payload.promotions : [];
-    } catch (error) {
-        return [];
+async function getMenuData() {
+    const menuFromFile = await fetchMenuFile();
+    if (menuFromFile.length > 0) {
+        return writeMenuToStorage(menuFromFile);
     }
-}
 
-async function getMenuData(options = {}) {
-    const menuFromApi = await fetchMenuFromApi();
-    if (menuFromApi.length > 0) {
-        return writeMenuToStorage(menuFromApi);
-    }
-    // API returned empty or failed — try localStorage cache
     const cached = readMenuFromStorage();
     if (cached && cached.length > 0) {
         return cached;
     }
-    // Last resort: use inline fallback menu
+
     const fallback = normalizeMenuList(getInlineMenuFallback());
     if (fallback.length > 0) {
         return writeMenuToStorage(fallback);
@@ -364,7 +314,6 @@ const LEGACY_CART_STORAGE_KEY = 'eedhalal.cart.v1';
 const MIN_ORDER_AMOUNT = 300;
 const FREE_DELIVERY_KM = 3;
 let cartSubmitting = false;
-let phoneLookupTimer = null;
 
 function normalizePhoneKey(phoneRaw) {
     const digitsOnly = String(phoneRaw || '').replace(/\D/g, '');
@@ -538,11 +487,7 @@ function setCartSubmitState(isSubmitting) {
     if (!submitBtn) return;
     submitBtn.disabled = isSubmitting;
     submitBtn.classList.toggle('opacity-70', isSubmitting);
-    if (STATIC_FRONTEND_MODE) {
-        submitBtn.textContent = isSubmitting ? 'กำลังเปิด LINE...' : 'ส่งรายการทาง LINE';
-        return;
-    }
-    submitBtn.textContent = isSubmitting ? 'กำลังสร้างออเดอร์...' : 'ยืนยันสั่งอาหาร';
+    submitBtn.textContent = isSubmitting ? 'กำลังเปิด LINE...' : 'ส่งรายการทาง LINE';
 }
 
 function buildStaticOrderReference() {
@@ -550,7 +495,55 @@ function buildStaticOrderReference() {
     return `WEB-${stamp}`;
 }
 
-function showStaticOrderRedirectOverlay(referenceId) {
+function buildStaticOrderMessage({ referenceId, customer, cart, total }) {
+    const lines = [
+        'สวัสดีครับ/ค่ะ ต้องการสั่งอาหารจากเว็บไซต์ EED HALAL',
+        `รหัสอ้างอิง: ${referenceId}`,
+        '',
+        'ข้อมูลผู้สั่ง',
+        `ชื่อ: ${customer.name}`,
+        `เบอร์โทร: ${customer.phone}`,
+        `ที่อยู่จัดส่ง: ${customer.address}`
+    ];
+
+    if (customer.note) {
+        lines.push(`หมายเหตุ: ${customer.note}`);
+    }
+
+    lines.push('', 'รายการอาหาร');
+    cart.forEach((item, index) => {
+        const quantity = Number(item.quantity || 0);
+        const unitPrice = Number(item.unitPrice || 0);
+        const lineTotal = quantity * unitPrice;
+        lines.push(`${index + 1}. ${item.name} x${quantity} = ${lineTotal} บาท`);
+    });
+
+    lines.push('', `ยอดรวม: ${total} บาท`, '', `หากข้อมูลไม่ครบ ติดต่อกลับที่ ${CONTACT_PHONE_DISPLAY}`);
+    return lines.join('\n');
+}
+
+function getLineOrderShareUrl(message) {
+    return `https://line.me/R/msg/text/?${encodeURIComponent(message)}`;
+}
+
+async function copyTextToClipboard(text) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(text);
+        return true;
+    }
+
+    const helper = document.createElement('textarea');
+    helper.value = text;
+    helper.setAttribute('readonly', 'true');
+    helper.className = 'fixed -left-[9999px] top-0';
+    document.body.appendChild(helper);
+    helper.select();
+    const copied = document.execCommand('copy');
+    helper.remove();
+    return copied;
+}
+
+function showStaticOrderRedirectOverlay(referenceId, shareUrl, message) {
     const existing = document.getElementById('order-success-overlay');
     if (existing) existing.remove();
 
@@ -563,21 +556,25 @@ function showStaticOrderRedirectOverlay(referenceId) {
             <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3"/><path stroke-linecap="round" stroke-linejoin="round" d="M3.05 11a9 9 0 111.99 5.66"/></svg>
             </div>
-            <h3 class="text-xl font-black text-slate-900 mb-2">ยืนยันออเดอร์ผ่าน LINE หรือโทร</h3>
-            <p class="text-slate-500 text-sm mb-2">เว็บไซต์นี้เป็นหน้าเว็บแสดงข้อมูลอย่างเดียว ยังไม่ได้ส่งออเดอร์เข้าระบบอัตโนมัติ</p>
+            <h3 class="text-xl font-black text-slate-900 mb-2">เปิด LINE พร้อมข้อความสั่งซื้อแล้ว</h3>
+            <p class="text-slate-500 text-sm mb-2">หาก LINE ไม่เปิดอัตโนมัติ ใช้ปุ่มด้านล่างเพื่อเปิดใหม่หรือคัดลอกข้อความสั่งซื้อ</p>
             <p class="text-slate-400 text-xs mb-6">รหัสอ้างอิง: <span class="font-bold text-slate-700">${referenceId}</span></p>
             <div class="space-y-3 mb-4">
-                <a href="${LINE_OA_DIRECT_LINK}" target="_blank" rel="noopener noreferrer"
+                <a href="${shareUrl}" target="_blank" rel="noopener noreferrer"
                    class="inline-flex items-center justify-center w-full bg-[#06C755] text-white py-3.5 rounded-2xl font-bold text-sm hover:bg-[#05b04c] transition-colors shadow-lg shadow-green-100 gap-2">
                     <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
-                    เปิด LINE เพื่อยืนยันออเดอร์
+                    เปิด LINE พร้อมข้อความสั่งซื้อ
                 </a>
-                <a href="${CONTACT_PHONE_LINK}"
-                   class="inline-flex items-center justify-center w-full bg-white border border-slate-200 text-slate-700 py-3.5 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-colors gap-2">
-                    โทร ${CONTACT_PHONE_DISPLAY}
-                </a>
+                <button onclick="copyLatestOrderMessage(event)" type="button"
+                    class="inline-flex items-center justify-center w-full bg-white border border-slate-200 text-slate-700 py-3.5 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-colors gap-2">
+                    คัดลอกข้อความสั่งซื้อ
+                </button>
             </div>
-            <p class="text-[11px] text-slate-400 mb-4">แจ้งรหัสอ้างอิงนี้พร้อมรายการอาหารในตะกร้าให้ทีมงานทาง LINE หรือโทรศัพท์</p>
+            <p class="text-[11px] text-slate-400 mb-4">ข้อความสั่งซื้อจะถูกเก็บไว้ในหน้านี้ชั่วคราว หากเปิด LINE ไม่สำเร็จให้กดคัดลอกแล้วส่งหาเราเอง</p>
+            <details class="mb-4 rounded-2xl bg-slate-50 p-4 text-left">
+                <summary class="cursor-pointer text-sm font-bold text-slate-700">ดูข้อความสั่งซื้อ</summary>
+                <pre class="mt-3 whitespace-pre-wrap break-words text-xs text-slate-500">${message}</pre>
+            </details>
             <button onclick="dismissOrderSuccess()" class="w-full py-3 rounded-2xl text-slate-500 font-semibold text-sm hover:bg-slate-50 transition-colors">
                 ปิด
             </button>
@@ -599,11 +596,33 @@ function showStaticOrderRedirectOverlay(referenceId) {
     document.body.appendChild(overlay);
 }
 
-function submitStaticCartOrder() {
+window.copyLatestOrderMessage = async function (event) {
+    event?.preventDefault();
+    const message = window.__eedhalalLastOrderMessage || '';
+    if (!message) return;
+    try {
+        await copyTextToClipboard(message);
+        const button = event?.currentTarget;
+        if (button) {
+            const original = button.textContent;
+            button.textContent = 'คัดลอกแล้ว';
+            setTimeout(() => {
+                button.textContent = original;
+            }, 1600);
+        }
+    } catch (_error) {
+        // Ignore clipboard failures and leave the message visible in the overlay.
+    }
+};
+
+function submitStaticCartOrder(customer, cart, total) {
     const referenceId = buildStaticOrderReference();
+    const message = buildStaticOrderMessage({ referenceId, customer, cart, total });
+    const shareUrl = getLineOrderShareUrl(message);
+    window.__eedhalalLastOrderMessage = message;
     window.toggleCartDrawer(false);
-    window.open(LINE_OA_DIRECT_LINK, '_blank', 'noopener');
-    showStaticOrderRedirectOverlay(referenceId);
+    window.open(shareUrl, '_blank', 'noopener');
+    showStaticOrderRedirectOverlay(referenceId, shareUrl, message);
 }
 
 async function submitCartOrder(event) {
@@ -637,55 +656,20 @@ async function submitCartOrder(event) {
         return;
     }
 
+    const customer = {
+        name,
+        phone: phoneKey,
+        address,
+        note
+    };
+
     setCartSubmitState(true);
     setCartError('');
 
-    if (STATIC_FRONTEND_MODE) {
-        submitStaticCartOrder();
-        setCartSubmitState(false);
-        return;
-    }
-
-    const payload = {
-        customer: {
-            name,
-            phone: phoneKey,
-            address,
-            note
-        },
-        items: cart.map((item) => ({
-            cartItemId: item.cartItemId,
-            id: item.id,
-            name: item.name,
-            image: item.image,
-            quantity: item.quantity,
-            price: item.unitPrice,
-            basePrice: item.unitPrice
-        }))
-    };
-
     try {
-        const response = await fetch(`${API_BASE}/api/orders`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || data?.ok === false) {
-            const message = data?.hint || data?.message || 'ไม่สามารถสร้างออเดอร์ได้';
-            throw new Error(message);
-        }
-
-        clearCart();
-        const form = document.getElementById('cart-form');
-        if (form) form.reset();
-        clearPhoneLookupIndicator();
-        window.toggleCartDrawer(false);
-        showOrderSuccessOverlay(data.orderId, data.lineOaLink);
+        submitStaticCartOrder(customer, cart, total);
     } catch (error) {
-        setCartError(String(error?.message || 'ไม่สามารถสร้างออเดอร์ได้ กรุณาลองใหม่อีกครั้ง'));
+        setCartError(String(error?.message || 'ไม่สามารถเปิด LINE ได้ กรุณาลองใหม่อีกครั้ง'));
     } finally {
         setCartSubmitState(false);
     }
@@ -717,7 +701,7 @@ function updateCartUI() {
     if (submitBtn) {
         submitBtn.disabled = cartSubmitting || count === 0;
         if (!cartSubmitting) {
-            submitBtn.textContent = STATIC_FRONTEND_MODE ? 'ส่งรายการทาง LINE' : 'ยืนยันสั่งอาหาร';
+            submitBtn.textContent = 'ส่งรายการทาง LINE';
         }
     }
 
@@ -838,7 +822,7 @@ function initCartUI() {
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
             <div>
                 <h2 class="text-xl font-black text-slate-900">ตะกร้าสินค้า</h2>
-                <p class="text-xs text-slate-500">${STATIC_FRONTEND_MODE ? 'กรอกข้อมูลแล้วส่งรายการทาง LINE' : 'กรอกข้อมูลแล้วกดยืนยัน'}</p>
+                <p class="text-xs text-slate-500">กรอกข้อมูลแล้วส่งรายการทาง LINE</p>
             </div>
             <button onclick="toggleCartDrawer(false)" class="p-2 hover:bg-slate-100 rounded-xl transition-colors">
                 <i data-lucide="x" class="w-6 h-6"></i>
@@ -852,7 +836,6 @@ function initCartUI() {
             <div id="cart-items-list" class="max-h-[40vh] overflow-y-auto p-6 space-y-3 border-b border-slate-100"></div>
             <div class="p-6 space-y-3 overflow-y-auto">
                 <input id="cart-customer-phone" type="tel" placeholder="เบอร์โทรศัพท์" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-emerald-500">
-                <div id="phone-lookup-indicator" class="hidden text-xs px-1 py-1"></div>
                 <input id="cart-customer-name" type="text" placeholder="ชื่อผู้สั่ง" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-emerald-500">
                 <textarea id="cart-customer-address" rows="3" placeholder="ที่อยู่จัดส่ง" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-emerald-500"></textarea>
                 <textarea id="cart-customer-note" rows="2" placeholder="หมายเหตุ (ไม่บังคับ)" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-emerald-500"></textarea>
@@ -865,7 +848,7 @@ function initCartUI() {
                 </div>
                 <p id="cart-min-hint" class="hidden text-xs font-semibold text-center"></p>
                 <button id="cart-submit-btn" type="submit" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black text-base shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all disabled:opacity-60">
-                    ยืนยันสั่งอาหาร
+                    ส่งรายการทาง LINE
                 </button>
             </div>
         </form>
@@ -885,125 +868,8 @@ function initCartUI() {
         cartForm.addEventListener('submit', submitCartOrder);
     }
 
-    const phoneInput = document.getElementById('cart-customer-phone');
-    if (phoneInput) {
-        phoneInput.addEventListener('input', handlePhoneLookup);
-    }
-
     initLucideIcons(document.body);
     updateCartUI();
-}
-
-function setPhoneLookupIndicator(html, className) {
-    const el = document.getElementById('phone-lookup-indicator');
-    if (!el) return;
-    el.innerHTML = html;
-    el.className = `text-xs px-1 py-1 ${className}`;
-    el.classList.remove('hidden');
-}
-
-function clearPhoneLookupIndicator() {
-    const el = document.getElementById('phone-lookup-indicator');
-    if (!el) return;
-    el.innerHTML = '';
-    el.classList.add('hidden');
-}
-
-function handlePhoneLookup() {
-    clearTimeout(phoneLookupTimer);
-    const raw = document.getElementById('cart-customer-phone')?.value.trim() || '';
-    const digits = raw.replace(/\D/g, '');
-
-    if (digits.length < 9) {
-        clearPhoneLookupIndicator();
-        return;
-    }
-
-    if (STATIC_FRONTEND_MODE) {
-        setPhoneLookupIndicator('ℹ️ หน้าเว็บนี้ยังไม่เชื่อมฐานข้อมูลลูกค้า กรุณายืนยันรายละเอียดกับทีมงานทาง LINE', 'text-sky-600 font-medium');
-        return;
-    }
-
-    setPhoneLookupIndicator('🔍 กำลังค้นหา...', 'text-slate-400');
-
-    phoneLookupTimer = setTimeout(async () => {
-        try {
-            const res = await fetch(`${API_BASE}/api/customers/profile?phone=${encodeURIComponent(digits)}`);
-            const data = await res.json();
-
-            if (data?.exists && data.customer) {
-                const c = data.customer;
-                const nameEl = document.getElementById('cart-customer-name');
-                const addrEl = document.getElementById('cart-customer-address');
-                const noteEl = document.getElementById('cart-customer-note');
-
-                if (nameEl && !nameEl.value.trim() && c.name && c.name !== '-') {
-                    nameEl.value = c.name;
-                }
-                if (addrEl && !addrEl.value.trim() && c.address && c.address !== '-') {
-                    addrEl.value = c.address;
-                }
-                if (noteEl && !noteEl.value.trim() && c.note) {
-                    noteEl.value = c.note;
-                }
-
-                const orderInfo = c.orderCount ? ` (สั่งแล้ว ${c.orderCount} ครั้ง)` : '';
-                setPhoneLookupIndicator(`✅ ลูกค้าเดิม${orderInfo}`, 'text-emerald-600 font-semibold');
-            } else {
-                setPhoneLookupIndicator('👤 ลูกค้าใหม่', 'text-amber-600 font-medium');
-            }
-        } catch (_err) {
-            clearPhoneLookupIndicator();
-        }
-    }, 600);
-}
-
-function showOrderSuccessOverlay(orderId, lineOaLink) {
-    const existing = document.getElementById('order-success-overlay');
-    if (existing) existing.remove();
-
-    const overlay = document.createElement('div');
-    overlay.id = 'order-success-overlay';
-    overlay.className = 'fixed inset-0 z-[80] flex items-center justify-center p-4';
-    overlay.innerHTML = `
-        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="dismissOrderSuccess()"></div>
-        <div class="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center animate-[fadeInUp_0.4s_ease-out]">
-            <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <h3 class="text-xl font-black text-slate-900 mb-1">สั่งออเดอร์สำเร็จ!</h3>
-            <p class="text-slate-500 text-sm mb-2">หมายเลขออเดอร์: <span class="font-bold text-slate-700">${orderId || '-'}</span></p>
-            <p class="text-slate-400 text-xs mb-6">ทีมงานจะเตรียมอาหารให้คุณในไม่ช้า</p>
-            ${lineOaLink ? `
-                <div class="border-t border-slate-100 pt-5 mb-4">
-                    <p class="text-sm text-slate-600 font-semibold mb-3">📦 ติดตามสถานะออเดอร์</p>
-                    <a href="${lineOaLink}" target="_blank" rel="noopener noreferrer"
-                       class="inline-flex items-center justify-center w-full bg-[#06C755] text-white py-3.5 rounded-2xl font-bold text-sm hover:bg-[#05b04c] transition-colors shadow-lg shadow-green-100 gap-2">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
-                        แอด LINE เพื่อติดตามสถานะ
-                    </a>
-                    <p class="text-[11px] text-slate-400 mt-2">รับแจ้งเตือนสถานะออเดอร์ผ่าน LINE</p>
-                </div>
-            ` : ''}
-            <button onclick="dismissOrderSuccess()" class="w-full py-3 rounded-2xl text-slate-500 font-semibold text-sm hover:bg-slate-50 transition-colors">
-                ${lineOaLink ? 'ข้าม, ปิด' : 'ปิด'}
-            </button>
-        </div>
-    `;
-
-    const style = document.createElement('style');
-    style.id = 'order-success-style';
-    style.textContent = `
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    `;
-    if (!document.getElementById('order-success-style')) {
-        document.head.appendChild(style);
-    }
-
-    document.body.appendChild(overlay);
 }
 
 window.dismissOrderSuccess = function () {
@@ -1115,27 +981,6 @@ window.addBundleToCart = function (firstId, secondId, bundlePrice, event) {
     });
 };
 
-function getBestMenuPromotion(menuItem) {
-    let selected = null;
-    let finalPrice = Number(menuItem?.price || 0);
-
-    activePromotionsCache.forEach((promotion) => {
-        if (promotion.type !== 'clearance_percent' && promotion.type !== 'clearance_fixed_price') return;
-        if (!Array.isArray(promotion.targetMenuIds) || !promotion.targetMenuIds.includes(menuItem.id)) return;
-
-        const candidatePrice = promotion.type === 'clearance_percent'
-            ? Number(menuItem.price || 0) * (1 - (Number(promotion.discountPercent || 0) / 100))
-            : Number(promotion.fixedPrice || 0);
-
-        if (!selected || candidatePrice < finalPrice) {
-            selected = promotion;
-            finalPrice = Math.max(0, candidatePrice);
-        }
-    });
-
-    return { promotion: selected, finalPrice };
-}
-
 function buildStaticBundleDeals(menu, maxBundles = 4) {
     const bundles = [];
     for (let index = 0; index < menu.length - 1 && bundles.length < maxBundles; index += 2) {
@@ -1163,59 +1008,7 @@ function buildStaticBundleDeals(menu, maxBundles = 4) {
 async function renderBundleDeals(menu) {
     const bundleGrid = document.getElementById('bundle-grid');
     if (!bundleGrid) return;
-
-    const menuMap = new Map(menu.map((item) => [item.id, item]));
-
-    // 1. Try manual promotions first
-    let bundles = activePromotionsCache
-        .filter((p) => p.type === 'bundle' && Array.isArray(p.bundleMenuIds) && p.bundleMenuIds.length === 2)
-        .map((promotion) => {
-            const first = menuMap.get(promotion.bundleMenuIds[0]);
-            const second = menuMap.get(promotion.bundleMenuIds[1]);
-            if (!first || !second) return null;
-            return {
-                label: promotion.label,
-                first,
-                second,
-                bundlePrice: Number(promotion.bundlePrice || 0),
-                originalTotal: Number(first.price || 0) + Number(second.price || 0),
-                saving: Math.max(0, (Number(first.price || 0) + Number(second.price || 0)) - Number(promotion.bundlePrice || 0))
-            };
-        })
-        .filter(Boolean);
-
-    // 2. If no manual bundles, fetch auto-generated bundles from API
-    if (!bundles.length && !STATIC_FRONTEND_MODE) {
-        try {
-            const res = await fetch(`${API_BASE}/api/auto-bundles?max=4`);
-            if (res.ok) {
-                const data = await res.json();
-                if (Array.isArray(data?.bundles)) {
-                    bundles = data.bundles
-                        .map((b) => {
-                            const first = menuMap.get(b.bundleMenuIds?.[0]);
-                            const second = menuMap.get(b.bundleMenuIds?.[1]);
-                            if (!first || !second) return null;
-                            return {
-                                label: b.label,
-                                first,
-                                second,
-                                bundlePrice: Number(b.bundlePrice || 0),
-                                originalTotal: Number(b.originalTotal || first.price + second.price),
-                                saving: Number(b.saving || 0)
-                            };
-                        })
-                        .filter(Boolean);
-                }
-            }
-        } catch (_err) {
-            // silently fail
-        }
-    }
-
-    if (!bundles.length && STATIC_FRONTEND_MODE) {
-        bundles = buildStaticBundleDeals(menu);
-    }
+    const bundles = buildStaticBundleDeals(menu);
 
     if (!bundles.length) {
         bundleGrid.innerHTML = `
@@ -1261,7 +1054,6 @@ function renderMenu(menu) {
             <div class="h-64 overflow-hidden relative">
                 <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
                 ${item.tag ? `<div class="absolute top-4 left-4 bg-emerald-600 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest shadow-lg">${item.tag}</div>` : ''}
-                ${getBestMenuPromotion(item).promotion ? `<div class="absolute top-4 right-4 bg-rose-500 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest shadow-lg">${getBestMenuPromotion(item).promotion.label}</div>` : ''}
             </div>
             <div class="p-8">
                 <div class="mb-2">
@@ -1270,9 +1062,7 @@ function renderMenu(menu) {
                 <p class="text-slate-500 text-sm mb-6 line-clamp-2 h-10">${cleanDesc(item.description)}</p>
                 <div class="flex justify-between items-center pt-4 border-t border-slate-200">
                     <span class="text-left">
-                        ${getBestMenuPromotion(item).promotion
-            ? `<span class="block text-sm text-slate-400 line-through">${item.price} บาท</span><span class="text-2xl font-black text-rose-600">${Math.round(getBestMenuPromotion(item).finalPrice * 100) / 100} บาท</span>`
-            : `<span class="text-2xl font-black text-emerald-700">${item.price} บาท</span>`}
+                        <span class="text-2xl font-black text-emerald-700">${item.price} บาท</span>
                     </span>
                     ${`<button onclick="addToCart('${item.id}', event)" class="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all flex items-center">
                             <i data-lucide="plus" class="w-4 h-4 mr-2"></i> เพิ่มลงตะกร้า
@@ -1289,17 +1079,13 @@ async function loadMenu() {
     if (!menuGrid) return;
 
     try {
-        const [menu, promotions] = await Promise.all([
-            getMenuData({ forceRefresh: true }),
-            fetchPromotionsFromApi()
-        ]);
-        activePromotionsCache = promotions;
+        const menu = await getMenuData();
 
         if (!menu.length) {
             menuGrid.innerHTML = `
                 <div class="col-span-full bg-slate-100 border border-slate-200 rounded-3xl p-10 text-center">
                     <h3 class="text-2xl font-bold text-slate-800 mb-2">ยังไม่มีรายการอาหาร</h3>
-                    <p class="text-slate-500">กรุณาเพิ่มเมนูจากหน้าแอดมิน หรือติดต่อทีมงานผ่าน LINE</p>
+                    <p class="text-slate-500">กรุณาอัปเดตไฟล์เมนู หรือส่งข้อความหาทีมงานผ่าน LINE</p>
                 </div>
             `;
             return;
