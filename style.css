@@ -1,29 +1,102 @@
+:root {
+    --primary: #065f46;
+    --primary-light: #10b981;
+    --accent: #fbbf24;
+    --slate-950: #020617;
+    --glass: rgba(255, 255, 255, 0.7);
+    --glass-dark: rgba(15, 23, 42, 0.7);
+}
+
 body {
     font-family: 'Kanit', sans-serif;
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Premium Typography Enhancement */
+h1, h2, h3 {
+    letter-spacing: -0.025em;
+}
+
+/* Glassmorphism */
+.glass-panel {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-panel-dark {
+    background: var(--glass-dark);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-up {
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Hover Effects */
+.premium-card {
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.premium-card:hover {
+    transform: translateY(-8px) scale(1.01);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
 }
 
 .halal-gradient {
     background: linear-gradient(135deg, #065f46 0%, #059669 100%);
 }
 
-.food-card:hover {
-    transform: translateY(-8px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.step-number {
-    -webkit-text-stroke: 1px #059669;
-    color: transparent;
+.gold-gradient {
+    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
 }
 
 .logo-box {
     width: 2.75rem;
     height: 2.75rem;
-    border-radius: 0.9rem;
+    border-radius: 1rem;
     background: linear-gradient(135deg, #059669, #047857);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8px 20px rgba(5, 150, 105, 0.28);
+    box-shadow: 0 8px 25px rgba(5, 150, 105, 0.3);
+    transition: transform 0.3s ease;
+}
+
+.logo-box:hover {
+    transform: rotate(5deg) scale(1.1);
+}
+
+/* Custom Scrollbar for Premium Feel */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
