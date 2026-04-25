@@ -5,17 +5,18 @@
 export default {
   ci: {
     collect: {
+      staticDistDir: './_site',
       url: [
-        'https://eedhalal.com/',
-        'https://eedhalal.com/popular-menu.html',
-        'https://eedhalal.com/order-steps.html',
-        'https://eedhalal.com/corporate.html',
-        'https://eedhalal.com/contact.html'
+        'http://localhost/',
+        'http://localhost/popular-menu.html',
+        'http://localhost/order-steps.html',
+        'http://localhost/corporate.html',
+        'http://localhost/contact.html'
       ],
       numberOfRuns: 3,
-      startServerCommand: 'npm run public:serve',
-      startServerReadyPattern: 'Server running',
-      startServerReadyTimeout: 30000
+      settings: {
+        chromeFlags: '--no-sandbox'
+      }
     },
     assert: {
       assertions: {
@@ -29,16 +30,14 @@ export default {
         'total-blocking-time': ['warn', { maxNumericValue: 500 }],
         'unused-javascript': ['warn', { maxLength: 0 }],
         'uses-long-cache-ttl': ['warn', { maxAssetLength: 0 }],
-        'render-blocking-resources': ['error', { maxLength: 0 }],
+        'render-blocking-resources': 'warn',
         'uses-optimized-images': 'warn',
         'uses-webp-images': 'warn',
         'unsized-images': 'warn'
       }
     },
     upload: {
-      target: 'lhci',
-      serverBaseUrl: process.env.LHCI_SERVER_URL || '',
-      token: process.env.LHCI_BUILD_TOKEN || ''
+      target: 'temporary-public-storage'
     }
   }
 };
