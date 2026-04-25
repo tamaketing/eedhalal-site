@@ -183,7 +183,7 @@ function getInlineFooterFallback() {
 
     <div class="max-w-7xl mx-auto px-4 pt-8 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
         <p class="text-[11px] text-slate-400 font-medium tracking-wide uppercase">
-            &copy; 2024 อีดฮาลาล สาทร กรุงเทพ — สงวนลิขสิทธิ์
+            &copy; 2026 อีดฮาลาล สาทร กรุงเทพ — สงวนลิขสิทธิ์
         </p>
         <div class="flex space-x-6 text-[10px] font-bold text-emerald-600/60 uppercase tracking-widest">
             <span>จัดส่งปลอดภัย</span>
@@ -745,7 +745,7 @@ function renderCartDrawer() {
         } else {
             itemsList.innerHTML = cart.map((item) => `
                 <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <img src="${item.image}" class="w-14 h-14 object-cover rounded-xl shadow-sm" alt="${item.name}">
+                    <img src="${item.image}" class="w-14 h-14 object-cover rounded-xl shadow-sm" alt="${item.name}" loading="lazy" width="56" height="56">
                     <div class="flex-1 min-w-0">
                         <h4 class="font-bold text-slate-800 text-sm line-clamp-1">${item.name}</h4>
                         <p class="text-emerald-600 font-bold text-xs">${item.unitPrice} บาท</p>
@@ -1038,8 +1038,8 @@ async function renderBundleDeals(menu) {
     bundleGrid.innerHTML = bundles.map(({ label, first, second, bundlePrice, originalTotal, saving }) => `
         <article class="rounded-3xl border border-amber-200 bg-white overflow-hidden shadow-sm hover:shadow-xl transition-shadow">
             <div class="flex h-36">
-                <img src="${first.image}" alt="${first.name}" class="w-1/2 object-cover">
-                <img src="${second.image}" alt="${second.name}" class="w-1/2 object-cover">
+                <img src="${first.image}" alt="${first.name}" class="w-1/2 object-cover" loading="lazy" width="200" height="144">
+                <img src="${second.image}" alt="${second.name}" class="w-1/2 object-cover" loading="lazy" width="200" height="144">
             </div>
             <div class="p-6">
                 <div class="flex items-center gap-2 mb-2">
@@ -1068,7 +1068,7 @@ function renderMenu(menu) {
     return menu.map((item) => `
         <div class="food-card bg-slate-50 rounded-3xl overflow-hidden border border-slate-100 group">
             <div class="h-64 overflow-hidden relative">
-                <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" width="400" height="256">
                 ${item.tag ? `<div class="absolute top-4 left-4 bg-emerald-600 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest shadow-lg">${item.tag}</div>` : ''}
             </div>
             <div class="p-8">
