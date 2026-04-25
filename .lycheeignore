@@ -2,20 +2,24 @@
 # Links to ignore during broken link checking
 
 # External services (may block automated checks)
-https://lin.ee/*
-https://liff.line.me/*
-https://*.unsplash.com/*
-https://fonts.googleapis.com/*
-https://unpkg.com/*
-https://cdn.tailwindcss.com/*
+https://lin\.ee/.*
+https://liff\.line\.me/.*
+https://.*\.unsplash\.com/.*
+https://fonts\.googleapis\.com/.*
+https://unpkg\.com/.*
+https://cdn\.tailwindcss\.com/.*
+https://www\.facebook\.com/.*
 
 # Documentation
-https://github.com/*
-https://*.google.com/*
-https://maps.google.com/*
+https://github\.com/.*
+https://.*\.google\.com/.*
+https://maps\.google\.com/.*
+
+# Canonical URLs point to the live domain and should not block pre-deploy checks
+https://eedhalal\.com/.*
 
 # Local paths that are loaded dynamically
-/main.js
-/navigation.html
-/footer.html
-/menu.json
+/main\.js
+/navigation\.html
+/footer\.html
+/menu\.json
