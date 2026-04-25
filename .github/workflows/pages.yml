@@ -59,15 +59,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Pages artifact
-        uses: actions/download-pages-artifact@v3
-        with:
-          path: .lychee
-
-      - name: Unpack artifact
+      - name: Build static files for link check
         run: |
           mkdir -p _site
-          unzip -q .lychee/pages_artifact.zip -d _site
+          cp *.html _site/
+          cp navigation.html footer.html style.css main.js robots.txt sitemap.xml menu.json llms.txt llms-full.md CNAME .nojekyll _site/
+          cp -R img _site/img
 
       - name: Check for broken links
         uses: lycheeverse/lychee-action@v2
@@ -83,15 +80,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Pages artifact
-        uses: actions/download-pages-artifact@v3
-        with:
-          path: .lighthouseci
-
-      - name: Unpack artifact
+      - name: Build static files for Lighthouse
         run: |
           mkdir -p _site
-          unzip -q .lighthouseci/pages_artifact.zip -d _site
+          cp *.html _site/
+          cp navigation.html footer.html style.css main.js robots.txt sitemap.xml menu.json llms.txt llms-full.md CNAME .nojekyll _site/
+          cp -R img _site/img
 
       - name: Run Lighthouse CI
         uses: treosh/lighthouse-ci-action@v11
