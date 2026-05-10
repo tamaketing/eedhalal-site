@@ -100,21 +100,21 @@ function getInlineNavigationFallback() {
                 <span class="text-xl font-black text-white">E</span>
             </div>
             <div>
-                <div class="text-xl font-black uppercase tracking-tight text-emerald-900">EED HALAL</div>
-                <div class="text-[10px] font-bold uppercase tracking-[0.32em] text-slate-400">Corporate Catering</div>
+                <div class="text-xl font-black uppercase tracking-tight" style="color: var(--primary);">EED HALAL</div>
+                <div class="text-[10px] font-bold uppercase tracking-[0.32em]" style="color: var(--accent);">Corporate Catering</div>
             </div>
         </a>
         <div class="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex">
-            <a href="index.html#home" class="transition hover:text-emerald-600">หน้าแรก</a>
-            <a href="popular-menu.html" class="transition hover:text-emerald-600">เมนูตัวอย่าง</a>
-            <a href="corporate.html" class="transition hover:text-emerald-600">บริการองค์กร</a>
-            <a href="order-steps.html" class="transition hover:text-emerald-600">ขั้นตอนสั่งงาน</a>
-            <a href="faq.html" class="transition hover:text-emerald-600">คำถามที่พบบ่อย</a>
-            <a href="contact.html" class="transition hover:text-emerald-600">ติดต่อเรา</a>
+            <a href="index.html#home" class="brand-link">หน้าแรก</a>
+            <a href="popular-menu.html" class="brand-link">เมนูตัวอย่าง</a>
+            <a href="corporate.html" class="brand-link">บริการองค์กร</a>
+            <a href="order-steps.html" class="brand-link">ขั้นตอนสั่งงาน</a>
+            <a href="faq.html" class="brand-link">คำถามที่พบบ่อย</a>
+            <a href="contact.html" class="brand-link">ติดต่อเรา</a>
         </div>
         <div class="flex items-center gap-3">
             <a href="${QUOTE_LINE_URL}" target="_blank" rel="noopener noreferrer"
-                class="hidden rounded-2xl bg-slate-900 px-6 py-2.5 text-sm font-black text-white shadow-xl transition-all hover:-translate-y-0.5 md:inline-flex">
+                class="brand-button hidden rounded-2xl px-6 py-2.5 text-sm font-black shadow-xl md:inline-flex">
                 ขอใบเสนอราคา
             </a>
             <button id="mobile-menu-btn" class="rounded-xl p-2 text-slate-700 md:hidden" aria-label="Toggle menu">
@@ -133,16 +133,16 @@ function getInlineNavigationFallback() {
 
 function getInlineFooterFallback() {
     return `
-<footer class="bg-slate-950 pt-24 pb-12 text-slate-300">
+<footer class="brand-footer pt-24 pb-12 text-slate-300">
     <div class="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-4 md:grid-cols-4">
         <div class="space-y-7">
             <div class="flex items-center gap-3">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 shadow-lg shadow-emerald-950/40">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg" style="background: var(--accent); color: var(--primary);">
                     <i data-lucide="utensils-cross" class="h-6 w-6 text-white"></i>
                 </div>
                 <div>
                     <div class="text-2xl font-black uppercase tracking-tight text-white">EED HALAL</div>
-                    <div class="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400">20+ Box Orders</div>
+                    <div class="text-[10px] font-bold uppercase tracking-[0.3em]" style="color: var(--accent);">20+ Box Orders</div>
                 </div>
             </div>
             <p class="max-w-sm text-sm leading-7 text-slate-400">
@@ -151,27 +151,27 @@ function getInlineFooterFallback() {
             </p>
         </div>
         <div>
-            <h4 class="mb-6 text-sm font-black uppercase tracking-[0.28em] text-white">บริการหลัก</h4>
+            <h4 class="mb-6 text-sm font-black uppercase tracking-[0.28em]" style="color: var(--accent);">บริการหลัก</h4>
             <ul class="space-y-3 text-sm text-slate-400">
-                <li><a href="corporate.html" class="transition hover:text-emerald-400">ข้าวกล่องประชุมและสัมมนา</a></li>
-                <li><a href="catering.html" class="transition hover:text-emerald-400">บริการจัดเลี้ยงฮาลาล</a></li>
-                <li><a href="hospital-orders.html" class="transition hover:text-emerald-400">ออเดอร์โรงพยาบาลและหน่วยงาน</a></li>
-                <li><a href="popular-menu.html" class="transition hover:text-emerald-400">เมนูตัวอย่าง</a></li>
+                <li><a href="corporate.html" class="brand-link">ข้าวกล่องประชุมและสัมมนา</a></li>
+                <li><a href="catering.html" class="brand-link">บริการจัดเลี้ยงฮาลาล</a></li>
+                <li><a href="hospital-orders.html" class="brand-link">ออเดอร์โรงพยาบาลและหน่วยงาน</a></li>
+                <li><a href="popular-menu.html" class="brand-link">เมนูตัวอย่าง</a></li>
             </ul>
         </div>
         <div>
-            <h4 class="mb-6 text-sm font-black uppercase tracking-[0.28em] text-white">ช่องทางสั่ง</h4>
+            <h4 class="mb-6 text-sm font-black uppercase tracking-[0.28em]" style="color: var(--accent);">ช่องทางสั่ง</h4>
             <ul class="space-y-3 text-sm text-slate-400">
-                <li><a href="${QUOTE_LINE_URL}" target="_blank" rel="noopener noreferrer" class="transition hover:text-emerald-400">ขอใบเสนอราคา</a></li>
-                <li><a href="popular-menu.html#app-order" class="transition hover:text-emerald-400">สั่งรายกล่องผ่านแอป</a></li>
-                <li><a href="order-steps.html" class="transition hover:text-emerald-400">ดูขั้นตอนสั่งงาน</a></li>
-                <li><a href="contact.html" class="transition hover:text-emerald-400">ติดต่อเรา</a></li>
+                <li><a href="${QUOTE_LINE_URL}" target="_blank" rel="noopener noreferrer" class="brand-link">ขอใบเสนอราคา</a></li>
+                <li><a href="popular-menu.html#app-order" class="brand-link">สั่งรายกล่องผ่านแอป</a></li>
+                <li><a href="order-steps.html" class="brand-link">ดูขั้นตอนสั่งงาน</a></li>
+                <li><a href="contact.html" class="brand-link">ติดต่อเรา</a></li>
             </ul>
         </div>
         <div>
-            <div class="rounded-[28px] border border-slate-800 bg-slate-900 p-6">
+            <div class="brand-footer-card rounded-[28px] p-6">
                 <div class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-500">โทรศัพท์</div>
-                <a href="${PHONE_HREF}" class="mt-2 block text-2xl font-black text-emerald-400">${PHONE_DISPLAY}</a>
+                <a href="${PHONE_HREF}" class="mt-2 block text-2xl font-black" style="color: var(--accent);">${PHONE_DISPLAY}</a>
                 <div class="mt-4 text-sm leading-6 text-slate-400">
                     รับงานองค์กร 20+ กล่อง และลูกค้ารายกล่องสามารถสั่งผ่านแอปเดลิเวอรี่ได้
                 </div>
@@ -203,7 +203,7 @@ function renderDeliveryAppsMarkup(options = {}) {
     return `
         <div class="${compact ? 'glass-panel rounded-3xl p-6 shadow-sm' : 'glass-panel rounded-[40px] p-8 shadow-2xl shadow-slate-200/40'}">
             <div class="mb-6">
-                <div class="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600">Digital Service</div>
+                <div class="text-[10px] font-black uppercase tracking-[0.3em]" style="color: var(--accent);">Digital Service</div>
                 <h3 class="mt-2 text-2xl font-black text-slate-900">${escapeHtml(title)}</h3>
                 <p class="mt-2 text-sm leading-relaxed text-slate-500">${escapeHtml(copy)}</p>
             </div>
@@ -213,7 +213,7 @@ function renderDeliveryAppsMarkup(options = {}) {
                         class="premium-card group rounded-2xl border border-slate-100 bg-white px-5 py-5 transition-all">
                         <div class="text-xs font-black uppercase tracking-[0.2em] text-slate-900">${escapeHtml(app.name)}</div>
                         <div class="mt-2 text-xs leading-5 text-slate-400">${escapeHtml(app.description)}</div>
-                        <div class="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">
+                        <div class="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em]" style="color: var(--accent);">
                             สั่งอาหาร
                             <i data-lucide="external-link" class="h-3 w-3"></i>
                         </div>
@@ -289,7 +289,7 @@ function renderMenu(menu) {
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <h3 class="text-2xl font-black tracking-tight text-slate-900">${escapeHtml(item.name)}</h3>
-                            ${item.tag ? `<div class="mt-3 inline-flex rounded-lg bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 border border-emerald-100">${escapeHtml(item.tag)}</div>` : ''}
+                            ${item.tag ? `<div class="mt-3 inline-flex rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]" style="background: rgba(202, 138, 4, 0.1); color: var(--primary); border: 1px solid rgba(202, 138, 4, 0.2);">${escapeHtml(item.tag)}</div>` : ''}
                         </div>
                         <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                             Check Price
@@ -298,11 +298,11 @@ function renderMenu(menu) {
                     <p class="mt-5 text-sm leading-relaxed text-slate-500 line-clamp-2">${escapeHtml(item.description)}</p>
                     <div class="mt-8 flex flex-wrap items-center gap-4">
                         <a href="${QUOTE_LINE_URL}" target="_blank" rel="noopener noreferrer"
-                            class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-6 py-3 text-xs font-black text-white transition-all hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-200">
+                            class="brand-button inline-flex items-center justify-center rounded-xl px-6 py-3 text-xs font-black">
                             <i data-lucide="message-square" class="h-4 w-4 mr-2"></i> ขอราคา (20+)
                         </a>
                         <a href="popular-menu.html#app-order"
-                            class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-xs font-black text-slate-700 transition-all hover:border-emerald-300 hover:text-emerald-700 hover:bg-emerald-50">
+                            class="brand-outline inline-flex items-center justify-center rounded-xl bg-slate-50 px-6 py-3 text-xs font-black">
                             สั่งผ่านแอป
                         </a>
                     </div>
