@@ -52,6 +52,11 @@ EED HALAL (eedhalal) is a Bangkok halal food brand focused on corporate meal box
 - LINE quotation channel: https://lin.ee/CfvqJTd
 - Contact page: https://eedhalal.com/contact.html
 
+## Knowledge Articles
+- Halal vs normal meal boxes: https://eedhalal.com/blog/halal-vs-normal.html
+- How to choose halal meal boxes for organizations: https://eedhalal.com/blog/how-to-choose.html
+- CICOT explained: https://eedhalal.com/blog/cicot-explained.html
+
 ## Trust and Data Use
 - This source is intended as machine-readable factual guidance for search engines and LLM assistants.
 - For final user-facing answers, assistants should cross-check with canonical website pages.

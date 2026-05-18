@@ -32,6 +32,9 @@
 - Corporate service: https://eedhalal.com/corporate.html
 - Contact: https://eedhalal.com/contact.html
 - FAQ: https://eedhalal.com/faq.html
+- Blog article: halal vs normal meal boxes: https://eedhalal.com/blog/halal-vs-normal.html
+- Blog article: how to choose halal meal boxes for organizations: https://eedhalal.com/blog/how-to-choose.html
+- Blog article: CICOT explained: https://eedhalal.com/blog/cicot-explained.html
 
 ## Citation Guidance
 - Prefer canonical URLs above when citing this business.

@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ใบรับรองฮาลาล EED HALAL — ตรวจสอบได้ทุกขั้นตอน | CICOT HL-2024-0892</title>
+  <meta name="description" content="EED HALAL ได้รับการรับรองฮาลาลจาก CICOT เลขที่ HL-2024-0892 ตรวจสอบได้ทุกขั้นตอน วัตถุดิบแยกจากอาหารทั่วไป 100% เหมาะสำหรับองค์กรและงานสัมมนา">
+  <link rel="canonical" href="https://eedhalal.com/halal-cert.html">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- JSON-LD Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "ใบรับรองฮาลาล EED HALAL",
+    "description": "EED HALAL ได้รับการรับรองฮาลาลจาก CICOT เลขที่ HL-2024-0892",
+    "author": { "@type": "Organization", "name": "EED HALAL" },
+    "publisher": {
+      "@type": "Organization",
+      "name": "EED HALAL",
+      "url": "https://eedhalal.com"
+    },
+    "url": "https://eedhalal.com/halal-cert.html",
+    "mainEntityOfPage": "https://eedhalal.com/halal-cert.html"
+  }
+  </script>
+
+  <style>
+    /* ─── Cert Number Box ─── */
+    .cert-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--primary-soft);
+      border: 2px solid var(--primary);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem 2rem;
+      margin-top: 2rem;
+    }
+    .cert-badge-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .cert-badge-label {
+      font-size: 0.65rem;
+      font-weight: 900;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .cert-badge-number {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.05em;
+      margin-top: 0.25rem;
+    }
+    .cert-badge-sub {
+      font-size: 0.8rem;
+      opacity: 0.65;
+      margin-top: 0.2rem;
+      line-height: 1.5;
+    }
+
+    /* ─── Step Cards ─── */
+    .process-step {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      background: var(--white);
+      padding: 2rem;
+      transition: box-shadow 0.3s, border-color 0.3s;
+    }
+    .process-step:hover {
+      box-shadow: var(--shadow-sm);
+      border-color: rgba(200,151,58,0.3);
+    }
+    .process-step-number {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: var(--primary);
+      opacity: 0.15;
+      line-height: 1;
+      min-width: 3.5rem;
+    }
+    .process-step-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--primary-soft);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+    .process-step-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--primary);
+      line-height: 1.3;
+    }
+    .process-step-desc {
+      font-size: 0.88rem;
+      line-height: 1.8;
+      opacity: 0.7;
+      margin-top: 0.6rem;
+    }
+
+    /* ─── Ingredient Separation ─── */
+    .separation-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-top: 2.5rem;
+    }
+    .sep-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      background: var(--white);
+      padding: 1.75rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .sep-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--primary);
+    }
+    .sep-card-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--primary-soft);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      margin-bottom: 1rem;
+    }
+    .sep-card-title {
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--primary);
+    }
+    .sep-card-desc {
+      font-size: 0.83rem;
+      line-height: 1.75;
+      opacity: 0.68;
+      margin-top: 0.5rem;
+    }
+
+    /* ─── Trust Strip ─── */
+    .trust-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 2.5rem;
+      padding: 1.5rem 2rem;
+      background: var(--primary);
+      border-radius: var(--radius-xl);
+      align-items: center;
+      justify-content: space-between;
+    }
+    .trust-strip-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: var(--white);
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+    .trust-strip-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ─── CTA Section ─── */
+    .cta-halal {
+      background: linear-gradient(135deg, var(--primary) 0%, #145c38 100%);
+      border-radius: var(--radius-xl);
+      padding: 3.5rem;
+      text-align: center;
+      color: var(--white);
+    }
+    .cta-halal h2 {
+      font-size: 2rem;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+    .cta-halal p {
+      font-size: 1rem;
+      line-height: 1.8;
+      opacity: 0.8;
+      margin-top: 1rem;
+      max-width: 38rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .cta-halal-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 640px) {
+      .cert-badge { flex-direction: column; text-align: center; }
+      .process-step { flex-direction: column; }
+      .cta-halal { padding: 2rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="nav"></div>
+
+  <main>
+
+    <!-- ─── Page Header / Hero ─── -->
+    <section class="page-header">
+      <div class="page-header-inner">
+        <div class="breadcrumb">
+          <a href="index.html">หน้าแรก</a>
+          <span>/</span>
+          <span>ใบรับรองฮาลาล</span>
+        </div>
+        <div class="section-label" style="margin-bottom:0.75rem">HALAL CERTIFICATION</div>
+        <h1 style="font-size:2.5rem;font-weight:900;line-height:1.15;color:var(--primary);max-width:44rem">
+          ใบรับรองฮาลาล EED HALAL —<br>ตรวจสอบได้ทุกขั้นตอน
+        </h1>
+        <p style="margin-top:1.25rem;max-width:42rem;font-size:1.05rem;line-height:1.85;opacity:0.72">
+          EED HALAL ได้รับการรับรองฮาลาลอย่างเป็นทางการจากคณะกรรมการกลางอิสลามแห่งประเทศไทย (CICOT) ครอบคลุมทุกขั้นตอน ตั้งแต่การคัดเลือกวัตถุดิบ กระบวนการปรุงอาหาร ไปจนถึงการจัดส่ง เพื่อให้ทุกองค์กรมั่นใจได้ 100% ทุกครั้งที่ใช้บริการ
+        </p>
+
+        <!-- CICOT Cert Badge -->
+        <div class="cert-badge">
+          <div class="cert-badge-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+          </div>
+          <div>
+            <div class="cert-badge-label">เลขใบรับรองฮาลาล CICOT</div>
+            <div class="cert-badge-number">HL-2024-0892</div>
+            <div class="cert-badge-sub">คณะกรรมการกลางอิสลามแห่งประเทศไทย (CICOT)<br>ออกให้แก่ EED HALAL — ครอบคลุมกระบวนการผลิตและจัดส่งทั้งหมด</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Section: CICOT คืออะไร ─── -->
+    <section class="section section-white">
+      <div class="container">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center" class="md:grid-2">
+          <div>
+            <div class="section-label" style="margin-bottom:0.75rem">ทำไม CICOT ถึงสำคัญ</div>
+            <h2 style="font-size:1.85rem;font-weight:900;color:var(--primary);line-height:1.2">ใบรับรองฮาลาลจาก CICOT — มาตรฐานสูงสุดในประเทศไทย</h2>
+            <p style="font-size:0.95rem;line-height:1.85;opacity:0.72;margin-top:1.25rem">
+              คณะกรรมการกลางอิสลามแห่งประเทศไทย (CICOT) คือหน่วยงานหลักที่ได้รับการยอมรับในระดับสากลสำหรับการรับรองมาตรฐานฮาลาลในประเทศไทย ใบรับรองจาก CICOT หมายความว่าผลิตภัณฑ์และกระบวนการผลิตผ่านการตรวจสอบและรับรองอย่างเข้มงวดตามหลักศาสนาอิสลาม
+            </p>
+            <p style="font-size:0.95rem;line-height:1.85;opacity:0.72;margin-top:1rem">
+              สำหรับองค์กรที่ต้องการให้บริการอาหารแก่พนักงานมุสลิม ลูกค้า หรือผู้ร่วมงานที่นับถือศาสนาอิสลาม ใบรับรองฮาลาลจาก CICOT คือหลักฐานที่เชื่อถือได้มากที่สุด ไม่ใช่เพียงการอ้างว่า "ฮาลาล" แต่ผ่านการพิสูจน์จริงทุกขั้นตอน
+            </p>
+            <div style="margin-top:1.75rem;padding:1.25rem 1.5rem;background:var(--primary-soft);border-radius:var(--radius-lg);border-left:4px solid var(--primary)">
+              <div style="font-size:0.75rem;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent)">เลขที่ใบรับรอง</div>
+              <div style="font-size:1.35rem;font-weight:900;color:var(--primary);margin-top:0.35rem">HL-2024-0892</div>
+              <div style="font-size:0.8rem;opacity:0.65;margin-top:0.25rem">ออกให้แก่ EED HALAL โดย CICOT — สามารถขอสำเนาเพื่อใช้ประกอบเอกสารองค์กรได้</div>
+            </div>
+          </div>
+          <div style="position:relative">
+            <img
+              src="img/HALAL.jpg"
+              alt="ใบรับรองฮาลาล CICOT ของ EED HALAL เลขที่ HL-2024-0892"
+              style="width:100%;border-radius:var(--radius-xl);object-fit:cover;display:block;box-shadow:var(--shadow-md)"
+              width="560"
+              height="400"
+              loading="lazy"
+            >
+            <div style="position:absolute;bottom:1.25rem;left:1.25rem;background:rgba(255,255,255,0.95);border:1px solid rgba(200,151,58,0.3);border-radius:999px;padding:0.5rem 1rem;display:inline-flex;align-items:center;gap:0.5rem;box-shadow:0 4px 14px rgba(0,0,0,0.1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <span style="font-size:0.72rem;font-weight:900;color:var(--primary)">รับรองโดย CICOT อย่างเป็นทางการ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Section: กระบวนการรับรองฮาลาล 3 ขั้นตอน ─── -->
+    <section class="section section-sand">
+      <div class="container">
+        <div class="text-center" style="max-width:44rem;margin:0 auto 3.5rem">
+          <div class="section-label" style="margin-bottom:0.75rem">OUR HALAL PROCESS</div>
+          <h2 style="font-size:1.85rem;font-weight:900;color:var(--primary);line-height:1.2">กระบวนการรับรองฮาลาลคืออะไร</h2>
+          <p style="font-size:0.95rem;line-height:1.85;opacity:0.72;margin-top:1rem">
+            การได้รับใบรับรองฮาลาลจาก CICOT ไม่ใช่เพียงการยื่นเอกสาร แต่คือการผ่านการตรวจสอบจริงในทุกขั้นตอนการผลิต EED HALAL ปฏิบัติตามข้อกำหนดครบทุกข้อ และตรวจสอบได้ตลอดเวลา
+          </p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1.5rem;max-width:56rem;margin:0 auto">
+
+          <!-- ขั้นตอนที่ 1 -->
+          <article class="process-step">
+            <div style="min-width:52px;text-align:center">
+              <div style="font-size:2.75rem;font-weight:900;color:var(--primary);opacity:0.12;line-height:1">01</div>
+              <div class="process-step-icon" style="margin-top:0.5rem">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              </div>
+            </div>
+            <div style="flex:1">
+              <h3 class="process-step-title">ขั้นตอนที่ 1 — คัดเลือกวัตถุดิบจากแหล่งที่ได้รับรองฮาลาล</h3>
+              <p class="process-step-desc">
+                ทุกวัตถุดิบที่ EED HALAL ใช้ต้องมาจากซัพพลายเออร์ที่ได้รับการรับรองฮาลาลเท่านั้น เนื้อสัตว์ทุกชนิดผ่านการเชือดตามหลักการอิสลาม (Zabiha) โดยผู้เชือดที่เป็นมุสลิม ไม่มีส่วนผสมของหมู แอลกอฮอล์ หรือวัตถุต้องห้ามใด ๆ ทั้งสิ้น วัตถุดิบเสริม เช่น ซอสปรุงรส น้ำมัน และเครื่องเทศ ล้วนผ่านการตรวจสอบฉลากและใบรับรองฮาลาลก่อนนำมาใช้ทุกครั้ง
+              </p>
+              <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem">
+                <span style="font-size:0.72rem;font-weight:800;background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:0.3rem 0.8rem">เนื้อสัตว์ฮาลาล</span>
+                <span style="font-size:0.72rem;font-weight:800;background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:0.3rem 0.8rem">ซอสผ่านรับรอง</span>
+                <span style="font-size:0.72rem;font-weight:800;background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:0.3rem 0.8rem">ไม่มีหมูและแอลกอฮอล์</span>
+                <span style="font-size:0.72rem;font-weight:800;background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:0.3rem 0.8rem">ตรวจสอบซัพพลายเออร์ทุกราย</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- ขั้นตอนที่ 2 -->
+          <article class="process-step">
+            <div style="min-width:52px;text-align:center">
+              <div style="font-size:2.75rem;font-weight:900;color:var(--primary);opacity:0.12;line-height:1">02</div>
+              <div class="process-step-icon" style="margin-top:0.5rem">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+            </div>
+            <div style="flex:1">
+              <h3 class="process-step-title">ขั้นตอนที่ 2 — ครัวฮาลาลแยกโดยสมบูรณ์ ไม่มีการปนเปื้อนข้าม</h3>
+              <p class="process-step-desc">
+                ครัวของ EED HALAL ดำเนินการเป็นครัวฮาลาลเต็มรูปแบบ อุปกรณ์ปรุงอาหารทุกชิ้น ตั้งแต่มีด เขียง หม้อ กระทะ ไปจนถึงพื้นที่เตรียมวัตถุดิบ แยกออกจากอาหารที่ไม่ฮาลาลอย่างเด็ดขาด พนักงานทุกคนผ่านการอบรมหลักปฏิบัติฮาลาลและเข้าใจกฎการป้องกันการปนเปื้อนข้าม (Cross-contamination) อย่างละเอียด กระบวนการทำความสะอาดครัวยังเป็นไปตามมาตรฐานฮาลาลที่ CICOT กำหนด
+              </p>
+              <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem">
+                <span style="font-size:0.72rem;font-weight:800;background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:0.3rem 0.8rem">ครัวฮาลาลแยก 100%</span>
+                <span style="font-size:0.72rem;font-weight:800;background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:0.3rem 0.8rem">อุปกรณ์แยกเด็ดขาด</span>
+                <span style="font-size:0.72rem;font-weight:800;background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:0.3rem 0.8rem">พนักงานผ่านอบรมฮาลาล</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- ขั้นตอนที่ 3 -->
+          <article class="process-step">
+            <div style="min-width:52px;text-align:center">
+              <div style="font-size:2.75rem;font-weight:900;color:var(--primary);opacity:0.12;line-height:1">03</div>
+              <div class="process-step-icon" style="margin-top:0.5rem">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              </div>
+            </div>
+            <div style="flex:1">
+              <h3 class="process-step-title">ขั้นตอนที่ 3 — บรรจุและจัดส่งตามมาตรฐานฮาลาล จนถึงมือผู้รับ</h3>
+              <p class="process-step-desc">
+                อาหารที่ปรุงเสร็จจะถูกบรรจุในภาชนะที่ผ่านการรับรองความปลอดภัยทางอาหาร ปิดผนึกมิดชิด ป้องกันการปนเปื้อนระหว่างการขนส่ง รถขนส่งของ EED HALAL ใช้สำหรับอาหารฮาลาลโดยเฉพาะ และมีการตรวจสอบอุณหภูมิในการขนส่งให้ได้มาตรฐานความปลอดภัยอาหาร ลูกค้าสามารถขอสำเนาใบรับรองฮาลาล CICOT เพื่อประกอบเอกสารขององค์กรได้ทุกเมื่อ
+              </p>
+              <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem">
+                <span style="font-size:0.72rem;font-weight:800;background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:0.3rem 0.8rem">บรรจุปลอดการปนเปื้อน</span>
+                <span style="font-size:0.72rem;font-weight:800;background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:0.3rem 0.8rem">ขนส่งฮาลาลเฉพาะ</span>
+                <span style="font-size:0.72rem;font-weight:800;background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:0.3rem 0.8rem">ขอสำเนาใบรับรองได้</span>
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Section: วัตถุดิบแยก 100% ─── -->
+    <section class="section section-white">
+      <div class="container">
+        <div style="max-width:52rem">
+          <div class="section-label" style="margin-bottom:0.75rem">INGREDIENT SEPARATION</div>
+          <h2 style="font-size:1.85rem;font-weight:900;color:var(--primary);line-height:1.25">วัตถุดิบแยกจากอาหารทั่วไป 100% — ไม่มีข้อยกเว้น</h2>
+          <p style="font-size:0.95rem;line-height:1.85;opacity:0.72;margin-top:1rem">
+            หนึ่งในข้อกังวลหลักของผู้บริโภคมุสลิมคือการปนเปื้อนข้ามจากอาหารที่ไม่ฮาลาล EED HALAL แก้ปัญหานี้ตั้งแต่รากฐาน ด้วยการแยกกระบวนการทุกอย่างออกจากกันอย่างสมบูรณ์ ทั้งในเชิงกายภาพและเชิงระบบการจัดการ
+          </p>
+        </div>
+
+        <div class="separation-grid">
+          <div class="sep-card">
+            <div class="sep-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            </div>
+            <div class="sep-card-title">พื้นที่จัดเก็บวัตถุดิบแยกเด็ดขาด</div>
+            <p class="sep-card-desc">ตู้เย็น ชั้นวาง และพื้นที่เก็บวัตถุดิบสำหรับอาหารฮาลาลและอาหารทั่วไปแยกออกจากกันโดยสิ้นเชิง ไม่มีการเก็บร่วมกันไม่ว่าในกรณีใด ทุกวัตถุดิบมีการระบุฉลากชัดเจน</p>
+          </div>
+
+          <div class="sep-card">
+            <div class="sep-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 1 10 10v1H2v-1A10 10 0 0 1 12 2z"/><line x1="12" y1="13" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+            </div>
+            <div class="sep-card-title">อุปกรณ์ครัวไม่ใช้ร่วมกัน</div>
+            <p class="sep-card-desc">มีด เขียง ถาด และอุปกรณ์ปรุงอาหารทุกชิ้นถูกแบ่งแยกสำหรับอาหารฮาลาลโดยเฉพาะ มีการทำเครื่องหมายสี และจัดเก็บแยกกันอย่างเป็นระบบ ล้างทำความสะอาดตามมาตรฐานฮาลาล</p>
+          </div>
+
+          <div class="sep-card">
+            <div class="sep-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="sep-card-title">พนักงานผ่านการอบรมเฉพาะทาง</div>
+            <p class="sep-card-desc">พนักงานทุกคนผ่านการอบรมหลักปฏิบัติฮาลาลที่ครอบคลุม เข้าใจถึงความสำคัญของการแยกวัตถุดิบ และมีการตรวจสอบการปฏิบัติงานอย่างสม่ำเสมอ</p>
+          </div>
+
+          <div class="sep-card">
+            <div class="sep-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div class="sep-card-title">ตรวจสอบและบันทึกทุกออเดอร์</div>
+            <p class="sep-card-desc">ทุกออเดอร์มีการบันทึกแหล่งที่มาของวัตถุดิบและกระบวนการผลิต ลูกค้าสามารถขอดูข้อมูลการตรวจสอบย้อนกลับ (Traceability) ได้ทุกเมื่อ เพื่อความโปร่งใสสูงสุด</p>
+          </div>
+
+          <div class="sep-card">
+            <div class="sep-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <div class="sep-card-title">ผ่านการตรวจสอบจาก CICOT ประจำปี</div>
+            <p class="sep-card-desc">CICOT ดำเนินการตรวจสอบสถานประกอบการและกระบวนการผลิตของ EED HALAL ตามรอบการรับรอง เพื่อยืนยันว่าปฏิบัติตามมาตรฐานอย่างต่อเนื่อง ไม่ใช่แค่ครั้งเดียวแล้วหยุด</p>
+          </div>
+
+          <div class="sep-card">
+            <div class="sep-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div class="sep-card-title">ขนส่งฮาลาลแยกจากอาหารอื่น</div>
+            <p class="sep-card-desc">ยานพาหนะขนส่งอาหารฮาลาลของ EED HALAL ไม่ได้ใช้ร่วมกับอาหารประเภทอื่น อาหารถูกปิดผนึกและบรรจุอย่างถูกต้องตลอดการเดินทาง จนถึงมือลูกค้า</p>
+          </div>
+        </div>
+
+        <!-- Trust strip -->
+        <div class="trust-strip">
+          <div class="trust-strip-item">
+            <div class="trust-strip-dot"></div>
+            ฮาลาลเซอร์ต CICOT เลขที่ HL-2024-0892
+          </div>
+          <div class="trust-strip-item">
+            <div class="trust-strip-dot"></div>
+            วัตถุดิบแยก 100% ไม่มีข้อยกเว้น
+          </div>
+          <div class="trust-strip-item">
+            <div class="trust-strip-dot"></div>
+            ตรวจสอบย้อนกลับได้ทุกออเดอร์
+          </div>
+          <div class="trust-strip-item">
+            <div class="trust-strip-dot"></div>
+            ขอสำเนาใบรับรองได้ทันที
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Section: รูปภาพครัวและกระบวนการ ─── -->
+    <section class="section section-sand">
+      <div class="container">
+        <div class="text-center" style="max-width:44rem;margin:0 auto 3rem">
+          <div class="section-label" style="margin-bottom:0.75rem">BEHIND THE SCENES</div>
+          <h2 style="font-size:1.85rem;font-weight:900;color:var(--primary);line-height:1.2">ความตั้งใจที่อยู่เบื้องหลังทุกกล่อง</h2>
+          <p style="font-size:0.95rem;line-height:1.85;opacity:0.72;margin-top:1rem">
+            ทีมงาน EED HALAL ทุ่มเทกับทุกรายละเอียดในกระบวนการผลิต เพราะเราเชื่อว่าอาหารฮาลาลที่แท้จริงต้องเริ่มจากความตั้งใจที่ถูกต้อง ไม่ใช่แค่ใบรับรองที่แขวนไว้บนกำแพง
+          </p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem" class="md:grid-3">
+          <div style="border-radius:var(--radius-xl);overflow:hidden;aspect-ratio:3/2">
+            <img
+              src="img/step-bulk-prep.png"
+              alt="การเตรียมวัตถุดิบฮาลาลของ EED HALAL"
+              style="width:100%;height:100%;object-fit:cover;display:block"
+              width="400"
+              height="267"
+              loading="lazy"
+            >
+          </div>
+          <div style="border-radius:var(--radius-xl);overflow:hidden;aspect-ratio:3/2">
+            <img
+              src="img/step1.png"
+              alt="กระบวนการปรุงอาหารฮาลาลในครัว EED HALAL"
+              style="width:100%;height:100%;object-fit:cover;display:block"
+              width="400"
+              height="267"
+              loading="lazy"
+            >
+          </div>
+          <div style="border-radius:var(--radius-xl);overflow:hidden;aspect-ratio:3/2">
+            <img
+              src="img/step4.png"
+              alt="การบรรจุและจัดส่งอาหารฮาลาล EED HALAL"
+              style="width:100%;height:100%;object-fit:cover;display:block"
+              width="400"
+              height="267"
+              loading="lazy"
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Section: Internal Links / Related ─── -->
+    <section class="section section-white">
+      <div class="container">
+        <div class="text-center" style="max-width:42rem;margin:0 auto 2.5rem">
+          <div class="section-label" style="margin-bottom:0.75rem">ข้อมูลเพิ่มเติม</div>
+          <h2 style="font-size:1.75rem;font-weight:900;color:var(--primary);line-height:1.25">มีคำถามเกี่ยวกับมาตรฐานฮาลาลของเรา?</h2>
+          <p style="font-size:0.92rem;line-height:1.8;opacity:0.68;margin-top:0.75rem">
+            เรารวบรวมคำถามที่พบบ่อยที่สุดเกี่ยวกับมาตรฐานฮาลาล การสั่งงานองค์กร และการออกเอกสารต่าง ๆ ไว้ให้แล้ว
+          </p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem" class="md:grid-3">
+
+          <a href="faq.html" style="text-decoration:none">
+            <div style="border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--white);padding:2rem;transition:box-shadow 0.3s,border-color 0.3s;height:100%;display:flex;flex-direction:column;gap:1rem" onmouseover="this.style.borderColor='rgba(200,151,58,0.35)';this.style.boxShadow='var(--shadow-sm)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+              <div style="width:44px;height:44px;background:var(--primary-soft);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--primary)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div>
+                <div style="font-size:0.65rem;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent)">FAQ</div>
+                <div style="font-size:1.05rem;font-weight:900;color:var(--primary);margin-top:0.4rem;line-height:1.3">คำถามที่พบบ่อยเกี่ยวกับฮาลาล</div>
+                <p style="font-size:0.82rem;line-height:1.7;opacity:0.65;margin-top:0.6rem">อาหารฮาลาลคืออะไร? ทำไมต้องมีใบรับรอง? ตอบทุกข้อสงสัยในหน้านี้</p>
+              </div>
+              <div style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.82rem;font-weight:800;color:var(--primary);margin-top:auto">
+                ดู FAQ
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </div>
+            </div>
+          </a>
+
+          <a href="corporate.html" style="text-decoration:none">
+            <div style="border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--white);padding:2rem;transition:box-shadow 0.3s,border-color 0.3s;height:100%;display:flex;flex-direction:column;gap:1rem" onmouseover="this.style.borderColor='rgba(200,151,58,0.35)';this.style.boxShadow='var(--shadow-sm)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+              <div style="width:44px;height:44px;background:var(--primary-soft);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--primary)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              </div>
+              <div>
+                <div style="font-size:0.65rem;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent)">CORPORATE</div>
+                <div style="font-size:1.05rem;font-weight:900;color:var(--primary);margin-top:0.4rem;line-height:1.3">บริการสำหรับองค์กร</div>
+                <p style="font-size:0.82rem;line-height:1.7;opacity:0.65;margin-top:0.6rem">สั่งข้าวกล่องฮาลาลสำหรับประชุม สัมมนา หรืออีเวนต์บริษัท ออกใบกำกับภาษีได้</p>
+              </div>
+              <div style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.82rem;font-weight:800;color:var(--primary);margin-top:auto">
+                ดูบริการองค์กร
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </div>
+            </div>
+          </a>
+
+          <a href="contact.html" style="text-decoration:none">
+            <div style="border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--white);padding:2rem;transition:box-shadow 0.3s,border-color 0.3s;height:100%;display:flex;flex-direction:column;gap:1rem" onmouseover="this.style.borderColor='rgba(200,151,58,0.35)';this.style.boxShadow='var(--shadow-sm)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+              <div style="width:44px;height:44px;background:var(--primary-soft);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--primary)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div>
+                <div style="font-size:0.65rem;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent)">CONTACT</div>
+                <div style="font-size:1.05rem;font-weight:900;color:var(--primary);margin-top:0.4rem;line-height:1.3">ติดต่อและขอสำเนาใบรับรอง</div>
+                <p style="font-size:0.82rem;line-height:1.7;opacity:0.65;margin-top:0.6rem">ต้องการสำเนาใบรับรองฮาลาล CICOT สำหรับงานเอกสาร ติดต่อทีมงานได้ทันที</p>
+              </div>
+              <div style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.82rem;font-weight:800;color:var(--primary);margin-top:auto">
+                ติดต่อเรา
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </div>
+            </div>
+          </a>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── CTA: ขอใบเสนอราคา ─── -->
+    <section class="section">
+      <div class="container">
+        <div class="cta-halal">
+          <div style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:999px;padding:0.4rem 1rem;margin-bottom:1.5rem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span style="font-size:0.72rem;font-weight:900;letter-spacing:0.1em;color:var(--accent)">ฮาลาลเซอร์ต CICOT HL-2024-0892</span>
+          </div>
+          <h2>พร้อมสั่งอาหารฮาลาลสำหรับองค์กรของคุณ?</h2>
+          <p>
+            บอกจำนวนกล่อง วันที่ต้องการ และประเภทงาน ทีมงาน EED HALAL ส่งใบเสนอราคาพร้อมแนะนำเมนูกลับให้ภายในวันเดียวกัน สำเนาใบรับรองฮาลาล CICOT สามารถขอแนบมาพร้อมเอกสารได้เลย
+          </p>
+          <div class="cta-halal-links">
+            <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="btn btn-accent" style="font-size:1rem;padding:0.9rem 2rem">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              ขอใบเสนอราคาทาง LINE
+            </a>
+            <a href="order-steps.html" class="btn" style="background:transparent;border:1px solid rgba(255,255,255,0.35);color:var(--white);font-size:1rem;padding:0.9rem 2rem">
+              ดูขั้นตอนการสั่งงาน
+            </a>
+            <a href="popular-menu.html" class="btn" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.75);font-size:1rem;padding:0.9rem 1.5rem">
+              ดูเมนูยอดนิยม
+            </a>
+          </div>
+          <p style="margin-top:2rem;font-size:0.85rem;opacity:0.5">หรือโทรตรง
+            <a href="tel:+66988715179" style="color:var(--white);font-weight:800;opacity:1;margin-left:0.3rem">098-871-5179</a>
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="footer"></div>
+  <script src="js/main.js"></script>
+</body>
+</html>
