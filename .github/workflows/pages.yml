@@ -1,0 +1,84 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build static artifact
+        shell: bash
+        run: |
+          mkdir -p _site
+          cp CNAME .nojekyll _site/
+
+          if [ -f .maintenance ]; then
+            printf '%s\n' \
+              '<!doctype html>' \
+              '<html lang="th">' \
+              '<head>' \
+              '  <meta charset="utf-8">' \
+              '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
+              '  <title>EED Halal | Temporary Maintenance</title>' \
+              '  <meta name="robots" content="noindex,nofollow">' \
+              '  <style>' \
+              '    body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f1e8;color:#1f2937;display:grid;min-height:100vh;place-items:center}' \
+              '    main{max-width:42rem;padding:2.5rem 1.5rem;text-align:center}' \
+              '    h1{margin:0 0 1rem;font-size:clamp(2rem,5vw,3.5rem)}' \
+              '    p{margin:.75rem 0;line-height:1.7}' \
+              '  </style>' \
+              '</head>' \
+              '<body>' \
+              '  <main>' \
+              '    <h1>เว็บไซต์ปิดปรับปรุงชั่วคราว</h1>' \
+              '    <p>ขณะนี้ EED Halal กำลังอัปเดตเว็บไซต์ กรุณากลับมาใหม่อีกครั้งในภายหลัง</p>' \
+              '  </main>' \
+              '</body>' \
+              '</html>' > _site/index.html
+            cp _site/index.html _site/404.html
+          else
+            cp *.html _site/
+            cp robots.txt sitemap.xml llms.txt llms-full.md _site/
+
+            for dir in blog css img js; do
+              if [ -d "$dir" ]; then
+                cp -R "$dir" "_site/$dir"
+              fi
+            done
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
