@@ -5,20 +5,41 @@
   var LINE_OA_ID = '@EEDHALAL';
   var PHONE_DISPLAY = '098-871-5179';
   var PHONE_HREF = 'tel:+66988715179';
+  var HOME_PATH = '/index.html';
+  var CORPORATE_PATH = '/corporate.html';
+  var MENU_PATH = '/popular-menu.html';
+  var CONTACT_PATH = '/contact.html';
+  var CATERING_PATH = '/catering.html';
+  var ORDER_STEPS_PATH = '/order-steps.html';
+  var DELIVERY_AREA_PATH = '/delivery-area.html';
+  var HALAL_CERT_PATH = '/halal-cert.html';
+  var REVIEWS_PATH = '/reviews.html';
+  var FAQ_PATH = '/faq.html';
+  var SATHORN_PATH = '/sathorn-silom.html';
+  var SUKHUMVIT_PATH = '/sukhumvit.html';
+  var RAMA3_PATH = '/rama3.html';
+  var LADPRAO_PATH = '/ladprao.html';
+  var BLOG_HALAL_VS_NORMAL_PATH = '/blog/halal-vs-normal.html';
+  var BLOG_HOW_TO_CHOOSE_PATH = '/blog/how-to-choose.html';
+  var BLOG_CICOT_PATH = '/blog/cicot-explained.html';
+  var LOGO_PATH = '/img/logo.jpg';
 
   function getNavHTML() {
     return '\
 <header class="site-header">\
   <div class="header-inner">\
-    <a href="index.html" class="logo-link">\
-      <div class="logo-title" style="display:block">EED HALAL</div>\
-      <span class="cicot-badge">CICOT \u2713</span>\
+    <a href="' + HOME_PATH + '" class="logo-link">\
+      <img src="' + LOGO_PATH + '" alt="EED HALAL" class="logo-img">\
+      <div class="logo-text">\
+        <div class="logo-title">EED HALAL</div>\
+        <span class="cicot-badge">CICOT \u2713</span>\
+      </div>\
     </a>\
     <nav class="nav-desktop">\
-      <a href="index.html" class="nav-link">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
-      <a href="corporate.html" class="nav-link">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
-      <a href="popular-menu.html" class="nav-link">\u0e40\u0e21\u0e19\u0e39</a>\
-      <a href="contact.html" class="nav-link">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
+      <a href="' + HOME_PATH + '" class="nav-link">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
+      <a href="' + CORPORATE_PATH + '" class="nav-link">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
+      <a href="' + MENU_PATH + '" class="nav-link">\u0e40\u0e21\u0e19\u0e39</a>\
+      <a href="' + CONTACT_PATH + '" class="nav-link">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
     </nav>\
     <div class="nav-actions">\
       <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" class="btn btn-gold">\
@@ -37,10 +58,10 @@
   </div>\
   <div class="mobile-menu" id="mobileMenu">\
     <div class="mobile-menu-inner">\
-      <a href="index.html" class="mobile-link">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
-      <a href="corporate.html" class="mobile-link">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
-      <a href="popular-menu.html" class="mobile-link">\u0e40\u0e21\u0e19\u0e39</a>\
-      <a href="contact.html" class="mobile-link">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
+      <a href="' + HOME_PATH + '" class="mobile-link">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
+      <a href="' + CORPORATE_PATH + '" class="mobile-link">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
+      <a href="' + MENU_PATH + '" class="mobile-link">\u0e40\u0e21\u0e19\u0e39</a>\
+      <a href="' + CONTACT_PATH + '" class="mobile-link">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
       <div class="mobile-cta">\
         <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" class="btn btn-gold w-full" style="justify-content:center">\
           \u0e17\u0e31\u0e01 LINE\
@@ -56,32 +77,38 @@
 <footer class="site-footer">\
   <div class="footer-grid">\
     <div>\
-      <div class="logo-title" style="font-size:1.5rem">EED HALAL</div>\
+      <a href="' + HOME_PATH + '" class="footer-brand-link">\
+        <img src="' + LOGO_PATH + '" alt="EED HALAL" class="footer-logo-img">\
+        <div class="logo-title" style="font-size:1.5rem">EED HALAL</div>\
+      </a>\
       <a href="' + PHONE_HREF + '" class="footer-phone" style="margin-top:0.5rem">' + PHONE_DISPLAY + '</a>\
       <p class="footer-cert-text">\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e15 CICOT | \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e01\u0e33\u0e01\u0e31\u0e1a\u0e20\u0e32\u0e29\u0e35\u0e44\u0e14\u0e49</p>\
     </div>\
     <div>\
       <div class="footer-heading">\u0e2b\u0e19\u0e49\u0e32\u0e40\u0e27\u0e47\u0e1a</div>\
       <div class="footer-links">\
-        <a href="index.html">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
-        <a href="corporate.html">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
-        <a href="popular-menu.html">\u0e40\u0e21\u0e19\u0e39\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21</a>\
-        <a href="catering.html">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
-        <a href="contact.html">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
-        <a href="order-steps.html">\u0e02\u0e31\u0e49\u0e19\u0e15\u0e2d\u0e19\u0e2a\u0e31\u0e48\u0e07\u0e07\u0e32\u0e19</a>\
-        <a href="delivery-area.html">\u0e1e\u0e37\u0e49\u0e19\u0e17\u0e35\u0e48\u0e43\u0e2b\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23</a>\
-        <a href="halal-cert.html">\u0e43\u0e1a\u0e23\u0e31\u0e1a\u0e23\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25</a>\
-        <a href="reviews.html">\u0e23\u0e35\u0e27\u0e34\u0e27</a>\
-        <a href="faq.html">FAQ</a>\
+        <a href="' + HOME_PATH + '">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
+        <a href="' + CORPORATE_PATH + '">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
+        <a href="' + MENU_PATH + '">\u0e40\u0e21\u0e19\u0e39\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21</a>\
+        <a href="' + CATERING_PATH + '">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
+        <a href="' + CONTACT_PATH + '">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
+        <a href="' + ORDER_STEPS_PATH + '">\u0e02\u0e31\u0e49\u0e19\u0e15\u0e2d\u0e19\u0e2a\u0e31\u0e48\u0e07\u0e07\u0e32\u0e19</a>\
+        <a href="' + DELIVERY_AREA_PATH + '">\u0e1e\u0e37\u0e49\u0e19\u0e17\u0e35\u0e48\u0e43\u0e2b\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23</a>\
+        <a href="' + HALAL_CERT_PATH + '">\u0e43\u0e1a\u0e23\u0e31\u0e1a\u0e23\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25</a>\
+        <a href="' + REVIEWS_PATH + '">\u0e23\u0e35\u0e27\u0e34\u0e27</a>\
+        <a href="' + FAQ_PATH + '">FAQ</a>\
+        <a href="' + BLOG_HOW_TO_CHOOSE_PATH + '">\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e22\u0e31\u0e07\u0e44\u0e07</a>\
+        <a href="' + BLOG_CICOT_PATH + '">CICOT \u0e04\u0e37\u0e2d\u0e2d\u0e30\u0e44\u0e23</a>\
+        <a href="' + BLOG_HALAL_VS_NORMAL_PATH + '">\u0e2e\u0e32\u0e25\u0e32\u0e25 vs \u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b</a>\
       </div>\
     </div>\
     <div>\
       <div class="footer-heading">\u0e1e\u0e37\u0e49\u0e19\u0e17\u0e35\u0e48\u0e43\u0e2b\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23</div>\
       <div class="footer-links">\
-        <a href="sathorn-silom.html">\u0e2a\u0e32\u0e17\u0e23 - \u0e2a\u0e35\u0e25\u0e21</a>\
-        <a href="sukhumvit.html">\u0e2a\u0e38\u0e02\u0e38\u0e21\u0e27\u0e34\u0e17</a>\
-        <a href="rama3.html">\u0e1e\u0e23\u0e30\u0e23\u0e32\u0e21 3</a>\
-        <a href="ladprao.html">\u0e25\u0e32\u0e14\u0e1e\u0e23\u0e49\u0e32\u0e27</a>\
+        <a href="' + SATHORN_PATH + '">\u0e2a\u0e32\u0e17\u0e23 - \u0e2a\u0e35\u0e25\u0e21</a>\
+        <a href="' + SUKHUMVIT_PATH + '">\u0e2a\u0e38\u0e02\u0e38\u0e21\u0e27\u0e34\u0e17</a>\
+        <a href="' + RAMA3_PATH + '">\u0e1e\u0e23\u0e30\u0e23\u0e32\u0e21 3</a>\
+        <a href="' + LADPRAO_PATH + '">\u0e25\u0e32\u0e14\u0e1e\u0e23\u0e49\u0e32\u0e27</a>\
       </div>\
     </div>\
     <div>\
@@ -92,17 +119,7 @@
           <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer">\u0e17\u0e31\u0e01 LINE</a>\
         </div>\
       </div>\
-      <div class="footer-social" style="margin-top:1rem">\
-        <div class="footer-social-title">\u0e15\u0e34\u0e14\u0e15\u0e32\u0e21\u0e40\u0e23\u0e32</div>\
-        <div class="social-icons">\
-          <a href="https://www.facebook.com/profile.php?id=61573552705869&locale=th_TH" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="Facebook">\
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>\
-          </a>\
-          <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="LINE">\
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>\
-          </a>\
-        </div>\
-      </div>\
+\
     </div>\
   </div>\
   <div class="footer-bottom">\
