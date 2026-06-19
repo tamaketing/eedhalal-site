@@ -1042,3 +1042,165 @@ h1, h2, h3, h4 {
   .lg\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
   .lg\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* ─── Pricing Guide ─── */
+.pricing-guide-section {
+  background: var(--white);
+}
+
+.pricing-intro { margin-bottom: 2.5rem; }
+
+/* ─── Pricing Table ─── */
+.pricing-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1.5rem;
+}
+
+.pricing-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  font-size: 0.95rem;
+  min-width: 380px;
+}
+
+.pricing-table thead th {
+  background: var(--primary);
+  color: var(--white);
+  font-weight: 800;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1rem 1.25rem;
+  text-align: left;
+}
+
+.pricing-table thead th:not(:first-child) {
+  text-align: center;
+}
+
+.pricing-table tbody td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.pricing-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tr-chicken {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.tr-beef {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+}
+
+.tr-seafood {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.pt-icon {
+  font-size: 1.3rem;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+.pt-price {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--primary);
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.pt-egg {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .pricing-table { font-size: 0.85rem; }
+  .pricing-table thead th { padding: 0.75rem 0.75rem; font-size: 0.72rem; }
+  .pricing-table tbody td { padding: 0.75rem; }
+  .pt-price { font-size: 1.1rem; }
+  .pt-egg { font-size: 0.85rem; }
+}
+
+/* ─── Menu Categories ─── */
+.menu-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mc-group {
+  background: var(--bg);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem 1.5rem;
+}
+
+.mc-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 0.85rem;
+}
+
+.mc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mc-tag {
+  display: inline-block;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.mc-tag:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+@media (max-width: 480px) {
+  .mc-group { padding: 1rem; }
+  .mc-tag { font-size: 0.75rem; padding: 0.3rem 0.7rem; }
+}
+
+.pricing-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: var(--primary-soft);
+  border: 1px solid rgba(29,107,62,0.18);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin-top: 2rem;
+  color: var(--text);
+}
+
+.pricing-note-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  margin-top: 0.05rem;
+}
