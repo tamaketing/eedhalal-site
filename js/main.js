@@ -25,7 +25,7 @@
   var BLOG_HALAL_VS_NORMAL_PATH = '/blog/halal-vs-normal.html';
   var BLOG_HOW_TO_CHOOSE_PATH = '/blog/how-to-choose.html';
   var BLOG_CICOT_PATH = '/blog/cicot-explained.html';
-  var LOGO_PATH = '/img/logo.jpg';
+  var LOGO_PATH = '/img/logo.png';
   var TRACKING_DEFAULTS = {
     metaPixelId: '',
     ga4MeasurementId: '',
