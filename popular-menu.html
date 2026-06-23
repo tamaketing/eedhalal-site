@@ -162,6 +162,64 @@
           <span>ทุกจานปรุงสดใหม่ ฮาลาล 100% — ราคาข้างต้นรวมข้าวหอมแล้ว สำหรับออเดอร์ <strong>10 กล่องขึ้นไป</strong> <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" style="color:var(--primary);font-weight:700">ทัก LINE เพื่อใบเสนอราคา →</a></span>
         </div>
 
+        <!-- ─── Budget Calculator ─── -->
+        <div class="calculator-section">
+          <div class="calculator-card">
+            <div class="calculator-header">
+              <div class="section-label" style="margin-bottom:0.5rem">คำนวณงบ</div>
+              <h3 style="font-size:1.4rem;font-weight:900;color:var(--primary)">ลองคำนวณงบก่อนทัก LINE</h3>
+              <p style="font-size:0.9rem;opacity:0.65;line-height:1.7;margin-top:0.5rem">กรอกจำนวนกล่อง กับงบต่อกล่อง ดูราคารวมทันที ไม่ต้องรอตอบ</p>
+            </div>
+            <div class="calculator-body">
+              <div class="calc-row">
+                <div class="calc-field">
+                  <label class="calc-label">จำนวนกล่อง</label>
+                  <div class="calc-input-wrap">
+                    <input type="number" class="calc-input" id="calcBoxes" value="20" min="20" max="999" step="1">
+                    <span class="calc-unit">กล่อง</span>
+                  </div>
+                  <input type="range" class="calc-range" id="calcBoxesRange" min="20" max="500" value="20" step="1">
+                  <div class="calc-range-labels">
+                    <span>20</span>
+                    <span>500</span>
+                  </div>
+                </div>
+                <div class="calc-divider">
+                  <span>×</span>
+                </div>
+                <div class="calc-field">
+                  <label class="calc-label">งบต่อกล่อง</label>
+                  <div class="calc-input-wrap">
+                    <span class="calc-unit calc-unit-left">฿</span>
+                    <input type="number" class="calc-input calc-input-budget" id="calcBudget" value="89" min="50" max="999" step="1">
+                  </div>
+                  <input type="range" class="calc-range" id="calcBudgetRange" min="50" max="500" value="89" step="1">
+                  <div class="calc-range-labels">
+                    <span>50</span>
+                    <span>500</span>
+                  </div>
+                  <div class="calc-chips">
+                    <button class="calc-chip" data-budget="79">79</button>
+                    <button class="calc-chip" data-budget="89">89</button>
+                    <button class="calc-chip" data-budget="109">109</button>
+                    <button class="calc-chip" data-budget="129">129</button>
+                    <button class="calc-chip" data-budget="159">159</button>
+                    <button class="calc-chip" data-budget="199">199</button>
+                  </div>
+                </div>
+              </div>
+              <div class="calc-result">
+                <div class="calc-result-label">ประมาณการรวม (ต่อครั้ง)</div>
+                <div class="calc-result-amount" id="calcTotal">฿1,780</div>
+                <div class="calc-result-note">ยังไม่รวม VAT 7% และค่าจัดส่ง</div>
+              </div>
+              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="btn btn-gold calc-cta" data-track-event="lead_quote_click" data-track-section="calculator" data-track-source="budget_calculator">
+                ทัก LINE ขอใบเสนอราคา →
+              </a>
+            </div>
+          </div>
+        </div>
+
         <!-- Menu Categories -->
         <div class="menu-categories" style="margin-top:3rem">
           <h3 style="font-size:1.3rem;font-weight:900;text-align:center;margin-bottom:2rem;color:var(--primary)">เลือกเมนูตามงบและโปรตีน</h3>
@@ -378,6 +436,49 @@
             </div>
           </div>
 
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Client Logos ─── -->
+    <section class="client-logos">
+      <div class="client-logos-inner">
+        <div class="client-logos-header">
+          <div class="client-logos-title">ลูกค้าองค์กรของเรา</div>
+        </div>
+        <div class="logo-carousel">
+          <div class="logo-track">
+            <div class="logo-slide"><img src="img/logos/logo-01.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-02.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-03.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-04.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-05.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-06.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-07.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-08.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-09.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-10.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-11.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-12.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-13.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-14.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-15.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-01.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-02.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-03.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-04.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-05.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-06.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-07.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-08.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-09.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-10.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-11.png" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-12.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-13.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-14.jpg" alt="Client logo" loading="lazy"></div>
+            <div class="logo-slide"><img src="img/logos/logo-15.png" alt="Client logo" loading="lazy"></div>
+          </div>
         </div>
       </div>
     </section>

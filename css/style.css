@@ -1204,3 +1204,427 @@ h1, h2, h3, h4 {
   font-size: 1rem;
   margin-top: 0.05rem;
 }
+
+/* ─── Seasonal Urgency Banner ─── */
+/* ─── Urgency Banner Spacing ─── */
+main > .trust-bar { margin-top: 68px; }
+main[data-urgency] > .trust-bar { margin-top: 0; }
+main[data-urgency] > .page-header { padding-top: 5rem; }
+
+.urgency-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  position: relative;
+  z-index: 49;
+  margin-top: 68px;
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.35s;
+}
+.urgency-banner.banner-hidden {
+  display: none;
+}
+.urgency-banner.banner-q3 {
+  background: linear-gradient(90deg, #FEF6E0, #FDF0CC, #FEF6E0);
+  color: #7A5C00;
+  border-bottom: 1px solid rgba(200,151,58,0.3);
+}
+.urgency-banner.banner-year-end {
+  background: linear-gradient(90deg, #FCE8E8, #FDDCDC, #FCE8E8);
+  color: #8B1A1A;
+  border-bottom: 1px solid rgba(200,60,60,0.2);
+}
+.urgency-banner.banner-default {
+  background: linear-gradient(90deg, #E8F5EE, #DCF0E6, #E8F5EE);
+  color: #1D6B3E;
+  border-bottom: 1px solid rgba(29,107,62,0.15);
+}
+.urgency-banner .urgency-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.urgency-banner .urgency-text {
+  flex: 1;
+  max-width: 720px;
+}
+.urgency-banner .urgency-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+  text-decoration-color: currentColor;
+  font-weight: 800;
+  white-space: nowrap;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.urgency-banner .urgency-link:hover {
+  opacity: 1;
+}
+.urgency-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  line-height: 0;
+  color: inherit;
+  border-radius: 4px;
+}
+.urgency-close:hover {
+  opacity: 1;
+}
+@media (max-width: 480px) {
+  .urgency-banner {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.72rem;
+  }
+  .urgency-banner .urgency-text {
+    max-width: 100%;
+  }
+}
+
+/* ─── Client Logo Carousel ─── */
+.client-logos {
+  padding: 3rem 0;
+  background: var(--white);
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.client-logos-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.client-logos-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.client-logos-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.logo-carousel {
+  overflow: hidden;
+  position: relative;
+}
+
+.logo-carousel::before,
+.logo-carousel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.logo-carousel::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--white), transparent);
+}
+
+.logo-carousel::after {
+  right: 0;
+  background: linear-gradient(-90deg, var(--white), transparent);
+}
+
+.logo-track {
+  display: flex;
+  gap: 2.5rem;
+  align-items: center;
+  animation: scrollLogos 30s linear infinite;
+  width: max-content;
+}
+
+.logo-carousel:hover .logo-track {
+  animation-play-state: paused;
+}
+
+.logo-slide {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+}
+
+.logo-slide img {
+  max-height: 100%;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  opacity: 0.45;
+  filter: grayscale(1);
+  transition: opacity 0.3s, filter 0.3s;
+}
+
+.logo-slide img:hover {
+  opacity: 0.85;
+  filter: grayscale(0);
+}
+
+@keyframes scrollLogos {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@media (max-width: 640px) {
+  .client-logos { padding: 2rem 0; }
+  .client-logos-title { font-size: 0.55rem; }
+  .logo-track { gap: 1.5rem; animation-duration: 20s; }
+  .logo-slide { height: 36px; }
+  .logo-slide img { max-width: 80px; }
+  .logo-carousel::before,
+  .logo-carousel::after { width: 20px; }
+}
+
+/* ─── Budget Calculator ─── */
+.calculator-section {
+  max-width: 42rem;
+  margin: 3rem auto 0;
+}
+
+.calculator-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.calculator-header {
+  background: linear-gradient(135deg, var(--primary-soft) 0%, var(--white) 100%);
+  padding: 2rem 2rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.calculator-body {
+  padding: 2rem;
+}
+
+.calc-row {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 640px) {
+  .calc-row {
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+  }
+}
+
+.calc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.calc-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.calc-input-wrap {
+  position: relative;
+}
+
+.calc-input {
+  width: 100%;
+  padding: 0.85rem 4.5rem 0.85rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg);
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+}
+
+.calc-input:focus {
+  border-color: var(--primary);
+  background: var(--white);
+}
+
+.calc-input-budget {
+  padding-left: 2.5rem;
+}
+
+.calc-unit {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.calc-unit-left {
+  right: auto;
+  left: 1rem;
+}
+
+.calc-range {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.calc-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: 3px solid var(--white);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.calc-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: 3px solid var(--white);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.calc-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.calc-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--accent);
+  padding: 0 0.5rem 0.35rem;
+}
+
+@media (max-width: 639px) {
+  .calc-divider { display: none; }
+}
+
+.calc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.calc-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--white);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.calc-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.calc-chip.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--white);
+}
+
+.calc-result {
+  text-align: center;
+  background: var(--primary-soft);
+  border: 2px dashed rgba(29,107,62,0.2);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.calc-result-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+
+.calc-result-amount {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--primary);
+  line-height: 1.2;
+  margin-top: 0.25rem;
+}
+
+.calc-result-note {
+  font-size: 0.75rem;
+  opacity: 0.5;
+  margin-top: 0.25rem;
+}
+
+.calc-cta {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.05rem;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .calculator-header { padding: 1.5rem 1.25rem; }
+  .calculator-body { padding: 1.25rem; }
+  .calc-input { font-size: 1.05rem; padding: 0.7rem 3.5rem 0.7rem 0.75rem; }
+  .calc-input-budget { padding-left: 2rem; }
+  .calc-result-amount { font-size: 2rem; }
+  .calc-chip { font-size: 0.72rem; padding: 0.25rem 0.55rem; }
+}
