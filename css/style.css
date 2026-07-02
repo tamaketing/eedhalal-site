@@ -1628,3 +1628,17 @@ main[data-urgency] > .page-header { padding-top: 5rem; }
   .calc-result-amount { font-size: 2rem; }
   .calc-chip { font-size: 0.72rem; padding: 0.25rem 0.55rem; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+  .logo-track {
+    animation: none !important;
+    transform: none !important;
+  }
+}

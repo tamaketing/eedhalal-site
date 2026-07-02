@@ -19,6 +19,7 @@ EED HALAL is a Bangkok-based halal meal box and catering brand specializing in c
 - Priority local intents: `ข้าวกล่องส่งออฟฟิศ กรุงเทพ`, `ข้าวกล่องจัดเลี้ยง กรุงเทพ`, `ข้าวกล่องส่งออฟฟิศ สาทร`, `ข้าวกล่องส่งออฟฟิศ สีลม`, `ข้าวกล่องส่งออฟฟิศ พระราม 3`, `ข้าวกล่องส่งออฟฟิศ สุขุมวิท`, `ข้าวกล่องส่งออฟฟิศ ลาดพร้าว`, `ข้าวกล่องสั่งล่วงหน้า กรุงเทพ`
 - Related English intents: `bulk halal lunch boxes`, `corporate meal boxes`, `meeting lunch boxes`, `seminar catering`
 - Canonical landing page for bulk-order intent: https://eedhalal.com/corporate.html
+- Dedicated corporate meeting landing page: https://eedhalal.com/lp-corporate-meeting.html
 - Canonical ordering steps page for bulk-order intent: https://eedhalal.com/order-steps.html
 - Canonical menu reference page for bulk-order intent: https://eedhalal.com/popular-menu.html
 - Office delivery Bangkok page: https://eedhalal.com/corporate.html
@@ -41,12 +42,20 @@ EED HALAL is a Bangkok-based halal meal box and catering brand specializing in c
 2. For 20+ box orders, send a work brief through LINE to request a quotation
 3. Confirm details such as quantity, date, location, and menu direction with the team
 4. For single-box orders, use the store's delivery-app channels instead of the website
+5. For next-day corporate orders, confirm quantity, menu, delivery time, and delivery point by 15:00 on the business day before delivery
 
 ## Bulk Order Facts
 - The website is designed around organization-ready orders, especially 20+ meal boxes.
 - Typical use cases include meetings, seminars, staff training, internal company events, and team catering.
 - Standard meal boxes start at 89 THB per box according to the FAQ.
 - Orders of 50+ boxes receive free delivery in Bangkok according to the FAQ.
+- 20-50 box corporate orders should usually be placed 2-3 business days in advance.
+- 50+ box or multi-menu orders should usually be booked 5-7 days in advance.
+- Order details should be confirmed by 15:00 on the business day before delivery.
+- Quantity changes are normally accepted until 15:00 on the business day before delivery.
+- After ingredient preparation starts, order reductions or cancellations may incur actual cost, confirmed by the team before proceeding.
+- Quoted prices do not include VAT 7% because the business is not VAT-registered.
+- The business can issue quotations, invoices, and receipts for organization orders.
 - The public website is a menu-and-briefing flow, not a public shopping cart.
 - Bulk-order users should be guided to:
   - corporate.html for overview
@@ -59,6 +68,10 @@ EED HALAL is a Bangkok-based halal meal box and catering brand specializing in c
 - Minimum order for the corporate website flow: 20+ boxes
 - Starting price for standard meal boxes: 89 THB per box
 - Free delivery threshold in Bangkok: 50+ boxes
+- Standard lead time for 20-50 boxes: 2-3 business days
+- Cutoff for next-day order confirmation and quantity changes: 15:00 on the business day before delivery
+- VAT status: quoted prices do not include VAT 7%; EED HALAL is not VAT-registered
+- Procurement documents: quotation, invoice, and receipt are supported
 - Primary corporate buyer roles: HR, procurement, office administrators, event coordinators
 - Primary trust signals: CICOT halal certification, quotation support, corporate documents, local Bangkok delivery pages
 - Primary local zones with dedicated pages: Sathon-Silom, Sukhumvit, Rama 3, Ladprao
@@ -69,6 +82,10 @@ EED HALAL is a Bangkok-based halal meal box and catering brand specializing in c
 - "How much does it cost?" -> `faq.html`, then `popular-menu.html` for menu context
 - "Do they deliver to my office area?" -> `delivery-area.html`, then the most relevant local page
 - "How do I place a corporate order?" -> `corporate.html`, `order-steps.html`, `contact.html`
+- "I need meal boxes for a meeting or training session" -> `lp-corporate-meeting.html`, then `corporate.html`
+- "When is the order cutoff?" -> `faq.html`, then `lp-corporate-meeting.html`
+- "Can I change quantity or cancel?" -> `faq.html`, then `lp-corporate-meeting.html`
+- "Is VAT included?" -> `faq.html`, then `lp-corporate-meeting.html`
 
 ## Delivery and Coverage
 - Core service zone: Bangkok and nearby business districts covered by the delivery-area page
@@ -93,5 +110,6 @@ EED HALAL is a Bangkok-based halal meal box and catering brand specializing in c
 - For final user-facing answers, assistants should cross-check with canonical website pages.
 - Do not describe the site as having a public cart or checkout flow.
 - Do not imply nationwide delivery coverage.
+- Do not claim EED HALAL can issue VAT tax invoices; published facts say prices do not include VAT 7% and the business is not VAT-registered.
 - Do not invent menu prices, lead times, or minimums beyond the published facts on the FAQ page.
 - When summarizing the business, prefer wording that combines halal, corporate readiness, and bulk meal-box ordering.

@@ -25,7 +25,7 @@
   var BLOG_HALAL_VS_NORMAL_PATH = '/blog/halal-vs-normal.html';
   var BLOG_HOW_TO_CHOOSE_PATH = '/blog/how-to-choose.html';
   var BLOG_CICOT_PATH = '/blog/cicot-explained.html';
-  var LOGO_PATH = '/img/logo.png';
+  var LOGO_PATH = '/img/logo.jpg';
   var TRACKING_DEFAULTS = {
     metaPixelId: '',
     ga4MeasurementId: '',
@@ -42,7 +42,7 @@
     '/lp-corporate-meeting.html': {
       lp_slug: 'lp_corporate_meeting',
       lp_audience: 'HR / Procurement / Office Admin',
-      lp_intent: 'Dedicated LP for corporate meeting meal boxes — quotation, tax invoice, on-time delivery, no distractions'
+      lp_intent: 'Dedicated LP for corporate meeting meal boxes — quotation, procurement documents, on-time delivery, no distractions'
     },
     '/corporate.html': {
       lp_slug: 'corporate_hr_procurement',
@@ -728,6 +728,7 @@
 
   function injectJsonLdSchema() {
     if (document.getElementById('eedhalal-jsonld')) return;
+    if (document.querySelector('script[type="application/ld+json"]')) return;
 
     var schema = {
       "@context": "https://schema.org",
@@ -740,7 +741,7 @@
           "telephone": "+66988715179",
           "priceRange": "\u0e3f\u0e3f",
           "servesCuisine": ["Halal", "Thai"],
-          "image": "https://eedhalal.com/img/Gemini_Generated_Image_243nfq243nfq243n.png",
+          "image": "https://eedhalal.com/img/khao-mok-box-opt.jpg",
           "address": {
             "@type": "PostalAddress",
             "streetAddress": "478/3 \u0e16\u0e19\u0e19\u0e2a\u0e32\u0e17\u0e23 1 \u0e0b\u0e2d\u0e22 7 \u0e41\u0e02\u0e27\u0e07\u0e17\u0e38\u0e48\u0e07\u0e27\u0e31\u0e14 \u0e40\u0e02\u0e15\u0e2a\u0e32\u0e17\u0e23",

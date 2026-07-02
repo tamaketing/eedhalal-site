@@ -11,7 +11,7 @@ Round 1 rule:
   - LP: [`corporate.html`](./corporate.html)
   - Angle: quotation-ready corporate meal boxes, 20+ boxes, document support, on-time delivery
   - Dedicated LP (Round 2): [`lp-corporate-meeting.html`](./lp-corporate-meeting.html)
-  - Angle: hyper-targeted to HR/procurement pain points — quotation, tax invoice, on-time delivery, budget control, menu variety. No catering/no single-order noise.
+  - Angle: hyper-targeted to HR/procurement pain points — quotation, procurement documents, on-time delivery, budget control, menu variety. No catering/no single-order noise.
 
 - `Event / Catering / Banquet / Family`
   - LP: [`catering.html`](./catering.html)
