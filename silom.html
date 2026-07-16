@@ -1,11 +1,12 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ข้าวกล่องฮาลาล สีลม — EED HALAL ส่งถึงที่ | กรุงเทพฯ</title>
+  <title>ข้าวกล่องฮาลาล สีลม — EED HALAL ส่งถึงที่ กรุงเทพฯ</title>
   <meta name="description" content="EED HALAL บริการส่งข้าวกล่องฮาลาลในย่านสีลม บางรัก สุรวงศ์ และบางรัก สำหรับองค์กร ประชุม สัมมนา ฮาลาลเซอร์ต CICOT เอกสารองค์กรครบ ตรงเวลา 98%">
   <link rel="canonical" href="https://eedhalal.com/silom.html">
+  <link rel="alternate" hreflang="en" href="https://eedhalal.com/en/silom.html">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
   <link rel="apple-touch-icon" href="/img/logo.jpg">
@@ -98,7 +99,46 @@
             "name": "ข้าวกล่องฮาลาล สีลม",
             "item": "https://eedhalal.com/silom.html"
           }
-        ]      }
+        ]      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://eedhalal.com/silom.html#faq",
+        "url": "https://eedhalal.com/silom.html",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "EED HALAL ส่งข้าวกล่องฮาลาลในสีลมฟรีไหม?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "สำหรับออเดอร์ 50 กล่องขึ้นไปในสีลม ส่งฟรีทั่วพื้นที่ ไม่มีค่าซ่อน ส่วนออเดอร์ 25 กล่องขึ้นไปรับส่วนลด 10% และ 100 กล่องขึ้นไปรับส่วนลด 20%"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "สั่งข้าวกล่องฮาลาลในสีลมขั้นต่ำกี่กล่อง?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "ออเดอร์องค์กรในสีลมเริ่มต้นที่ 20 กล่องขึ้นไป สามารถทัก LINE เพื่อขอใบเสนอราคาพร้อมเลือกเมนูที่เหมาะกับงบได้ทันที"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "EED HALAL มีใบรับรองฮาลาลหรือไม่?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "มี ใบรับรองฮาลาลออกโดยคณะกรรมการกลางอิสลามแห่งประเทศไทย (CICOT) เลขที่ HL 926/2566 สามารถตรวจสอบรายละเอียดใบรับรองได้ที่ eedhalal.com/halal-cert.html"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "ต้องสั่งข้าวกล่องฮาลาลล่วงหน้ากี่วัน?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "ออเดอร์ 20–50 กล่องแนะนำสั่งล่วงหน้า 2–3 วันทำการ และยืนยันจำนวน เมนู เวลา และจุดส่งก่อน 15:00 น. ของวันทำการก่อนส่ง"
+            }
+          }
+        ]
+      }
     ]
   }
   </script>
@@ -215,18 +255,32 @@
 
     /* ─── Menu Cards ─── */
     .menu-card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
       background: var(--white);
+      border-radius: var(--radius-xl);
       overflow: hidden;
-      transition: transform 0.3s, box-shadow 0.3s;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-xs);
+      border: 1px solid var(--border-light);
     }
-    .menu-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
-    .menu-card-img { width: 100%; height: 200px; object-fit: cover; }
-    .menu-card-body { padding: 1.25rem 1.5rem 1.5rem; }
-    .menu-card-tag { font-size: 0.6rem; font-weight: 900; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
-    .menu-card-name { font-size: 1.1rem; font-weight: 900; color: var(--primary); margin-top: 0.35rem; }
-    .menu-card-desc { font-size: 0.82rem; line-height: 1.65; opacity: 0.65; margin-top: 0.5rem; }
+    .menu-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(200, 151, 58, 0.2);
+    }
+    .menu-card-img { width: 100%; height: 280px; object-fit: cover; object-position: center 70%; }
+    .menu-card-body { padding: 1.5rem; }
+    .menu-card-tag {
+      display: inline-block;
+      font-size: 0.6rem; font-weight: 800;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(200, 151, 58, 0.1);
+      padding: 0.25rem 0.75rem;
+      border-radius: 100px;
+    }
+    .menu-card-name { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-top: 0.75rem; letter-spacing: -0.02em; line-height: 1.3; }
+    .menu-card-desc { font-size: 0.82rem; line-height: 1.7; color: var(--text-secondary); margin-top: 0.5rem; }
+    .menu-card .card-link { margin-top: 1rem; }
   </style>
 </head>
 <body>
@@ -276,12 +330,12 @@
             <span style="margin:0 0.5rem">/</span>
             <span>สีลม</span>
           </div>
-          <div class="section-label" style="margin-bottom:1rem">LOCAL SEO — สีลม</div>
+          <div class="section-label" style="margin-bottom:1rem">สีลม</div>
           <h1 style="font-size:2.6rem;font-weight:900;line-height:1.15;letter-spacing:-0.02em;color:var(--primary)">
-            ข้าวกล่องฮาลาล สีลม<br>ส่งถึงออฟฟิศในย่านนี้ พร้อมใบเสนอราคาภายในวัน
+            ข้าวกล่องฮาลาล สีลม<br>ถึงสีลมคอมเพล็กซ์ ซี.พี.ทาวเวอร์ และอาคารย่านการเงิน พร้อมใบเสนอราคาทันที
           </h1>
           <p style="margin-top:1.5rem;font-size:1rem;line-height:1.85;opacity:0.72;max-width:38rem">
-            ย่านสีลมคือศูนย์กลางการเงินและการค้าระดับนานาชาติของกรุงเทพฯ บอกวันและจำนวนมาได้เลย ทีมงานช่วยเช็กรอบส่งให้เหมาะกับสีลม บางรัก สุรวงศ์ และสี่พระยา พร้อมส่งตรงเวลา 98% และออกใบเสนอราคาภายในวัน
+            ข้าวกล่องฮาลาลย่านสีลมเริ่ม 70 บาท สั่งถึงบางรัก สุรวงศ์ สี่พระยา และสีลม CICOT รับรอง ส่งตรงเวลา 98% ขั้นต่ำ 20 กล่อง ส่งฟรี 50+ กล่อง ทัก LINE แจ้งจำนวน — ทีมงานส่งใบเสนอราคาให้ภายในวัน
           </p>
 
           <!-- Stats Row -->
@@ -373,30 +427,35 @@
         </div>
         <div class="grid-3">
           <article class="menu-card">
-            <img src="img/khao-mok-hero-opt.jpg" alt="ข้าวหมกไก่ฮาลาล EED HALAL สำหรับองค์กรเขตสีลม" class="menu-card-img" width="400" height="200" loading="lazy">
+            <img src="img/Wok-Seared Spicy Beef Basil with Rice.png" alt="ผัดกะเพราเนื้อ EED HALAL" class="menu-card-img" width="400" height="200" loading="lazy">
             <div class="menu-card-body">
-              <div class="menu-card-tag">ข้าวกล่อง • ยอดนิยม</div>
+              <div class="menu-card-tag">ผัดกะเพรา • พรีเมียม</div>
+              <h3 class="menu-card-name">ผัดกะเพราเนื้อ</h3>
+              <p class="menu-card-desc">ผัดกะเพราเนื้อนุ่ม ๆ ผัดไฟแรงหอมโหระพาสด พริกสดจัดจ้าน กระเทียม เสิร์ฟพร้อมข้าวสวยร้อน ๆ เมนูพรีเมียมที่ทีมงานย่านสีลมชื่นชอบ</p>
+              <div style="font-size:1.1rem;font-weight:800;color:var(--accent);margin-top:0.75rem;letter-spacing:-0.02em">90 บาท</div>
+              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สั่งเมนูนี้ →</a>
+            </div>
+          </article>
+
+          <article class="menu-card">
+            <img src="img/Garlic Chili Fried Shrimp with Rice.png" alt="ทอดกระเทียมพริกไทยกุ้ง EED HALAL" class="menu-card-img" width="400" height="200" loading="lazy">
+            <div class="menu-card-body">
+              <div class="menu-card-tag">ทะเล • ทอดกระเทียม</div>
+              <h3 class="menu-card-name">ทอดกระเทียมพริกไทยกุ้ง</h3>
+              <p class="menu-card-desc">กุ้งสดทอดกรอบ โรยกระเทียมเจียวหอมและพริกไทยดำ เสิร์ฟพร้อมข้าวสวยและน้ำจิ้มซีฟู้ด เมนูทะเลที่ออฟฟิศย่านสีลมเลือกสั่งเพื่องานเลี้ยงและประชุมสำคัญ</p>
+              <div style="font-size:1.1rem;font-weight:800;color:var(--accent);margin-top:0.75rem;letter-spacing:-0.02em">100 บาท</div>
+              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สั่งเมนูนี้ →</a>
+            </div>
+          </article>
+
+          <article class="menu-card">
+            <img src="img/khao-mok-box-opt.jpg" alt="ข้าวหมกไก่ EED HALAL" class="menu-card-img" width="400" height="200" loading="lazy">
+            <div class="menu-card-body">
+              <div class="menu-card-tag">ข้าวหมก • ขายดี</div>
               <h3 class="menu-card-name">ข้าวหมกไก่</h3>
-              <p class="menu-card-desc">ข้าวหมกไก่สูตรฮาลาล หอมเครื่องเทศตะวันออกกลาง ข้าวเหลืองนุ่ม เนื้อไก่นุ่มฉ่ำ เสิร์ฟพร้อมซอสและอาจาด เมนูขาประจำของทีมย่านสีลม</p>
-              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สอบถามราคา →</a>
-            </div>
-          </article>
-          <article class="menu-card">
-            <img src="img/mealbox-kaprao-opt.jpg" alt="ข้าวผัดกระเพราไก่ฮาลาล EED HALAL เขตสีลม" class="menu-card-img" width="400" height="200" loading="lazy">
-            <div class="menu-card-body">
-              <div class="menu-card-tag">ข้าวกล่อง • คลาสสิก</div>
-              <h3 class="menu-card-name">ข้าวผัดไก่กระเพราไข่ดาว</h3>
-              <p class="menu-card-desc">ข้าวผัดกระเพราไก่หอมๆ ใส่พริกสด กระเทียม โหระพาแท้ เสิร์ฟพร้อมไข่ดาวและผักเคียง รสชาติถูกใจทุกคน ออเดอร์ประจำงานประชุมย่านสีลม</p>
-              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สอบถามราคา →</a>
-            </div>
-          </article>
-          <article class="menu-card">
-            <img src="img/mealbox-satay-opt.jpg" alt="สะเต๊ะไก่ฮาลาล EED HALAL coffee break เขตสีลม" class="menu-card-img" width="400" height="200" loading="lazy">
-            <div class="menu-card-body">
-              <div class="menu-card-tag">ของว่าง • Coffee Break</div>
-              <h3 class="menu-card-name">สะเต๊ะไก่</h3>
-              <p class="menu-card-desc">ไม้สะเต๊ะไก่หมักเครื่องเทศย่างหอม เสิร์ฟพร้อมน้ำจิ้มถั่วและอาจาดแตงกวา เหมาะสำหรับ coffee break และงานสัมมนาในย่านสีลม</p>
-              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สอบถามราคา →</a>
+              <p class="menu-card-desc">ข้าวหมกไก่สูตรต้นตำรับ หอมเครื่องเทศเข้มข้น ข้าวเหลืองนุ่ม เนื้อไก่หมักย่างฉ่ำ เสิร์ฟพร้อมซอสพิเศษและอาจาด เมนูขาประจำของออฟฟิศย่านสีลม</p>
+              <div style="font-size:1.1rem;font-weight:800;color:var(--accent);margin-top:0.75rem;letter-spacing:-0.02em">135 บาท</div>
+              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สั่งเมนูนี้ →</a>
             </div>
           </article>
         </div>

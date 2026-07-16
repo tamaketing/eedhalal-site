@@ -1,13 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ข้าวกล่องฮาลาล สำหรับองค์กรและสัมมนา กรุงเทพฯ | EED HALAL</title>
+  <title>ข้าวกล่องฮาลาล องค์กรและสัมมนา กรุงเทพฯ | EED HALAL</title>
   <meta name="description" content="EED HALAL บริการข้าวกล่องฮาลาลสำหรับองค์กร ประชุม และสัมมนา กรุงเทพฯ จัดส่ง 20+ กล่อง ฮาลาลเซอร์ต CICOT เอกสารองค์กรครบ ตรงเวลา 98%">
   <meta name="author" content="EED HALAL">
   <meta name="theme-color" content="#1d6b3e">
   <link rel="canonical" href="https://eedhalal.com/">
+  <link rel="alternate" hreflang="en" href="https://eedhalal.com/en/index.html">
+  <link rel="llms.txt" href="/llms.txt">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
   <link rel="apple-touch-icon" href="/img/logo.jpg">
@@ -46,6 +48,13 @@
         "description": "EED HALAL บริการข้าวกล่องฮาลาลสำหรับองค์กร ประชุม และสัมมนาในกรุงเทพฯ พร้อมใบเสนอราคาและบริการจัดส่ง 20+ กล่อง",
         "telephone": "+66988715179",
         "priceRange": "฿฿",
+        "makesOffer": {
+          "@type": "Offer",
+          "name": "ข้าวกล่องฮาลาลเริ่ม 70 บาท",
+          "price": "70",
+          "priceCurrency": "THB",
+          "description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน ออเดอร์องค์กร 20+ กล่อง ราคาจริงขึ้นอยู่กับเมนูและจำนวนที่สั่ง"
+        },
         "servesCuisine": [
           "Halal",
           "Thai"
@@ -223,7 +232,7 @@
             "name": "ข้าวกล่องฮาลาลของ EED HALAL ราคาเริ่มต้นเท่าไร?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "ราคาข้าวกล่องฮาลาลเริ่มต้นที่ 89 บาทต่อกล่องสำหรับเมนูมาตรฐาน โดยราคาจริงขึ้นกับเมนูและจำนวนที่สั่ง"
+              "text": "ราคาข้าวกล่องฮาลาลเริ่มต้นที่ 70 บาทต่อกล่องสำหรับเมนูมาตรฐาน โดยราคาจริงขึ้นกับเมนูและจำนวนที่สั่ง"
             }
           },
           {
@@ -268,7 +277,7 @@
           {
             "@type": "ListItem",
             "position": 1,
-            "url": "https://eedhalal.com/sathorn-silom.html",
+            "url": "https://eedhalal.com/sathorn.html",
             "name": "สาทร-สีลม"
           },
           {
@@ -296,11 +305,10 @@
   </script>
 
   <style>
-    /* ─── Trust Bar ─── */
     .trust-bar {
-      background: var(--primary);
+      background: linear-gradient(135deg, var(--primary) 0%, #1a7a45 100%);
       color: var(--white);
-      padding: 0.65rem 1rem;
+      padding: 0.6rem 1.25rem;
       overflow: hidden;
     }
     .trust-bar-inner {
@@ -309,14 +317,14 @@
       justify-content: center;
       flex-wrap: wrap;
       gap: 0 1.5rem;
-      max-width: 1280px;
+      max-width: 1200px;
       margin: 0 auto;
     }
     .trust-item {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      font-size: 0.72rem;
+      gap: 0.45rem;
+      font-size: 0.7rem;
       font-weight: 800;
       letter-spacing: 0.08em;
       white-space: nowrap;
@@ -334,18 +342,15 @@
       font-size: 0.7rem;
     }
 
-    /* ─── Hero override for homepage ─── */
     .hero-home {
-      padding-top: 2.75rem;
+      padding-top: 2.5rem;
       background:
-        radial-gradient(circle at top left, rgba(200,151,58,0.13), transparent 36%),
-        radial-gradient(circle at bottom right, rgba(29,107,62,0.13), transparent 30%),
-        linear-gradient(180deg, var(--bg) 0%, var(--white) 65%);
+        radial-gradient(ellipse at 15% 10%, rgba(200,151,58,0.1), transparent 45%),
+        radial-gradient(ellipse at 85% 90%, rgba(29,107,62,0.1), transparent 40%),
+        linear-gradient(180deg, var(--bg) 0%, var(--white) 100%);
       overflow: hidden;
     }
-    .hero-home .hero-grid {
-      padding-top: 0;
-    }
+    .hero-home .hero-grid { padding-top: 0; }
     .hero-kicker-row {
       display: flex;
       align-items: center;
@@ -353,43 +358,43 @@
       margin-bottom: 0.25rem;
     }
     .hero-kicker-img {
-      width: 74px;
-      height: 74px;
-      border-radius: 22px;
+      width: 68px;
+      height: 68px;
+      border-radius: 18px;
       object-fit: cover;
       flex-shrink: 0;
-      border: 1px solid rgba(29,107,62,0.14);
-      box-shadow: 0 12px 26px rgba(29,107,62,0.14);
+      border: 1px solid rgba(29,107,62,0.1);
+      box-shadow: 0 8px 24px rgba(29,107,62,0.12);
       background: var(--white);
     }
-    /* ─── Services Section ─── */
+
     .service-card {
       position: relative;
       border: 1px solid var(--border);
       border-radius: var(--radius-xl);
       background: var(--white);
       padding: 2rem;
-      transition: transform 0.35s, box-shadow 0.35s, border-color 0.35s;
+      transition: all var(--transition);
       overflow: hidden;
     }
     .service-card::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, transparent 60%, rgba(200,151,58,0.06) 100%);
+      background: linear-gradient(135deg, transparent 60%, rgba(200,151,58,0.04) 100%);
       pointer-events: none;
     }
     .service-card:hover {
-      transform: translateY(-6px);
+      transform: translateY(-4px);
       box-shadow: var(--shadow-md);
-      border-color: rgba(200,151,58,0.35);
+      border-color: rgba(29,107,62,0.15);
     }
     .service-icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 52px;
-      height: 52px;
+      width: 48px;
+      height: 48px;
       border-radius: var(--radius-lg);
       background: var(--primary-soft);
       color: var(--primary);
@@ -405,15 +410,16 @@
       margin-bottom: 0.5rem;
     }
     .service-title {
-      font-size: 1.3rem;
-      font-weight: 900;
+      font-size: 1.25rem;
+      font-weight: 800;
       color: var(--primary);
       line-height: 1.25;
+      letter-spacing: -0.01em;
     }
     .service-desc {
       font-size: 0.88rem;
       line-height: 1.75;
-      opacity: 0.68;
+      color: var(--text-muted);
       margin-top: 0.75rem;
     }
     .service-list {
@@ -428,7 +434,7 @@
       gap: 0.5rem;
       font-size: 0.82rem;
       line-height: 1.5;
-      opacity: 0.75;
+      color: var(--text-muted);
     }
     .service-list li::before {
       content: '✓';
@@ -442,14 +448,13 @@
       align-items: center;
       gap: 0.4rem;
       font-size: 0.85rem;
-      font-weight: 800;
+      font-weight: 700;
       color: var(--primary);
       margin-top: 1.75rem;
-      transition: opacity 0.2s;
+      transition: all var(--transition-fast);
     }
-    .service-cta:hover { opacity: 0.65; }
+    .service-cta:hover { gap: 0.6rem; opacity: 0.8; }
 
-    /* ─── Why Section ─── */
     .why-card {
       display: flex;
       gap: 1.25rem;
@@ -458,11 +463,11 @@
       border-radius: var(--radius-xl);
       background: var(--white);
       padding: 1.75rem;
-      transition: box-shadow 0.3s, border-color 0.3s;
+      transition: all var(--transition);
     }
     .why-card:hover {
       box-shadow: var(--shadow-sm);
-      border-color: rgba(200,151,58,0.25);
+      border-color: rgba(29,107,62,0.12);
     }
     .why-icon {
       display: flex;
@@ -477,62 +482,77 @@
     }
     .why-title {
       font-size: 1rem;
-      font-weight: 900;
+      font-weight: 800;
       color: var(--primary);
     }
     .why-desc {
       font-size: 0.83rem;
       line-height: 1.7;
-      opacity: 0.65;
+      color: var(--text-muted);
       margin-top: 0.35rem;
     }
 
-    /* ─── Menu Preview ─── */
     .menu-card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
       background: var(--white);
+      border-radius: var(--radius-xl);
       overflow: hidden;
-      transition: transform 0.3s, box-shadow 0.3s;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-xs);
+      border: 1px solid var(--border-light);
     }
     .menu-card:hover {
-      transform: translateY(-5px);
-      box-shadow: var(--shadow-md);
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(200, 151, 58, 0.2);
     }
     .menu-card-img {
       width: 100%;
-      height: 200px;
+      height: 280px;
       object-fit: cover;
+      object-position: center 70%;
     }
     .menu-card-body {
-      padding: 1.25rem 1.5rem 1.5rem;
+      padding: 1.5rem;
     }
     .menu-card-tag {
+      display: inline-block;
       font-size: 0.6rem;
-      font-weight: 900;
+      font-weight: 800;
       letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--accent);
+      background: rgba(200, 151, 58, 0.1);
+      padding: 0.25rem 0.75rem;
+      border-radius: 100px;
     }
     .menu-card-name {
-      font-size: 1.1rem;
-      font-weight: 900;
+      font-size: 1.15rem;
+      font-weight: 800;
       color: var(--primary);
-      margin-top: 0.35rem;
+      margin-top: 0.75rem;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
     }
     .menu-card-desc {
       font-size: 0.82rem;
-      line-height: 1.65;
-      opacity: 0.65;
+      line-height: 1.7;
+      color: var(--text-secondary);
       margin-top: 0.5rem;
     }
+    .menu-card .card-link {
+      margin-top: 1rem;
+    }
 
-    /* ─── Reviews ─── */
     .review-card {
       border: 1px solid var(--border);
       border-radius: var(--radius-xl);
       background: var(--white);
       padding: 1.75rem;
+      transition: all var(--transition);
+    }
+    .review-card:hover {
+      border-color: rgba(29,107,62,0.12);
+      box-shadow: var(--shadow-xs);
     }
     .review-stars {
       color: var(--accent);
@@ -542,7 +562,7 @@
     .review-text {
       font-size: 0.9rem;
       line-height: 1.75;
-      opacity: 0.75;
+      color: var(--text-muted);
       margin-top: 0.75rem;
     }
     .review-author {
@@ -553,7 +573,7 @@
     }
     .review-role {
       font-size: 0.72rem;
-      opacity: 0.55;
+      color: var(--text-muted);
       font-weight: 600;
       margin-top: 0.15rem;
     }
@@ -600,14 +620,14 @@
         <!-- Left: Content -->
         <div class="hero-content">
           <div class="hero-kicker-row">
-            <img src="img/khao-mok-box-opt.jpg" alt="ข้าวกล่องฮาลาล EED HALAL" class="hero-kicker-img" width="74" height="74">
+            <img src="img/khao-mok-box-opt.jpg" alt="ข้าวกล่องฮาลาล EED HALAL" class="hero-kicker-img" width="68" height="68">
             <div class="section-label">EED HALAL — กรุงเทพมหานคร</div>
           </div>
           <h1 class="hero-title md:text-7xl">
             ข้าวกล่องฮาลาล<br>สำหรับองค์กร<br>และสัมมนา<br>กรุงเทพฯ
           </h1>
           <p class="hero-desc">
-            ฮาลาลเซอร์ต CICOT | ออกเอกสารองค์กรได้ | ส่งตรงเวลา<br>
+            ข้าวกล่องฮาลาลสำหรับองค์กรในกรุงเทพฯ เริ่ม 70 บาท สั่งขั้นต่ำ 20 กล่อง ส่งฟรี 50+ กล่อง รับรอง CICOT ส่งตรงเวลา 98% ออกใบเสนอราคาและใบเสร็จรับเงินได้<br>
             บอกจำนวน วันที่ และงบ — เราจัดการให้ทุกอย่าง<br>
             <span style="font-size:0.85em;opacity:0.7">สั่งน้อยกว่า 20 กล่อง? สั่งผ่าน LINEMAN ได้เลย ไม่มีขั้นต่ำ</span>
           </p>
@@ -639,17 +659,17 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </a>
           </div>
-          <p style="margin-top:1rem;font-size:0.92rem;line-height:1.8;opacity:0.78">
-            เมนูมาตรฐานเริ่มต้น <strong>89 บาท/กล่อง</strong> สำหรับออเดอร์องค์กร และปรับงบต่อหัวได้ตามจำนวนที่สั่ง
+          <p style="margin-top:1rem;font-size:0.92rem;line-height:1.8;color:var(--text-muted)">
+            เมนูมาตรฐานเริ่มต้น <strong>70 บาท/กล่อง</strong> สำหรับออเดอร์องค์กร และปรับงบต่อหัวได้ตามจำนวนที่สั่ง
           </p>
         </div>
 
         <!-- Right: Image Frame -->
         <div class="hero-frame">
           <!-- Chef + Food split layout -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;height:320px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;height:300px">
             <!-- Chef portrait -->
-            <div style="position:relative;border-radius:24px;overflow:hidden">
+            <div style="position:relative;border-radius:20px;overflow:hidden">
               <img
                 src="img/chef-profile.jpg"
                 alt="เชฟ EED HALAL ผู้เชี่ยวชาญอาหารฮาลาล กรุงเทพฯ"
@@ -658,14 +678,13 @@
                 height="320"
                 loading="eager"
               >
-              <!-- Name overlay -->
-              <div style="position:absolute;bottom:0;left:0;right:0;padding:0.75rem 1rem;background:linear-gradient(transparent,rgba(29,107,62,0.85));border-radius:0 0 24px 24px">
-                <div style="font-size:0.6rem;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.7)">เชฟและผู้ก่อตั้ง</div>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:0.75rem 1rem;background:linear-gradient(transparent,rgba(29,107,62,0.85));border-radius:0 0 20px 20px">
+                <div style="font-size:0.58rem;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.7)">เชฟและผู้ก่อตั้ง</div>
                 <div style="font-size:0.88rem;font-weight:800;color:#fff;margin-top:0.2rem">EED HALAL</div>
               </div>
             </div>
             <!-- Food image -->
-            <div style="position:relative;border-radius:24px;overflow:hidden">
+            <div style="position:relative;border-radius:20px;overflow:hidden">
               <img
                 src="img/khao-mok-box-opt.jpg"
                 alt="ข้าวหมกไก่ฮาลาล EED HALAL กรุงเทพฯ"
@@ -678,24 +697,24 @@
           </div>
 
           <!-- CICOT badge -->
-          <div class="hero-frame-badge" style="top:1.5rem;right:1.5rem">
-            <div style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(255,255,255,0.96);border:1px solid rgba(200,151,58,0.3);border-radius:999px;padding:0.45rem 0.9rem;box-shadow:0 4px 14px rgba(0,0,0,0.1)">
+          <div class="hero-frame-badge" style="top:1.25rem;right:1.25rem">
+            <div style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(255,255,255,0.95);border:1px solid rgba(200,151,58,0.2);border-radius:999px;padding:0.4rem 0.85rem;box-shadow:0 4px 12px rgba(0,0,0,0.08)">
               <span style="width:22px;height:22px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
               </span>
-              <span style="font-size:0.7rem;font-weight:900;color:var(--primary);letter-spacing:0.05em">ฮาลาลเซอร์ต CICOT</span>
+              <span style="font-size:0.68rem;font-weight:800;color:var(--primary);letter-spacing:0.05em">ฮาลาลเซอร์ต CICOT</span>
             </div>
           </div>
 
           <!-- Bottom info cards -->
           <div class="hero-frame-grid">
             <div style="background:var(--primary-soft);border-radius:var(--radius-lg);padding:1rem 1.25rem">
-              <div style="font-size:0.6rem;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent)">ออกเอกสารได้</div>
-              <div style="font-size:0.9rem;font-weight:800;color:var(--primary);margin-top:0.35rem">ใบเสนอราคา / ใบเสร็จรับเงิน</div>
+              <div style="font-size:0.58rem;font-weight:900;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent)">ออกเอกสารได้</div>
+              <div style="font-size:0.88rem;font-weight:800;color:var(--primary);margin-top:0.35rem">ใบเสนอราคา / ใบเสร็จรับเงิน</div>
             </div>
             <div style="background:var(--primary-soft);border-radius:var(--radius-lg);padding:1rem 1.25rem">
-              <div style="font-size:0.6rem;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent)">พื้นที่ให้บริการ</div>
-              <div style="font-size:0.9rem;font-weight:800;color:var(--primary);margin-top:0.35rem">ทั่วกรุงเทพฯ และปริมณฑล</div>
+              <div style="font-size:0.58rem;font-weight:900;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent)">พื้นที่ให้บริการ</div>
+              <div style="font-size:0.88rem;font-weight:800;color:var(--primary);margin-top:0.35rem">ทั่วกรุงเทพฯ และปริมณฑล</div>
             </div>
           </div>
         </div>
@@ -707,8 +726,8 @@
       <div class="container">
         <div style="max-width:48rem;margin-bottom:3.5rem">
           <div class="section-label">บริการของเรา</div>
-          <h2 style="font-size:2.25rem;font-weight:900;line-height:1.2;letter-spacing:-0.02em;margin-top:1.25rem" class="md:text-5xl">ครบทุกรูปแบบ<br>ตั้งแต่ออเดอร์เล็กจนถึงงานใหญ่</h2>
-          <p style="margin-top:1.25rem;font-size:1rem;line-height:1.8;opacity:0.68;max-width:40rem">ไม่ว่าจะเป็นอาหารกลางวันออฟฟิศทุกวัน งานสัมมนาใหญ่ หรืออยากสั่งผ่านแอปแบบเดี่ยว เราพร้อมดูแลทุกงาน</p>
+          <h2 style="font-size:2.25rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1.25rem" class="md:text-5xl">ครบทุกรูปแบบ<br>ตั้งแต่ออเดอร์เล็กจนถึงงานใหญ่</h2>
+          <p style="margin-top:1.25rem;font-size:1rem;line-height:1.8;color:var(--text-muted);max-width:40rem">ไม่ว่าจะเป็นอาหารกลางวันออฟฟิศทุกวัน งานสัมมนาใหญ่ หรืออยากสั่งผ่านแอปแบบเดี่ยว เราพร้อมดูแลทุกงาน</p>
         </div>
 
         <div class="grid-3">
@@ -739,9 +758,9 @@
             </div>
             <div class="service-tag">จัดเลี้ยง</div>
             <h3 class="service-title">บริการจัดเลี้ยงงานฮาลาล</h3>
-            <p class="service-desc">จัดเลี้ยงบุฟเฟต์ ชุดกล่อง หรือชุดเซตสำหรับงานเลี้ยงบริษัท วันสำคัญ และงานพิเศษที่ต้องการความประณีต พร้อมรองรับผู้ร่วมงานหลายร้อยคน</p>
+            <p class="service-desc">บริการจัดเลี้ยงฮาลาลพร้อมทีมหน้างาน เลือกได้ทั้งแบบ Live Cooking Station (ซุ้มอาหารปรุงสดจานต่อจาน) และแบบยกหม้อ พร้อมรองรับผู้ร่วมงานหลายร้อยคน</p>
             <ul class="service-list">
-              <li>บุฟเฟต์และชุดกล่องฮาลาล 100%</li>
+              <li>Live Cooking Station (ซุ้มอาหารปรุงสด) หรือแบบยกหม้อ</li>
               <li>จัดเมนูเฉพาะตามธีมงาน</li>
               <li>รองรับงานขนาดใหญ่ 100–500+ คน</li>
               <li>มีทีมประสานงานหน้างาน</li>
@@ -781,8 +800,8 @@
         <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;margin-bottom:3rem">
           <div style="max-width:42rem">
             <div class="section-label">เมนูยอดนิยม</div>
-            <h2 style="font-size:2rem;font-weight:900;line-height:1.2;letter-spacing:-0.02em;margin-top:1rem" class="md:text-5xl">อาหารฮาลาลที่องค์กรเลือกบ่อยที่สุด</h2>
-            <p style="margin-top:1rem;font-size:0.92rem;line-height:1.8;opacity:0.65">ทุกเมนูผ่านมาตรฐานฮาลาล CICOT ปรุงสดทุกวัน ไม่ใช้วัตถุดิบต้องห้ามตามหลักศาสนาอิสลาม โดยเมนูมาตรฐานเริ่มต้นที่ <strong>89 บาท/กล่อง</strong></p>
+            <h2 style="font-size:2rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1rem" class="md:text-5xl">อาหารฮาลาลที่องค์กรเลือกบ่อยที่สุด</h2>
+            <p style="margin-top:1rem;font-size:0.92rem;line-height:1.8;color:var(--text-muted)">ทุกเมนูผ่านมาตรฐานฮาลาล CICOT ปรุงสดทุกวัน ไม่ใช้วัตถุดิบต้องห้ามตามหลักศาสนาอิสลาม โดยเมนูมาตรฐานเริ่มต้นที่ <strong>70 บาท/กล่อง</strong></p>
           </div>
           <a href="popular-menu.html" class="btn btn-outline">ดูเมนูทั้งหมด</a>
         </div>
@@ -790,34 +809,37 @@
         <div class="grid-3">
           <!-- Menu 1 -->
           <article class="menu-card">
-            <img src="img/pad-thai-opt.jpg" alt="ผัดไทยฮาลาล EED HALAL" class="menu-card-img" width="400" height="200" loading="lazy">
+            <video src="img/padthai.mp4" class="menu-card-img" width="400" height="200" autoplay muted loop playsinline></video>
             <div class="menu-card-body">
               <div class="menu-card-tag">เส้น • ยอดนิยม</div>
-              <h3 class="menu-card-name">ผัดไทยซอสมะขาม</h3>
-              <p class="menu-card-desc">ผัดไทยฮาลาลเส้นเหนียวนุ่ม ซอสมะขามกลมกล่อม เสิร์ฟครบเครื่อง เหมาะทั้งงานประชุมและเลี้ยงทีมที่ต้องการเมนูคุ้นเคยทานง่าย</p>
-              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สอบถามราคา →</a>
+              <h3 class="menu-card-name">ผัดไทยซอสมะขามกุ้งสด</h3>
+              <p class="menu-card-desc">ผัดไทยฮาลาลเส้นเหนียวนุ่ม ซอสมะขามกลมกล่อม ใส่กุ้งสด เสิร์ฟครบเครื่อง เหมาะทั้งงานประชุมและเลี้ยงทีมที่ต้องการเมนูคุ้นเคยทานง่าย</p>
+              <div style="font-size:1.1rem;font-weight:800;color:var(--accent);margin-top:0.75rem;letter-spacing:-0.02em">110 บาท</div>
+              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สั่งเมนูนี้ →</a>
             </div>
           </article>
 
           <!-- Menu 2 -->
           <article class="menu-card">
-            <img src="img/mealbox-kaprao-opt.jpg" alt="ข้าวผัดกระเพราไก่ฮาลาล EED HALAL" class="menu-card-img" width="400" height="200" loading="lazy">
+                        <img src="img/S__49922057_0.jpg" alt="ทะเลทอดกระเทียม EED HALAL" class="menu-card-img" width="400" height="200" loading="lazy">
             <div class="menu-card-body">
-              <div class="menu-card-tag">ข้าวกล่อง • คลาสสิก</div>
-              <h3 class="menu-card-name">ข้าวผัดไก่กระเพราไข่ดาว</h3>
-              <p class="menu-card-desc">ข้าวผัดกระเพราไก่หอม ๆ ใส่พริกสด กระเทียม โหระพา เสิร์ฟพร้อมไข่ดาวและผักเคียง รสชาติคุ้นเคย ทุกคนโปรด</p>
-              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สอบถามราคา →</a>
+              <div class="menu-card-tag">ทะเล • ของทอด</div>
+              <h3 class="menu-card-name">ทะเลทอดกระเทียม + ไข่ดาว</h3>
+              <p class="menu-card-desc">กุ้ง ปลา และซีฟู้ดทอดกรอบ โรยกระเทียมเจียวหอม ทานคู่กับน้ำจิ้มซีฟู้ดรสเด็ด เหมาะกับงานเลี้ยงที่ต้องการเมนูทะเลหรูหรา</p>
+              <div style="font-size:1.1rem;font-weight:800;color:var(--accent);margin-top:0.75rem;letter-spacing:-0.02em">120 บาท</div>
+              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สั่งเมนูนี้ →</a>
             </div>
           </article>
 
           <!-- Menu 3 -->
           <article class="menu-card">
-            <img src="img/mealbox-satay-opt.jpg" alt="สะเต๊ะไก่ฮาลาล EED HALAL" class="menu-card-img" width="400" height="200" loading="lazy">
+            <img src="img/S__48480262_0.jpg" alt="ข้าวผัดกะเพราเนื้อ ไข่ดาว+ผลไม้ EED HALAL" class="menu-card-img" width="400" height="200" loading="lazy">
             <div class="menu-card-body">
-              <div class="menu-card-tag">ของว่าง • งานประชุม</div>
-              <h3 class="menu-card-name">สะเต๊ะไก่</h3>
-              <p class="menu-card-desc">ไม้สะเต๊ะไก่หมักเครื่องเทศย่างหอม เสิร์ฟพร้อมน้ำจิ้มถั่วและอาจาดแตงกวา เหมาะสำหรับงานประชุมและ coffee break</p>
-              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สอบถามราคา →</a>
+              <div class="menu-card-tag">ข้าวกล่อง • พรีเมียม</div>
+              <h3 class="menu-card-name">ข้าวผัดกะเพราเนื้อ ไข่ดาว+ผลไม้</h3>
+              <p class="menu-card-desc">ข้าวผัดกะเพราเนื้อนุ่ม ๆ หอมพริกสดกระเทียม เสิร์ฟพร้อมไข่ดาวและผลไม้สด เมนูพรีเมียมอิ่มคุ้มในกล่องเดียว</p>
+              <div style="font-size:1.1rem;font-weight:800;color:var(--accent);margin-top:0.75rem;letter-spacing:-0.02em">130 บาท</div>
+              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สั่งเมนูนี้ →</a>
             </div>
           </article>
         </div>
@@ -829,7 +851,7 @@
       <div class="container">
         <div style="max-width:48rem;margin-bottom:3.5rem">
           <div class="section-label">ทำไมต้องเลือกเรา</div>
-          <h2 style="font-size:2.25rem;font-weight:900;line-height:1.2;letter-spacing:-0.02em;margin-top:1.25rem" class="md:text-5xl">ทำไมองค์กรชั้นนำ<br>ถึงเลือก EED HALAL</h2>
+          <h2 style="font-size:2.25rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1.25rem" class="md:text-5xl">ทำไมองค์กรชั้นนำ<br>ถึงเลือก EED HALAL</h2>
         </div>
         <div class="grid-2" style="gap:1.25rem">
           <div class="why-card">
@@ -840,7 +862,7 @@
               <div class="why-title">ฮาลาลเซอร์ต CICOT รับรองจริง</div>
               <p class="why-desc">รับรองโดยคณะกรรมการกลางอิสลามแห่งประเทศไทย (CICOT) ทุกวัตถุดิบและกระบวนการผ่านมาตรฐานฮาลาล 100%</p>
               <a href="halal-cert.html" style="display:inline-block;margin-top:0.75rem">
-                <img src="img/HALAL.jpg" alt="ใบรับรองฮาลาล CICOT HL-2024-0892 ของ EED HALAL" width="300" height="225" style="border-radius:var(--radius-lg);box-shadow:var(--shadow-md);max-width:100%;height:auto;border:1px solid var(--border);transition:transform 0.3s" loading="lazy">
+                <img src="img/HALAL.png" alt="ใบรับรองฮาลาล CICOT HL 926/2566 ของ EED HALAL" width="300" height="225" style="border-radius:var(--radius-lg);box-shadow:var(--shadow-md);max-width:100%;height:auto;border:1px solid var(--border);transition:transform 0.3s" loading="lazy">
               </a>
               <p style="margin-top:0.5rem;font-size:0.75rem;opacity:0.5">คลิกเพื่อดูรายละเอียดใบรับรอง</p>
             </div>
@@ -852,6 +874,7 @@
             <div>
               <div class="why-title">ส่งตรงเวลา 98% ทุกออเดอร์</div>
               <p class="why-desc">ส่งถึงก่อนเวลานัดทุกออเดอร์ ไม่มีข้อแม้ ไม่ทำให้ประชุมต้องรอ</p>
+              <img src="img/655712073_1553715433140186_6787648389306334838_n.jpg" alt="ส่งตรงเวลา EED HALAL" width="300" height="225" style="border-radius:var(--radius-lg);box-shadow:var(--shadow-md);max-width:100%;height:auto;border:1px solid var(--border);transition:transform 0.3s;margin-top:0.75rem" loading="lazy">
             </div>
           </div>
           <div class="why-card">
@@ -861,6 +884,7 @@
             <div>
               <div class="why-title">ออกใบเสนอราคาและใบเสร็จรับเงินได้</div>
               <p class="why-desc">จดทะเบียนบริษัทถูกต้อง ออกใบเสนอราคาและใบเสร็จรับเงินได้ครบ ฝ่ายจัดซื้อแนบเบิกจ่ายได้สะดวกไม่ยุ่งยาก</p>
+              <img src="img/Screenshot (23).png" alt="เอกสารออกใบเสนอราคา EED HALAL" width="300" height="225" style="border-radius:var(--radius-lg);box-shadow:var(--shadow-md);max-width:100%;height:auto;border:1px solid var(--border);transition:transform 0.3s;margin-top:0.75rem" loading="lazy">
             </div>
           </div>
           <div class="why-card">
@@ -870,6 +894,23 @@
             <div>
               <div class="why-title">ไว้วางใจโดยบริษัทชั้นนำมากมาย</div>
               <p class="why-desc">องค์กรชั้นนำในกรุงเทพฯ สั่งซ้ำทุกสัปดาห์ — เพราะไว้ใจได้ทั้งรสชาติและมาตรฐานฮาลาล</p>
+              <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.75rem;margin-top:0.75rem">
+                <img src="img/logos/logo-01.png" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-02.jpg" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-03.png" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-04.jpg" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-05.png" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-06.jpg" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-07.png" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-08.jpg" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-09.png" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-10.jpg" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-11.png" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-12.jpg" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-13.jpg" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-14.jpg" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+                <img src="img/logos/logo-15.png" alt="" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--white);border-radius:var(--radius);border:1px solid var(--border-light);padding:0.35rem" loading="lazy">
+              </div>
             </div>
           </div>
           <div class="why-card">
@@ -879,6 +920,7 @@
             <div>
               <div class="why-title">ส่งฟรีเมื่อสั่ง 50+ กล่อง</div>
               <p class="why-desc">สั่ง 50 กล่องขึ้นไป ส่งฟรีทั่วกรุงเทพฯ ไม่มีค่าซ่อน</p>
+              <img src="img/649704059_1541895197655543_7698744521739493425_n.jpg" alt="ส่งฟรี EED HALAL" width="300" height="225" style="border-radius:var(--radius-lg);box-shadow:var(--shadow-md);max-width:100%;height:auto;border:1px solid var(--border);transition:transform 0.3s;margin-top:0.75rem" loading="lazy">
             </div>
           </div>
           <div class="why-card">
@@ -942,7 +984,7 @@
       <div class="container">
         <div style="max-width:42rem;margin-bottom:3rem">
           <div class="section-label">รีวิวจากลูกค้า</div>
-          <h2 style="font-size:2rem;font-weight:900;line-height:1.2;letter-spacing:-0.02em;margin-top:1rem" class="md:text-5xl">เสียงจากองค์กรที่ไว้วางใจเรา</h2>
+          <h2 style="font-size:2rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1rem" class="md:text-5xl">เสียงจากองค์กรที่ไว้วางใจเรา</h2>
         </div>
         <div class="grid-3">
           <div class="review-card">
@@ -978,7 +1020,7 @@
       <div class="container">
         <div style="max-width:48rem;margin-bottom:3.5rem">
           <div class="section-label">วิธีสั่งงาน</div>
-          <h2 style="font-size:2.25rem;font-weight:900;line-height:1.2;letter-spacing:-0.02em;margin-top:1.25rem" class="md:text-5xl">สั่งง่าย 3 ขั้นตอน<br>รับใบเสนอราคาภายในวัน</h2>
+          <h2 style="font-size:2.25rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1.25rem" class="md:text-5xl">สั่งง่าย 3 ขั้นตอน<br>รับใบเสนอราคาภายในวัน</h2>
         </div>
         <div class="grid-3">
           <div class="step-card">
@@ -1007,7 +1049,7 @@
       <div class="container">
         <div style="max-width:48rem;margin-bottom:3rem">
           <div class="section-label">คำถามที่ถามบ่อย</div>
-          <h2 style="font-size:2rem;font-weight:900;line-height:1.2;letter-spacing:-0.02em;margin-top:1rem" class="md:text-5xl">ก่อนสั่ง อยากรู้อะไร?</h2>
+          <h2 style="font-size:2rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1rem" class="md:text-5xl">ก่อนสั่ง อยากรู้อะไร?</h2>
         </div>
         <div class="grid-2">
           <article class="card card-sm">
@@ -1017,7 +1059,7 @@
           </article>
           <article class="card card-sm">
             <div class="card-title">ราคาเริ่มต้นเท่าไร?</div>
-            <p class="card-desc">เริ่ม 89 บาท/กล่อง — สั่ง 50 กล่องขึ้นไปส่งฟรีทั่วกรุงเทพฯ</p>
+            <p class="card-desc">เริ่ม 70 บาท/กล่อง — สั่ง 50 กล่องขึ้นไปส่งฟรีทั่วกรุงเทพฯ</p>
             <a href="faq.html" class="card-link">ดูราคาและเงื่อนไข →</a>
           </article>
           <article class="card card-sm">
@@ -1048,7 +1090,7 @@
       <div class="container">
         <div style="max-width:48rem;margin-bottom:3rem">
           <div class="section-label">อ่านก่อนสั่ง</div>
-          <h2 style="font-size:2rem;font-weight:900;line-height:1.2;letter-spacing:-0.02em;margin-top:1rem" class="md:text-5xl">รู้จัก EED HALAL ให้มากขึ้น</h2>
+          <h2 style="font-size:2rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1rem" class="md:text-5xl">รู้จัก EED HALAL ให้มากขึ้น</h2>
         </div>
         <div class="grid-3">
           <article class="card card-sm">
@@ -1070,12 +1112,33 @@
       </div>
     </section>
 
+    <!-- ─── ส่วนลดท้ายบิล ─── -->
+    <section class="section" style="background:var(--warm-bg);padding:3rem 1.5rem">
+      <div class="container" style="max-width:40rem;text-align:center">
+        <h3 style="font-size:1.5rem;font-weight:800;color:var(--primary);margin-bottom:1.5rem">ส่วนลดท้ายบิล</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:0.95rem">
+          <thead>
+            <tr style="background:var(--primary);color:var(--white)">
+              <th style="padding:0.75rem 1rem;border:1px solid var(--primary)">จำนวนกล่อง</th>
+              <th style="padding:0.75rem 1rem;border:1px solid var(--primary)">ส่วนลด</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:0.75rem 1rem;border:1px solid #ddd">25 กล่องขึ้นไป</td><td style="padding:0.75rem 1rem;border:1px solid #ddd;font-weight:700;color:var(--accent)">ลด 10%</td></tr>
+            <tr><td style="padding:0.75rem 1rem;border:1px solid #ddd">50 กล่องขึ้นไป</td><td style="padding:0.75rem 1rem;border:1px solid #ddd;font-weight:700;color:var(--accent)">ลด 15%</td></tr>
+            <tr><td style="padding:0.75rem 1rem;border:1px solid #ddd">100 กล่องขึ้นไป</td><td style="padding:0.75rem 1rem;border:1px solid #ddd;font-weight:700;color:var(--accent)">ลด 20%</td></tr>
+          </tbody>
+        </table>
+
+      </div>
+    </section>
+
     <!-- ─── CTA Section ─── -->
     <section class="section section-dark">
-      <div class="container text-center">
+      <div class="container text-center" style="position:relative;z-index:1">
         <div class="section-label section-label-center" style="color:var(--accent)">ติดต่อเรา</div>
-        <h2 style="font-size:2.25rem;font-weight:900;line-height:1.2;letter-spacing:-0.02em;margin-top:1.5rem;color:var(--white)" class="md:text-5xl">มีงานเข้ามา?<br>ทักเราได้เลยทันที</h2>
-        <p style="max-width:38rem;margin:1.5rem auto 0;font-size:1rem;line-height:1.8;opacity:0.75">บอกจำนวน วันที่ และงบ — ทีมงานส่งใบเสนอราคากลับให้เร็วที่สุด</p>
+        <h2 style="font-size:2.25rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1.5rem;color:var(--white)" class="md:text-5xl">มีงานเข้ามา?<br>ทักเราได้เลยทันที</h2>
+        <p style="max-width:38rem;margin:1.5rem auto 0;font-size:1rem;line-height:1.8;opacity:0.8">บอกจำนวน วันที่ และงบ — ทีมงานส่งใบเสนอราคากลับให้เร็วที่สุด</p>
         <div class="hero-buttons" style="justify-content:center;margin-top:2.5rem">
           <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="btn btn-accent" style="font-size:1rem;padding:0.9rem 2rem">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>

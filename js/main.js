@@ -5,26 +5,28 @@
   var LINE_OA_ID = '@EEDHALAL';
   var PHONE_DISPLAY = '098-871-5179';
   var PHONE_HREF = 'tel:+66988715179';
-  var HOME_PATH = '/index.html';
-  var LP_CORPORATE_MEETING_PATH = '/lp-corporate-meeting.html';
-  var CORPORATE_PATH = '/corporate.html';
-  var MENU_PATH = '/popular-menu.html';
-  var CONTACT_PATH = '/contact.html';
-  var CATERING_PATH = '/catering.html';
-  var ORDER_STEPS_PATH = '/order-steps.html';
-  var DELIVERY_AREA_PATH = '/delivery-area.html';
-  var HALAL_CERT_PATH = '/halal-cert.html';
-  var REVIEWS_PATH = '/reviews.html';
-  var FAQ_PATH = '/faq.html';
-  var SATHORN_PATH = '/sathorn.html';
-  var SILOM_PATH = '/silom.html';
-  var SATHORN_SILOM_PATH = '/sathorn-silom.html';
-  var SUKHUMVIT_PATH = '/sukhumvit.html';
-  var RAMA3_PATH = '/rama3.html';
-  var LADPRAO_PATH = '/ladprao.html';
-  var BLOG_HALAL_VS_NORMAL_PATH = '/blog/halal-vs-normal.html';
-  var BLOG_HOW_TO_CHOOSE_PATH = '/blog/how-to-choose.html';
-  var BLOG_CICOT_PATH = '/blog/cicot-explained.html';
+  var EN_PREFIX = window.location.pathname.indexOf('/en/') === 0 ? '/en' : '';
+  var isEN = EN_PREFIX === '/en';
+
+  var HOME_PATH = EN_PREFIX + '/index.html';
+  var CORPORATE_PATH = EN_PREFIX + '/corporate.html';
+  var MENU_PATH = EN_PREFIX + '/popular-menu.html';
+  var CONTACT_PATH = EN_PREFIX + '/contact.html';
+  var CATERING_PATH = EN_PREFIX + '/catering.html';
+  var ORDER_STEPS_PATH = EN_PREFIX + '/order-steps.html';
+  var DELIVERY_AREA_PATH = EN_PREFIX + '/delivery-area.html';
+  var HALAL_CERT_PATH = EN_PREFIX + '/halal-cert.html';
+  var REVIEWS_PATH = EN_PREFIX + '/reviews.html';
+  var FAQ_PATH = EN_PREFIX + '/faq.html';
+  var SATHORN_PATH = EN_PREFIX + '/sathorn.html';
+  var SILOM_PATH = EN_PREFIX + '/silom.html';
+
+  var SUKHUMVIT_PATH = EN_PREFIX + '/sukhumvit.html';
+  var RAMA3_PATH = EN_PREFIX + '/rama3.html';
+  var LADPRAO_PATH = EN_PREFIX + '/ladprao.html';
+  var BLOG_HALAL_VS_NORMAL_PATH = (isEN ? '/en' : '') + '/blog/halal-vs-normal.html';
+  var BLOG_HOW_TO_CHOOSE_PATH = (isEN ? '/en' : '') + '/blog/how-to-choose.html';
+  var BLOG_CICOT_PATH = (isEN ? '/en' : '') + '/blog/cicot-explained.html';
   var LOGO_PATH = '/img/logo.jpg';
   var TRACKING_DEFAULTS = {
     metaPixelId: '',
@@ -38,11 +40,6 @@
       lp_slug: 'home_general',
       lp_audience: 'General / Broad Prospecting',
       lp_intent: 'Brand awareness and entry point'
-    },
-    '/lp-corporate-meeting.html': {
-      lp_slug: 'lp_corporate_meeting',
-      lp_audience: 'HR / Procurement / Office Admin',
-      lp_intent: 'Dedicated LP for corporate meeting meal boxes — quotation, procurement documents, on-time delivery, no distractions'
     },
     '/corporate.html': {
       lp_slug: 'corporate_hr_procurement',
@@ -93,11 +90,6 @@
       lp_slug: 'geo_silom',
       lp_audience: 'Silom / Bang Rak / Surawong / Si Phraya',
       lp_intent: 'Local delivery for the Silom financial district'
-    },
-    '/sathorn-silom.html': {
-      lp_slug: 'geo_sathorn_silom',
-      lp_audience: 'Sathorn / Silom / Bangrak / Yannawa',
-      lp_intent: 'Local delivery for the Sathorn-Silom business district'
     },
     '/sukhumvit.html': {
       lp_slug: 'geo_sukhumvit',
@@ -161,7 +153,6 @@
 
     if (path === '/' || path === '/index.html') return 'home';
     if (path === '/contact.html') return 'contact';
-    if (path === '/lp-corporate-meeting.html') return 'lp_corporate_meeting';
     if (path === '/corporate.html') return 'corporate';
     if (path === '/catering.html') return 'catering';
     if (path === '/popular-menu.html') return 'menu';
@@ -170,7 +161,7 @@
     if (path === '/halal-cert.html') return 'halal_cert';
     if (path === '/reviews.html') return 'reviews';
     if (path === '/faq.html') return 'faq';
-    if (path === '/sathorn.html' || path === '/silom.html' || path === '/sathorn-silom.html' || path === '/sukhumvit.html' || path === '/rama3.html' || path === '/ladprao.html') return 'location';
+    if (path === '/sathorn.html' || path === '/silom.html' || path === '/sukhumvit.html' || path === '/rama3.html' || path === '/ladprao.html') return 'location';
     if (path.indexOf('/blog/') === 0) return 'blog';
     return 'page';
   }
@@ -462,6 +453,53 @@
   }
 
   function getNavHTML() {
+    if (isEN) {
+      return '\
+<header class="site-header">\
+  <div class="header-inner">\
+    <a href="' + HOME_PATH + '" class="logo-link">\
+      <img src="' + LOGO_PATH + '" alt="EED HALAL" class="logo-img">\
+      <div class="logo-text">\
+        <div class="logo-title">EED HALAL</div>\
+        <span class="cicot-badge">CICOT \u2713</span>\
+      </div>\
+    </a>\
+    <nav class="nav-desktop">\
+      <a href="' + HOME_PATH + '" class="nav-link">Home</a>\
+      <a href="' + CORPORATE_PATH + '" class="nav-link">Corporate</a>\
+      <a href="' + MENU_PATH + '" class="nav-link">Menu</a>\
+      <a href="' + CONTACT_PATH + '" class="nav-link">Contact</a>\
+    </nav>\
+    <div class="nav-actions">\
+      <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" class="btn btn-gold" data-track-event="lead_line_click" data-track-section="header" data-track-source="desktop_nav">\
+        Message LINE\
+      </a>\
+    </div>\
+    <button class="mobile-toggle" id="mobileMenuBtn" aria-label="Toggle menu" aria-expanded="false">\
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\
+        <line id="menuOpenIcon" x1="4" y1="7" x2="20" y2="7"></line>\
+        <line id="menuOpenIcon2" x1="4" y1="12" x2="20" y2="12"></line>\
+        <line id="menuOpenIcon3" x1="4" y1="17" x2="20" y2="17"></line>\
+        <line id="menuCloseIcon" class="hidden" x1="6" y1="6" x2="18" y2="18"></line>\
+        <line id="menuCloseIcon2" class="hidden" x1="6" y1="18" x2="18" y2="6"></line>\
+      </svg>\
+    </button>\
+  </div>\
+  <div class="mobile-menu" id="mobileMenu">\
+    <div class="mobile-menu-inner">\
+      <a href="' + HOME_PATH + '" class="mobile-link">Home</a>\
+      <a href="' + CORPORATE_PATH + '" class="mobile-link">Corporate</a>\
+      <a href="' + MENU_PATH + '" class="mobile-link">Menu</a>\
+      <a href="' + CONTACT_PATH + '" class="mobile-link">Contact</a>\
+      <div class="mobile-cta">\
+        <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" class="btn btn-gold w-full" style="justify-content:center" data-track-event="lead_line_click" data-track-section="header" data-track-source="mobile_nav">\
+          Message LINE\
+        </a>\
+      </div>\
+    </div>\
+  </div>\
+</header>';
+    }
     return '\
 <header class="site-header">\
   <div class="header-inner">\
@@ -484,10 +522,10 @@
       </a>\
     </div>\
     <button class="mobile-toggle" id="mobileMenuBtn" aria-label="Toggle menu" aria-expanded="false">\
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\
-        <line id="menuOpenIcon" x1="4" y1="6" x2="20" y2="6"></line>\
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\
+        <line id="menuOpenIcon" x1="4" y1="7" x2="20" y2="7"></line>\
         <line id="menuOpenIcon2" x1="4" y1="12" x2="20" y2="12"></line>\
-        <line id="menuOpenIcon3" x1="4" y1="18" x2="20" y2="18"></line>\
+        <line id="menuOpenIcon3" x1="4" y1="17" x2="20" y2="17"></line>\
         <line id="menuCloseIcon" class="hidden" x1="6" y1="6" x2="18" y2="18"></line>\
         <line id="menuCloseIcon2" class="hidden" x1="6" y1="18" x2="18" y2="6"></line>\
       </svg>\
@@ -510,15 +548,83 @@
   }
 
   function getFooterHTML() {
+    if (isEN) {
+      return '\
+<footer class="site-footer">\
+  <div class="footer-grid">\
+    <div>\
+      <a href="' + HOME_PATH + '" class="footer-brand-link">\
+        <img src="' + LOGO_PATH + '" alt="EED HALAL" class="footer-logo-img">\
+        <div>\
+          <div class="logo-title" style="font-size:1.3rem">EED HALAL</div>\
+          <span style="font-size:0.6rem;font-weight:700;color:var(--accent);letter-spacing:0.15em;text-transform:uppercase">HALAL CERTIFIED</span>\
+        </div>\
+      </a>\
+      <a href="' + PHONE_HREF + '" class="footer-phone" style="margin-top:0.75rem" data-track-event="lead_phone_click" data-track-section="footer" data-track-source="site_footer">' + PHONE_DISPLAY + '</a>\
+      <p class="footer-cert-text">CICOT Halal Certified | Tax Invoice Available</p>\
+    </div>\
+    <div>\
+      <div class="footer-heading">Pages</div>\
+      <div class="footer-links">\
+        <a href="' + HOME_PATH + '">Home</a>\
+        <a href="' + CORPORATE_PATH + '">Corporate</a>\
+        <a href="' + MENU_PATH + '">Popular Menu</a>\
+        <a href="' + CATERING_PATH + '">Catering</a>\
+        <a href="' + CONTACT_PATH + '">Contact</a>\
+        <a href="' + ORDER_STEPS_PATH + '">How to Order</a>\
+        <a href="' + DELIVERY_AREA_PATH + '">Delivery Areas</a>\
+        <a href="' + HALAL_CERT_PATH + '">Halal Certificate</a>\
+        <a href="' + REVIEWS_PATH + '">Reviews</a>\
+        <a href="' + FAQ_PATH + '">FAQ</a>\
+        <a href="' + BLOG_HOW_TO_CHOOSE_PATH + '">Choosing Halal Vendor</a>\
+        <a href="' + BLOG_CICOT_PATH + '">What is CICOT</a>\
+        <a href="' + BLOG_HALAL_VS_NORMAL_PATH + '">Halal vs Regular</a>\
+      </div>\
+    </div>\
+    <div>\
+      <div class="footer-heading">Delivery Areas</div>\
+      <div class="footer-links">\
+        <a href="' + SATHORN_PATH + '">Sathon</a>\
+        <a href="' + SILOM_PATH + '">Silom</a>\
+        <a href="' + SATHORN_PATH + '">Sathon - Silom</a>\
+        <a href="' + SUKHUMVIT_PATH + '">Sukhumvit</a>\
+        <a href="' + RAMA3_PATH + '">Rama 3</a>\
+        <a href="' + LADPRAO_PATH + '">Lat Phrao</a>\
+      </div>\
+    </div>\
+    <div>\
+      <div class="footer-contact-card">\
+        <div class="footer-heading" style="margin-bottom:0.25rem">Contact</div>\
+        <a href="' + PHONE_HREF + '" class="footer-phone" data-track-event="lead_phone_click" data-track-section="footer" data-track-source="site_footer">' + PHONE_DISPLAY + '</a>\
+        <div class="footer-contact-links">\
+          <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="footer" data-track-source="site_footer">Message LINE</a>\
+        </div>\
+      </div>\
+\
+    </div>\
+  </div>\
+  <div class="footer-bottom">\
+    <p class="footer-copy">&copy; 2024 EED HALAL. CICOT Halal Certified</p>\
+    <div class="footer-tags">\
+      <span>HL-2024-0892</span>\
+      <span>Best Seller</span>\
+      <span>Grilled</span>\
+    </div>\
+  </div>\
+</footer>';
+    }
     return '\
 <footer class="site-footer">\
   <div class="footer-grid">\
     <div>\
       <a href="' + HOME_PATH + '" class="footer-brand-link">\
         <img src="' + LOGO_PATH + '" alt="EED HALAL" class="footer-logo-img">\
-        <div class="logo-title" style="font-size:1.5rem">EED HALAL</div>\
+        <div>\
+          <div class="logo-title" style="font-size:1.3rem">EED HALAL</div>\
+          <span style="font-size:0.6rem;font-weight:700;color:var(--accent);letter-spacing:0.15em;text-transform:uppercase">HALAL CERTIFIED</span>\
+        </div>\
       </a>\
-      <a href="' + PHONE_HREF + '" class="footer-phone" style="margin-top:0.5rem" data-track-event="lead_phone_click" data-track-section="footer" data-track-source="site_footer">' + PHONE_DISPLAY + '</a>\
+      <a href="' + PHONE_HREF + '" class="footer-phone" style="margin-top:0.75rem" data-track-event="lead_phone_click" data-track-section="footer" data-track-source="site_footer">' + PHONE_DISPLAY + '</a>\
       <p class="footer-cert-text">\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e15 CICOT | \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e01\u0e33\u0e01\u0e31\u0e1a\u0e20\u0e32\u0e29\u0e35\u0e44\u0e14\u0e49</p>\
     </div>\
     <div>\
@@ -544,7 +650,7 @@
       <div class="footer-links">\
         <a href="' + SATHORN_PATH + '">\u0e2a\u0e32\u0e17\u0e23</a>\
         <a href="' + SILOM_PATH + '">\u0e2a\u0e35\u0e25\u0e21</a>\
-        <a href="' + SATHORN_SILOM_PATH + '">\u0e2a\u0e32\u0e17\u0e23 - \u0e2a\u0e35\u0e25\u0e21</a>\
+        <a href="' + SATHORN_PATH + '">\u0e2a\u0e32\u0e17\u0e23 - \u0e2a\u0e35\u0e25\u0e21</a>\
         <a href="' + SUKHUMVIT_PATH + '">\u0e2a\u0e38\u0e02\u0e38\u0e21\u0e27\u0e34\u0e17</a>\
         <a href="' + RAMA3_PATH + '">\u0e1e\u0e23\u0e30\u0e23\u0e32\u0e21 3</a>\
         <a href="' + LADPRAO_PATH + '">\u0e25\u0e32\u0e14\u0e1e\u0e23\u0e49\u0e32\u0e27</a>\
@@ -562,9 +668,30 @@
     </div>\
   </div>\
   <div class="footer-bottom">\
-    <p class="footer-copy">\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e15 CICOT | \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e01\u0e33\u0e01\u0e31\u0e1a\u0e20\u0e32\u0e29\u0e35\u0e44\u0e14\u0e49</p>\
+    <p class="footer-copy">&copy; 2024 EED HALAL. \u0e2e\u0e32\u0e25\u0e32\u0e25\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e15 CICOT</p>\
+    <div class="footer-tags">\
+      <span>HL-2024-0892</span>\
+      <span>\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21\u0e4c</span>\
+      <span>Grilled</span>\
+    </div>\
   </div>\
 </footer>';
+  }
+
+  function initHeaderScroll() {
+    var header = document.querySelector('.site-header');
+    if (!header) return;
+
+    function onScroll() {
+      if (window.scrollY > 10) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
   }
 
   function initMobileMenu() {
@@ -689,7 +816,7 @@
     return {
       cssClass: 'banner-default',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
-      text: '\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21 89 \u0e1a\u0e32\u0e17 \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e01\u0e33\u0e01\u0e31\u0e1a\u0e20\u0e32\u0e29\u0e35\u0e44\u0e14\u0e49',
+      text: '\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21 70 \u0e1a\u0e32\u0e17 \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e01\u0e33\u0e01\u0e31\u0e1a\u0e20\u0e32\u0e29\u0e35\u0e44\u0e14\u0e49',
       linkText: '\u0e17\u0e31\u0e01 LINE \u0e02\u0e2d\u0e43\u0e1a\u0e40\u0e2a\u0e19\u0e2d\u0e23\u0e32\u0e04\u0e32',
       linkHref: QUOTE_LINE_URL
     };
@@ -774,7 +901,7 @@
               "name": "\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33\u0e01\u0e35\u0e48\u0e01\u0e25\u0e48\u0e2d\u0e07?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33 20 \u0e01\u0e25\u0e48\u0e2d\u0e07\u0e02\u0e36\u0e49\u0e19\u0e44\u0e1b \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e17\u0e35\u0e48 89 \u0e1a\u0e32\u0e17/\u0e01\u0e25\u0e48\u0e2d\u0e07 \u0e2a\u0e31\u0e48\u0e07 50 \u0e01\u0e25\u0e48\u0e2d\u0e07\u0e02\u0e36\u0e49\u0e19\u0e44\u0e1b\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e1f\u0e23\u0e35\u0e17\u0e31\u0e48\u0e27\u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e\u0e2e\u0e2f"
+                "text": "\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33 20 \u0e01\u0e25\u0e48\u0e2d\u0e07\u0e02\u0e36\u0e49\u0e19\u0e44\u0e1b \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e17\u0e35\u0e48 70 \u0e1a\u0e32\u0e17/\u0e01\u0e25\u0e48\u0e2d\u0e07 \u0e2a\u0e31\u0e48\u0e07 50 \u0e01\u0e25\u0e48\u0e2d\u0e07\u0e02\u0e36\u0e49\u0e19\u0e44\u0e1b\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e1f\u0e23\u0e35\u0e17\u0e31\u0e48\u0e27\u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e\u0e2e\u0e2f"
               }
             },
             {
@@ -872,6 +999,39 @@
     updateTotal();
   }
 
+  function initDiscountPopup() {
+    if (sessionStorage.getItem('discountPopupShown')) return;
+    var overlay = document.createElement('div');
+    overlay.className = 'discount-overlay';
+    overlay.innerHTML =
+      '<div class="discount-modal">' +
+        '<button class="close-btn" aria-label="ปิด">&times;</button>' +
+        '<h3>ส่วนลดท้ายบิล</h3>' +
+        '<table class="discount-table">' +
+          '<thead><tr><th>จำนวนกล่อง</th><th>ส่วนลด</th></tr></thead>' +
+          '<tbody>' +
+            '<tr><td>25 กล่องขึ้นไป</td><td>ลด 10%</td></tr>' +
+            '<tr><td>50 กล่องขึ้นไป</td><td>ลด 15%</td></tr>' +
+            '<tr><td>100 กล่องขึ้นไป</td><td>ลด 20%</td></tr>' +
+          '</tbody>' +
+        '</table>' +
+        '<p>สั่งเยอะ ยิ่งคุ้ม — ทัก LINE สอบถามได้เลยครับ</p>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    setTimeout(function() {
+      overlay.classList.add('active');
+    }, 1200);
+    var close = function() {
+      overlay.classList.remove('active');
+      sessionStorage.setItem('discountPopupShown', '1');
+      setTimeout(function() { overlay.remove(); }, 350);
+    };
+    overlay.querySelector('.close-btn').addEventListener('click', close);
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) close();
+    });
+  }
+
   function injectComponents() {
     var navEl = document.getElementById('nav');
     if (navEl) navEl.innerHTML = getNavHTML();
@@ -881,6 +1041,8 @@
 
     initMobileMenu();
     initDesktopDropdowns();
+    initHeaderScroll();
+    initDiscountPopup();
     injectJsonLdSchema();
     initTracking();
     injectUrgencyBanner();

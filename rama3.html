@@ -1,11 +1,12 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ข้าวกล่องฮาลาล พระราม 3 — EED HALAL ส่งถึงที่ | กรุงเทพฯ</title>
-  <meta name="description" content="EED HALAL บริการส่งข้าวกล่องฮาลาลในย่านพระราม 3 นางลิ้นจี่ เจริญราษฎร์ และช่องนนทรี สำหรับองค์กร ประชุม สัมมนา ฮาลาลเซอร์ต CICOT เอกสารองค์กรครบ ตรงเวลา 98%">
+  <title>ข้าวกล่องฮาลาล พระราม 3 — EED HALAL ส่งถึงที่ กรุงเทพฯ</title>
+  <meta name="description" content="EED HALAL บริการส่งข้าวกล่องฮาลาลในย่านพระราม 3 นางลิ้นจี่ เจริญราษฎร์ ช่องนนทรี สำหรับองค์กร ประชุม สัมมนา ฮาลาลเซอร์ต CICOT เอกสารองค์กรครบ ตรงเวลา 98%">
   <link rel="canonical" href="https://eedhalal.com/rama3.html">
+  <link rel="alternate" hreflang="en" href="https://eedhalal.com/en/rama3.html">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
   <link rel="apple-touch-icon" href="/img/logo.jpg">
@@ -98,7 +99,46 @@
             "name": "ข้าวกล่องฮาลาล พระราม 3",
             "item": "https://eedhalal.com/rama3.html"
           }
-        ]      }
+        ]      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://eedhalal.com/rama3.html#faq",
+        "url": "https://eedhalal.com/rama3.html",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "EED HALAL ส่งข้าวกล่องฮาลาลในพระราม 3 ฟรีไหม?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "สำหรับออเดอร์ 50 กล่องขึ้นไปในพระราม 3 ส่งฟรีทั่วพื้นที่ ไม่มีค่าซ่อน ส่วนออเดอร์ 25 กล่องขึ้นไปรับส่วนลด 10% และ 100 กล่องขึ้นไปรับส่วนลด 20%"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "สั่งข้าวกล่องฮาลาลในพระราม 3 ขั้นต่ำกี่กล่อง?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "ออเดอร์องค์กรในพระราม 3 เริ่มต้นที่ 20 กล่องขึ้นไป สามารถทัก LINE เพื่อขอใบเสนอราคาพร้อมเลือกเมนูที่เหมาะกับงบได้ทันที"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "EED HALAL มีใบรับรองฮาลาลหรือไม่?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "มี ใบรับรองฮาลาลออกโดยคณะกรรมการกลางอิสลามแห่งประเทศไทย (CICOT) เลขที่ HL 926/2566 สามารถตรวจสอบรายละเอียดใบรับรองได้ที่ eedhalal.com/halal-cert.html"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "ต้องสั่งข้าวกล่องฮาลาลล่วงหน้ากี่วัน?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "ออเดอร์ 20–50 กล่องแนะนำสั่งล่วงหน้า 2–3 วันทำการ และยืนยันจำนวน เมนู เวลา และจุดส่งก่อน 15:00 น. ของวันทำการก่อนส่ง"
+            }
+          }
+        ]
+      }
     ]
   }
   </script>
@@ -168,7 +208,7 @@
       gap: 0.85rem;
     }
     .local-hero-img {
-      border-radius: 20px;
+      border-radius: var(--radius-lg);
       overflow: hidden;
       height: 200px;
     }
@@ -193,7 +233,7 @@
       border-radius: var(--radius-xl);
       background: var(--white);
       padding: 1.75rem;
-      transition: box-shadow 0.3s, border-color 0.3s;
+      transition: all var(--transition);
     }
     .why-card:hover {
       box-shadow: var(--shadow-sm);
@@ -210,23 +250,37 @@
       color: var(--primary);
       flex-shrink: 0;
     }
-    .why-title { font-size: 1rem; font-weight: 900; color: var(--primary); }
-    .why-desc { font-size: 0.83rem; line-height: 1.7; opacity: 0.65; margin-top: 0.35rem; }
+    .why-title { font-size: 1rem; font-weight: 800; color: var(--primary); }
+    .why-desc { font-size: 0.83rem; line-height: 1.7; color: var(--text-muted); margin-top: 0.35rem; }
 
     /* ─── Menu Cards ─── */
     .menu-card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
       background: var(--white);
+      border-radius: var(--radius-xl);
       overflow: hidden;
-      transition: transform 0.3s, box-shadow 0.3s;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-xs);
+      border: 1px solid var(--border-light);
     }
-    .menu-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
-    .menu-card-img { width: 100%; height: 200px; object-fit: cover; }
-    .menu-card-body { padding: 1.25rem 1.5rem 1.5rem; }
-    .menu-card-tag { font-size: 0.6rem; font-weight: 900; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
-    .menu-card-name { font-size: 1.1rem; font-weight: 900; color: var(--primary); margin-top: 0.35rem; }
-    .menu-card-desc { font-size: 0.82rem; line-height: 1.65; opacity: 0.65; margin-top: 0.5rem; }
+    .menu-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(200, 151, 58, 0.2);
+    }
+    .menu-card-img { width: 100%; height: 280px; object-fit: cover; object-position: center 70%; }
+    .menu-card-body { padding: 1.5rem; }
+    .menu-card-tag {
+      display: inline-block;
+      font-size: 0.6rem; font-weight: 800;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(200, 151, 58, 0.1);
+      padding: 0.25rem 0.75rem;
+      border-radius: 100px;
+    }
+    .menu-card-name { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-top: 0.75rem; letter-spacing: -0.02em; line-height: 1.3; }
+    .menu-card-desc { font-size: 0.82rem; line-height: 1.7; color: var(--text-secondary); margin-top: 0.5rem; }
+    .menu-card .card-link { margin-top: 1rem; }
   </style>
 </head>
 <body>
@@ -269,34 +323,34 @@
       <div class="local-hero-inner">
         <!-- Content -->
         <div>
-          <div class="breadcrumb" style="margin-bottom:1.5rem;font-size:0.8rem;opacity:0.65">
+          <div class="breadcrumb" style="margin-bottom:1.5rem;font-size:0.8rem;color:var(--text-muted)">
             <a href="index.html">หน้าแรก</a>
             <span style="margin:0 0.5rem">/</span>
             <a href="delivery-area.html">พื้นที่ให้บริการ</a>
             <span style="margin:0 0.5rem">/</span>
             <span>พระราม 3</span>
           </div>
-          <div class="section-label" style="margin-bottom:1rem">LOCAL SEO — พระราม 3</div>
-          <h1 style="font-size:2.6rem;font-weight:900;line-height:1.15;letter-spacing:-0.02em;color:var(--primary)">
-            ข้าวกล่องฮาลาล พระราม 3<br>ส่งถึงออฟฟิศในย่านนี้ พร้อมใบเสนอราคาภายในวัน
+          <div class="section-label" style="margin-bottom:1rem">พระราม 3</div>
+          <h1 style="font-size:2.6rem;font-weight:800;line-height:1.15;letter-spacing:-0.02em;color:var(--primary)">
+            ข้าวกล่องฮาลาล พระราม 3<br>ถึงเดอะไลท์เฮ้าส์ อาคารธนาคาร และออฟฟิศย่านนางลิ้นจี่-เจริญราษฎร์ พร้อมใบเสนอราคาในวัน
           </h1>
-          <p style="margin-top:1.5rem;font-size:1rem;line-height:1.85;opacity:0.72;max-width:38rem">
-            ย่านพระราม 3 เหมาะกับออฟฟิศและโครงการที่ต้องการคุมรอบส่ง บอกวัน-จำนวนมาได้เลย ทีมงานช่วยเช็กรอบส่งให้เหมาะกับนางลิ้นจี่ เจริญราษฎร์ และช่องนนทรี พร้อมส่งตรงเวลา 98% และออกใบเสนอราคาภายในวัน
+          <p style="margin-top:1.5rem;font-size:1rem;line-height:1.85;color:var(--text-muted);max-width:38rem">
+            ข้าวกล่องฮาลาลพระราม 3 เริ่ม 70 บาท จัดส่งนางลิ้นจี่ เจริญราษฎร์ ช่องนนทรี CICOT รับรอง ขั้นต่ำ 20 กล่อง ส่งฟรี 50+ กล่อง ส่งตรงเวลา 98% ทัก LINE แจ้งวันและจำนวน — ทีมงานส่งใบเสนอราคาให้ภายในวัน
           </p>
 
           <!-- Stats Row -->
           <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:2rem">
             <div style="background:var(--primary-soft);border-radius:var(--radius);padding:0.85rem 1.25rem;text-align:center">
-              <div style="font-size:1.5rem;font-weight:900;color:var(--primary)">98%</div>
-              <div style="font-size:0.7rem;opacity:0.65;font-weight:700;letter-spacing:0.05em">ส่งตรงเวลา</div>
+              <div style="font-size:1.5rem;font-weight:800;color:var(--primary)">98%</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;letter-spacing:0.05em">ส่งตรงเวลา</div>
             </div>
             <div style="background:var(--primary-soft);border-radius:var(--radius);padding:0.85rem 1.25rem;text-align:center">
-              <div style="font-size:1.5rem;font-weight:900;color:var(--primary)">20+</div>
-              <div style="font-size:0.7rem;opacity:0.65;font-weight:700;letter-spacing:0.05em">กล่องขั้นต่ำ</div>
+              <div style="font-size:1.5rem;font-weight:800;color:var(--primary)">20+</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;letter-spacing:0.05em">กล่องขั้นต่ำ</div>
             </div>
             <div style="background:var(--primary-soft);border-radius:var(--radius);padding:0.85rem 1.25rem;text-align:center">
-              <div style="font-size:1.5rem;font-weight:900;color:var(--primary)">CICOT</div>
-              <div style="font-size:0.7rem;opacity:0.65;font-weight:700;letter-spacing:0.05em">ฮาลาลเซอร์ต</div>
+              <div style="font-size:1.5rem;font-weight:800;color:var(--primary)">CICOT</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;letter-spacing:0.05em">ฮาลาลเซอร์ต</div>
             </div>
           </div>
 
@@ -332,8 +386,8 @@
       <div class="container">
         <div style="max-width:48rem;margin-bottom:3rem">
           <div class="section-label">พื้นที่ให้บริการ</div>
-          <h2 style="font-size:2rem;font-weight:900;line-height:1.2;margin-top:1.25rem">ครอบคลุมทุกจุดในย่านพระราม 3</h2>
-          <p style="margin-top:1rem;font-size:0.92rem;line-height:1.8;opacity:0.65">บอกวัน จำนวน และจุดส่งมาได้เลย ทีมงานช่วยเช็กรอบส่งให้เหมาะกับนางลิ้นจี่ เจริญราษฎร์ และช่องนนทรี พร้อมออกใบเสนอราคาภายในวัน</p>
+          <h2 style="font-size:2rem;font-weight:800;line-height:1.2;margin-top:1.25rem">ครอบคลุมทุกจุดในย่านพระราม 3</h2>
+          <p style="margin-top:1rem;font-size:0.92rem;line-height:1.8;color:var(--text-muted)">บอกวัน จำนวน และจุดส่งมาได้เลย ทีมงานช่วยเช็กรอบส่งให้เหมาะกับนางลิ้นจี่ เจริญราษฎร์ และช่องนนทรี พร้อมออกใบเสนอราคาภายในวัน</p>
         </div>
         <div class="grid-3" style="gap:1.25rem">
           <div class="card card-sm">
@@ -361,37 +415,42 @@
         <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;margin-bottom:3rem">
           <div style="max-width:42rem">
             <div class="section-label">เมนูยอดนิยม</div>
-            <h2 style="font-size:2rem;font-weight:900;line-height:1.2;margin-top:1rem">เมนูฮาลาลที่องค์กรย่านพระราม 3 เลือกบ่อย</h2>
-            <p style="margin-top:1rem;font-size:0.92rem;line-height:1.8;opacity:0.65">เหมาะกับออฟฟิศและโครงการที่ต้องคุมรอบส่ง ถ้าอยากเริ่มจากเมนูที่ทีมงานสั่งซ้ำบ่อย ลองดูชุดนี้ก่อน</p>
+            <h2 style="font-size:2rem;font-weight:800;line-height:1.2;margin-top:1rem">เมนูฮาลาลที่องค์กรย่านพระราม 3 เลือกบ่อย</h2>
+            <p style="margin-top:1rem;font-size:0.92rem;line-height:1.8;color:var(--text-muted)">เหมาะกับออฟฟิศและโครงการที่ต้องคุมรอบส่ง ถ้าอยากเริ่มจากเมนูที่ทีมงานสั่งซ้ำบ่อย ลองดูชุดนี้ก่อน</p>
           </div>
           <a href="popular-menu.html" class="btn btn-outline">ดูเมนูทั้งหมด</a>
         </div>
         <div class="grid-3">
           <article class="menu-card">
-            <img src="img/khao-mok-hero-opt.jpg" alt="ข้าวหมกไก่ฮาลาล EED HALAL สำหรับองค์กรเขตพระราม 3" class="menu-card-img" width="400" height="200" loading="lazy">
+            <img src="img/Authentic Thai Pad See Ew.png" alt="ผัดซีอิ้ว EED HALAL" class="menu-card-img" width="400" height="200" loading="lazy">
             <div class="menu-card-body">
-              <div class="menu-card-tag">ข้าวกล่อง • ยอดนิยม</div>
-              <h3 class="menu-card-name">ข้าวหมกไก่</h3>
-              <p class="menu-card-desc">ข้าวหมกไก่สูตรต้นตำรับ หอมเครื่องเทศเข้มข้น ข้าวเหลืองนุ่ม เนื้อไก่หมักเครื่องย่างฉ่ำ เสิร์ฟพร้อมซอสพิเศษ เมนูโปรดขององค์กรย่านพระราม 3</p>
-              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สอบถามราคา →</a>
+              <div class="menu-card-tag">เส้น • ผัดซีอิ๊ว</div>
+              <h3 class="menu-card-name">ผัดซีอิ้ว</h3>
+              <p class="menu-card-desc">เส้นใหญ่ผัดซีอิ๊วหอมกลิ่นกระทะ ใส่กุ้งสด คะน้าสด โรยกระเทียมเจียว เสิร์ฟพร้อมมะนาวและพริกป่น เมนูอิ่มท้องที่องค์กรย่านพระราม 3 เลือกสั่งบ่อย</p>
+              <div style="font-size:1.1rem;font-weight:800;color:var(--accent);margin-top:0.75rem;letter-spacing:-0.02em">100 บาท</div>
+              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สั่งเมนูนี้ →</a>
             </div>
           </article>
+
           <article class="menu-card">
-            <img src="img/mealbox-kaprao-opt.jpg" alt="ข้าวผัดกระเพราฮาลาล EED HALAL เขตนางลิ้นจี่" class="menu-card-img" width="400" height="200" loading="lazy">
+            <img src="img/Wok-Seared Dry Chili Beef Basil Fried Rice.png" alt="ผัดกะเพราเนื้อ EED HALAL" class="menu-card-img" width="400" height="200" loading="lazy">
             <div class="menu-card-body">
-              <div class="menu-card-tag">ข้าวกล่อง • คลาสสิก</div>
-              <h3 class="menu-card-name">ข้าวผัดไก่กระเพราไข่ดาว</h3>
-              <p class="menu-card-desc">ข้าวผัดกระเพราไก่รสจัดจ้าน ใส่พริกสด กระเทียมบด โหระพาเขียว เสิร์ฟพร้อมไข่ดาวขอบกรอบ รสชาติที่คุ้นเคยและถูกใจทุกคนในทีม</p>
-              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สอบถามราคา →</a>
+              <div class="menu-card-tag">ผัดกะเพรา • พิเศษ</div>
+              <h3 class="menu-card-name">ผัดกะเพราเนื้อ</h3>
+              <p class="menu-card-desc">เนื้อนุ่มผัดกะเพราสูตรพิเศษ ใส่พริกแห้งเพิ่มความหอม กระเทียม โหระพาสด เสิร์ฟพร้อมข้าวสวยร้อน ๆ เมนูเด็ดที่ทีมงานย่านพระราม 3 ชอบสั่ง</p>
+              <div style="font-size:1.1rem;font-weight:800;color:var(--accent);margin-top:0.75rem;letter-spacing:-0.02em">90 บาท</div>
+              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สั่งเมนูนี้ →</a>
             </div>
           </article>
+
           <article class="menu-card">
-            <img src="img/vip-thai-fusion-set-opt.jpg" alt="เซ็ตอาหารฮาลาล EED HALAL งานองค์กรเขตเจริญราษฎร์" class="menu-card-img" width="400" height="200" loading="lazy">
+            <img src="img/Premium Tender Beef Crispy Noodles.png" alt="ราดหน้าเนื้อ EED HALAL" class="menu-card-img" width="400" height="200" loading="lazy">
             <div class="menu-card-body">
-              <div class="menu-card-tag">เซ็ตพิเศษ • งานองค์กร</div>
-              <h3 class="menu-card-name">เซ็ตไทยฟิวชั่น Halal</h3>
-              <p class="menu-card-desc">ข้าวกล่องไทยฟิวชั่น + ซุปใส + ผลไม้สดตามฤดูกาล + น้ำดื่ม ครบชุดสำหรับงานเลี้ยงองค์กรและประชุมสำคัญในย่านพระราม 3</p>
-              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สอบถามราคา →</a>
+              <div class="menu-card-tag">ราดหน้า • พิเศษ</div>
+              <h3 class="menu-card-name">ราดหน้าเนื้อ</h3>
+              <p class="menu-card-desc">ราดหน้าเส้นใหญ่เนื้อนุ่ม ใส่คะน้า แครอท เห็ดหอม ราดซอสเหนียวข้นหอม ๆ โรยกระเทียมเจียว เมนูอุ่นใจที่องค์กรย่านพระราม 3 เลือกสั่งประจำ</p>
+              <div style="font-size:1.1rem;font-weight:800;color:var(--accent);margin-top:0.75rem;letter-spacing:-0.02em">90 บาท</div>
+              <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="card-link">สั่งเมนูนี้ →</a>
             </div>
           </article>
         </div>
@@ -403,7 +462,7 @@
       <div class="container">
         <div style="max-width:48rem;margin-bottom:3.5rem">
           <div class="section-label">ทำไมต้องเลือกเรา</div>
-          <h2 style="font-size:2.25rem;font-weight:900;line-height:1.2;letter-spacing:-0.02em;margin-top:1.25rem">ส่งตรงเวลา 98% พร้อมเอกสารครบ —<br>ความมั่นใจที่องค์กรพระราม 3 ไว้ใจ</h2>
+          <h2 style="font-size:2.25rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1.25rem">ส่งตรงเวลา 98% พร้อมเอกสารครบ —<br>ความมั่นใจที่องค์กรพระราม 3 ไว้ใจ</h2>
         </div>
         <div class="grid-2" style="gap:1.25rem">
           <div class="why-card">
@@ -469,28 +528,28 @@
       <div class="container">
         <div style="max-width:48rem;margin:0 auto;text-align:center;margin-bottom:3rem">
           <div class="section-label section-label-center">ข้อมูลเพิ่มเติม</div>
-          <h2 style="font-size:1.75rem;font-weight:900;line-height:1.3;margin-top:1.25rem">ดูข้อมูลที่เกี่ยวข้องสำหรับองค์กรของคุณ</h2>
+          <h2 style="font-size:1.75rem;font-weight:800;line-height:1.3;margin-top:1.25rem">ดูข้อมูลที่เกี่ยวข้องสำหรับองค์กรของคุณ</h2>
         </div>
         <div class="grid-2" style="max-width:900px;margin:0 auto;gap:1.5rem">
-          <a href="corporate.html" style="display:block;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--white);padding:2rem;transition:transform 0.3s,box-shadow 0.3s;text-decoration:none" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <a href="corporate.html" style="display:block;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--white);padding:2rem;transition:all var(--transition);text-decoration:none" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
             <div style="display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:var(--radius);background:var(--primary-soft);color:var(--primary);margin-bottom:1rem">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
             </div>
-            <div style="font-size:0.6rem;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent)">บริการองค์กร</div>
-            <div style="font-size:1.1rem;font-weight:900;color:var(--primary);margin-top:0.5rem">ข้าวกล่องฮาลาลสำหรับองค์กร</div>
-            <p style="font-size:0.85rem;line-height:1.7;opacity:0.65;margin-top:0.75rem">ดูรายละเอียดแพ็กเกจ ราคา และเงื่อนไขสำหรับออเดอร์องค์กร พร้อมข้อมูลการออกเอกสารองค์กรและเบิกจ่าย</p>
+            <div style="font-size:0.6rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent)">บริการองค์กร</div>
+            <div style="font-size:1.1rem;font-weight:800;color:var(--primary);margin-top:0.5rem">ข้าวกล่องฮาลาลสำหรับองค์กร</div>
+            <p style="font-size:0.85rem;line-height:1.7;color:var(--text-muted);margin-top:0.75rem">ดูรายละเอียดแพ็กเกจ ราคา และเงื่อนไขสำหรับออเดอร์องค์กร พร้อมข้อมูลการออกเอกสารองค์กรและเบิกจ่าย</p>
             <div style="display:flex;align-items:center;gap:0.35rem;font-size:0.85rem;font-weight:800;color:var(--primary);margin-top:1.25rem">
               ดูบริการออเดอร์องค์กร
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </div>
           </a>
-          <a href="halal-cert.html" style="display:block;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--white);padding:2rem;transition:transform 0.3s,box-shadow 0.3s;text-decoration:none" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <a href="halal-cert.html" style="display:block;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--white);padding:2rem;transition:all var(--transition);text-decoration:none" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
             <div style="display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:var(--radius);background:var(--primary-soft);color:var(--primary);margin-bottom:1rem">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
-            <div style="font-size:0.6rem;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent)">ความน่าเชื่อถือ</div>
-            <div style="font-size:1.1rem;font-weight:900;color:var(--primary);margin-top:0.5rem">ใบรับรองฮาลาล CICOT</div>
-            <p style="font-size:0.85rem;line-height:1.7;opacity:0.65;margin-top:0.75rem">ดูใบรับรองฮาลาลจริงจาก CICOT พร้อมข้อมูลขั้นตอนการรับรองและมาตรฐานที่เราปฏิบัติตามอย่างเคร่งครัด</p>
+            <div style="font-size:0.6rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent)">ความน่าเชื่อถือ</div>
+            <div style="font-size:1.1rem;font-weight:800;color:var(--primary);margin-top:0.5rem">ใบรับรองฮาลาล CICOT</div>
+            <p style="font-size:0.85rem;line-height:1.7;color:var(--text-muted);margin-top:0.75rem">ดูใบรับรองฮาลาลจริงจาก CICOT พร้อมข้อมูลขั้นตอนการรับรองและมาตรฐานที่เราปฏิบัติตามอย่างเคร่งครัด</p>
             <div style="display:flex;align-items:center;gap:0.35rem;font-size:0.85rem;font-weight:800;color:var(--primary);margin-top:1.25rem">
               ดูใบรับรองฮาลาล
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -545,9 +604,9 @@
 
     <!-- ─── CTA Section ─── -->
     <section class="section section-dark">
-      <div class="container text-center">
+      <div class="container text-center" style="position:relative;z-index:1">
         <div class="section-label section-label-center" style="color:var(--accent)">ติดต่อเรา</div>
-        <h2 style="font-size:2.25rem;font-weight:900;line-height:1.2;letter-spacing:-0.02em;margin-top:1.5rem;color:var(--white)">พร้อมจัดส่งข้าวกล่องฮาลาล<br>ถึงออฟฟิศย่านพระราม 3 ของคุณ</h2>
+        <h2 style="font-size:2.25rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1.5rem;color:var(--white)">พร้อมจัดส่งข้าวกล่องฮาลาล<br>ถึงออฟฟิศย่านพระราม 3 ของคุณ</h2>
         <p style="max-width:38rem;margin:1.5rem auto 0;font-size:1rem;line-height:1.8;opacity:0.75">บอกจำนวน วันที่ต้องการ และสถานที่ส่ง ทีมงาน EED HALAL แนะนำเมนูและส่งใบเสนอราคากลับให้ภายในวันเดียวกัน</p>
         <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:1rem;margin-top:2.5rem">
           <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="btn btn-accent" style="font-size:1rem;padding:0.9rem 2rem">
