@@ -15,7 +15,7 @@
 
 ## Published Facts
 - Corporate website and LINE flow are designed for 20+ box orders.
-- Standard meal boxes start at 70 THB per box.
+- Standard meal boxes start at 55 THB per box.
 - Orders of 50+ boxes receive free delivery in Bangkok.
 - 20-50 box corporate orders should usually be placed 2-3 business days in advance.
 - Order quantity, menu, delivery time, and delivery point should be confirmed by 15:00 on the business day before delivery.

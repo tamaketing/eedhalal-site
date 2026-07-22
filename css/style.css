@@ -1789,63 +1789,232 @@ main[data-urgency] > .page-header { padding-top: 5rem; }
   .calc-chip { font-size: 0.72rem; padding: 0.25rem 0.55rem;   }
 }
 
-/* ─── Discount Popup Modal ─── */
-.discount-overlay {
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,0.55);
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; visibility: hidden;
-  transition: opacity 0.35s ease, visibility 0.35s ease;
-}
-.discount-overlay.active {
-  opacity: 1; visibility: visible;
-}
-.discount-modal {
+
+/* ─── Menu Cards ─── */
+.menu-card {
   background: var(--white);
-  border-radius: var(--radius-lg);
-  padding: 2.5rem 2rem 2rem;
-  max-width: 420px; width: 90%;
-  position: relative;
-  box-shadow: var(--shadow-xl);
-  transform: translateY(20px) scale(0.96);
-  transition: transform 0.35s ease;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
 }
-.discount-overlay.active .discount-modal {
-  transform: translateY(0) scale(1);
+
+.menu-card-image {
+  width: 100%;
+  aspect-ratio: 2/1;
+  overflow: hidden;
 }
-.discount-modal .close-btn {
-  position: absolute; top: 0.75rem; right: 1rem;
-  background: none; border: none;
-  font-size: 1.5rem; cursor: pointer;
-  color: var(--text-muted); line-height: 1;
-  padding: 0.25rem; transition: color var(--transition-fast);
+
+.menu-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-.discount-modal .close-btn:hover { color: var(--text); }
-.discount-modal h3 {
-  font-size: 1.35rem; font-weight: 800;
-  color: var(--primary); margin-bottom: 1rem;
-  text-align: center;
+
+.menu-card-body {
+  padding: 1.5rem;
 }
-.discount-modal p {
-  font-size: 0.85rem; color: var(--text-muted);
-  text-align: center; margin-top: 1rem;
+
+.menu-card-title {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--text);
+  margin-bottom: 0.3rem;
 }
-.discount-modal .discount-table {
-  width: 100%; border-collapse: collapse;
-  font-size: 0.95rem;
+
+.menu-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
-.discount-modal .discount-table th,
-.discount-modal .discount-table td {
-  padding: 0.7rem 1rem; border: 1px solid var(--border);
-  text-align: center;
+
+.menu-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--text);
 }
-.discount-modal .discount-table th {
-  background: var(--primary); color: var(--white);
+
+.menu-item-name {
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.menu-item-dots {
+  flex: 1;
+  min-width: 1rem;
+  border-bottom: 1px dotted var(--border);
+}
+
+.menu-tier {
+  display: inline-block;
+  font-size: 0.7rem;
   font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
 }
-.discount-modal .discount-table td:last-child {
-  font-weight: 700; color: var(--accent);
-  font-size: 1.05rem;
+
+/* ─── Tier Reference ─── */
+.tier-reference {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  max-width: 36rem;
+  margin: 0 auto;
+}
+
+.tier-ref-item {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.tier-ref-price {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.tier-ref-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tier-ref-note {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ─── Food Gallery Carousel ─── */
+.food-gallery {
+  margin-top: 3rem;
+}
+
+.food-gallery-title {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.food-carousel {
+  overflow: hidden;
+  position: relative;
+}
+
+.food-carousel::before,
+.food-carousel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.food-carousel::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--bg), transparent);
+}
+
+.food-carousel::after {
+  right: 0;
+  background: linear-gradient(-90deg, var(--bg), transparent);
+}
+
+.food-track {
+  display: flex;
+  gap: 1rem;
+  animation: scrollFood 40s linear infinite;
+  width: max-content;
+}
+
+.food-carousel:hover .food-track {
+  animation-play-state: paused;
+}
+
+.food-slide {
+  flex-shrink: 0;
+  width: 260px;
+  aspect-ratio: 4/3;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.food-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.food-slide img:hover {
+  transform: scale(1.08);
+}
+
+@keyframes scrollFood {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ─── FAQ Section ─── */
+.faq-section {
+  margin-top: 3rem;
+}
+
+.faq-section .faq-answer {
+  display: block;
+}
+
+.faq-section .faq-question {
+  cursor: default;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.3rem;
+}
+
+.faq-section .faq-item {
+  padding: 1rem 1.25rem;
+}
+
+.faq-heading {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .menu-card-body { padding: 1.25rem; }
+  .tier-reference { gap: 0.4rem; }
+  .tier-ref-item { padding: 0.4rem 0.75rem; }
+  .tier-ref-price { font-size: 0.95rem; }
+  .tier-ref-label { font-size: 0.65rem; }
+  .tier-ref-note { font-size: 0.6rem; }
+  .menu-tier { font-size: 0.6rem; padding: 0.15rem 0.5rem; }
+  .food-gallery { margin-top: 2rem; }
+  .food-gallery-title { font-size: 1.05rem; }
+  .food-slide { width: 180px; }
+  .food-carousel::before,
+  .food-carousel::after { width: 24px; }
+  .faq-section { margin-top: 2rem; }
+  .faq-heading { font-size: 1.05rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1856,7 +2025,8 @@ main[data-urgency] > .page-header { padding-top: 5rem; }
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
-  .logo-track {
+  .logo-track,
+  .food-track {
     animation: none !important;
     transform: none !important;
   }

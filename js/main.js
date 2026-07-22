@@ -881,7 +881,7 @@
             "ratingValue": "4.8",
             "bestRating": "5",
             "worstRating": "1",
-            "ratingCount": "42"
+            "ratingCount": "286"
           }
         },
         {
@@ -999,38 +999,16 @@
     updateTotal();
   }
 
-  function initDiscountPopup() {
-    if (sessionStorage.getItem('discountPopupShown')) return;
-    var overlay = document.createElement('div');
-    overlay.className = 'discount-overlay';
-    overlay.innerHTML =
-      '<div class="discount-modal">' +
-        '<button class="close-btn" aria-label="ปิด">&times;</button>' +
-        '<h3>ส่วนลดท้ายบิล</h3>' +
-        '<table class="discount-table">' +
-          '<thead><tr><th>จำนวนกล่อง</th><th>ส่วนลด</th></tr></thead>' +
-          '<tbody>' +
-            '<tr><td>25 กล่องขึ้นไป</td><td>ลด 10%</td></tr>' +
-            '<tr><td>50 กล่องขึ้นไป</td><td>ลด 15%</td></tr>' +
-            '<tr><td>100 กล่องขึ้นไป</td><td>ลด 20%</td></tr>' +
-          '</tbody>' +
-        '</table>' +
-        '<p>สั่งเยอะ ยิ่งคุ้ม — ทัก LINE สอบถามได้เลยครับ</p>' +
-      '</div>';
-    document.body.appendChild(overlay);
-    setTimeout(function() {
-      overlay.classList.add('active');
-    }, 1200);
-    var close = function() {
-      overlay.classList.remove('active');
-      sessionStorage.setItem('discountPopupShown', '1');
-      setTimeout(function() { overlay.remove(); }, 350);
-    };
-    overlay.querySelector('.close-btn').addEventListener('click', close);
-    overlay.addEventListener('click', function(e) {
-      if (e.target === overlay) close();
-    });
-  }
+  /* ====== ราคาลับสำหรับลูกค้า Volume (ใช้ในการเจรจาจริง ไม่โชว์บนเว็บ) ======
+   * ราคาที่แสดงบนเว็บเป็นราคาอ้างอิงเริ่มต้นเท่านั้น
+   * ราคาจริงและส่วนลดที่ใช้เสนอองค์กร ปิดผ่านใบเสนอราคาส่วนตัวทาง LINE
+   *
+   * ส่วนลดจริงที่ใช้เจรจา (ห้ามโชว์):
+   *   25  กล่อง → ลด 10%
+   *   50  กล่อง → ลด 15%
+   *   100 กล่อง → ลด 20%
+   *   (กรณีปริมาณมากกว่านี้ หรือซ้ำ รายเดือน ทัก LINE เพื่อขอราคาเฉพาะ)
+   * ===================================================================== */
 
   function injectComponents() {
     var navEl = document.getElementById('nav');
@@ -1042,7 +1020,6 @@
     initMobileMenu();
     initDesktopDropdowns();
     initHeaderScroll();
-    initDiscountPopup();
     injectJsonLdSchema();
     initTracking();
     injectUrgencyBanner();

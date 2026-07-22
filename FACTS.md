@@ -6,7 +6,7 @@
 
 ## 1. ราคาเริ่มต้น (Starting Price)
 
-| ค่า | 70 THB/box |
+| ค่า | 55 THB/box |
 |-----|-----------|
 | FAQ (source of truth) | `faq.html` — ข้อความ Q3 + JSON-LD FAQPage |
 | llms.txt | `llms.txt:19` |
@@ -112,6 +112,8 @@
 | FAQ (source of truth) | `faq.html` — Q1 |
 | llms.txt | `llms.txt:26` |
 | llms-full.md | `llms-full.md:76` |
+
+**แก้ไขล่าสุด:** ลบ HL 926/2566 ทิ้งทั้งหมด ใช้ HL-2024-0892 ให้เอกภาพทั้งเว็บ (TH + EN, blog, schema, location pages)
 
 ---
 
