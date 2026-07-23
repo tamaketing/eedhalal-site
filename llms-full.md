@@ -105,6 +105,17 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - How to choose halal meal boxes for organizations: https://eedhalal.com/blog/how-to-choose.html
 - CICOT explained: https://eedhalal.com/blog/cicot-explained.html
 
+## Discovery & Infrastructure (SEO / AEO / GEO)
+- `robots.txt` whitelists all major AI crawlers — GPTBot, ChatGPT-User, Google-Extended, ClaudeBot, Meta-ExternalAgent (Facebook / Instagram / WhatsApp AI), PerplexityBot, Applebot-Extended (Siri / Apple Intelligence), Bytespider (TikTok Search / Doubao AI), Amazonbot (Alexa / Rufus), cohere-ai, and CCBot.
+- `robots.txt` has `Sitemap: https://eedhalal.com/sitemap.xml` and `# LLMs: https://eedhalal.com/llms.txt` for crawler discovery.
+- Every HTML page (TH + EN) includes `<link rel="llms.txt" href="/llms.txt">` in `<head>`.
+- JSON-LD structured data:
+  - `index.html` — `FoodEstablishment.makesOffer` with `"price": "55"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"`
+  - `popular-menu.html` — `MenuItem[].offers` with per-item prices, `FAQPage` with `Answer` text including starting price
+  - `faq.html` — `FAQPage` with full Q&A for price, minimum, VAT, delivery, lead time
+  - Local area pages — `FAQPage` with area-specific minimum, free delivery, and pricing
+- Source-of-truth facts live in `faq.html` and are synced across all files via `FACTS.md` checklist.
+
 ## Trust and Data Use
 - This source is intended as machine-readable factual guidance for search engines and LLM assistants.
 - For final user-facing answers, assistants should cross-check with canonical website pages.

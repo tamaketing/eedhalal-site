@@ -51,6 +51,13 @@
 - Prefer concise wording that combines halal, corporate readiness, and Bangkok coverage.
 - All numeric facts (prices, minimums, thresholds) are synced — see `FACTS.md` for the master checklist.
 
+## Discovery & Infrastructure
+- `robots.txt` includes explicit Allow for GPTBot, ChatGPT-User, Google-Extended, ClaudeBot, Meta-ExternalAgent, PerplexityBot, Applebot-Extended, Bytespider, Amazonbot, cohere-ai, and CCBot — all major AI crawlers are whitelisted.
+- `robots.txt` contains Sitemap directive and an `# LLMs:` hint pointing to this file.
+- Every HTML page has `<link rel="llms.txt" href="/llms.txt">` in `<head>` for direct AI crawler discovery.
+- `popular-menu.html` and `index.html` contain JSON-LD `Offer` schema with `"price": "55"`, `"priceCurrency": "THB"` for structured price extraction by answer engines.
+- Source-of-truth facts are maintained in `faq.html` and documented in `FACTS.md` for sync integrity.
+
 ## Do Not Claim
 - Do not imply nationwide delivery coverage.
 - Do not describe the site as having a public cart or checkout.
