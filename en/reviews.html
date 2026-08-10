@@ -12,9 +12,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Halal Meal Box Reviews | EED HALAL</title>
   <meta name="description" content="Corporate client reviews for halal meal box and catering services from EED HALAL. Feedback from leading organizations in Bangkok.">
-  <link rel="canonical" href="https://eedhalal.com/en/reviews.html">
+<link rel="canonical" href="https://eedhalal.com/en/reviews.html">
+<link rel="llms.txt" href="/llms.txt">
   <link rel="alternate" hreflang="th" href="https://eedhalal.com/reviews.html">
   <link rel="alternate" hreflang="en" href="https://eedhalal.com/en/reviews.html">
+  <link rel="alternate" hreflang="x-default" href="https://eedhalal.com/reviews.html">
   <link rel="stylesheet" href="../css/style.css">
   <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
   <link rel="apple-touch-icon" href="/img/logo.jpg">
@@ -37,6 +39,22 @@
     "@context": "https://schema.org",
     "@graph": [
       {
+        "@type": ["FoodEstablishment", "LocalBusiness"],
+        "@id": "https://eedhalal.com/#organization",
+        "name": "EED HALAL",
+        "url": "https://eedhalal.com/",
+        "image": "https://eedhalal.com/img/khao-mok-hero-opt.jpg",
+        "telephone": "+66988715179",
+        "servesCuisine": ["Halal", "Thai"],
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "478/3 Sathon 1 Soi 7, Thung Wat Don, Sathon",
+          "addressLocality": "Bangkok",
+          "postalCode": "10120",
+          "addressCountry": "TH"
+        }
+      },
+      {
         "@type": "CollectionPage",
         "@id": "https://eedhalal.com/en/reviews.html#webpage",
         "name": "Client Reviews | EED HALAL",
@@ -57,6 +75,8 @@
               "position": 1,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/en/reviews.html#review-1",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "Ordered 50 boxed meals for our 3-day seminar. EED HALAL varied the menu so staff didn't get bored. Delivered at 8:30 AM sharp every day — hot, clean, and impressive.",
                 "reviewRating": {
                   "@type": "Rating",
@@ -74,6 +94,8 @@
               "position": 2,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/en/reviews.html#review-2",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "Catered for 120 executives at our hospital. Arrived early with full Halal certification paperwork ready. Our nursing team loved the food — we've already reordered.",
                 "reviewRating": {
                   "@type": "Rating",
@@ -91,6 +113,8 @@
               "position": 3,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/en/reviews.html#review-3",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "Ordered 200 boxes for our Open House — both chicken and beef options. 100% order accuracy. Tax invoices were all complete. No need to chase anything afterward.",
                 "reviewRating": {
                   "@type": "Rating",
@@ -108,6 +132,8 @@
               "position": 4,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/en/reviews.html#review-4",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "Catered our graduation ceremony for 80 students + 20 teachers. Each box had a menu-name sticker. Our teachers complimented the packaging and how appetizing the food looked.",
                 "reviewRating": {
                   "@type": "Rating",
@@ -125,6 +151,8 @@
               "position": 5,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/en/reviews.html#review-5",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "Live event day — messaged at noon asking for 60 boxes by 3 PM. EED HALAL handled the rush order with no issues. On time, complete, nothing missing.",
                 "reviewRating": {
                   "@type": "Rating",
@@ -142,6 +170,8 @@
               "position": 6,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/en/reviews.html#review-6",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "First order was 40 boxes to test quality. Staff liked it so much we immediately bumped to 100 boxes on the second order. Great value and reliability.",
                 "reviewRating": {
                   "@type": "Rating",

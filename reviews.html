@@ -12,8 +12,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>รีวิวข้าวกล่องฮาลาล EED HALAL จากลูกค้าองค์กร</title>
   <meta name="description" content="รีวิวข้าวกล่องฮาลาลและรีวิวจัดเลี้ยงฮาลาลองค์กรจากลูกค้าของ EED HALAL เสียงตอบรับจากองค์กรชั้นนำในกรุงเทพฯ ส่งตรงเวลา ครบตามออเดอร์">
-  <link rel="canonical" href="https://eedhalal.com/reviews.html">
+<link rel="canonical" href="https://eedhalal.com/reviews.html">
+<link rel="llms.txt" href="/llms.txt">
   <link rel="alternate" hreflang="en" href="https://eedhalal.com/en/reviews.html">
+  <link rel="alternate" hreflang="x-default" href="https://eedhalal.com/reviews.html">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
   <link rel="apple-touch-icon" href="/img/logo.jpg">
@@ -36,6 +38,22 @@
   {
     "@context": "https://schema.org",
     "@graph": [
+      {
+        "@type": ["FoodEstablishment", "LocalBusiness"],
+        "@id": "https://eedhalal.com/#organization",
+        "name": "EED HALAL",
+        "url": "https://eedhalal.com/",
+        "image": "https://eedhalal.com/img/khao-mok-hero-opt.jpg",
+        "telephone": "+66988715179",
+        "servesCuisine": ["Halal", "Thai"],
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "478/3 ถนนสาทร 1 ซอย 7 แขวงทุ่งวัด เขตสาทร",
+          "addressLocality": "กรุงเทพมหานคร",
+          "postalCode": "10120",
+          "addressCountry": "TH"
+        }
+      },
       {
         "@type": "CollectionPage",
         "@id": "https://eedhalal.com/reviews.html#webpage",
@@ -61,6 +79,8 @@
               "position": 1,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/reviews.html#review-1",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "สั่งข้าวกล่อง 50 กล่องสำหรับทีมสัมมนา 3 วันติด EED HALAL จัดเมนูหลากหลายให้พนักงานไม่อิ่มเบื่อ ส่งตรง 8.30 น. ทุกวัน อาหารร้อน สะอาด ประทับใจมาก",
                 "reviewRating": {
                   "@type": "Rating",
@@ -78,6 +98,8 @@
               "position": 2,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/reviews.html#review-2",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "ใช้บริการจัดเลี้ยงผู้บริหาร 120 คนที่รพ.เรา มาส่งก่อนเวลา + จัดเตรียมเอกสารฮาลาลเซอร์ตให้พร้อม ทีมพยาบาลกินกันเพลินเลย สั่งซ้ำรอบสองแล้ว",
                 "reviewRating": {
                   "@type": "Rating",
@@ -95,6 +117,8 @@
               "position": 3,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/reviews.html#review-3",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "เราสั่งข้าวกล่อง 200 กล่องไปงาน Open House ทั้งเมนูไก่และเนื้อ ครบตามออเดอร์ 100% ใบกำกับภาษีมาครบถ้วน ไม่ต้องตามเรื่องทีหลัง",
                 "reviewRating": {
                   "@type": "Rating",
@@ -112,6 +136,8 @@
               "position": 4,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/reviews.html#review-4",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "จัดเลี้ยงวันปัจฉิมให้นักเรียน 80 คน + ครู 20 คน แต่ละกล่องมีสติกเกอร์ชื่อเมนูติดให้ ครูชมว่าอาหารน่ากิน แพ็กเกจจิ้งสวย",
                 "reviewRating": {
                   "@type": "Rating",
@@ -129,6 +155,8 @@
               "position": 5,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/reviews.html#review-5",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "ไลฟ์การาจวันจัดอีเวนต์ ทักไปตอนเที่ยง ขอ 60 กล่องส่งบ่ายสาม EED HALAL รับออเดอร์ด่วนได้จริง ส่งตรงเวลา ครบถ้วน ไม่มีตกหล่น",
                 "reviewRating": {
                   "@type": "Rating",
@@ -146,6 +174,8 @@
               "position": 6,
               "item": {
                 "@type": "Review",
+                "@id": "https://eedhalal.com/reviews.html#review-6",
+                "itemReviewed": { "@id": "https://eedhalal.com/#organization" },
                 "reviewBody": "รอบแรกสั่ง 40 กล่องทดลองคุณภาพ พนักงานชอบกันมาก รอบสองเลยเพิ่มเป็น 100 กล่องทันที ตอบโจทย์เรื่องความคุ้มค่าและน่าเชื่อถือ",
                 "reviewRating": {
                   "@type": "Rating",

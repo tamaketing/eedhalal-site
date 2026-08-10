@@ -20,6 +20,7 @@
   var FAQ_PATH = EN_PREFIX + '/faq.html';
   var SATHORN_PATH = EN_PREFIX + '/sathorn.html';
   var SILOM_PATH = EN_PREFIX + '/silom.html';
+  var SATHORN_SILOM_PATH = EN_PREFIX + '/sathorn-silom.html';
 
   var SUKHUMVIT_PATH = EN_PREFIX + '/sukhumvit.html';
   var RAMA3_PATH = EN_PREFIX + '/rama3.html';
@@ -586,7 +587,7 @@
       <div class="footer-links">\
         <a href="' + SATHORN_PATH + '">Sathon</a>\
         <a href="' + SILOM_PATH + '">Silom</a>\
-        <a href="' + SATHORN_PATH + '">Sathon - Silom</a>\
+        <a href="' + SATHORN_SILOM_PATH + '">Sathon - Silom</a>\
         <a href="' + SUKHUMVIT_PATH + '">Sukhumvit</a>\
         <a href="' + RAMA3_PATH + '">Rama 3</a>\
         <a href="' + LADPRAO_PATH + '">Lat Phrao</a>\
@@ -650,7 +651,7 @@
       <div class="footer-links">\
         <a href="' + SATHORN_PATH + '">\u0e2a\u0e32\u0e17\u0e23</a>\
         <a href="' + SILOM_PATH + '">\u0e2a\u0e35\u0e25\u0e21</a>\
-        <a href="' + SATHORN_PATH + '">\u0e2a\u0e32\u0e17\u0e23 - \u0e2a\u0e35\u0e25\u0e21</a>\
+        <a href="' + SATHORN_SILOM_PATH + '">\u0e2a\u0e32\u0e17\u0e23 - \u0e2a\u0e35\u0e25\u0e21</a>\
         <a href="' + SUKHUMVIT_PATH + '">\u0e2a\u0e38\u0e02\u0e38\u0e21\u0e27\u0e34\u0e17</a>\
         <a href="' + RAMA3_PATH + '">\u0e1e\u0e23\u0e30\u0e23\u0e32\u0e21 3</a>\
         <a href="' + LADPRAO_PATH + '">\u0e25\u0e32\u0e14\u0e1e\u0e23\u0e49\u0e32\u0e27</a>\
