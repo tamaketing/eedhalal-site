@@ -2031,3 +2031,42 @@ main[data-urgency] > .page-header { padding-top: 5rem; }
     transform: none !important;
   }
 }
+
+/* ─── Sticky LINE CTA (mobile) ─── */
+.sticky-line-cta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--accent);
+  color: var(--white);
+  font-weight: 800;
+  font-size: 1.02rem;
+  padding: 0.9rem 1rem;
+  text-align: center;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sticky-line-cta:hover,
+.sticky-line-cta:focus,
+.sticky-line-cta:active {
+  color: var(--white);
+  text-decoration: none;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding-bottom: calc(3.6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .sticky-line-cta {
+    display: flex;
+    padding-bottom: calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  }
+}

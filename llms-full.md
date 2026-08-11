@@ -47,7 +47,7 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 ## Bulk Order Facts
 - The website is designed around organization-ready orders, especially 20+ meal boxes.
 - Typical use cases include meetings, seminars, staff training, internal company events, and team catering.
-- Standard meal boxes start at 55 THB per box according to the FAQ.
+- Standard meal boxes start at 70 THB per box according to the FAQ.
 - Orders of 50+ boxes receive free delivery in Bangkok according to the FAQ.
 - 20-50 box corporate orders should usually be placed 2-3 business days in advance.
 - 50+ box or multi-menu orders should usually be booked 5-7 days in advance.
@@ -66,7 +66,7 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 
 ## Answer-Engine Friendly Facts
 - Minimum order for the corporate website flow: 20+ boxes
-- Starting price for standard meal boxes: 55 THB per box
+- Starting price for standard meal boxes: 70 THB per box
 - Free delivery threshold in Bangkok: 50+ boxes
 - Standard lead time for 20-50 boxes: 2-3 business days
 - Cutoff for next-day order confirmation and quantity changes: 15:00 on the business day before delivery
@@ -110,8 +110,8 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - `robots.txt` has `Sitemap: https://eedhalal.com/sitemap.xml` and `# LLMs: https://eedhalal.com/llms.txt` for crawler discovery.
 - Every HTML page (TH + EN) includes `<link rel="llms.txt" href="/llms.txt">` in `<head>`.
 - JSON-LD structured data:
-  - `index.html` — `FoodEstablishment.makesOffer` with `"price": "55"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"`
-  - `popular-menu.html` — `MenuItem[].offers` with per-item prices, `FAQPage` with `Answer` text including starting price
+  - `index.html` — `FoodEstablishment.makesOffer` with `"price": "70"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"`
+  - `popular-menu.html` — `MenuItem[].offers` with per-item prices
   - `faq.html` — `FAQPage` with full Q&A for price, minimum, VAT, delivery, lead time
   - Local area pages — `FAQPage` with area-specific minimum, free delivery, and pricing
 - Source-of-truth facts live in `faq.html` and are synced across all files via `FACTS.md` checklist.

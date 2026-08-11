@@ -6,7 +6,7 @@
 
 ## 1. ราคาเริ่มต้น (Starting Price)
 
-| ค่า | 55 THB/box |
+| ค่า | 70 THB/box |
 |-----|-----------|
 | FAQ (source of truth) | `faq.html` — ข้อความ Q3 + JSON-LD FAQPage |
 | llms.txt | `llms.txt:19` |
