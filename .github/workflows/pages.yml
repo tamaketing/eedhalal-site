@@ -60,7 +60,7 @@ jobs:
             cp *.html _site/
             cp robots.txt sitemap.xml llms.txt llms-full.md _site/
 
-            for dir in blog css img js; do
+            for dir in blog css img js en; do
               if [ -d "$dir" ]; then
                 cp -R "$dir" "_site/$dir"
               fi
