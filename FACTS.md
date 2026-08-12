@@ -6,7 +6,7 @@
 
 ## 1. ราคาเริ่มต้น (Starting Price)
 
-| ค่า | 70 THB/box |
+| ค่า | 60 THB/box |
 |-----|-----------|
 | FAQ (source of truth) | `faq.html` — ข้อความ Q3 + JSON-LD FAQPage |
 | llms.txt | `llms.txt:19` |
@@ -32,13 +32,19 @@
 
 ## 2. ขั้นต่ำการสั่ง (Minimum Order)
 
-| ค่า | 20+ boxes (corporate) |
+| ค่า | 10+ boxes (corporate) |
 |-----|----------------------|
 | FAQ (source of truth) | `faq.html` — Q2 (JSON-LD + visible) |
 | llms.txt | `llms.txt:17` |
 | llms-full.md | `llms-full.md:47`, `llms-full.md:67` |
 | หน้า HTML | `index.html`, `corporate.html`, area pages, `delivery-area.html` |
 | EN counterpart | `en/` — ทุกไฟล์ที่เกี่ยวข้อง |
+
+**ขั้นต่ำต่อเมนู (Per-Menu Minimum):**
+| ประเภทเมนู | ขั้นต่ำ |
+|-----------|--------|
+| อาหารไทย | 5 กล่อง |
+| อาหารอินเดีย | 10 กล่อง |
 
 **Checklist เมื่อเปลี่ยนขั้นต่ำ:**
 - [ ] faq.html (JSON-LD + visible)
@@ -121,7 +127,7 @@
 
 | ค่า | รายละเอียด |
 |-----|-----------|
-| 20-50 boxes | 2-3 วันทำการล่วงหน้า |
+| 10-50 boxes | 2-3 วันทำการล่วงหน้า |
 | 50+ boxes | 5-7 วันทำการล่วงหน้า |
 | Cutoff | ยืนยันรายละเอียดภายใน 15:00 น. ของวันทำการก่อนส่ง |
 | FAQ (source of truth) | `faq.html` — Q6, Q7 |

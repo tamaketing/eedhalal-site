@@ -16,7 +16,7 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 
 ## Search Intent Mapping
 - Primary Thai intent: `ข้าวกล่องฮาลาล`
-- Related Thai intents: `ข้าวกล่องจำนวนมาก`, `ข้าวกล่องประชุม`, `ข้าวกล่องสัมมนา`, `สั่งข้าวกล่อง 20+ กล่อง`, `ข้าวกล่องงานองค์กร`
+- Related Thai intents: `ข้าวกล่องจำนวนมาก`, `ข้าวกล่องประชุม`, `ข้าวกล่องสัมมนา`, `สั่งข้าวกล่อง 10+ กล่อง`, `ข้าวกล่องงานองค์กร`
 - Priority local intents: `ข้าวกล่องส่งออฟฟิศ กรุงเทพ`, `ข้าวกล่องจัดเลี้ยง กรุงเทพ`, `ข้าวกล่องส่งออฟฟิศ สาทร`, `ข้าวกล่องส่งออฟฟิศ สีลม`, `ข้าวกล่องส่งออฟฟิศ พระราม 3`, `ข้าวกล่องส่งออฟฟิศ สุขุมวิท`, `ข้าวกล่องส่งออฟฟิศ ลาดพร้าว`, `ข้าวกล่องสั่งล่วงหน้า กรุงเทพ`
 - Related English intents: `bulk halal lunch boxes`, `corporate meal boxes`, `meeting lunch boxes`, `seminar catering`
 - Canonical landing page for bulk-order intent: https://eedhalal.com/corporate.html
@@ -39,17 +39,18 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 
 ## Ordering Flow
 1. Browse the menu catalog on the website
-2. For 20+ box orders, send a work brief through LINE to request a quotation
+2. For 10+ box orders, send a work brief through LINE to request a quotation
 3. Confirm details such as quantity, date, location, and menu direction with the team
 4. For single-box orders, use the store's delivery-app channels instead of the website
 5. For next-day corporate orders, confirm quantity, menu, delivery time, and delivery point by 15:00 on the business day before delivery
 
 ## Bulk Order Facts
-- The website is designed around organization-ready orders, especially 20+ meal boxes.
+- The website is designed around organization-ready orders, especially 10+ meal boxes.
 - Typical use cases include meetings, seminars, staff training, internal company events, and team catering.
-- Standard meal boxes start at 70 THB per box according to the FAQ.
+- Per-menu minimums apply: 5 boxes per Thai menu, 10 boxes per Indian menu.
+- Standard meal boxes start at 60 THB per box according to the FAQ.
 - Orders of 50+ boxes receive free delivery in Bangkok according to the FAQ.
-- 20-50 box corporate orders should usually be placed 2-3 business days in advance.
+- 10-50 box corporate orders should usually be placed 2-3 business days in advance.
 - 50+ box or multi-menu orders should usually be booked 5-7 days in advance.
 - Order details should be confirmed by 15:00 on the business day before delivery.
 - Quantity changes are normally accepted until 15:00 on the business day before delivery.
@@ -65,10 +66,10 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - Single-box users should be guided away from the bulk-order flow and toward delivery apps run by the store.
 
 ## Answer-Engine Friendly Facts
-- Minimum order for the corporate website flow: 20+ boxes
-- Starting price for standard meal boxes: 70 THB per box
+- Minimum order for the corporate website flow: 10+ boxes
+- Starting price for standard meal boxes: 60 THB per box
 - Free delivery threshold in Bangkok: 50+ boxes
-- Standard lead time for 20-50 boxes: 2-3 business days
+- Standard lead time for 10-50 boxes: 2-3 business days
 - Cutoff for next-day order confirmation and quantity changes: 15:00 on the business day before delivery
 - VAT status: quoted prices do not include VAT 7%; EED HALAL is not VAT-registered
 - Procurement documents: quotation, invoice, and receipt are supported
@@ -110,7 +111,7 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - `robots.txt` has `Sitemap: https://eedhalal.com/sitemap.xml` and `# LLMs: https://eedhalal.com/llms.txt` for crawler discovery.
 - Every HTML page (TH + EN) includes `<link rel="llms.txt" href="/llms.txt">` in `<head>`.
 - JSON-LD structured data:
-  - `index.html` — `FoodEstablishment.makesOffer` with `"price": "70"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"`
+  - `index.html` — `FoodEstablishment.makesOffer` with `"price": "60"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"`
   - `popular-menu.html` — `MenuItem[].offers` with per-item prices
   - `faq.html` — `FAQPage` with full Q&A for price, minimum, VAT, delivery, lead time
   - Local area pages — `FAQPage` with area-specific minimum, free delivery, and pricing
