@@ -40,6 +40,7 @@
 - Catering: https://eedhalal.com/catering.html
 - Delivery areas: https://eedhalal.com/delivery-area.html
 - Popular menu: https://eedhalal.com/popular-menu.html
+- Snack box & coffee break: https://eedhalal.com/snack-box.html
 - Ordering steps: https://eedhalal.com/order-steps.html
 - FAQ: https://eedhalal.com/faq.html
 - Halal certificate: https://eedhalal.com/halal-cert.html

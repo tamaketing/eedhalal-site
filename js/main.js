@@ -13,6 +13,7 @@
   var STORY_PATH = EN_PREFIX + '/story.html';
   var CORPORATE_PATH = EN_PREFIX + '/corporate.html';
   var MENU_PATH = EN_PREFIX + '/popular-menu.html';
+  var SNACK_BOX_PATH = EN_PREFIX + '/snack-box.html';
   var CONTACT_PATH = EN_PREFIX + '/contact.html';
   var CATERING_PATH = EN_PREFIX + '/catering.html';
   var ORDER_STEPS_PATH = EN_PREFIX + '/order-steps.html';
@@ -63,6 +64,11 @@
       lp_slug: 'menu_price_shoppers',
       lp_audience: 'Menu Browsers / Price Comparers / Warm Leads',
       lp_intent: 'Popular menu discovery and price comparison'
+    },
+    '/snack-box.html': {
+      lp_slug: 'snack_box_menus',
+      lp_audience: 'Event Organizers / HR / Coffee Break Buyers',
+      lp_intent: 'Halal snack box and coffee break discovery'
     },
     '/contact.html': {
       lp_slug: 'contact_direct',
@@ -164,6 +170,7 @@
     if (path === '/corporate.html') return 'corporate';
     if (path === '/catering.html') return 'catering';
     if (path === '/popular-menu.html') return 'menu';
+    if (path === '/snack-box.html') return 'menu';
     if (path === '/order-steps.html') return 'order_steps';
     if (path === '/delivery-area.html') return 'delivery_area';
     if (path === '/halal-cert.html') return 'halal_cert';
@@ -607,6 +614,7 @@
         <a href="' + STORY_PATH + '">Our Story</a>\
         <a href="' + CORPORATE_PATH + '">Corporate</a>\
         <a href="' + MENU_PATH + '">Popular Menu</a>\
+        <a href="' + SNACK_BOX_PATH + '">Snack Box</a>\
         <a href="' + CATERING_PATH + '">Catering</a>\
         <a href="' + CONTACT_PATH + '">Contact</a>\
         <a href="' + ORDER_STEPS_PATH + '">How to Order</a>\
@@ -673,6 +681,7 @@
         <a href="' + STORY_PATH + '">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27\u0e02\u0e2d\u0e07\u0e40\u0e23\u0e32</a>\
         <a href="' + CORPORATE_PATH + '">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
         <a href="' + MENU_PATH + '">\u0e40\u0e21\u0e19\u0e39\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21</a>\
+        <a href="' + SNACK_BOX_PATH + '">\u0e02\u0e2d\u0e07\u0e27\u0e48\u0e32\u0e07 Snack Box</a>\
         <a href="' + CATERING_PATH + '">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
         <a href="' + CONTACT_PATH + '">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
         <a href="' + ORDER_STEPS_PATH + '">\u0e02\u0e31\u0e49\u0e19\u0e15\u0e2d\u0e19\u0e2a\u0e31\u0e48\u0e07\u0e07\u0e32\u0e19</a>\
