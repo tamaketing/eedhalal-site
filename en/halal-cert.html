@@ -39,17 +39,71 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": "CICOT Halal Certificate — EED HALAL",
-    "description": "EED HALAL is officially Halal certified by CICOT under certificate HL-2024-0892",
-    "author": { "@type": "Organization", "name": "EED HALAL" },
-    "publisher": {
-      "@type": "Organization",
-      "name": "EED HALAL",
-      "url": "https://eedhalal.com"
-    },
-    "url": "https://eedhalal.com/en/halal-cert.html",
-    "mainEntityOfPage": "https://eedhalal.com/en/halal-cert.html"
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://eedhalal.com/#organization",
+        "name": "EED HALAL",
+        "url": "https://eedhalal.com/",
+        "logo": "https://eedhalal.com/img/logo.jpg",
+        "telephone": "+66988715179",
+        "award": "CICOT Halal Certification, certificate no. HL-2024-0892",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "478/3 Sathorn 1 Soi 7, Thung Wat Don, Sathorn",
+          "addressLocality": "Bangkok",
+          "postalCode": "10120",
+          "addressCountry": "TH"
+        },
+        "sameAs": [
+          "https://lin.ee/CfvqJTd",
+          "https://www.facebook.com/profile.php?id=61573552705869"
+        ]
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://eedhalal.com/en/halal-cert.html#webpage",
+        "url": "https://eedhalal.com/en/halal-cert.html",
+        "name": "CICOT Halal Certificate — EED HALAL",
+        "description": "EED HALAL is officially Halal certified by CICOT under certificate HL-2024-0892",
+        "keywords": [
+          "CICOT halal certificate",
+          "halal certified meal boxes"
+        ],
+        "inLanguage": "en",
+        "isPartOf": {
+          "@id": "https://eedhalal.com/#website"
+        },
+        "about": {
+          "@id": "https://eedhalal.com/#organization"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://eedhalal.com/#website",
+        "url": "https://eedhalal.com/",
+        "name": "EED HALAL",
+        "inLanguage": "en"
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://eedhalal.com/en/halal-cert.html#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://eedhalal.com/en/index.html"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "CICOT Halal Certificate",
+            "item": "https://eedhalal.com/en/halal-cert.html"
+          }
+        ]
+      }
+    ]
   }
   </script>
 
@@ -617,7 +671,7 @@
           </div>
           <h2>Ready to Order Halal Food for Your Organization?</h2>
           <p>
-            Tell us the number of boxes, your preferred date, and event type. The EED HALAL team will send you a quote with menu recommendations on the same day. A copy of the CICOT Halal certificate can be attached to your documentation.
+            Tell us the number of boxes, your preferred date, and event type. The EED HALAL team will send you a quote with menu recommendations quickly after messaging us on LINE. A copy of the CICOT Halal certificate can be attached to your documentation.
           </p>
           <div class="cta-halal-links">
             <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="btn btn-accent" style="font-size:1rem;padding:0.9rem 2rem">
@@ -641,7 +695,8 @@
   </main>
 
   <div id="footer"></div>
-  <script src="../js/tracking-config.js"></script>
+  <script src="../js/business-data.js"></script>
+    <script src="../js/tracking-config.js"></script>
   <script src="../js/main.js"></script>
 </body>
 </html>

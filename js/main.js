@@ -1,14 +1,16 @@
 (function() {
   'use strict';
 
-  var QUOTE_LINE_URL = 'https://lin.ee/CfvqJTd';
-  var LINE_OA_ID = '@EEDHALAL';
-  var PHONE_DISPLAY = '098-871-5179';
-  var PHONE_HREF = 'tel:+66988715179';
+  var QUOTE_LINE_URL = (typeof EED !== 'undefined' && EED.lineUrl) ? EED.lineUrl : 'https://lin.ee/CfvqJTd';
+  var LINE_OA_ID = (typeof EED !== 'undefined' && EED.lineId) ? EED.lineId : '@EEDHALAL';
+  var PHONE_DISPLAY = (typeof EED !== 'undefined' && EED.phoneDisplay) ? EED.phoneDisplay : '098-871-5179';
+  var PHONE_HREF = (typeof EED !== 'undefined' && EED.phoneHref) ? EED.phoneHref : 'tel:+66988715179';
   var EN_PREFIX = window.location.pathname.indexOf('/en/') === 0 ? '/en' : '';
   var isEN = EN_PREFIX === '/en';
 
   var HOME_PATH = EN_PREFIX + '/index.html';
+  var ABOUT_PATH = EN_PREFIX + '/about.html';
+  var STORY_PATH = EN_PREFIX + '/story.html';
   var CORPORATE_PATH = EN_PREFIX + '/corporate.html';
   var MENU_PATH = EN_PREFIX + '/popular-menu.html';
   var CONTACT_PATH = EN_PREFIX + '/contact.html';
@@ -41,6 +43,11 @@
       lp_slug: 'home_general',
       lp_audience: 'General / Broad Prospecting',
       lp_intent: 'Brand awareness and entry point'
+    },
+    '/story.html': {
+      lp_slug: 'brand_story',
+      lp_audience: 'Brand / Trust seekers',
+      lp_intent: 'Brand story, heritage, and trust building'
     },
     '/corporate.html': {
       lp_slug: 'corporate_hr_procurement',
@@ -441,14 +448,34 @@
     } catch(e) {}
   }
 
-  function getLeadMessageUrl(name, phone, message) {
-    var lineMessage = [
-      'สวัสดีครับ/ค่ะ สนใจสอบถามบริการ EED HALAL',
-      '',
-      'ชื่อ: ' + name,
-      'เบอร์โทร: ' + phone,
-      'รายละเอียด: ' + message
-    ].join('\n');
+  function getLeadMessageUrl(fields) {
+    var lines = isEN
+      ? ['Hello, I\'m interested in EED HALAL services.', '']
+      : ['สวัสดีครับ/ค่ะ สนใจสอบถามบริการ EED HALAL', ''];
+    var labels = isEN
+      ? {
+          name: 'Name / Company',
+          phone: 'Phone',
+          event_date: 'Event Date',
+          quantity: 'Number of People / Boxes',
+          location: 'Delivery Location',
+          budget: 'Budget Per Person',
+          message: 'Additional Details'
+        }
+      : {
+          name: 'ชื่อ / ชื่อบริษัท',
+          phone: 'เบอร์โทร',
+          event_date: 'วันที่จัดงาน',
+          quantity: 'จำนวนคน / กล่อง',
+          location: 'สถานที่จัดส่ง',
+          budget: 'งบประมาณต่อคน',
+          message: 'รายละเอียดเพิ่มเติม'
+        };
+    ['name', 'phone', 'event_date', 'quantity', 'location', 'budget', 'message'].forEach(function(key) {
+      var value = (fields[key] || '').trim();
+      if (value) lines.push(labels[key] + ': ' + value);
+    });
+    var lineMessage = lines.join('\n');
 
     return 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA_ID) + '/?' + encodeURIComponent(lineMessage);
   }
@@ -469,6 +496,8 @@
       <a href="' + HOME_PATH + '" class="nav-link">Home</a>\
       <a href="' + CORPORATE_PATH + '" class="nav-link">Corporate</a>\
       <a href="' + MENU_PATH + '" class="nav-link">Menu</a>\
+      <a href="' + ABOUT_PATH + '" class="nav-link">About</a>\
+      <a href="' + STORY_PATH + '" class="nav-link">Story</a>\
       <a href="' + CONTACT_PATH + '" class="nav-link">Contact</a>\
     </nav>\
     <div class="nav-actions">\
@@ -491,6 +520,8 @@
       <a href="' + HOME_PATH + '" class="mobile-link">Home</a>\
       <a href="' + CORPORATE_PATH + '" class="mobile-link">Corporate</a>\
       <a href="' + MENU_PATH + '" class="mobile-link">Menu</a>\
+      <a href="' + ABOUT_PATH + '" class="mobile-link">About</a>\
+      <a href="' + STORY_PATH + '" class="mobile-link">Story</a>\
       <a href="' + CONTACT_PATH + '" class="mobile-link">Contact</a>\
       <div class="mobile-cta">\
         <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" class="btn btn-gold w-full" style="justify-content:center" data-track-event="lead_line_click" data-track-section="header" data-track-source="mobile_nav">\
@@ -515,6 +546,8 @@
       <a href="' + HOME_PATH + '" class="nav-link">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
       <a href="' + CORPORATE_PATH + '" class="nav-link">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
       <a href="' + MENU_PATH + '" class="nav-link">\u0e40\u0e21\u0e19\u0e39</a>\
+      <a href="' + ABOUT_PATH + '" class="nav-link">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32</a>\
+      <a href="' + STORY_PATH + '" class="nav-link">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27</a>\
       <a href="' + CONTACT_PATH + '" class="nav-link">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
     </nav>\
     <div class="nav-actions">\
@@ -537,6 +570,8 @@
       <a href="' + HOME_PATH + '" class="mobile-link">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
       <a href="' + CORPORATE_PATH + '" class="mobile-link">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
       <a href="' + MENU_PATH + '" class="mobile-link">\u0e40\u0e21\u0e19\u0e39</a>\
+      <a href="' + ABOUT_PATH + '" class="mobile-link">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32</a>\
+      <a href="' + STORY_PATH + '" class="mobile-link">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27</a>\
       <a href="' + CONTACT_PATH + '" class="mobile-link">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
       <div class="mobile-cta">\
         <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" class="btn btn-gold w-full" style="justify-content:center" data-track-event="lead_line_click" data-track-section="header" data-track-source="mobile_nav">\
@@ -562,12 +597,14 @@
         </div>\
       </a>\
       <a href="' + PHONE_HREF + '" class="footer-phone" style="margin-top:0.75rem" data-track-event="lead_phone_click" data-track-section="footer" data-track-source="site_footer">' + PHONE_DISPLAY + '</a>\
-      <p class="footer-cert-text">CICOT Halal Certified | Tax Invoice Available</p>\
+      <p class="footer-cert-text">CICOT Halal Certified | Regular Receipt Issued</p>\
     </div>\
     <div>\
       <div class="footer-heading">Pages</div>\
       <div class="footer-links">\
         <a href="' + HOME_PATH + '">Home</a>\
+        <a href="' + ABOUT_PATH + '">About Us</a>\
+        <a href="' + STORY_PATH + '">Our Story</a>\
         <a href="' + CORPORATE_PATH + '">Corporate</a>\
         <a href="' + MENU_PATH + '">Popular Menu</a>\
         <a href="' + CATERING_PATH + '">Catering</a>\
@@ -626,12 +663,14 @@
         </div>\
       </a>\
       <a href="' + PHONE_HREF + '" class="footer-phone" style="margin-top:0.75rem" data-track-event="lead_phone_click" data-track-section="footer" data-track-source="site_footer">' + PHONE_DISPLAY + '</a>\
-      <p class="footer-cert-text">\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e15 CICOT | \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e01\u0e33\u0e01\u0e31\u0e1a\u0e20\u0e32\u0e29\u0e35\u0e44\u0e14\u0e49</p>\
+      <p class="footer-cert-text">\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e15 CICOT | \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e40\u0e2a\u0e23\u0e47\u0e08\u0e23\u0e31\u0e1a\u0e40\u0e07\u0e34\u0e19\u0e44\u0e14\u0e49</p>\
     </div>\
     <div>\
       <div class="footer-heading">\u0e2b\u0e19\u0e49\u0e32\u0e40\u0e27\u0e47\u0e1a</div>\
       <div class="footer-links">\
         <a href="' + HOME_PATH + '">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
+        <a href="' + ABOUT_PATH + '">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32</a>\
+        <a href="' + STORY_PATH + '">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27\u0e02\u0e2d\u0e07\u0e40\u0e23\u0e32</a>\
         <a href="' + CORPORATE_PATH + '">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
         <a href="' + MENU_PATH + '">\u0e40\u0e21\u0e19\u0e39\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21</a>\
         <a href="' + CATERING_PATH + '">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
@@ -765,17 +804,20 @@
     form.addEventListener('submit', function(e) {
       e.preventDefault();
 
-      var name = (form.elements.name && form.elements.name.value || '').trim();
-      var phone = (form.elements.phone && form.elements.phone.value || '').trim();
-      var message = (form.elements.message && form.elements.message.value || '').trim();
-      var lineMessage = [
-        'สวัสดีครับ/ค่ะ สนใจสอบถามบริการ EED HALAL',
-        '',
-        'ชื่อ: ' + name,
-        'เบอร์โทร: ' + phone,
-        'รายละเอียด: ' + message
-      ].join('\n');
-      var lineUrl = getLeadMessageUrl(name, phone, message);
+      function val(name) {
+        return (form.elements[name] && form.elements[name].value || '').trim();
+      }
+
+      var fields = {
+        name: val('name'),
+        phone: val('phone'),
+        event_date: val('event_date'),
+        quantity: val('quantity'),
+        location: val('location'),
+        budget: val('budget'),
+        message: val('message')
+      };
+      var lineUrl = getLeadMessageUrl(fields);
 
       emitTrackingEvent('lead_form_submit', {
         form_name: 'line_contact_form',
@@ -863,7 +905,7 @@
       "@graph": [
         {
           "@type": ["FoodEstablishment", "LocalBusiness"],
-          "@id": "https://eedhalal.com/#org",
+          "@id": "https://eedhalal.com/#organization",
           "name": "EED HALAL",
           "url": "https://eedhalal.com/",
           "telephone": "+66988715179",
@@ -918,7 +960,7 @@
               "name": "EED HALAL \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e01\u0e33\u0e01\u0e31\u0e1a\u0e20\u0e32\u0e29\u0e35\u0e44\u0e14\u0e49\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "EED HALAL \u0e08\u0e14\u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e16\u0e39\u0e01\u0e15\u0e49\u0e2d\u0e07 \u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e40\u0e2a\u0e19\u0e2d\u0e23\u0e32\u0e04\u0e32 \u0e43\u0e1a\u0e41\u0e08\u0e49\u0e07\u0e2b\u0e19\u0e35\u0e49 \u0e41\u0e25\u0e30\u0e43\u0e1a\u0e40\u0e2a\u0e23\u0e47\u0e08\u0e23\u0e31\u0e1a\u0e40\u0e07\u0e34\u0e19\u0e44\u0e14\u0e49 \u0e23\u0e32\u0e04\u0e32\u0e17\u0e35\u0e48\u0e40\u0e2a\u0e19\u0e2d\u0e44\u0e21\u0e48\u0e23\u0e27\u0e21 VAT 7%"
+                "text": "EED HALAL \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e40\u0e2a\u0e19\u0e2d\u0e23\u0e32\u0e04\u0e32\u0e41\u0e25\u0e30\u0e43\u0e1a\u0e40\u0e2a\u0e23\u0e47\u0e08\u0e23\u0e31\u0e1a\u0e40\u0e07\u0e34\u0e19\u0e41\u0e1a\u0e1a\u0e18\u0e23\u0e23\u0e21\u0e14\u0e32\u0e43\u0e2b\u0e49\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 \u0e17\u0e32\u0e07\u0e23\u0e49\u0e32\u0e19\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e08\u0e14\u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19 VAT \u0e23\u0e32\u0e04\u0e32\u0e17\u0e35\u0e48\u0e40\u0e2a\u0e19\u0e2d\u0e44\u0e21\u0e48\u0e23\u0e27\u0e21 VAT 7%"
               }
             }
           ]
@@ -999,17 +1041,6 @@
 
     updateTotal();
   }
-
-  /* ====== ราคาลับสำหรับลูกค้า Volume (ใช้ในการเจรจาจริง ไม่โชว์บนเว็บ) ======
-   * ราคาที่แสดงบนเว็บเป็นราคาอ้างอิงเริ่มต้นเท่านั้น
-   * ราคาจริงและส่วนลดที่ใช้เสนอองค์กร ปิดผ่านใบเสนอราคาส่วนตัวทาง LINE
-   *
-   * ส่วนลดจริงที่ใช้เจรจา (ห้ามโชว์):
-   *   25  กล่อง → ลด 10%
-   *   50  กล่อง → ลด 15%
-   *   100 กล่อง → ลด 20%
-   *   (กรณีปริมาณมากกว่านี้ หรือซ้ำ รายเดือน ทัก LINE เพื่อขอราคาเฉพาะ)
-   * ===================================================================== */
 
   function injectComponents() {
     var navEl = document.getElementById('nav');

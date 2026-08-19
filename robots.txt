@@ -1,37 +1,109 @@
 User-agent: *
 Allow: /
 
-User-agent: Bytespider
-Allow: /
-
+# OpenAI
 User-agent: GPTBot
 Allow: /
 
 User-agent: ChatGPT-User
 Allow: /
 
+User-agent: OAI-SearchBot
+Allow: /
+
+# Google
 User-agent: Google-Extended
 Allow: /
 
+User-agent: Google-CloudVertexBot
+Allow: /
+
+# Anthropic
 User-agent: ClaudeBot
 Allow: /
 
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Meta
 User-agent: Meta-ExternalAgent
 Allow: /
 
+User-agent: FacebookBot
+Allow: /
+
+# Perplexity
 User-agent: PerplexityBot
 Allow: /
 
+User-agent: Perplexity-User
+Allow: /
+
+# xAI
+User-agent: GrokBot
+Allow: /
+
+User-agent: xAI-Grok
+Allow: /
+
+# Microsoft
+User-agent: CopilotBot
+Allow: /
+
+# Mistral
+User-agent: MistralAI-User
+Allow: /
+
+# Amazon
 User-agent: Amazonbot
 Allow: /
 
+# Apple
 User-agent: Applebot-Extended
 Allow: /
 
+# ByteDance
+User-agent: Bytespider
+Allow: /
+
+# Cohere
 User-agent: cohere-ai
 Allow: /
 
+# Common Crawl
 User-agent: CCBot
+Allow: /
+
+# AI search engines
+User-agent: YouBot
+Allow: /
+
+User-agent: DuckAssistBot
+Allow: /
+
+User-agent: iaskspider
+Allow: /
+
+User-agent: KagiBot
+Allow: /
+
+# Data aggregators
+User-agent: Diffbot
+Allow: /
+
+User-agent: omgili
+Allow: /
+
+User-agent: omgilibot
+Allow: /
+
+User-agent: img2dataset
 Allow: /
 
 Sitemap: https://eedhalal.com/sitemap.xml

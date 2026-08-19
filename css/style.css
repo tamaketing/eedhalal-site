@@ -2070,3 +2070,100 @@ main[data-urgency] > .page-header { padding-top: 5rem; }
     padding-bottom: calc(0.9rem + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ─── Related Article Cards ─── */
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+.related-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.75rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  text-decoration: none;
+  overflow: hidden;
+  transition: all var(--transition);
+}
+.related-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--primary-light));
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.related-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(200, 151, 58, 0.35);
+}
+.related-card:hover::before {
+  opacity: 1;
+}
+.related-card-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-soft);
+  border-radius: var(--radius);
+  color: var(--primary);
+  transition: transform var(--transition), background var(--transition);
+}
+.related-card:hover .related-card-icon {
+  transform: scale(1.08);
+  background: var(--accent-light);
+}
+.related-card-tag {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 0.5rem;
+}
+.related-card-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1.4;
+  margin-top: 0.35rem;
+}
+.related-card-desc {
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+}
+.related-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: auto;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+.related-card-cta svg {
+  transition: transform var(--transition);
+}
+.related-card:hover .related-card-cta svg {
+  transform: translateX(4px);
+}
+
+@media (max-width: 900px) {
+  .related-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .related-grid { grid-template-columns: 1fr; }
+}

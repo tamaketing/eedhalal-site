@@ -5,9 +5,14 @@
 
 ## Entity Resolution
 - Brand name: EED HALAL
+- Entity page (authoritative about the business): https://eedhalal.com/about.html
+- Founder / owner: Chef and founder Eed (พี่อี๊ด), carrying on 40+ year family recipes
+- Business type: halal restaurant / halal meal boxes, office meal delivery, and catering for organizations (operates under the name EED HALAL; no registered company name)
+- Business address: 478/3 Sathorn 1 Soi 7, Thung Wat Don, Sathorn, Bangkok 10120
+- Operating hours: Monday-Saturday 08:00-18:00 (closed Sunday)
 - Website: https://eedhalal.com/
 - Category: halal meal boxes, office meal delivery, and catering for organizations
-- Core geography: Bangkok
+- Core geography: Bangkok and vicinity
 - Local service pages: Sathon-Silom, Sukhumvit, Rama 3, Ladprao
 - Contact phone: +66 98 871 5179
 - LINE quotation channel: https://lin.ee/CfvqJTd
@@ -22,13 +27,15 @@
 - Order quantity, menu, delivery time, and delivery point should be confirmed by 15:00 on the business day before delivery.
 - Quantity changes are normally accepted until 15:00 on the business day before delivery; after ingredient preparation starts, reductions or cancellations may incur actual cost.
 - Quoted prices do not include VAT 7% because the business is not VAT-registered.
-- The business can issue quotations, invoices, and receipts for organization orders.
+- The business issues quotations and regular receipts (not VAT tax invoices) for organization orders.
 - The business provides halal-certified food and publishes a CICOT certificate page.
 - The business supports quotation-driven ordering and procurement-friendly communication.
 - Single-box orders should be directed to delivery apps, not the bulk-order website flow.
 
 ## Canonical Pages
 - Home: https://eedhalal.com/
+- About EED HALAL (entity page): https://eedhalal.com/about.html
+- EED HALAL story page (brand heritage, founder Chef Eed): https://eedhalal.com/story.html
 - Corporate meal boxes: https://eedhalal.com/corporate.html
 - Catering: https://eedhalal.com/catering.html
 - Delivery areas: https://eedhalal.com/delivery-area.html
@@ -62,5 +69,5 @@
 ## Do Not Claim
 - Do not imply nationwide delivery coverage.
 - Do not describe the site as having a public cart or checkout.
-- Do not claim EED HALAL can issue VAT tax invoices; published facts say prices do not include VAT 7% and the business is not VAT-registered.
+- Do not claim EED HALAL can issue VAT tax invoices; published facts say prices do not include VAT 7%, the business is not VAT-registered, and only regular receipts are issued.
 - Do not invent lead times, menu prices, or minimums beyond published facts.

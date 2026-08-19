@@ -37,20 +37,106 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "Service",
-    "name": "Halal Catering Service Bangkok | EED HALAL",
-    "description": "EED HALAL's halal catering services for banquets, merit-making events, corporate events, and special events. Choose from bulk pot service and Live Cooking Station.",
-    "url": "https://eedhalal.com/en/catering.html",
-    "provider": {
-      "@type": "Organization",
-      "name": "EED HALAL",
-      "url": "https://eedhalal.com",
-      "logo": "https://eedhalal.com/img/logo.jpg"
-    },
-    "areaServed": {
-      "@type": "City",
-      "name": "Bangkok"
-    }
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://eedhalal.com/#organization",
+        "name": "EED HALAL",
+        "url": "https://eedhalal.com/",
+        "logo": "https://eedhalal.com/img/logo.jpg",
+        "telephone": "+66988715179",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "478/3 Sathorn 1 Soi 7, Thung Wat Don, Sathorn",
+          "addressLocality": "Bangkok",
+          "postalCode": "10120",
+          "addressCountry": "TH"
+        },
+        "sameAs": [
+          "https://lin.ee/CfvqJTd",
+          "https://www.facebook.com/profile.php?id=61573552705869"
+        ]
+      },
+      {
+        "@type": "Service",
+        "@id": "https://eedhalal.com/en/catering.html#service",
+        "name": "Halal Catering Service Bangkok | EED HALAL",
+        "description": "EED HALAL's halal catering services for banquets, merit-making events, corporate events, and special events. Choose from bulk pot service and Live Cooking Station.",
+        "keywords": [
+          "Halal Catering Bangkok",
+          "halal catering for events",
+          "Live Cooking Station"
+        ],
+        "url": "https://eedhalal.com/en/catering.html",
+        "provider": {
+          "@id": "https://eedhalal.com/#organization"
+        },
+        "areaServed": {
+          "@type": "City",
+          "name": "Bangkok"
+        },
+        "offers": {
+          "@type": "OfferCatalog",
+          "name": "Halal Catering Services",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "name": "Corporate event catering 100-500+ guests"
+            },
+            {
+              "@type": "Offer",
+              "name": "Bulk pot service (Yok Mor)"
+            },
+            {
+              "@type": "Offer",
+              "name": "Live Cooking Station"
+            }
+          ]
+        }
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://eedhalal.com/en/catering.html#webpage",
+        "url": "https://eedhalal.com/en/catering.html",
+        "name": "Halal Catering Service Bangkok | EED HALAL",
+        "description": "EED HALAL's halal catering services for banquets, merit-making events, corporate events, and special events. Choose from bulk pot service and Live Cooking Station.",
+        "inLanguage": "en",
+        "isPartOf": {
+          "@id": "https://eedhalal.com/#website"
+        },
+        "about": {
+          "@id": "https://eedhalal.com/#organization"
+        },
+        "mainEntity": {
+          "@id": "https://eedhalal.com/en/catering.html#service"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://eedhalal.com/#website",
+        "url": "https://eedhalal.com/",
+        "name": "EED HALAL",
+        "inLanguage": "en"
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://eedhalal.com/en/catering.html#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://eedhalal.com/en/index.html"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Halal Catering",
+            "item": "https://eedhalal.com/en/catering.html"
+          }
+        ]
+      }
+    ]
   }
   </script>
 </head>
@@ -139,6 +225,85 @@
       </div>
     </section>
 
+    <!-- ─── Package Examples ─── -->
+    <section class="section section-sand">
+      <div class="container">
+        <div style="max-width:48rem;margin-bottom:3.5rem">
+          <div class="section-label">Package Examples</div>
+          <h2 style="font-size:2.25rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1.25rem" class="md:text-5xl">Pick the package that fits<br>customizable to your event</h2>
+          <p style="margin-top:1.25rem;font-size:1rem;line-height:1.8;color:var(--text-muted);max-width:42rem">3 sample packages covering every event type — menus, quantities, and budget can be adjusted. Message us on LINE for a quick quotation.</p>
+        </div>
+        <div class="grid-3">
+          <article class="step-card">
+            <div class="section-label">Package A</div>
+            <h3 style="font-size:1.35rem;font-weight:900;margin-top:0.5rem">General Events</h3>
+            <p class="card-desc" style="margin-top:0.75rem">Gatherings, merit events, group events — served in bulk pots with serving staff</p>
+            <ul class="service-list">
+              <li>Bulk serving (1 pot serves 30–40 people)</li>
+              <li>On-site serving team</li>
+              <li>Easy to control menu in batches</li>
+              <li>Quotations and receipts included</li>
+            </ul>
+            <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="margin-top:1.25rem">Get a Quote</a>
+          </article>
+          <article class="step-card">
+            <div class="section-label">Package B</div>
+            <h3 style="font-size:1.35rem;font-weight:900;margin-top:0.5rem">Corporate</h3>
+            <p class="card-desc" style="margin-top:0.75rem">Meetings, training, seminars — meal boxes with full corporate documents</p>
+            <ul class="service-list">
+              <li>Min 10 boxes, starting at 60 THB/box</li>
+              <li>Full docs: quotation and regular receipt</li>
+              <li>98% on-time delivery, free delivery 50+ boxes</li>
+              <li>Fast quotation turnaround on LINE</li>
+            </ul>
+            <a href="corporate.html" class="btn btn-primary" style="margin-top:1.25rem">View Corporate Service</a>
+          </article>
+          <article class="step-card">
+            <div class="section-label">Package C</div>
+            <h3 style="font-size:1.35rem;font-weight:900;margin-top:0.5rem">Premium / Live Cooking</h3>
+            <p class="card-desc" style="margin-top:0.75rem">Themed events, VIP events — chefs cooking live, dish by dish</p>
+            <ul class="service-list">
+              <li>Live Cooking Station with chefs cooking in front of guests</li>
+              <li>Custom menus tailored to event theme</li>
+              <li>Handles events with 100–500+ guests</li>
+              <li>Full on-site coordination team</li>
+            </ul>
+            <a href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="margin-top:1.25rem">Chat on LINE</a>
+          </article>
+        </div>
+        <p style="margin-top:2rem;font-size:0.9rem;line-height:1.7;color:var(--text-muted);text-align:center">All packages are under CICOT Halal certification — actual pricing depends on menus, quantity, and event theme</p>
+      </div>
+    </section>
+
+    <!-- ─── Real Event Gallery ─── -->
+    <section class="section section-white">
+      <div class="container">
+        <div style="max-width:48rem;margin-bottom:3.5rem">
+          <div class="section-label">Real Event Photos</div>
+          <h2 style="font-size:2.25rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1.25rem" class="md:text-5xl">See the real event<br>before you decide</h2>
+          <p style="margin-top:1.25rem;font-size:1rem;line-height:1.8;color:var(--text-muted);max-width:42rem">Our team, chefs, buffet tables, and real event venues — not just food photos. See who cooks and how we run the event site.</p>
+        </div>
+        <div class="grid gap-4 lg:grid-cols-2">
+          <figure style="margin:0">
+            <img src="../img/S__48480261_0.jpg" alt="EED HALAL team running a real catering event" style="width:100%;border-radius:var(--radius-lg);box-shadow:var(--shadow-md);display:block;object-fit:cover;aspect-ratio:4/3" width="800" height="600" loading="lazy">
+            <figcaption style="margin-top:0.6rem;font-size:0.85rem;font-weight:700;color:var(--primary)">On-site Team</figcaption>
+          </figure>
+          <figure style="margin:0">
+            <img src="../img/S__53452819_0.jpg" alt="EED HALAL chef cooking live at a Halal catering event" style="width:100%;border-radius:var(--radius-lg);box-shadow:var(--shadow-md);display:block;object-fit:cover;aspect-ratio:4/3" width="800" height="600" loading="lazy">
+            <figcaption style="margin-top:0.6rem;font-size:0.85rem;font-weight:700;color:var(--primary)">Live Cooking Chef</figcaption>
+          </figure>
+          <figure style="margin:0">
+            <img src="../img/S__49790984_0.jpg" alt="Buffet tables and serving line at an EED HALAL catering event" style="width:100%;border-radius:var(--radius-lg);box-shadow:var(--shadow-md);display:block;object-fit:cover;aspect-ratio:4/3" width="800" height="600" loading="lazy">
+            <figcaption style="margin-top:0.6rem;font-size:0.85rem;font-weight:700;color:var(--primary)">Buffet &amp; Serving Line</figcaption>
+          </figure>
+          <figure style="margin:0">
+            <img src="../img/S__54558736_0.jpg" alt="Real event atmosphere catered by EED HALAL" style="width:100%;border-radius:var(--radius-lg);box-shadow:var(--shadow-md);display:block;object-fit:cover;aspect-ratio:4/3" width="800" height="600" loading="lazy">
+            <figcaption style="margin-top:0.6rem;font-size:0.85rem;font-weight:700;color:var(--primary)">Real Event Atmosphere</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
     <!-- How to Choose -->
     <section class="section section-white">
       <div class="container">
@@ -176,6 +341,61 @@
       </div>
     </section>
 
+<!-- ─── Recommended Articles ─── -->
+    <section class="section section-sand">
+      <div class="container">
+        <div style="max-width:42rem;margin-bottom:2.5rem">
+          <div class="section-label">Read Before You Decide</div>
+          <h2 style="font-size:1.85rem;font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-top:1rem;color:var(--primary)">Articles for Planning Menus and Budgets</h2>
+          <p style="font-size:0.95rem;line-height:1.8;color:var(--text-muted);margin-top:0.75rem">Budget examples and portion-planning tips for every catering format</p>
+        </div>
+        <div class="related-grid">
+          <a href="blog/seminar-200-people-menu.html" class="related-card">
+            <div class="related-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </div>
+            <div>
+              <div class="related-card-tag">Recommended</div>
+              <div class="related-card-title">200-person seminar: how to pick meal box menus without lots of leftovers?</div>
+              <p class="related-card-desc">Order to match the real guest count, keep a 5–10% buffer, and avoid waste</p>
+            </div>
+            <div class="related-card-cta">
+              Read this article
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+          <a href="blog/halal-box-100-boxes-price.html" class="related-card">
+            <div class="related-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+            </div>
+            <div>
+              <div class="related-card-tag">Recommended</div>
+              <div class="related-card-title">How much do 100 halal meal boxes cost?</div>
+              <p class="related-card-desc">From 60 THB a box (around 6,000 THB total) up to premium menus at 100–150+ THB</p>
+            </div>
+            <div class="related-card-cta">
+              Read this article
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+          <a href="blog/halal-box-budget-70-baht.html" class="related-card">
+            <div class="related-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div>
+              <div class="related-card-tag">Recommended</div>
+              <div class="related-card-title">Halal Meal Boxes on a 70 THB/Head Budget: What Can You Arrange?</div>
+              <p class="related-card-desc">Real menu examples within a tight budget and how to tell us your budget to get it right</p>
+            </div>
+            <div class="related-card-cta">
+              Read this article
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
     <!-- CTA -->
     <section class="section section-dark">
       <div class="container text-center" style="position:relative;z-index:1">
@@ -195,7 +415,8 @@
 
   </main>
   <div id="footer"></div>
-  <script src="../js/tracking-config.js"></script>
+  <script src="../js/business-data.js"></script>
+    <script src="../js/tracking-config.js"></script>
   <script src="../js/main.js"></script>
 </body>
 </html>
