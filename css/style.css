@@ -1396,6 +1396,161 @@ h1, h2, h3, h4 {
   overflow: hidden;
 }
 
+/* Catering landing page: keep the decision path compact and visual. */
+.catering-hero .container { max-width: 1240px; }
+
+.catering-hero-card {
+  overflow: hidden;
+  border: 1px solid rgba(29,107,62,0.12);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+  box-shadow: var(--shadow-lg);
+}
+
+.catering-hero-image { position: relative; }
+.catering-hero-image img {
+  display: block;
+  width: 100%;
+  height: 310px;
+  object-fit: cover;
+}
+.catering-hero-badge {
+  position: absolute;
+  left: 1.25rem;
+  bottom: 1.25rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(20,56,35,0.9);
+  color: var(--white);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.catering-hero-card-body { padding: 1.75rem 2rem 2rem; }
+.catering-hero-card-body h2 {
+  margin-top: 0.65rem;
+  font-size: 1.65rem;
+  line-height: 1.25;
+  font-weight: 850;
+}
+.catering-proof-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1.35rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.catering-proof-list span { display: flex; align-items: baseline; gap: 0.65rem; }
+.catering-proof-list b { color: var(--accent); font-size: 0.75rem; letter-spacing: 0.08em; }
+.catering-trust {
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+}
+.catering-trust-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  padding-top: 1.4rem;
+  padding-bottom: 1.4rem;
+}
+.catering-trust-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.25rem 1.25rem;
+  border-right: 1px solid var(--border);
+}
+.catering-trust-grid > div:last-child { border-right: 0; }
+.catering-trust-grid strong { color: var(--primary); font-size: 1rem; font-weight: 850; }
+.catering-trust-grid span { color: var(--text-muted); font-size: 0.8rem; }
+
+.catering-services .container > div:first-child { max-width: 56rem !important; }
+.catering-service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+  align-items: stretch;
+}
+.catering-service-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.catering-service-card > img { height: 210px !important; }
+.catering-service-card > div:last-child {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.catering-service-card > div:last-child > a { align-self: flex-start; margin-top: auto !important; }
+
+@media (max-width: 1023px) {
+  .catering-service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .catering-service-card:last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 767px) {
+  .catering-hero-image img { height: 245px; }
+  .catering-hero-card-body { padding: 1.35rem 1.25rem 1.5rem; }
+  .catering-trust-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+  .catering-trust-grid > div { border-right: 0; border-bottom: 1px solid var(--border); padding: 0.7rem 0; }
+  .catering-trust-grid > div:last-child { border-bottom: 0; }
+  .catering-service-grid { grid-template-columns: 1fr; }
+  .catering-service-card:last-child { grid-column: auto; }
+}
+
+.review-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+  padding: 1.75rem;
+  transition: all var(--transition);
+}
+.review-card:hover {
+  border-color: rgba(29,107,62,0.12);
+  box-shadow: var(--shadow-xs);
+}
+.review-stars {
+  color: var(--accent);
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+}
+.review-text {
+  font-size: 0.9rem;
+  line-height: 1.75;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+}
+.review-author {
+  margin-top: 1.25rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+.review-role {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-top: 0.15rem;
+}
+
+.floating-line-cta {
+  display: none;
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 999;
+}
+.floating-line-cta .btn {
+  width: 100%;
+  justify-content: center;
+}
+@media (max-width: 767px) {
+  .floating-line-cta { display: block; }
+}
+
 .step-card {
   display: grid;
   gap: 0.5rem;

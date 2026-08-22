@@ -36,6 +36,8 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - Canonical menu reference page for bulk-order intent: https://eedhalal.com/popular-menu.html
 - Office delivery Bangkok page: https://eedhalal.com/corporate.html
 - Catering Bangkok page: https://eedhalal.com/catering.html
+- Halal buffet Bangkok page: https://eedhalal.com/buffet.html
+- Live cooking station Bangkok page: https://eedhalal.com/live-cooking-station.html
 - Delivery area overview page: https://eedhalal.com/delivery-area.html
 - Office delivery Sathon-Silom page: https://eedhalal.com/sathorn-silom.html
 - Office delivery Sukhumvit page: https://eedhalal.com/sukhumvit.html

@@ -16,6 +16,8 @@
   var SNACK_BOX_PATH = EN_PREFIX + '/snack-box.html';
   var CONTACT_PATH = EN_PREFIX + '/contact.html';
   var CATERING_PATH = EN_PREFIX + '/catering.html';
+  var BUFETT_PATH = EN_PREFIX + '/buffet.html';
+  var LIVE_COOKING_PATH = EN_PREFIX + '/live-cooking-station.html';
   var ORDER_STEPS_PATH = EN_PREFIX + '/order-steps.html';
   var DELIVERY_AREA_PATH = EN_PREFIX + '/delivery-area.html';
   var HALAL_CERT_PATH = EN_PREFIX + '/halal-cert.html';
@@ -59,6 +61,16 @@
       lp_slug: 'catering_events',
       lp_audience: 'Event Organizer / Banquet / Venue / Family',
       lp_intent: 'Halal catering, buffet, and yok mor events'
+    },
+    '/buffet.html': {
+      lp_slug: 'catering_buffet',
+      lp_audience: 'Event Organizer / Corporate / Reception Planner',
+      lp_intent: 'Halal buffet catering discovery and quotes'
+    },
+    '/live-cooking-station.html': {
+      lp_slug: 'catering_live_cooking',
+      lp_audience: 'Event Organizer / Themed & VIP Event Planner',
+      lp_intent: 'Live cooking station catering discovery and quotes'
     },
     '/popular-menu.html': {
       lp_slug: 'menu_price_shoppers',
@@ -169,6 +181,7 @@
     if (path === '/contact.html') return 'contact';
     if (path === '/corporate.html') return 'corporate';
     if (path === '/catering.html') return 'catering';
+    if (path === '/buffet.html' || path === '/live-cooking-station.html') return 'catering';
     if (path === '/popular-menu.html') return 'menu';
     if (path === '/snack-box.html') return 'menu';
     if (path === '/order-steps.html') return 'order_steps';
@@ -616,6 +629,8 @@
         <a href="' + MENU_PATH + '">Popular Menu</a>\
         <a href="' + SNACK_BOX_PATH + '">Snack Box</a>\
         <a href="' + CATERING_PATH + '">Catering</a>\
+        <a href="' + BUFETT_PATH + '">Buffet</a>\
+        <a href="' + LIVE_COOKING_PATH + '">Live Cooking Station</a>\
         <a href="' + CONTACT_PATH + '">Contact</a>\
         <a href="' + ORDER_STEPS_PATH + '">How to Order</a>\
         <a href="' + DELIVERY_AREA_PATH + '">Delivery Areas</a>\
@@ -683,6 +698,8 @@
         <a href="' + MENU_PATH + '">\u0e40\u0e21\u0e19\u0e39\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21</a>\
         <a href="' + SNACK_BOX_PATH + '">\u0e02\u0e2d\u0e07\u0e27\u0e48\u0e32\u0e07 Snack Box</a>\
         <a href="' + CATERING_PATH + '">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
+        <a href="' + BUFETT_PATH + '">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e15\u0e4c\u0e2e\u0e32\u0e25\u0e32\u0e25</a>\
+        <a href="' + LIVE_COOKING_PATH + '">Live Cooking Station</a>\
         <a href="' + CONTACT_PATH + '">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
         <a href="' + ORDER_STEPS_PATH + '">\u0e02\u0e31\u0e49\u0e19\u0e15\u0e2d\u0e19\u0e2a\u0e31\u0e48\u0e07\u0e07\u0e32\u0e19</a>\
         <a href="' + DELIVERY_AREA_PATH + '">\u0e1e\u0e37\u0e49\u0e19\u0e17\u0e35\u0e48\u0e43\u0e2b\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23</a>\
