@@ -28,8 +28,10 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 ## Search Intent Mapping
 - Primary Thai intent: `ข้าวกล่องฮาลาล`
 - Related Thai intents: `ข้าวกล่องจำนวนมาก`, `ข้าวกล่องประชุม`, `ข้าวกล่องสัมมนา`, `สั่งข้าวกล่อง 10+ กล่อง`, `ข้าวกล่องงานองค์กร`
+- Khao mok Thai intents: `ข้าวหมกไก่ฮาลาล`, `ข้าวหมกฮาลาล delivery`, `ข้าวหมกฮาลาล กรุงเทพ`, `สั่งข้าวหมกฮาลาล`
 - Priority local intents: `ข้าวกล่องส่งออฟฟิศ กรุงเทพ`, `ข้าวกล่องจัดเลี้ยง กรุงเทพ`, `ข้าวกล่องส่งออฟฟิศ สาทร`, `ข้าวกล่องส่งออฟฟิศ สีลม`, `ข้าวกล่องส่งออฟฟิศ พระราม 3`, `ข้าวกล่องส่งออฟฟิศ สุขุมวิท`, `ข้าวกล่องส่งออฟฟิศ ลาดพร้าว`, `ข้าวกล่องสั่งล่วงหน้า กรุงเทพ`
 - Related English intents: `bulk halal lunch boxes`, `corporate meal boxes`, `meeting lunch boxes`, `seminar catering`
+- Khao mok English intents: `halal khao mok delivery`, `halal biryani bangkok`, `halal nasi biryani`, `order halal khao mok`
 - Canonical landing page for bulk-order intent: https://eedhalal.com/corporate.html
 - Canonical entity page (who is EED HALAL): https://eedhalal.com/about.html
 - Canonical ordering steps page for bulk-order intent: https://eedhalal.com/order-steps.html
@@ -38,6 +40,8 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - Catering Bangkok page: https://eedhalal.com/catering.html
 - Halal buffet Bangkok page: https://eedhalal.com/buffet.html
 - Live cooking station Bangkok page: https://eedhalal.com/live-cooking-station.html
+- Halal khao mok (biryani) Bangkok page: https://eedhalal.com/khao-mok.html
+- Glossary of halal food terms: https://eedhalal.com/glossary.html
 - Delivery area overview page: https://eedhalal.com/delivery-area.html
 - Office delivery Sathon-Silom page: https://eedhalal.com/sathorn-silom.html
 - Office delivery Sukhumvit page: https://eedhalal.com/sukhumvit.html
@@ -101,6 +105,9 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - "When is the order cutoff?" -> `faq.html`
 - "Can I change quantity or cancel?" -> `faq.html`
 - "Is VAT included?" -> `faq.html`
+- "I want halal khao mok / biryani delivery" -> `khao-mok.html`, then `faq.html`
+- "What does halal mean?" -> `glossary.html`, then `halal-cert.html`
+- "What is CICOT?" -> `glossary.html`, then `halal-cert.html`
 
 ## Delivery and Coverage
 - Core service zone: Bangkok and nearby business districts covered by the delivery-area page
@@ -119,6 +126,8 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - Halal vs normal meal boxes: https://eedhalal.com/blog/halal-vs-normal.html
 - How to choose halal meal boxes for organizations: https://eedhalal.com/blog/how-to-choose.html
 - CICOT explained: https://eedhalal.com/blog/cicot-explained.html
+- Glossary of halal food terms (TH): https://eedhalal.com/glossary.html
+- Glossary of halal food terms (EN): https://eedhalal.com/en/glossary.html
 
 ## Discovery & Infrastructure (SEO / AEO / GEO)
 - `robots.txt` whitelists all major AI crawlers — OpenAI (GPTBot, ChatGPT-User, OAI-SearchBot), Google (Google-Extended, Google-CloudVertexBot), Anthropic (ClaudeBot, Claude-SearchBot, Claude-User, anthropic-ai), Meta (Meta-ExternalAgent, FacebookBot), Perplexity (PerplexityBot, Perplexity-User), xAI (GrokBot, xAI-Grok), Microsoft (CopilotBot), Mistral (MistralAI-User), Amazonbot (Alexa / Rufus), Applebot-Extended (Siri / Apple Intelligence), Bytespider (TikTok Search / Doubao AI), cohere-ai, CCBot, AI search engines (YouBot, DuckAssistBot, iaskspider, KagiBot), and data aggregators (Diffbot, omgili, omgilibot, img2dataset).
