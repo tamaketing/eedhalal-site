@@ -39,8 +39,8 @@ var EED = {
   leadSmallTh: '2–3 วันทำการ',      /* 10–50 กล่อง */
   leadMediumTh: '5–7 วันทำการ',     /* 50–100 กล่อง */
   leadLargeTh: '1–2 สัปดาห์',        /* เกิน 100 กล่อง */
-  vatTh: 'ราคาที่เสนอไม่รวม VAT 7% (ยังไม่ได้จดทะเบียน VAT)',
-  vatEn: 'Quoted prices exclude 7% VAT (we are not yet VAT-registered)',
+  vatTh: 'ราคาสุทธิ ไม่มีภาษีมูลค่าเพิ่ม (ยังไม่ได้จดทะเบียน VAT จึงไม่สามารถออกใบกำกับภาษีได้ ออกได้เพียงใบเสร็จรับเงินทั่วไป)',
+  vatEn: 'Net price, no VAT charged (we are not VAT-registered and cannot issue tax invoices; only regular receipts available)',
   docTh: 'ออกใบเสนอราคา (Quotation) และใบเสร็จรับเงินแบบธรรมดา',
   docEn: 'We issue Quotations and regular Receipts (not VAT tax invoices)',
 

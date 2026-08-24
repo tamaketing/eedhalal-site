@@ -16,8 +16,9 @@
   var SNACK_BOX_PATH = EN_PREFIX + '/snack-box.html';
   var CONTACT_PATH = EN_PREFIX + '/contact.html';
   var CATERING_PATH = EN_PREFIX + '/catering.html';
-  var BUFETT_PATH = EN_PREFIX + '/buffet.html';
+  var BUFFET_PATH = EN_PREFIX + '/buffet.html';
   var LIVE_COOKING_PATH = EN_PREFIX + '/live-cooking-station.html';
+  var KHAO_MOK_PATH = EN_PREFIX + '/khao-mok.html';
   var ORDER_STEPS_PATH = EN_PREFIX + '/order-steps.html';
   var DELIVERY_AREA_PATH = EN_PREFIX + '/delivery-area.html';
   var HALAL_CERT_PATH = EN_PREFIX + '/halal-cert.html';
@@ -514,10 +515,25 @@
     </a>\
     <nav class="nav-desktop">\
       <a href="' + HOME_PATH + '" class="nav-link">Home</a>\
-      <a href="' + CORPORATE_PATH + '" class="nav-link">Corporate</a>\
-      <a href="' + MENU_PATH + '" class="nav-link">Menu</a>\
-      <a href="' + ABOUT_PATH + '" class="nav-link">About</a>\
-      <a href="' + STORY_PATH + '" class="nav-link">Story</a>\
+      <div class="nav-dropdown">\
+        <button class="nav-link nav-dropdown-toggle">Services <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="nav-dropdown-menu">\
+          <a href="' + CORPORATE_PATH + '" class="nav-dropdown-item">Corporate Orders</a>\
+          <a href="' + CATERING_PATH + '" class="nav-dropdown-item">Catering</a>\
+          <a href="' + BUFFET_PATH + '" class="nav-dropdown-item">Buffet</a>\
+          <a href="' + LIVE_COOKING_PATH + '" class="nav-dropdown-item">Live Cooking Station</a>\
+          <a href="' + SNACK_BOX_PATH + '" class="nav-dropdown-item">Snack Box</a>\
+          <a href="' + MENU_PATH + '" class="nav-dropdown-item">Menu</a>\
+          <a href="' + KHAO_MOK_PATH + '" class="nav-dropdown-item">Khao Mok</a>\
+        </div>\
+      </div>\
+      <div class="nav-dropdown">\
+        <button class="nav-link nav-dropdown-toggle">About <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="nav-dropdown-menu">\
+          <a href="' + ABOUT_PATH + '" class="nav-dropdown-item">About EED HALAL</a>\
+          <a href="' + STORY_PATH + '" class="nav-dropdown-item">Our 40-Year Story</a>\
+        </div>\
+      </div>\
       <a href="' + CONTACT_PATH + '" class="nav-link">Contact</a>\
     </nav>\
     <div class="nav-actions">\
@@ -538,10 +554,25 @@
   <div class="mobile-menu" id="mobileMenu">\
     <div class="mobile-menu-inner">\
       <a href="' + HOME_PATH + '" class="mobile-link">Home</a>\
-      <a href="' + CORPORATE_PATH + '" class="mobile-link">Corporate</a>\
-      <a href="' + MENU_PATH + '" class="mobile-link">Menu</a>\
-      <a href="' + ABOUT_PATH + '" class="mobile-link">About</a>\
-      <a href="' + STORY_PATH + '" class="mobile-link">Story</a>\
+      <div class="mobile-dropdown">\
+        <button class="mobile-link mobile-dropdown-toggle">Services <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="mobile-dropdown-menu">\
+          <a href="' + CORPORATE_PATH + '" class="mobile-dropdown-item">Corporate Orders</a>\
+          <a href="' + CATERING_PATH + '" class="mobile-dropdown-item">Catering</a>\
+          <a href="' + BUFFET_PATH + '" class="mobile-dropdown-item">Buffet</a>\
+          <a href="' + LIVE_COOKING_PATH + '" class="mobile-dropdown-item">Live Cooking Station</a>\
+          <a href="' + SNACK_BOX_PATH + '" class="mobile-dropdown-item">Snack Box</a>\
+          <a href="' + MENU_PATH + '" class="mobile-dropdown-item">Menu</a>\
+          <a href="' + KHAO_MOK_PATH + '" class="mobile-dropdown-item">Khao Mok</a>\
+        </div>\
+      </div>\
+      <div class="mobile-dropdown">\
+        <button class="mobile-link mobile-dropdown-toggle">About <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="mobile-dropdown-menu">\
+          <a href="' + ABOUT_PATH + '" class="mobile-dropdown-item">About EED HALAL</a>\
+          <a href="' + STORY_PATH + '" class="mobile-dropdown-item">Our 40-Year Story</a>\
+        </div>\
+      </div>\
       <a href="' + CONTACT_PATH + '" class="mobile-link">Contact</a>\
       <div class="mobile-cta">\
         <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" class="btn btn-gold w-full" style="justify-content:center" data-track-event="lead_line_click" data-track-section="header" data-track-source="mobile_nav">\
@@ -564,10 +595,25 @@
     </a>\
     <nav class="nav-desktop">\
       <a href="' + HOME_PATH + '" class="nav-link">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
-      <a href="' + CORPORATE_PATH + '" class="nav-link">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
-      <a href="' + MENU_PATH + '" class="nav-link">\u0e40\u0e21\u0e19\u0e39</a>\
-      <a href="' + ABOUT_PATH + '" class="nav-link">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32</a>\
-      <a href="' + STORY_PATH + '" class="nav-link">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27</a>\
+      <div class="nav-dropdown">\
+        <button class="nav-link nav-dropdown-toggle">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="nav-dropdown-menu">\
+          <a href="' + CORPORATE_PATH + '" class="nav-dropdown-item">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
+          <a href="' + CATERING_PATH + '" class="nav-dropdown-item">\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
+          <a href="' + BUFFET_PATH + '" class="nav-dropdown-item">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e48\u0e15\u0e4c</a>\
+          <a href="' + LIVE_COOKING_PATH + '" class="nav-dropdown-item">Live Cooking Station</a>\
+          <a href="' + SNACK_BOX_PATH + '" class="nav-dropdown-item">Snack Box</a>\
+          <a href="' + MENU_PATH + '" class="nav-dropdown-item">\u0e40\u0e21\u0e19\u0e39</a>\
+          <a href="' + KHAO_MOK_PATH + '" class="nav-dropdown-item">\u0e02\u0e49\u0e32\u0e27\u0e2b\u0e21\u0e01</a>\
+        </div>\
+      </div>\
+      <div class="nav-dropdown">\
+        <button class="nav-link nav-dropdown-toggle">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="nav-dropdown-menu">\
+          <a href="' + ABOUT_PATH + '" class="nav-dropdown-item">\u0e23\u0e39\u0e49\u0e08\u0e31\u0e01 EED HALAL</a>\
+          <a href="' + STORY_PATH + '" class="nav-dropdown-item">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27 40 \u0e1b\u0e35</a>\
+        </div>\
+      </div>\
       <a href="' + CONTACT_PATH + '" class="nav-link">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
     </nav>\
     <div class="nav-actions">\
@@ -588,10 +634,25 @@
   <div class="mobile-menu" id="mobileMenu">\
     <div class="mobile-menu-inner">\
       <a href="' + HOME_PATH + '" class="mobile-link">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
-      <a href="' + CORPORATE_PATH + '" class="mobile-link">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
-      <a href="' + MENU_PATH + '" class="mobile-link">\u0e40\u0e21\u0e19\u0e39</a>\
-      <a href="' + ABOUT_PATH + '" class="mobile-link">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32</a>\
-      <a href="' + STORY_PATH + '" class="mobile-link">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27</a>\
+      <div class="mobile-dropdown">\
+        <button class="mobile-link mobile-dropdown-toggle">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="mobile-dropdown-menu">\
+          <a href="' + CORPORATE_PATH + '" class="mobile-dropdown-item">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
+          <a href="' + CATERING_PATH + '" class="mobile-dropdown-item">\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
+          <a href="' + BUFFET_PATH + '" class="mobile-dropdown-item">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e48\u0e15\u0e4c</a>\
+          <a href="' + LIVE_COOKING_PATH + '" class="mobile-dropdown-item">Live Cooking Station</a>\
+          <a href="' + SNACK_BOX_PATH + '" class="mobile-dropdown-item">Snack Box</a>\
+          <a href="' + MENU_PATH + '" class="mobile-dropdown-item">\u0e40\u0e21\u0e19\u0e39</a>\
+          <a href="' + KHAO_MOK_PATH + '" class="mobile-dropdown-item">\u0e02\u0e49\u0e32\u0e27\u0e2b\u0e21\u0e01</a>\
+        </div>\
+      </div>\
+      <div class="mobile-dropdown">\
+        <button class="mobile-link mobile-dropdown-toggle">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="mobile-dropdown-menu">\
+          <a href="' + ABOUT_PATH + '" class="mobile-dropdown-item">\u0e23\u0e39\u0e49\u0e08\u0e31\u0e01 EED HALAL</a>\
+          <a href="' + STORY_PATH + '" class="mobile-dropdown-item">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27 40 \u0e1b\u0e35</a>\
+        </div>\
+      </div>\
       <a href="' + CONTACT_PATH + '" class="mobile-link">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
       <div class="mobile-cta">\
         <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" class="btn btn-gold w-full" style="justify-content:center" data-track-event="lead_line_click" data-track-section="header" data-track-source="mobile_nav">\
@@ -629,7 +690,7 @@
         <a href="' + MENU_PATH + '">Popular Menu</a>\
         <a href="' + SNACK_BOX_PATH + '">Snack Box</a>\
         <a href="' + CATERING_PATH + '">Catering</a>\
-        <a href="' + BUFETT_PATH + '">Buffet</a>\
+        <a href="' + BUFFET_PATH + '">Buffet</a>\
         <a href="' + LIVE_COOKING_PATH + '">Live Cooking Station</a>\
         <a href="' + CONTACT_PATH + '">Contact</a>\
         <a href="' + ORDER_STEPS_PATH + '">How to Order</a>\
@@ -698,7 +759,7 @@
         <a href="' + MENU_PATH + '">\u0e40\u0e21\u0e19\u0e39\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21</a>\
         <a href="' + SNACK_BOX_PATH + '">\u0e02\u0e2d\u0e07\u0e27\u0e48\u0e32\u0e07 Snack Box</a>\
         <a href="' + CATERING_PATH + '">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
-        <a href="' + BUFETT_PATH + '">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e15\u0e4c\u0e2e\u0e32\u0e25\u0e32\u0e25</a>\
+        <a href="' + BUFFET_PATH + '">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e15\u0e4c\u0e2e\u0e32\u0e25\u0e32\u0e25</a>\
         <a href="' + LIVE_COOKING_PATH + '">Live Cooking Station</a>\
         <a href="' + CONTACT_PATH + '">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
         <a href="' + ORDER_STEPS_PATH + '">\u0e02\u0e31\u0e49\u0e19\u0e15\u0e2d\u0e19\u0e2a\u0e31\u0e48\u0e07\u0e07\u0e32\u0e19</a>\
@@ -791,6 +852,13 @@
         this.setAttribute('aria-expanded', String(isOpen));
       });
     });
+
+    document.querySelectorAll('.mobile-dropdown-toggle').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var dropdown = this.closest('.mobile-dropdown');
+        dropdown.classList.toggle('open');
+      });
+    });
   }
 
   function initDesktopDropdowns() {
@@ -809,9 +877,21 @@
       });
     });
 
+    document.querySelectorAll('.nav-dropdown-toggle').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var dropdown = this.closest('.nav-dropdown');
+        var isOpen = dropdown.classList.toggle('open');
+        document.querySelectorAll('.nav-dropdown').forEach(function(d) {
+          if (d !== dropdown) d.classList.remove('open');
+        });
+      });
+    });
+
     document.addEventListener('click', function() {
       document.querySelectorAll('[data-dd-menu]').forEach(function(m) { m.classList.remove('show'); });
       document.querySelectorAll('[data-dd-btn]').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
+      document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('open'); });
     });
   }
 

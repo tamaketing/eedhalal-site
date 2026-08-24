@@ -219,7 +219,9 @@ h1, h2, h3, h4 {
 
 .nav-dropdown { position: relative; }
 
-.nav-dropdown-btn {
+.nav-dropdown:hover .nav-dropdown-menu { display: block; animation: dropdownIn 0.2s ease-out; }
+
+.nav-dropdown-toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -234,22 +236,16 @@ h1, h2, h3, h4 {
   transition: color var(--transition-fast), background var(--transition-fast);
 }
 
-.nav-dropdown-btn:hover { color: var(--primary); background: var(--primary-soft); }
+.nav-dropdown-toggle:hover { color: var(--primary); background: var(--primary-soft); }
 
-.nav-dropdown-btn .arrow {
-  font-size: 0.55rem;
-  transition: transform var(--transition-fast);
-}
+.nav-dropdown-toggle svg { transition: transform var(--transition-fast); }
 
-.nav-dropdown-btn[aria-expanded="true"] .arrow {
-  transform: rotate(180deg);
-}
+.nav-dropdown.open .nav-dropdown-toggle svg { transform: rotate(180deg); }
 
-.dropdown-menu {
+.nav-dropdown-menu {
   position: absolute;
   top: calc(100% + 0.5rem);
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   min-width: 220px;
   background: var(--white);
   border: 1px solid var(--border);
@@ -260,22 +256,53 @@ h1, h2, h3, h4 {
   z-index: 60;
 }
 
-.dropdown-menu.show { display: block; animation: dropdownIn 0.2s ease-out; }
+.nav-dropdown.open .nav-dropdown-menu { display: block; animation: dropdownIn 0.2s ease-out; }
 
 @keyframes dropdownIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.dropdown-menu a {
+.nav-dropdown-item {
   display: block;
   padding: 0.6rem 1rem;
   border-radius: var(--radius);
   font-size: 0.85rem;
+  color: var(--text-secondary);
   transition: background var(--transition-fast);
 }
 
-.dropdown-menu a:hover { background: var(--primary-soft); }
+.nav-dropdown-item:hover { background: var(--primary-soft); color: var(--primary); }
+
+.mobile-dropdown { }
+
+.mobile-dropdown-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.mobile-dropdown-toggle svg { transition: transform var(--transition-fast); }
+
+.mobile-dropdown.open .mobile-dropdown-toggle svg { transform: rotate(180deg); }
+
+.mobile-dropdown-menu {
+  display: none;
+  padding-left: 1rem;
+}
+
+.mobile-dropdown.open .mobile-dropdown-menu { display: block; }
+
+.mobile-dropdown-item {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+}
+
+.mobile-dropdown-item:hover { background: var(--primary-soft); color: var(--primary); }
 
 .cicot-badge {
   display: inline-flex;
