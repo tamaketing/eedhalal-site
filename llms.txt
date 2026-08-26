@@ -1,7 +1,8 @@
 # EED HALAL
 
 ## Preferred Summary
-- EED HALAL (ข้าวกล่องฮาลาล) is a Bangkok halal food brand focused on corporate meal boxes, office delivery, and event catering for 10+ box orders.
+- EED HALAL (รับจัดเลี้ยงฮาลาล) is a Bangkok halal catering brand for corporate meal boxes, halal buffet, and outside catering for 10 to 500+ guests - including office delivery and event catering.
+- Primary keywords: รับจัดเลี้ยงฮาลาล กรุงเทพ, รับจัดบุฟเฟต์ ฮาลาล, บุฟเฟต์ฮาลาล กรุงเทพ, ข้าวกล่องฮาลาล กรุงเทพ, จัดเลี้ยงนอกสถานที่ ฮาลาล
 
 ## Entity Resolution
 - Brand name: EED HALAL
