@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>โหมดวางแผน — คำนวนต้นทุน & ล็อคกำไร 20% | EED HALAL (เจ้าของเท่านั้น)</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
+  <style>
+    .planner-hero{padding-top:7.5rem;padding-bottom:1.25rem;background:linear-gradient(180deg, #0f2e1c 0%, var(--primary) 100%);color:#fff}
+    .planner-hero-inner{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 1.25rem}
+    .planner-hero-badge{display:inline-flex;align-items:center;gap:.45rem;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(8px);padding:.35rem .75rem;border-radius:999px;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    .planner-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:1.25rem}
+    .planner-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem}
+    @media(min-width:640px){ .planner-stat-grid{grid-template-columns:repeat(4,1fr)} }
+    .planner-stat{background:var(--bg);border:1px solid var(--border-light);border-radius:14px;padding:.85rem .9rem;text-align:center}
+    .planner-stat-label{font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)}
+    .planner-stat-value{font-size:1.35rem;font-weight:900;color:var(--primary);margin-top:.15rem;line-height:1}
+    .planner-stat-sub{font-size:.72rem;color:var(--text-muted);margin-top:.15rem}
+    .gate-overlay{position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 30% 0%, rgba(200,151,58,.12), transparent 60%), linear-gradient(180deg, #0f2e1c, var(--primary));display:flex;align-items:center;justify-content:center;padding:1.5rem}
+    .gate-card{background:var(--white);border-radius:24px;box-shadow:var(--shadow-xl);padding:2rem;max-width:420px;width:100%;text-align:center}
+    .gate-input{width:100%;height:48px;border:1px solid var(--border);border-radius:12px;text-align:center;font-size:1.35rem;letter-spacing:.35em;font-weight:900;color:var(--primary);margin-top:1rem}
+    .cost-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:14px;max-height:520px}
+    .cost-table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:720px}
+    .cost-table th{position:sticky;top:0;background:var(--primary);color:#fff;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:.7rem .6rem;text-align:center;white-space:nowrap}
+    .cost-table td{padding:.55rem .6rem;border-bottom:1px solid var(--border-light);vertical-align:middle}
+    .cost-table tr:hover td{background:rgba(29,107,62,.02)}
+    .range-accent{accent-color:var(--primary)}
+    .chip{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:.38rem .85rem;font-size:.8rem;font-weight:700;cursor:pointer}
+    .chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+    @media(max-width:640px){
+      .planner-hero-inner{padding:1.25rem 1rem}
+      .cost-table{font-size:.8rem}
+    }
+  </style>
+</head>
+<body>
+  <div id="nav"></div>
+
+  <!-- GATE -->
+  <div id="plannerGate" class="gate-overlay" style="display:none">
+    <div class="gate-card">
+      <div style="width:56px;height:56px;border-radius:16px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;margin:0 auto;color:var(--primary)">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1.5"/></svg>
+      </div>
+      <h1 style="font-size:1.35rem;font-weight:900;color:var(--primary);margin-top:.9rem">โหมดวางแผน — เจ้าของเท่านั้น</h1>
+      <p style="font-size:.88rem;line-height:1.6;color:var(--text-muted);margin-top:.4rem">หน้านี้มีข้อมูลต้นทุนและกำไร ลูกค้าต้องไม่เห็น<br>ใส่ PIN เพื่อเข้าใช้งาน</p>
+      <input id="gatePin" class="gate-input" type="password" inputmode="numeric" maxlength="4" placeholder="••••">
+      <div id="gateErr" style="display:none;margin-top:.65rem;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;border-radius:10px;padding:.5rem .75rem;font-size:.82rem;font-weight:700"></div>
+      <button id="gateBtn" class="btn btn-primary" style="width:100%;margin-top:1rem;justify-content:center;padding:.9rem">เข้าสู่โหมดวางแผน</button>
+      <div style="margin-top:.85rem;font-size:.75rem;color:var(--text-muted)">หรือเปิดด้วยลิงก์ <code style="background:var(--bg);padding:.15rem .4rem;border-radius:6px">?key=2024</code></div>
+      <a href="budget-calculator.html" style="display:inline-flex;margin-top:1rem;font-size:.82rem;font-weight:700;color:var(--primary);text-decoration:underline">← กลับไปหน้าลูกค้า</a>
+    </div>
+  </div>
+
+  <main id="plannerApp" style="display:none">
+    <section class="planner-hero">
+      <div class="planner-hero-inner">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+          <div class="planner-hero-badge">🔒 เจ้าของเท่านั้น · ไม่แสดงต่อลูกค้า · PIN 2024</div>
+          <div style="display:flex;gap:.5rem">
+            <a href="budget-calculator.html" class="btn btn-outline" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff">หน้าลูกค้า</a>
+            <button id="plannerLogout" class="btn" style="background:rgba(255,255,255,.9);color:var(--primary);font-weight:800">ล็อคหน้าจอ</button>
+          </div>
+        </div>
+        <h1 style="font-size:2rem;font-weight:900;line-height:1.15;margin-top:1rem">คำนวนต้นทุน → ล็อคกำไร 20% → เสนอเมนูให้ลูกค้า</h1>
+        <p style="margin-top:.6rem;max-width:48rem;opacity:.85;line-height:1.7;font-size:.92rem">แก้ต้นทุน/กล่องได้ทุกเมนู เลื่อนกำไร% แล้วระบบจะคำนวณ <b>ราคาขายที่ต้องตั้ง</b> ให้อัตโนมัติ จากนั้นใส่งบลูกค้ามา ระบบจะเสนอเฉพาะชุดที่ <b>กำไร ≥20% และอยู่ในงบ</b> พร้อมยอดกำไรรวมให้คุณตัดสินใจก่อนส่งให้ลูกค้า</p>
+        <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
+          <button id="copyPlannerLink" class="btn" style="background:var(--accent);color:#fff;font-weight:800">คัดลอกลิงก์เจ้าของ</button>
+          <span style="font-size:.75rem;opacity:.7;align-self:center">แชร์ลิงก์นี้ให้ทีมงานเท่านั้น</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <section class="section section-white" style="padding-top:1.5rem;padding-bottom:1.25rem">
+      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
+        <div style="display:grid;gap:1.25rem;grid-template-columns:1fr;align-items:start">
+          <div class="planner-card">
+            <h2 style="font-size:1rem;font-weight:900;color:var(--primary);display:flex;align-items:center;gap:.5rem">⚙️ ตั้งค่ากำไร & งบลูกค้า</h2>
+
+            <div style="display:grid;gap:1.1rem;margin-top:1rem">
+              <!-- Margin -->
+              <div>
+                <label style="font-size:.78rem;font-weight:800;color:var(--primary);display:flex;justify-content:space-between"><span>กำไรที่บังคับ (%)</span><span style="color:var(--text-muted);font-weight:600">ล็อค 20% = มาตรฐานร้าน</span></label>
+                <div style="display:flex;align-items:center;gap:.75rem;margin-top:.45rem;flex-wrap:wrap">
+                  <input id="plannerMargin" type="range" min="5" max="50" step="1" value="20" class="range-accent" style="flex:1;min-width:140px">
+                  <input id="plannerMarginNum" type="number" min="5" max="50" step="1" value="20" style="width:84px;height:40px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary)">
+                  <span style="font-weight:800;color:var(--text-muted)">%</span>
+                  <button id="plannerLock" class="btn btn-outline btn-sm" type="button">ล็อค 20%</button>
+                </div>
+                <div style="font-size:.75rem;color:var(--text-muted);margin-top:.3rem">เป้าหมาย: <code style="background:var(--bg);padding:.1rem .35rem;border-radius:6px">กำไรรวม = 20% × งบอาหาร</code> · ราคาขายล็อคตายตัว กำไรต่อกล่องแต่ละเมนูไม่เท่ากัน ระบบจะคละให้รวมแล้วได้ 20% ±2%</div>
+              </div>
+
+              <!-- Customer budget -->
+              <div style="display:grid;gap:.75rem;grid-template-columns:1fr 1fr;align-items:end">
+                <div>
+                  <label style="font-size:.78rem;font-weight:800;color:var(--primary)">งบรวมลูกค้า (บาท)</label>
+                  <input id="plannerTotal" type="number" min="0" step="100" value="3000" style="margin-top:.35rem;width:100%;height:44px;border:1px solid var(--border);border-radius:12px;padding:0 .9rem;font-size:1.1rem;font-weight:900;color:var(--primary)">
+                  <div style="display:flex;gap:.35rem;margin-top:.45rem;flex-wrap:wrap">
+                    <button class="chip" data-ptotal="1500">1,500</button>
+                    <button class="chip" data-ptotal="3000">3,000</button>
+                    <button class="chip" data-ptotal="5000">5,000</button>
+                    <button class="chip" data-ptotal="10000">10,000</button>
+                  </div>
+                </div>
+                <div>
+                  <label style="font-size:.78rem;font-weight:800;color:var(--primary)">จำนวนกล่อง</label>
+                  <div style="display:flex;gap:.5rem;align-items:center;margin-top:.35rem">
+                    <input id="plannerQty" type="number" min="1" max="500" value="30" style="flex:1;height:44px;border:1px solid var(--border);border-radius:12px;padding:0 .9rem;font-size:1.1rem;font-weight:900;color:var(--primary);text-align:center">
+                    <span style="font-weight:800;color:var(--text-muted)">กล่อง</span>
+                  </div>
+                  <input id="plannerQtyRange" type="range" min="10" max="200" step="5" value="30" class="range-accent" style="width:100%;margin-top:.55rem">
+                  <div style="display:flex;gap:.35rem;margin-top:.35rem;flex-wrap:wrap">
+                    <button class="chip" data-pqty="10">10</button>
+                    <button class="chip" data-pqty="20">20</button>
+                    <button class="chip" data-pqty="50">50 ส่งฟรี</button>
+                    <button class="chip" data-pqty="100">100</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ค่าส่ง + งบเหลือ -->
+              <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;align-items:end">
+                  <div>
+                    <label style="font-size:.78rem;font-weight:800;color:var(--primary);display:flex;align-items:center;gap:.4rem">ค่าส่ง (บาท) <span id="plannerDeliveryBadge" style="font-size:.68rem;font-weight:700;padding:.15rem .45rem;border-radius:999px;background:var(--primary-soft);color:var(--primary)">คำนวณตามจำนวน</span></label>
+                    <input id="plannerDelivery" type="number" min="0" step="50" value="0" style="margin-top:.35rem;width:100%;height:42px;border:1px solid var(--border);border-radius:10px;padding:0 .9rem;font-size:1.05rem;font-weight:900;color:var(--primary)">
+                    <div style="display:flex;gap:.3rem;margin-top:.4rem;flex-wrap:wrap">
+                      <button class="chip" data-delivery="0">ฟรี</button>
+                      <button class="chip" data-delivery="150">150 ในเมือง</button>
+                      <button class="chip" data-delivery="200">200 กลาง</button>
+                      <button class="chip" data-delivery="300">300 ไกล</button>
+                    </div>
+                  </div>
+                  <div style="background:var(--bg);border:1px solid var(--border-light);border-radius:12px;padding:.75rem .85rem">
+                    <div style="font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)">งบเหลือสำหรับอาหาร (ทุน)</div>
+                    <div style="font-size:1.35rem;font-weight:900;color:var(--primary);line-height:1;margin-top:.15rem"><span id="plannerUsable">0</span> บาท</div>
+                    <div style="font-size:.72rem;color:var(--text-muted);margin-top:.15rem"><span id="plannerUsablePerBox">0</span> บาท/กล่อง · หลังหักกำไร <span id="plannerProfitShow">0</span> + ค่าส่ง <span id="plannerDeliveryShow">0</span></div>
+                    <div style="font-size:.68rem;color:var(--text-muted)">สูตร: <span id="plannerFormula">4400 - 880 - 320 = 3200</span></div>
+                  </div>
+                </div>
+                <div style="margin-top:.65rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+                  <label style="font-size:.78rem;font-weight:800;color:var(--primary)">ยอมให้กำไรคลาดเคลื่อน</label>
+                  <input id="plannerTolerance" type="range" min="0" max="5" step="0.5" value="2" class="range-accent" style="width:120px">
+                  <span style="font-size:.85rem;font-weight:900;color:var(--primary)">±<span id="plannerToleranceVal">2</span>%</span>
+                  <span style="font-size:.72rem;color:var(--text-muted)">(20±<span id="plannerTol2">2</span>% → 18-22%)</span>
+                </div>
+              </div>
+
+              <div style="background:var(--primary-soft);border:1px solid rgba(29,107,62,.15);border-radius:14px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+                <div>
+                  <div style="font-size:.7rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--primary)">งบต่อกล่องที่คำนวณได้</div>
+                  <div style="font-size:1.9rem;font-weight:900;color:var(--primary);line-height:1"><span id="plannerPerBox">100</span> <span style="font-size:.9rem;font-weight:700;color:var(--text-muted)">บาท/กล่อง</span></div>
+                  <div style="font-size:.72rem;color:var(--text-muted)">จากงบเหลือ <span id="plannerUsableInline">0</span> ÷ <span id="plannerQtyInline">0</span> กล่อง</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)">สถานะ</div>
+                  <div id="plannerFree" style="font-size:.85rem;font-weight:800;color:var(--primary)">ส่งฟรีทั่วกรุงเทพฯ</div>
+                  <div style="font-size:.72rem;color:var(--text-muted)">ขั้นต่ำ 10 กล่อง · ไทย 5/เมนู</div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+                <span style="font-size:.78rem;font-weight:800;color:var(--text-muted)">กรองหมวด:</span>
+                <button class="chip active" data-pcat="all">ทั้งหมด</button>
+                <button class="chip" data-pcat="ข้าวราดแกง">ข้าวราดแกง</button>
+                <button class="chip" data-pcat="ข้าวผัด">ข้าวผัด</button>
+                <button class="chip" data-pcat="เส้น">เส้น</button>
+                <button class="chip" data-pcat="ข้าวหมก">ข้าวหมก</button>
+                <button class="chip" data-pcat="แกง/ต้ม">แกง/ต้ม</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary stats -->
+          <div class="planner-card">
+            <h3 style="font-size:.9rem;font-weight:900;color:var(--primary)">สรุปเร็ว (กรณีสั่งเมนูถูกสุดที่อยู่ในงบ)</h3>
+            <div class="planner-stat-grid" style="margin-top:.85rem">
+              <div class="planner-stat">
+                <div class="planner-stat-label">ต้นทุนรวม</div>
+                <div class="planner-stat-value" style="color:var(--text)"><span id="plannerTotalCost">0</span> <span style="font-size:.75rem">บาท</span></div>
+                <div class="planner-stat-sub">ทุน/กล่อง ~<span id="plannerAvgCost">-</span></div>
+              </div>
+              <div class="planner-stat">
+                <div class="planner-stat-label">ยอดขายรวม</div>
+                <div class="planner-stat-value"><span id="plannerTotalSell">0</span> <span style="font-size:.75rem">บาท</span></div>
+                <div class="planner-stat-sub">เฉลี่ย <span id="plannerAvgSell">-</span> บาท/กล่อง</div>
+              </div>
+              <div class="planner-stat" style="background:linear-gradient(135deg, #FFFBEB, #FEF3C7);border-color:#FDE68A">
+                <div class="planner-stat-label" style="color:#92400E">กำไรรวม</div>
+                <div class="planner-stat-value" style="color:#92400E"><span id="plannerTotalProfit">0</span> <span style="font-size:.75rem">บาท</span></div>
+                <div class="planner-stat-sub">ล็อค <span id="plannerMarginLive">20%</span></div>
+              </div>
+              <div class="planner-stat">
+                <div class="planner-stat-label">เมนูในงบ</div>
+                <div class="planner-stat-value" style="color:var(--accent)"><span id="plannerFilteredCount">0 เมนู</span></div>
+                <div class="planner-stat-sub">ที่กำไร ≥ <span id="plannerMarginLive2">20%</span></div>
+              </div>
+            </div>
+            <div style="margin-top:.75rem;display:flex;gap:.5rem;flex-wrap:wrap">
+              <button id="plannerCalcBtn" class="btn btn-primary btn-sm" type="button">คำนวณใหม่</button>
+              <button id="resetCosts" class="btn btn-outline btn-sm" type="button">รีเซ็ตต้นทุน & ราคาขาย</button>
+              <span style="font-size:.72rem;color:var(--text-muted);align-self:center">ต้นทุน/ราคาขายแก้แล้วจำไว้ในเครื่องอัตโนมัติ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Suggestions -->
+    <section class="section section-sand" style="padding-top:1.5rem">
+      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+          <h2 style="font-size:1.25rem;font-weight:900;color:var(--primary);margin:0">ชุดที่แนะนำ — กำไร ≥ <span id="plannerMarginLive3">20%</span> และอยู่ในงบ</h2>
+          <span style="font-size:.75rem;color:var(--text-muted)">เรียงจากกำไรสูงสุด · ลูกค้าจะไม่เห็นต้นทุน</span>
+        </div>
+        <div id="plannerEmpty" style="display:none;margin-top:1rem"></div>
+        <div id="plannerSuggestions" style="display:grid;gap:1rem;margin-top:1rem"></div>
+        <div style="margin-top:1rem;background:var(--white);border:1px dashed var(--border);border-radius:12px;padding:.85rem 1rem;font-size:.82rem;line-height:1.6;color:var(--text-muted);text-align:center">
+          💡 ทิป: ถ้าชุดที่เสนอเกินงบ ลองเพิ่มงบรวม 500 บาท หรือลดกำไรเป็น 15% ชั่วคราวเพื่อปิดดีล — แล้วค่อยปรับเมนูให้กลับมา 20% ในรอบถัดไป
+        </div>
+      </div>
+    </section>
+
+    <!-- Cost table -->
+    <section class="section section-white" style="padding-top:1.5rem">
+      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+          <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0">ตารางต้นทุน & ราคาขาย — แก้ได้ทันที</h2>
+          <span style="font-size:.75rem;color:var(--text-muted)">แก้ได้ทั้ง <b>ต้นทุน</b> และ <b>ราคาขาย</b> · กำไรคำนวณ realtime · ต่ำกว่า 20% จะเตือน</span>
+        </div>
+        <div class="cost-table-wrap" style="margin-top:.85rem">
+          <table class="cost-table">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding-left:.9rem">เมนู</th>
+                <th>ต้นทุน (บาท)</th>
+                <th>ราคาขาย (บาท) <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ได้</span></th>
+                <th>กำไร/กล่อง</th>
+                <th>สถานะในงบ</th>
+              </tr>
+            </thead>
+            <tbody id="costTableBody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:.75rem;font-size:.75rem;color:var(--text-muted);line-height:1.6">ต้นทุนเก็บไว้ใน <code>localStorage</code> ของเครื่องนี้เท่านั้น ไม่ถูกส่งไปให้ลูกค้า · ถ้าต้องการต้นทุนลับสุด ไม่ต้อง push ไฟล์ <code>js/cost-data.js</code> ขึ้น GitHub ก็ได้</div>
+      </div>
+    </section>
+
+    <section class="section section-dark" style="padding:2rem 0">
+      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem;text-align:center;position:relative;z-index:1">
+        <h2 style="font-size:1.25rem;font-weight:900;color:#fff">พอใจชุดไหน ส่งให้ลูกค้าทันที</h2>
+        <p style="opacity:.85;margin-top:.4rem;font-size:.9rem">ลูกค้าจะได้รับข้อความที่มีแค่ชื่อเมนู + ราคาขาย + ยอดรวม — ไม่เห็นต้นทุน/กำไร</p>
+        <a href="budget-calculator.html" class="btn btn-accent" style="margin-top:1rem">เปิดหน้าลูกค้าเพื่อทดสอบ</a>
+      </div>
+    </section>
+  </main>
+
+  <div id="footer"></div>
+  <script src="js/business-data.js"></script>
+  <script src="js/menu-data.js"></script>
+  <script src="js/cost-data.js"></script>
+  <script src="js/tracking-config.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/budget-planner.js"></script>
+</body>
+</html>
