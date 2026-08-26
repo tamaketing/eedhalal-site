@@ -37,7 +37,7 @@
       var priceOk = m.price <= b;
       var catOk = cats === 'all' || m.category === cats;
       return priceOk && catOk;
-    }).sort(function(a,b){ return a.price - b.price; });
+    }).sort(function(a,b){ return b.price - a.price; });
   }
 
   function getOverBudget(){
@@ -89,15 +89,31 @@
     els.budgetLevel.textContent = levelText;
     els.budgetLevel.className = 'calc-level ' + levelClass;
 
-    // LINE url
+    // LINE urls — build once and sync all buttons
     var lineMsg = buildLineMessage(total, filtered);
     var lineUrl = 'https://line.me/R/oaMessage/%40EEDHALAL/?' + encodeURIComponent(lineMsg);
-    // also use lin.ee fallback
-    els.btnLine.href = lineUrl;
-    // keep short lin.ee as visible but href is line.me with message
-    els.btnLine2.href = lineUrl;
+    if(els.btnLine) els.btnLine.href = lineUrl;
+    if(els.btnLine2) els.btnLine2.href = lineUrl;
+    if(els.btnLineSelected) els.btnLineSelected.href = lineUrl;
+    // also update title for accessibility
+    var hasSelected = Object.keys(state.selected).length > 0;
+    if(els.btnLine) els.btnLine.title = hasSelected ? 'ส่งเมนูที่เลือกไป LINE' : 'ส่งสรุปไป LINE';
+    if(els.btnLineSelected) els.btnLineSelected.title = lineMsg;
 
     els.totalBudgetInput.value = total;
+  }
+
+  function getSelectedTotals(){
+    var ids = Object.keys(state.selected);
+    var qty = 0, price = 0;
+    ids.forEach(function(id){
+      var m = EED_MENUS.find(function(x){ return String(x.id)===String(id); });
+      if(!m) return;
+      var q = state.selected[id]||0;
+      qty += q;
+      price += q * m.price;
+    });
+    return { ids: ids, qty: qty, price: price, avg: qty ? Math.round(price/qty) : 0 };
   }
 
   function buildLineMessage(total, filtered){
@@ -106,23 +122,64 @@
     lines.push('');
     lines.push('งบต่อกล่อง: ' + state.budgetPerBox + ' บาท');
     lines.push('จำนวน: ' + state.quantity + ' กล่อง');
-    lines.push('ยอดรวมประมาณ: ' + formatMoney(total) + ' บาท' + (state.quantity>=50 ? ' (ส่งฟรี)' : ''));
+    lines.push('ยอดรวมประมาณ (ตามงบ): ' + formatMoney(total) + ' บาท' + (state.quantity>=50 ? ' (ส่งฟรี 50+ กล่อง)' : ''));
     if(state.category !== 'all') lines.push('หมวดที่สนใจ: ' + state.category);
-    var selIds = Object.keys(state.selected);
-    if(selIds.length){
+    var sel = getSelectedTotals();
+    if(sel.ids.length){
       lines.push('');
-      lines.push('เมนูที่สนใจ:');
-      selIds.forEach(function(id){
+      lines.push('เมนูที่เลือก (' + sel.ids.length + ' เมนู รวม ' + sel.qty + ' กล่อง):');
+      sel.ids.forEach(function(id){
         var m = EED_MENUS.find(function(x){return String(x.id)===String(id);});
-        if(m) lines.push('- ' + m.name + ' ('+m.price+' บ./กล่อง) x'+ state.selected[id]);
+        if(!m) return;
+        var q = state.selected[id];
+        var lineTotal = q * m.price;
+        lines.push('- ' + m.name + ' ('+m.price+' บ./กล่อง) x'+ q + ' = ' + formatMoney(lineTotal) + ' บาท');
       });
+      lines.push('ยอดรวมที่เลือก: ' + formatMoney(sel.price) + ' บาท (เฉลี่ย ' + formatMoney(sel.avg) + ' บาท/กล่อง)');
+      if(sel.qty !== state.quantity){
+        lines.push('หมายเหตุ: เลือก ' + sel.qty + ' กล่อง (ตั้งไว้ ' + state.quantity + ' กล่อง)');
+      }
     } else {
       lines.push('');
-      lines.push('เมนูในงบ '+state.budgetPerBox+' บาท ('+filtered.length+' เมนู) เช่น: ' + filtered.slice(0,3).map(function(m){return m.name;}).join(', '));
+      if(filtered.length){
+        lines.push('เมนูในงบ '+state.budgetPerBox+' บาท ('+filtered.length+' เมนู) เช่น: ' + filtered.slice(0,3).map(function(m){return m.name + ' ' + m.price + 'บ.';}).join(', '));
+      } else {
+        lines.push('ยังไม่ได้เลือกเมนู — เมนูในงบนี้: 0 เมนู');
+      }
     }
     lines.push('');
     lines.push('รบกวนขอใบเสนอราคาครับ');
+    lines.push('อ้างอิง: budget-calculator @ eedhalal.com');
     return lines.join('\n');
+  }
+
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly','');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  function copyText(text){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(text).catch(function(){ fallbackCopy(text); });
+    } else {
+      fallbackCopy(text);
+      return Promise.resolve();
+    }
+  }
+
+  function showCopyFeedback(btn, okText, origText){
+    if(!btn) return;
+    var orig = origText || btn.textContent;
+    btn.textContent = okText || 'คัดลอกแล้ว ✓';
+    btn.disabled = true;
+    setTimeout(function(){ btn.textContent = orig; btn.disabled = false; }, 1800);
   }
 
   function renderResults(){
@@ -154,7 +211,7 @@
         var qty = state.selected[m.id]||0;
         return '<article class="calc-card '+(isSelected?'selected':'')+'" data-id="'+m.id+'">'
           + '<div class="calc-card-img-wrap">'
-          + '<img src="'+m.image+'" alt="'+m.name+'" loading="lazy" onerror="this.style.display=\'none\'">'
+          + '<img src="'+m.image+'" alt="'+m.name+'" loading="lazy" onerror="this.onerror=null;this.src=\'img/logo.jpg\';this.style.objectFit=\'contain\';this.style.padding=\'1rem\';this.style.background=\'#f9fafb\'">'
           + (m.badge ? '<span class="calc-badge">'+m.badge+'</span>' : '')
           + '<span class="calc-price-badge">'+m.price+' บาท</span>'
           + '</div>'
@@ -229,7 +286,7 @@
       totalSelectedQty += qty;
       totalSelectedPrice += qty * m.price;
       return '<div class="calc-selected-row">'
-        + '<img src="'+m.image+'" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover" onerror="this.style.display=\'none\'">'
+        + '<img src="'+m.image+'" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover" onerror="this.onerror=null;this.src=\'img/logo.jpg\';this.style.objectFit=\'contain\';this.style.background=\'#f9fafb\'">'
         + '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:.92rem;line-height:1.2">'+m.name+'</div><div style="font-size:.78rem;color:var(--text-muted)">'+m.price+' บาท × '+qty+' = '+formatMoney(m.price*qty)+' บาท</div></div>'
         + '<button class="calc-remove-btn" data-remove="'+id+'" aria-label="ลบ">×</button>'
         + '</div>';
@@ -254,13 +311,15 @@
       });
     });
 
-    // update LINE message again
+    // update LINE buttons again (selected totals need same message)
     var total = state.budgetPerBox * state.quantity;
     var filtered = getFiltered();
     var lineMsg = buildLineMessage(total, filtered);
     var lineUrl = 'https://line.me/R/oaMessage/%40EEDHALAL/?' + encodeURIComponent(lineMsg);
-    els.btnLine.href = lineUrl;
-    els.btnLine2.href = lineUrl;
+    if(els.btnLine) els.btnLine.href = lineUrl;
+    if(els.btnLine2) els.btnLine2.href = lineUrl;
+    if(els.btnLineSelected) els.btnLineSelected.href = lineUrl;
+    if(els.btnLineSelected) els.btnLineSelected.title = lineMsg;
   }
 
   function initControls(){
@@ -286,6 +345,9 @@
     els.budgetLevel = $('budgetLevel');
     els.btnLine = $('calcLineBtn');
     els.btnLine2 = $('calcLineBtn2');
+    els.btnLineSelected = $('lineSelected');
+    els.btnCopySelected = $('copySelected');
+    els.copyToast = $('copyToast');
     els.selectedSection = $('calcSelected');
     els.selectedList = $('calcSelectedList');
     els.selectedQty = $('selectedQty');
@@ -408,17 +470,50 @@
       renderResults(); updateSummary();
     });
 
-    // share / copy
+    // share / copy — สรุปหลัก (คัดลอกแล้วส่ง LINE ได้)
     var copyBtn = $('copySummary');
     if(copyBtn) copyBtn.addEventListener('click', function(){
       var total = state.budgetPerBox * state.quantity;
       var msg = buildLineMessage(total, getFiltered());
-      if(navigator.clipboard){
-        navigator.clipboard.writeText(msg).then(function(){
-          copyBtn.textContent='คัดลอกแล้ว ✓';
-          setTimeout(function(){ copyBtn.textContent='คัดลอกสรุป'; },1500);
+      copyText(msg).then(function(){
+        showCopyFeedback(copyBtn, 'คัดลอกแล้ว ✓', 'คัดลอกสรุป');
+        if(els.copyToast && Object.keys(state.selected).length){
+          els.copyToast.style.display='block';
+          els.copyToast.textContent = 'คัดลอกเมนูที่เลือกแล้ว! นำไปวางใน LINE ได้เลย ✓';
+          setTimeout(function(){ if(els.copyToast) els.copyToast.style.display='none'; }, 2200);
+        }
+        if(window.emitTrackingEvent) try{ emitTrackingEvent('budget_copy', {has_selected: Object.keys(state.selected).length>0});}catch(e){}
+      });
+    });
+
+    // คัดลอกเฉพาะเมนูที่เลือก (ในกล่อง เมนูที่เลือก)
+    if(els.btnCopySelected) els.btnCopySelected.addEventListener('click', function(){
+      var total = state.budgetPerBox * state.quantity;
+      var msg = buildLineMessage(total, getFiltered());
+      if(!Object.keys(state.selected).length){
+        // ถ้ายังไม่ได้เลือก ให้คัดลอกสรุปงบทั่วไปแทน
+        copyText(msg).then(function(){
+          showCopyFeedback(els.btnCopySelected, 'คัดลอกแล้ว ✓', 'คัดลอกเมนูที่เลือก');
         });
+        return;
       }
+      copyText(msg).then(function(){
+        showCopyFeedback(els.btnCopySelected, 'คัดลอกแล้ว ✓', 'คัดลอกเมนูที่เลือก');
+        if(els.copyToast){
+          els.copyToast.style.display='block';
+          els.copyToast.textContent = 'คัดลอกเมนูที่เลือกแล้ว! นำไปวางใน LINE ได้เลย ✓';
+          setTimeout(function(){ if(els.copyToast) els.copyToast.style.display='none'; }, 2200);
+        }
+        if(window.emitTrackingEvent) try{ emitTrackingEvent('budget_copy_selected', {count: Object.keys(state.selected).length});}catch(e){}
+      });
+    });
+
+    // กดส่ง LINE ที่กล่องเมนูที่เลือก — tracking
+    if(els.btnLineSelected) els.btnLineSelected.addEventListener('click', function(){
+      if(window.emitTrackingEvent) try{ emitTrackingEvent('budget_line_selected', {count: Object.keys(state.selected).length});}catch(e){}
+    });
+    if(els.btnLine) els.btnLine.addEventListener('click', function(){
+      if(window.emitTrackingEvent) try{ emitTrackingEvent('budget_line_main', {budget_per_box: state.budgetPerBox, quantity: state.quantity, has_selected: Object.keys(state.selected).length>0});}catch(e){}
     });
 
     // initial render

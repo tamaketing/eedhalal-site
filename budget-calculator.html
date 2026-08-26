@@ -332,6 +332,14 @@
             <div class="calc-selected-stat"><strong id="selectedAvg">0</strong><span>เฉลี่ย/กล่อง</span></div>
             <div class="calc-selected-stat"><strong style="color:var(--accent)">CICOT ✓</strong><span>ฮาลาลรับรอง</span></div>
           </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:1rem">
+            <button id="copySelected" class="btn btn-outline btn-sm" type="button">คัดลอกเมนูที่เลือก</button>
+            <a id="lineSelected" href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="justify-content:center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              ส่งเมนูที่เลือกไป LINE
+            </a>
+          </div>
+          <div id="copyToast" style="display:none;margin-top:.6rem;text-align:center;font-size:.82rem;font-weight:700;color:var(--primary);background:var(--primary-soft);border:1px solid rgba(29,107,62,.15);padding:.5rem .8rem;border-radius:10px">คัดลอกแล้ว! วางใน LINE ได้เลย ✓</div>
         </div>
       </div>
     </section>
