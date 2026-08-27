@@ -5,7 +5,7 @@
 var EED_MENUS = [
   // 60 บาท — มาตรฐาน
   { id: 1, name: "ข้าวกะเพราไก่", price: 60, category: "ข้าวราดแกง", image: "img/menu-kaprao-gai.png", desc: "ผัดกะเพราไฟแรง ไก่สับนุ่ม หอมใบกะเพรา", badge: "", minPerMenu: 5 },
-  { id: 2, name: "ข้าวผัดกะเพราเนื้อ", price: 60, category: "ข้าวราดแกง", image: "img/menu-kaprao-nuea.png", desc: "ข้าวผัดกะเพราเนื้อหอมกระทะ เนื้อนุ่ม", badge: "", minPerMenu: 5 },
+  { id: 2, name: "ข้าวผัดกะเพราเนื้อ", price: 60, category: "ข้าวผัด", image: "img/menu-kaprao-nuea.png", desc: "ข้าวผัดกะเพราเนื้อหอมกระทะ เนื้อนุ่ม", badge: "", minPerMenu: 5 },
   { id: 3, name: "ผัดไทยกุ้งสด", price: 60, category: "เส้น", image: "img/ผัดไทยกุ้งสด.png", desc: "เส้นนุ่มรสกลมกล่อม กุ้งสดตัวโต", badge: "", minPerMenu: 5 },
   { id: 4, name: "ผัดซีอิ๊วเนื้อ", price: 60, category: "เส้น", image: "img/ผัดซีอิ้ว.png", desc: "เส้นใหญ่ผัดซีอิ๊วหอมกระทะ เนื้อหมักนุ่ม", badge: "", minPerMenu: 5 },
   { id: 5, name: "ข้าวผัดทะเล", price: 60, category: "ข้าวผัด", image: "img/ข้าวผัดทะเล.png", desc: "ข้าวผัดทะเลรวม กุ้ง ปลาหมึก ปู", badge: "", minPerMenu: 5 },

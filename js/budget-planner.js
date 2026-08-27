@@ -9,6 +9,8 @@
   var LS_TOPPINGS = 'eed_toppings_v1';
   var LS_IMAGES = 'eed_images_v1';
   var LS_NAMES = 'eed_names_v1';
+  var LS_CATEGORIES = 'eed_categories_v1';
+  var MENU_CATEGORIES = ['ข้าวราดแกง','ข้าวผัด','เส้น','ข้าวหมก','แกง/ต้ม','พรีเมียม'];
   var DEFAULT_ZONES = [
     {id:'bangkok_inner', label:'กรุงเทพชั้นใน (สาทร สีลม พระราม3)', fee:120},
     {id:'sukhumvit', label:'สุขุมวิท', fee:150},
@@ -215,6 +217,44 @@
       }
     }
     saveNames();
+    flashSaved();
+  }
+
+  function loadCategories(){
+    try{
+      var saved = JSON.parse(localStorage.getItem(LS_CATEGORIES)||'null');
+      if(saved && typeof saved === 'object'){
+        for(var id in saved){
+          if(!saved.hasOwnProperty(id)) continue;
+          var v = String(saved[id]||'').trim();
+          if(v){
+            for(var i=0;i<EED_MENUS.length;i++){
+              if(String(EED_MENUS[i].id)===String(id)){
+                EED_MENUS[i].category = v;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }catch(e){}
+  }
+  function saveCategories(){
+    try{
+      var obj = {};
+      EED_MENUS.forEach(function(m){ obj[m.id] = m.category; });
+      localStorage.setItem(LS_CATEGORIES, JSON.stringify(obj));
+      localStorage.setItem('eed_selling_updated_at', String(Date.now()));
+    }catch(e){}
+  }
+  function saveOneCategory(id, catVal){
+    for(var i=0;i<EED_MENUS.length;i++){
+      if(String(EED_MENUS[i].id)===String(id)){
+        EED_MENUS[i].category = catVal;
+        break;
+      }
+    }
+    saveCategories();
     flashSaved();
   }
 
@@ -452,7 +492,7 @@
         var tierColor = m.price <= 60 ? 'var(--primary)' : (m.price <= 90 ? '#7A5C00' : '#7C3A00');
         html += '<tr data-id="'+m.id+'">'
           + '<td style="min-width:200px"><div style="display:flex;align-items:center;gap:.6rem"><img src="'+m.image+'" alt="" style="width:38px;height:38px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'"><div><div style="font-weight:800;font-size:.88rem;line-height:1.2">'+m.name+badge+'</div><div style="font-size:.72rem;color:var(--text-muted);line-height:1.3">'+(m.desc||'')+'</div></div></div></td>'
-          + '<td style="text-align:center"><span style="font-size:.72rem;font-weight:700;padding:.2rem .5rem;border-radius:999px;background:var(--bg);border:1px solid var(--border-light)">'+m.category+'</span></td>'
+          + '<td style="text-align:center"><select class="cat-input" data-id="'+m.id+'" style="height:34px;border:1px solid var(--border);border-radius:10px;padding:0 .35rem;font-size:.78rem;font-weight:700;color:var(--text);background:var(--bg);cursor:pointer">'+MENU_CATEGORIES.map(function(c){ return '<option value="'+c+'"'+(c===m.category?' selected':'')+'>'+c+'</option>'; }).join('')+'</select></td>'
           + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.35rem"><input type="number" class="price-input" data-id="'+m.id+'" value="'+m.price+'" min="10" max="500" step="5" style="width:86px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFFBEB"><span style="font-size:.75rem;font-weight:700;color:var(--text-muted)">บาท</span></div><div style="font-size:.68rem;color:var(--text-muted);margin-top:.15rem">เดิม '+fmt(m._origPrice||m.price)+' บาท</div></td>'
           + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.35rem"><input type="number" class="min-input" data-id="'+m.id+'" value="'+m.minPerMenu+'" min="1" max="50" step="1" style="width:72px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFF7ED"><span style="font-size:.75rem;font-weight:700;color:var(--text-muted)">กล่อง</span></div></td>'
           + '<td style="text-align:center"><input type="text" class="img-input" data-id="'+m.id+'" value="'+m.image.replace(/"/g,'&quot;')+'" placeholder="img/menu.png" style="width:160px;height:34px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;font-size:.78rem;font-weight:600;color:var(--text);background:var(--bg)"></td>'
@@ -548,6 +588,16 @@
         }
       });
     });
+    tbody.querySelectorAll('.cat-input').forEach(function(sel){
+      sel.addEventListener('change', function(){
+        var id = this.getAttribute('data-id');
+        var v = this.value;
+        if(!v) return;
+        saveOneCategory(id, v);
+        renderTable();
+        updateStats();
+      });
+    });
   }
 
   function updateStats(){
@@ -585,6 +635,7 @@
     loadSelling();
     loadImages();
     loadNames();
+    loadCategories();
 
     var catChips = document.querySelectorAll('[data-pcat]');
     var searchInput = $('priceSearch');
@@ -630,11 +681,12 @@
 
     var resetBtn = $('resetPrices');
     if(resetBtn) resetBtn.addEventListener('click', function(){
-      if(!confirm('รีเซ็ตทุกราคา ขั้นต่ำ รูป และชื่อกลับเป็นค่าเริ่มต้นใน js/menu-data.js ?\n(จะลบ eed_selling_v1, eed_mins_v1, eed_images_v1, eed_names_v1)')) return;
+      if(!confirm('รีเซ็ตทุกราคา ขั้นต่ำ รูป ชื่อ และหมวดกลับเป็นค่าเริ่มต้นใน js/menu-data.js ?\n(จะลบ eed_selling_v1, eed_mins_v1, eed_images_v1, eed_names_v1, eed_categories_v1)')) return;
       localStorage.removeItem(LS_SELLING);
       localStorage.removeItem(LS_MINS);
       localStorage.removeItem(LS_IMAGES);
       localStorage.removeItem(LS_NAMES);
+      localStorage.removeItem(LS_CATEGORIES);
       localStorage.removeItem('eed_selling_updated_at');
       EED_MENUS.forEach(function(m){
         if(m._origPrice !== undefined) m.price = m._origPrice;
@@ -668,18 +720,20 @@
       setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
     }
     function buildOverrides(){
-      var prices={}, mins={}, images={}, names={};
+      var prices={}, mins={}, images={}, names={}, categories={};
       EED_MENUS.forEach(function(m){
         prices[m.id]=m.price;
         mins[m.id]=m.minPerMenu;
         images[m.id]=m.image;
         names[m.id]=m.name;
+        categories[m.id]=m.category;
       });
       return {
         prices: prices,
         mins: mins,
         images: images,
         names: names,
+        categories: categories,
         toppings: getGlobalToppings(),
         shipZones: getShipZones(),
         shipFree: getFreeThreshold(),
