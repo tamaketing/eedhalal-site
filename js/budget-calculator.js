@@ -11,6 +11,7 @@
   var LS_SHIP_ZONES = 'eed_ship_zones_v1';
   var LS_SHIP_FREE = 'eed_ship_free_v1';
   var LS_IMAGES = 'eed_images_v1';
+  var LS_NAMES = 'eed_names_v1';
   var els = {};
   var DEFAULT_SHIP_ZONES = [
     {id:'bangkok_inner', label:'กรุงเทพชั้นใน (สาทร สีลม พระราม3)', fee:120},
@@ -48,6 +49,7 @@
       if(data.prices) Object.keys(data.prices).forEach(function(id){ var v=parseFloat(data.prices[id]); if(!isNaN(v)) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].price=v; });
       if(data.mins) Object.keys(data.mins).forEach(function(id){ var v=parseInt(data.mins[id],10); if(!isNaN(v)) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].minPerMenu=v; });
       if(data.images) Object.keys(data.images).forEach(function(id){ var v=String(data.images[id]||'').trim(); if(v) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].image=v; });
+      if(data.names) Object.keys(data.names).forEach(function(id){ var v=String(data.names[id]||'').trim(); if(v) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].name=v; });
       if(Array.isArray(data.toppings)){
         // global toppings
         EED_MENUS.forEach(function(m){ m.toppings = data.toppings.map(function(t){return {name:String(t.name), price:parseInt(t.price,10)||0};}); });
@@ -70,10 +72,12 @@
       var shipZ = JSON.parse(localStorage.getItem(LS_SHIP_ZONES)||'null');
       var shipF = localStorage.getItem(LS_SHIP_FREE);
       var imgs = JSON.parse(localStorage.getItem(LS_IMAGES)||'null');
+      var nms = JSON.parse(localStorage.getItem(LS_NAMES)||'null');
       var data={};
       if(p) data.prices=p;
       if(mns) data.mins=mns;
       if(imgs) data.images=imgs;
+      if(nms) data.names=nms;
       if(tops) data.toppings=tops;
       if(shipZ) data.shipZones=shipZ;
       if(shipF!==null) data.shipFree=parseInt(shipF,10);

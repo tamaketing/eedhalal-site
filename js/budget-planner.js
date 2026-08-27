@@ -8,6 +8,7 @@
   var LS_SHIP_FREE = 'eed_ship_free_v1';
   var LS_TOPPINGS = 'eed_toppings_v1';
   var LS_IMAGES = 'eed_images_v1';
+  var LS_NAMES = 'eed_names_v1';
   var DEFAULT_ZONES = [
     {id:'bangkok_inner', label:'กรุงเทพชั้นใน (สาทร สีลม พระราม3)', fee:120},
     {id:'sukhumvit', label:'สุขุมวิท', fee:150},
@@ -176,6 +177,44 @@
       }
     }
     saveImages();
+    flashSaved();
+  }
+
+  function loadNames(){
+    try{
+      var saved = JSON.parse(localStorage.getItem(LS_NAMES)||'null');
+      if(saved && typeof saved === 'object'){
+        for(var id in saved){
+          if(!saved.hasOwnProperty(id)) continue;
+          var v = String(saved[id]||'').trim();
+          if(v){
+            for(var i=0;i<EED_MENUS.length;i++){
+              if(String(EED_MENUS[i].id)===String(id)){
+                EED_MENUS[i].name = v;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }catch(e){}
+  }
+  function saveNames(){
+    try{
+      var obj = {};
+      EED_MENUS.forEach(function(m){ obj[m.id] = m.name; });
+      localStorage.setItem(LS_NAMES, JSON.stringify(obj));
+      localStorage.setItem('eed_selling_updated_at', String(Date.now()));
+    }catch(e){}
+  }
+  function saveOneName(id, nameVal){
+    for(var i=0;i<EED_MENUS.length;i++){
+      if(String(EED_MENUS[i].id)===String(id)){
+        EED_MENUS[i].name = nameVal;
+        break;
+      }
+    }
+    saveNames();
     flashSaved();
   }
 
@@ -396,13 +435,13 @@
     });
 
     if(filtered.length===0){
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">ไม่พบเมนูที่ค้นหา</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">ไม่พบเมนูที่ค้นหา</td></tr>';
       return;
     }
 
     var html = '';
     sortedCats.forEach(function(cat){
-      html += '<tr style="background:var(--bg);"><td colspan="7" style="font-weight:900;color:var(--primary);padding:.7rem .9rem;font-size:.85rem">'+cat+' <span style="font-weight:600;color:var(--text-muted)">· '+cats[cat].length+' เมนู</span></td></tr>';
+      html += '<tr style="background:var(--bg);"><td colspan="8" style="font-weight:900;color:var(--primary);padding:.7rem .9rem;font-size:.85rem">'+cat+' <span style="font-weight:600;color:var(--text-muted)">· '+cats[cat].length+' เมนู</span></td></tr>';
       cats[cat].forEach(function(m){
         var badge = m.badge ? '<span style="display:inline-block;margin-left:.4rem;background:var(--accent);color:#fff;font-size:.62rem;font-weight:800;padding:.15rem .4rem;border-radius:999px;vertical-align:middle">'+m.badge+'</span>' : '';
         var tier = [];
@@ -417,6 +456,7 @@
           + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.35rem"><input type="number" class="price-input" data-id="'+m.id+'" value="'+m.price+'" min="10" max="500" step="5" style="width:86px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFFBEB"><span style="font-size:.75rem;font-weight:700;color:var(--text-muted)">บาท</span></div><div style="font-size:.68rem;color:var(--text-muted);margin-top:.15rem">เดิม '+fmt(m._origPrice||m.price)+' บาท</div></td>'
           + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.35rem"><input type="number" class="min-input" data-id="'+m.id+'" value="'+m.minPerMenu+'" min="1" max="50" step="1" style="width:72px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFF7ED"><span style="font-size:.75rem;font-weight:700;color:var(--text-muted)">กล่อง</span></div></td>'
           + '<td style="text-align:center"><input type="text" class="img-input" data-id="'+m.id+'" value="'+m.image.replace(/"/g,'&quot;')+'" placeholder="img/menu.png" style="width:160px;height:34px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;font-size:.78rem;font-weight:600;color:var(--text);background:var(--bg)"></td>'
+          + '<td style="text-align:center"><input type="text" class="name-input" data-id="'+m.id+'" value="'+m.name.replace(/"/g,'&quot;')+'" placeholder="ชื่อเมนู" style="width:170px;height:34px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;font-size:.78rem;font-weight:700;color:var(--text);background:var(--bg)"></td>'
           + '<td style="text-align:center;font-size:.72rem;font-weight:700;color:'+tierColor+'">'+tierText+'</td>'
           + '</tr>';
       });
@@ -439,7 +479,7 @@
         saveOne(id, v);
         var tr = this.closest('tr');
         if(tr){
-          var tierCell = tr.cells[5];
+          var tierCell = tr.cells[6];
           if(tierCell){
             var tier = [];
             if(v <= 60) tier.push('60✓'); else tier.push('60✗');
@@ -490,6 +530,24 @@
         }
       });
     });
+    tbody.querySelectorAll('.name-input').forEach(function(inp){
+      inp.addEventListener('change', function(){
+        var id = this.getAttribute('data-id');
+        var v = this.value.trim();
+        if(!v) return;
+        saveOneName(id, v);
+        // update name display in first column
+        var tr = this.closest('tr');
+        if(tr){
+          var nameEl = tr.querySelector('td:first-child div > div > div:first-child');
+          if(nameEl){
+            var badge = tr.querySelector('.calc-badge');
+            var badgeHtml = badge ? badge.outerHTML : '';
+            nameEl.innerHTML = v + badgeHtml;
+          }
+        }
+      });
+    });
   }
 
   function updateStats(){
@@ -526,6 +584,7 @@
   function initPlanner(){
     loadSelling();
     loadImages();
+    loadNames();
 
     var catChips = document.querySelectorAll('[data-pcat]');
     var searchInput = $('priceSearch');
@@ -571,10 +630,11 @@
 
     var resetBtn = $('resetPrices');
     if(resetBtn) resetBtn.addEventListener('click', function(){
-      if(!confirm('รีเซ็ตทุกราคา ขั้นต่ำ และรูปกลับเป็นค่าเริ่มต้นใน js/menu-data.js ?\n(จะลบ eed_selling_v1, eed_mins_v1, eed_images_v1)')) return;
+      if(!confirm('รีเซ็ตทุกราคา ขั้นต่ำ รูป และชื่อกลับเป็นค่าเริ่มต้นใน js/menu-data.js ?\n(จะลบ eed_selling_v1, eed_mins_v1, eed_images_v1, eed_names_v1)')) return;
       localStorage.removeItem(LS_SELLING);
       localStorage.removeItem(LS_MINS);
       localStorage.removeItem(LS_IMAGES);
+      localStorage.removeItem(LS_NAMES);
       localStorage.removeItem('eed_selling_updated_at');
       EED_MENUS.forEach(function(m){
         if(m._origPrice !== undefined) m.price = m._origPrice;
@@ -608,16 +668,18 @@
       setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
     }
     function buildOverrides(){
-      var prices={}, mins={}, images={};
+      var prices={}, mins={}, images={}, names={};
       EED_MENUS.forEach(function(m){
         prices[m.id]=m.price;
         mins[m.id]=m.minPerMenu;
         images[m.id]=m.image;
+        names[m.id]=m.name;
       });
       return {
         prices: prices,
         mins: mins,
         images: images,
+        names: names,
         toppings: getGlobalToppings(),
         shipZones: getShipZones(),
         shipFree: getFreeThreshold(),
