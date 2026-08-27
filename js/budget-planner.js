@@ -372,28 +372,11 @@
         if(m.price <= 120) tier.push('120✓'); else tier.push('120✗');
         var tierText = tier.join(' · ');
         var tierColor = m.price <= 60 ? 'var(--primary)' : (m.price <= 90 ? '#7A5C00' : '#7C3A00');
-        var toppings = getToppingsForMenu ? getToppingsForMenu(m.id) : (function(){ try{var map=JSON.parse(localStorage.getItem(LS_TOPPINGS)||'null'); var arr=map&&map[String(m.id)]; return Array.isArray(arr)?arr:[];}catch(e){return [];} })();
-        // fallback for global toppings
-        if((!toppings || !toppings.length) && typeof getGlobalToppings==='function'){
-          try{ var g=getGlobalToppings(); if(g && g.length) toppings=g; }catch(e){}
-        }
-        var toppingChips = '';
-        if(typeof getGlobalToppings==='function'){
-          var gTops = getGlobalToppings();
-          toppingChips = gTops.length ? gTops.map(function(t, ti){
-            return '<span style="display:inline-flex;align-items:center;gap:.2rem;background:var(--primary-soft);border:1px solid rgba(29,107,62,.15);color:var(--primary);font-size:.68rem;font-weight:800;padding:.15rem .4rem;border-radius:999px;margin:.15rem .15rem 0 0">'+t.name+' +'+fmt(t.price)+'฿</span>';
-          }).join('') : '<span style="font-size:.68rem;color:var(--text-muted)">— ใช้ชุดรวม</span>';
-        } else {
-          toppingChips = toppings.length ? toppings.map(function(t, ti){
-            return '<span style="display:inline-flex;align-items:center;gap:.25rem;background:var(--primary-soft);border:1px solid rgba(29,107,62,.15);color:var(--primary);font-size:.68rem;font-weight:800;padding:.15rem .4rem;border-radius:999px;margin:.15rem .15rem 0 0">'+t.name+' +'+fmt(t.price)+'฿ <button data-topdel="'+m.id+':'+ti+'" type="button" style="border:none;background:transparent;color:var(--primary);font-weight:900;cursor:pointer;padding:0 .15rem;line-height:1">×</button></span>';
-          }).join('') : '<span style="font-size:.68rem;color:var(--text-muted)">— ไม่มี</span>';
-        }
         html += '<tr data-id="'+m.id+'">'
           + '<td style="min-width:200px"><div style="display:flex;align-items:center;gap:.6rem"><img src="'+m.image+'" alt="" style="width:38px;height:38px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'"><div><div style="font-weight:800;font-size:.88rem;line-height:1.2">'+m.name+badge+'</div><div style="font-size:.72rem;color:var(--text-muted);line-height:1.3">'+(m.desc||'')+'</div></div></div></td>'
           + '<td style="text-align:center"><span style="font-size:.72rem;font-weight:700;padding:.2rem .5rem;border-radius:999px;background:var(--bg);border:1px solid var(--border-light)">'+m.category+'</span></td>'
           + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.35rem"><input type="number" class="price-input" data-id="'+m.id+'" value="'+m.price+'" min="10" max="500" step="5" style="width:86px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFFBEB"><span style="font-size:.75rem;font-weight:700;color:var(--text-muted)">บาท</span></div><div style="font-size:.68rem;color:var(--text-muted);margin-top:.15rem">เดิม '+fmt(m._origPrice||m.price)+' บาท</div></td>'
-          + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.25rem"><input type="number" class="min-input" data-id="'+m.id+'" value="'+m.minPerMenu+'" min="1" max="50" step="1" style="width:64px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:800;color:var(--primary);background:var(--white)"><span style="font-size:.72rem;font-weight:700;color:var(--text-muted)">กล่อง</span></div></td>'
-          + '<td style="min-width:210px"><div style="display:flex;flex-wrap:wrap;align-items:center">'+toppingChips+'</div><div style="font-size:.68rem;color:var(--text-muted);margin-top:.25rem">แก้ท็อปปิ้งรวมที่กล่องด้านล่าง</div></td>'
+          + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.35rem"><input type="number" class="min-input" data-id="'+m.id+'" value="'+m.minPerMenu+'" min="1" max="50" step="1" style="width:72px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFF7ED"><span style="font-size:.75rem;font-weight:700;color:var(--text-muted)">กล่อง</span></div></td>'
           + '<td style="text-align:center;font-size:.72rem;font-weight:700;color:'+tierColor+'">'+tierText+'</td>'
           + '</tr>';
       });
@@ -416,7 +399,7 @@
         saveOne(id, v);
         var tr = this.closest('tr');
         if(tr){
-          var tierCell = tr.cells[5];
+          var tierCell = tr.cells[4];
           if(tierCell){
             var tier = [];
             if(v <= 60) tier.push('60✓'); else tier.push('60✗');
