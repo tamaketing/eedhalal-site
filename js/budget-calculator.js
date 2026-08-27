@@ -5,6 +5,11 @@
   var LS_SHIP = 'eed_budget_ship_v1';
   var LS_DATE = 'eed_delivery_date_v1';
   var LS_TIME = 'eed_delivery_time_v1';
+  var LS_SELLING = 'eed_selling_v1';
+  var LS_MINS = 'eed_mins_v1';
+  var LS_TOPPINGS = 'eed_toppings_v1';
+  var LS_SHIP_ZONES = 'eed_ship_zones_v1';
+  var LS_SHIP_FREE = 'eed_ship_free_v1';
   var els = {};
   var DEFAULT_SHIP_ZONES = [
     {id:'bangkok_inner', label:'กรุงเทพชั้นใน (สาทร สีลม พระราม3)', fee:120},
@@ -15,6 +20,10 @@
     {id:'other', label:'อื่นๆ / ต่างจังหวัด — สอบถาม', fee:0}
   ];
   function getShipZones(){
+    try{
+      var saved = JSON.parse(localStorage.getItem(LS_SHIP_ZONES)||'null');
+      if(Array.isArray(saved) && saved.length) return saved;
+    }catch(e){}
     return DEFAULT_SHIP_ZONES;
   }
   function getShipFees(){
@@ -24,8 +33,58 @@
     return map;
   }
   function getFreeThreshold(){
+    try{
+      var v = localStorage.getItem(LS_SHIP_FREE);
+      if(v!==null) return parseInt(v,10)||50;
+    }catch(e){}
     if(typeof EED !== 'undefined' && EED.freeDeliveryFrom) return parseInt(EED.freeDeliveryFrom,10)||50;
     return 50;
+  }
+  // Load overrides from server (for no-backend deploy) + local planner
+  function applyOverrides(data){
+    if(!data || typeof data!=='object') return;
+    try{
+      if(data.prices) Object.keys(data.prices).forEach(function(id){ var v=parseFloat(data.prices[id]); if(!isNaN(v)) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].price=v; });
+      if(data.mins) Object.keys(data.mins).forEach(function(id){ var v=parseInt(data.mins[id],10); if(!isNaN(v)) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].minPerMenu=v; });
+      if(Array.isArray(data.toppings)){
+        // global toppings
+        EED_MENUS.forEach(function(m){ m.toppings = data.toppings.map(function(t){return {name:String(t.name), price:parseInt(t.price,10)||0};}); });
+        if(typeof EED_DEFAULT_TOPPINGS!=='undefined') EED_DEFAULT_TOPPINGS = data.toppings.slice();
+      } else if(data.toppings && typeof data.toppings==='object'){
+        EED_MENUS.forEach(function(m){
+          var arr = data.toppings[String(m.id)];
+          if(Array.isArray(arr)) m.toppings = arr.map(function(t){return {name:String(t.name), price:parseInt(t.price,10)||0};});
+        });
+      }
+      if(Array.isArray(data.shipZones)) localStorage.setItem(LS_SHIP_ZONES, JSON.stringify(data.shipZones));
+      if(data.shipFree!==undefined) localStorage.setItem(LS_SHIP_FREE, String(data.shipFree));
+    }catch(e){}
+  }
+  function loadLocalOverrides(){
+    try{
+      var p = JSON.parse(localStorage.getItem(LS_SELLING)||'null');
+      var mns = JSON.parse(localStorage.getItem(LS_MINS)||'null');
+      var tops = JSON.parse(localStorage.getItem(LS_TOPPINGS)||'null');
+      var shipZ = JSON.parse(localStorage.getItem(LS_SHIP_ZONES)||'null');
+      var shipF = localStorage.getItem(LS_SHIP_FREE);
+      var data={};
+      if(p) data.prices=p;
+      if(mns) data.mins=mns;
+      if(tops) data.toppings=tops;
+      if(shipZ) data.shipZones=shipZ;
+      if(shipF!==null) data.shipFree=parseInt(shipF,10);
+      if(Object.keys(data).length) applyOverrides(data);
+    }catch(e){}
+  }
+  function loadServerOverrides(cb){
+    if(location.protocol==='file:'){ if(cb) cb(); return; }
+    var urls=['data/planner-overrides.json','./data/planner-overrides.json','planner-overrides.json'];
+    var i=0;
+    function next(){
+      if(i>=urls.length){ if(cb) cb(); return; }
+      fetch(urls[i++]+'?t='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error(); return r.json(); }).then(function(data){ applyOverrides(data); if(cb) cb(); }).catch(next);
+    }
+    next();
   }
   var SHIP_FEES = getShipFees();
   var state = {
@@ -733,9 +792,9 @@
   }
 
   function initControls(){
+    loadLocalOverrides();
     loadState();
-    // Prices, minimum order quantities and toppings come from js/menu-data.js.
-    // They are intentionally static so every visitor sees the same catalog.
+    // Prices, minimum order quantities and toppings come from js/menu-data.js + overrides.
     els.budgetRange = $('budgetRange');
     els.budgetNumber = $('budgetNumber');
     els.qtyNumber = $('qtyNumber');
@@ -1063,9 +1122,16 @@
       if(window.emitTrackingEvent) try{ emitTrackingEvent('budget_line_main', {budget_per_box: state.budgetPerBox, quantity: state.quantity, has_selected: Object.keys(state.selected).length>0});}catch(e){}
     });
 
-    // initial render
+    // initial render (local)
     updateSummary();
     renderResults();
+    // try server overrides (planner-overrides.json) for deployed site
+    loadServerOverrides(function(){
+      refreshShipZoneSelect();
+      if(els.shippingZone) els.shippingZone.value = state.shippingZone;
+      updateSummary();
+      renderResults();
+    });
   } // end initControls
 
   // Customer selections may sync between tabs, but the catalog itself is static.
