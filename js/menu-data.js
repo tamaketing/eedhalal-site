@@ -23,7 +23,7 @@ var EED_MENUS = [
   { id: 16, name: "ข้าวหมกไก่", price: 90, category: "ข้าวหมก", image: "img/menu-khao-mok.png", desc: "ข้าวหมกหอมเครื่องเทศ เสิร์ฟพร้อมไก่นุ่ม", badge: "⭐ Best Seller", minPerMenu: 5 },
   { id: 17, name: "คั่วกลิ้งไก่สับ", price: 90, category: "ข้าวราดแกง", image: "img/คั่วกลิ้งไก.png", desc: "ไก่สับผัดเครื่องคั่วกลิ้งหอมเครื่องเทศใต้", badge: "", minPerMenu: 5 },
   { id: 18, name: "ข้าวผัดปู", price: 90, category: "ข้าวผัด", image: "img/ข้าวผัดปู.png", desc: "เนื้อปูชิ้นเต็มคำผัดข้าวหอมกระทะ", badge: "", minPerMenu: 5 },
-  { id: 19, name: "กระเพราทะเลไข่ดาว", price: 90, category: "ข้าวราดแกง", image: "img/กระเพราทะเลไข่ดาว.png", desc: "ผัดกระเพราทะเลรวม กุ้ง หมึก หอย + ไข่ดาว", badge: "", minPerMenu: 5 },
+  { id: 19, name: "กระเพราทะเล", price: 90, category: "ข้าวราดแกง", image: "img/กระเพราทะเลไข่ดาว.png", desc: "ผัดกระเพราทะเลรวม กุ้ง หมึก หอย + ไข่ดาว", badge: "", minPerMenu: 5 },
   { id: 20, name: "ข้าวหมกน่องไก่", price: 90, category: "ข้าวหมก", image: "img/khao-mok-box-opt.jpg", desc: "ข้าวหมกน่องไก่ชิ้นใหญ่", badge: "", minPerMenu: 10 },
   { id: 37, name: "ข้าวหมกเนื้อน่อง", price: 90, category: "ข้าวหมก", image: "img/ข้าวหมกเนื้อ+ซาโมซา.png", desc: "ข้าวหมกหอมเครื่องเทศ เสิร์ฟพร้อมเนื้อน่องนุ่ม", badge: "ใหม่", minPerMenu: 10 },
   { id: 21, name: "ข้าวเนื้อผัดพริกไทยดำ", price: 90, category: "ข้าวราดแกง", image: "img/menu-kaprao-nuea.png", desc: "เนื้อผัดพริกไทยดำหอมๆ", badge: "", minPerMenu: 5 },
@@ -31,8 +31,8 @@ var EED_MENUS = [
 
   // 120 บาท — พรีเมียม
   { id: 24, name: "ไก่ทอดเครื่อง + ข้าวเหลือง", price: 120, category: "ข้าวหมก", image: "img/ไก่ทอดเครื่อง.png", desc: "ไก่ทอดเครื่องหอมสมุนไพร + ข้าวเหลือง", badge: "พรีเมียม", minPerMenu: 10 },
-  { id: 29, name: "ข้าวผัดกะเพราเนื้อ + ผลไม้", price: 75, category: "ข้าวราดแกง", image: "img/กะเพราเนื้อ_ผลไม้.jpg", desc: "เพิ่มผลไม้สดตามฤดูกาล", badge: "+ ผลไม้", minPerMenu: 5 },
-  { id: 30, name: "ข้าวผัดทะเล + ผลไม้", price: 75, category: "ข้าวผัด", image: "img/ข้าวผัดทะเล_ผลไม้.jpg", desc: "ข้าวผัดทะเลเสิร์ฟพร้อมผลไม้", badge: "+ ผลไม้", minPerMenu: 5 },
+  { id: 29, name: "ข้าวผัดกะเพราเนื้อ", price: 75, category: "ข้าวราดแกง", image: "img/กะเพราเนื้อ_ผลไม้.jpg", desc: "เพิ่มผลไม้สดตามฤดูกาล", badge: "+ ผลไม้", minPerMenu: 5 },
+  { id: 30, name: "ข้าวผัดทะเล", price: 75, category: "ข้าวผัด", image: "img/ข้าวผัดทะเล_ผลไม้.jpg", desc: "ข้าวผัดทะเลเสิร์ฟพร้อมผลไม้", badge: "+ ผลไม้", minPerMenu: 5 },
 
   // เพิ่มใหม่ — 6 เมนูลูกค้าร้องขอ
   { id: 31, name: "ผัดเขียวหวานแห้งไก่", price: 60, category: "ข้าวราดแกง", image: "img/ผัดเขียวหวาน.png", desc: "ผัดเขียวหวานแห้งไก่ หอมเครื่องแกง เข้มข้น จัดจ้าน", badge: "ใหม่", minPerMenu: 5 },
@@ -41,20 +41,21 @@ var EED_MENUS = [
   { id: 34, name: "ผัดผักรวมไก่", price: 60, category: "ข้าวราดแกง", image: "img/ไก่กะเทียม.jpg", desc: "ผัดผักรวมไก่ ผักสดหลากชนิด ผัดน้ำมันหอย", badge: "ใหม่", minPerMenu: 5 },
   { id: 35, name: "ผัดพริกแกงไก่ถั่วฝักยาว", price: 60, category: "ข้าวราดแกง", image: "img/คั่วกลิ้งไก.png", desc: "ผัดพริกแกงไก่ใส่ถั่วฝักยาว เผ็ดหอมเครื่องแกงใต้", badge: "ใหม่", minPerMenu: 5 },
   { id: 36, name: "ข้าวราดแกงโทโพปลาเค็ม", price: 60, category: "ข้าวราดแกง", image: "img/buffet-menu-kaeng-kati.jpg", desc: "แกงโทโพกะทิเข้มข้น ใส่ปลาเค็มและหมูสามชั้น", badge: "ใหม่", minPerMenu: 5 },
-  { id: 38, name: "ผัดเขียวหวานแห้งเนื้อ", price: 60, category: "ข้าวราดแกง", image: "img/ผัดเขียวหวาน.png", desc: "ผัดเขียวหวานแห้งเนื้อ หอมเครื่องแกง เข้มข้น จัดจ้าน", badge: "ใหม่", minPerMenu: 5 }
+  { id: 38, name: "ผัดเขียวหวานแห้งเนื้อ", price: 60, category: "ข้าวราดแกง", image: "img/ผัดเขียวหวาน.png", desc: "ผัดเขียวหวานแห้งเนื้อ หอมเครื่องแกง เข้มข้น จัดจ้าน", badge: "ใหม่", minPerMenu: 5 },
+  { id: 39, name: "ข้าวราดกะเพราเนื้อสับคั่ว", price: 60, category: "ข้าวราดแกง", image: "img/menu-kaprao-nuea.png", desc: "เนื้อสับคั่วแห้งหอมกระทะ เผ็ดจัดจ้าน สไตล์กะเพราคั่ว", badge: "ใหม่", minPerMenu: 5 }
 ];
 
 // Standard add-ons shown on the public calculator.
 // Keep these values here so toppings are identical for every visitor after deploy.
 var EED_DEFAULT_TOPPINGS = [
-  {name: "ไข่ดาว", price: 10},
-  {name: "ไข่เจียว", price: 10},
-  {name: "ไก่ทอด", price: 20}
+  { name: "ไข่ดาว", price: 10 },
+  { name: "ไข่เจียว", price: 10 },
+  { name: "ไก่ทอด", price: 20 }
 ];
-EED_MENUS.forEach(function(menu){
-  if(!Array.isArray(menu.toppings) || !menu.toppings.length){
-    menu.toppings = EED_DEFAULT_TOPPINGS.map(function(topping){
-      return {name: topping.name, price: topping.price};
+EED_MENUS.forEach(function (menu) {
+  if (!Array.isArray(menu.toppings) || !menu.toppings.length) {
+    menu.toppings = EED_DEFAULT_TOPPINGS.map(function (topping) {
+      return { name: topping.name, price: topping.price };
     });
   }
 });
