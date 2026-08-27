@@ -10,6 +10,7 @@
   var LS_TOPPINGS = 'eed_toppings_v1';
   var LS_SHIP_ZONES = 'eed_ship_zones_v1';
   var LS_SHIP_FREE = 'eed_ship_free_v1';
+  var LS_IMAGES = 'eed_images_v1';
   var els = {};
   var DEFAULT_SHIP_ZONES = [
     {id:'bangkok_inner', label:'กรุงเทพชั้นใน (สาทร สีลม พระราม3)', fee:120},
@@ -46,6 +47,7 @@
     try{
       if(data.prices) Object.keys(data.prices).forEach(function(id){ var v=parseFloat(data.prices[id]); if(!isNaN(v)) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].price=v; });
       if(data.mins) Object.keys(data.mins).forEach(function(id){ var v=parseInt(data.mins[id],10); if(!isNaN(v)) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].minPerMenu=v; });
+      if(data.images) Object.keys(data.images).forEach(function(id){ var v=String(data.images[id]||'').trim(); if(v) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].image=v; });
       if(Array.isArray(data.toppings)){
         // global toppings
         EED_MENUS.forEach(function(m){ m.toppings = data.toppings.map(function(t){return {name:String(t.name), price:parseInt(t.price,10)||0};}); });
@@ -67,9 +69,11 @@
       var tops = JSON.parse(localStorage.getItem(LS_TOPPINGS)||'null');
       var shipZ = JSON.parse(localStorage.getItem(LS_SHIP_ZONES)||'null');
       var shipF = localStorage.getItem(LS_SHIP_FREE);
+      var imgs = JSON.parse(localStorage.getItem(LS_IMAGES)||'null');
       var data={};
       if(p) data.prices=p;
       if(mns) data.mins=mns;
+      if(imgs) data.images=imgs;
       if(tops) data.toppings=tops;
       if(shipZ) data.shipZones=shipZ;
       if(shipF!==null) data.shipFree=parseInt(shipF,10);
@@ -743,6 +747,7 @@
     els.selectedSection.style.display='block';
     var totalSelectedQty = 0;
     var totalSelectedPrice = 0;
+    var hasBelowMin = false;
     var html = ids.map(function(id){
       var m = EED_MENUS.find(function(x){ return String(x.id)===String(id); });
       var qty = state.selected[id];
@@ -752,9 +757,12 @@
       totalSelectedPrice += qty * unitPrice;
       var topNames = (state.selectedToppings[id]||[]).map(function(ti){ var t=getToppingsForMenu(id)[ti]; return t? t.name+' (+'+t.price+'บ.)' : null; }).filter(Boolean).join(', ');
       var topLine = topNames ? '<div style="font-size:.72rem;color:var(--primary);font-weight:700">+ '+topNames+'</div>' : '';
+      var belowMin = m.minPerMenu && qty < m.minPerMenu;
+      if(belowMin) hasBelowMin = true;
+      var belowMinLine = belowMin ? '<div style="font-size:.78rem;color:#DC2626;font-weight:800;margin-top:2px">⚠ ต่ำกว่าขั้นต่ำ (ต้องไม่น้อยกว่า '+m.minPerMenu+' กล่อง)</div>' : '';
       return '<div class="calc-selected-row">'
         + '<img src="'+m.image+'" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover" onerror="this.onerror=null;this.src=\'img/logo.jpg\';this.style.objectFit=\'contain\';this.style.background=\'#f9fafb\'">'
-        + '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:.92rem;line-height:1.2">'+m.name+'</div>'+topLine+'<div style="font-size:.78rem;color:var(--text-muted)">'+unitPrice+' บาท × '+qty+' = '+formatMoney(unitPrice*qty)+' บาท'+(topPrice>0?' <span style="color:var(--text-muted)">(ฐาน '+m.price+'+ท็อปปิ้ง '+topPrice+')</span>':'')+'</div></div>'
+        + '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:.92rem;line-height:1.2">'+m.name+'</div>'+topLine+'<div style="font-size:.78rem;color:var(--text-muted)">'+unitPrice+' บาท × '+qty+' = '+formatMoney(unitPrice*qty)+' บาท'+(topPrice>0?' <span style="color:var(--text-muted)">(ฐาน '+m.price+'+ท็อปปิ้ง '+topPrice+')</span>':'')+'</div>'+belowMinLine+'</div>'
         + '<button class="calc-remove-btn" data-remove="'+id+'" aria-label="ลบ">×</button>'
         + '</div>';
     }).join('');
@@ -769,6 +777,14 @@
       els.selectedWarn.style.display='block';
     } else {
       els.selectedWarn.style.display='none';
+    }
+
+    // warn if any menu below minimum
+    if(hasBelowMin){
+      els.selectedMinWarn.innerHTML = '⚠️ มีเมนูที่จำนวนต่ำกว่าขั้นต่ำ — ปรับจำนวนหรือลบเมนูนั้นออกก่อนคัดลอก/ส่ง LINE';
+      els.selectedMinWarn.style.display='block';
+    } else {
+      els.selectedMinWarn.style.display='none';
     }
 
     els.selectedList.querySelectorAll('[data-remove]').forEach(function(b){
@@ -787,8 +803,30 @@
     var lineUrl = 'https://line.me/R/oaMessage/%40EEDHALAL/?' + encodeURIComponent(lineMsg);
     if(els.btnLine) els.btnLine.href = lineUrl;
     if(els.btnLine2) els.btnLine2.href = lineUrl;
-    if(els.btnLineSelected) els.btnLineSelected.href = lineUrl;
-    if(els.btnLineSelected) els.btnLineSelected.title = lineMsg;
+
+    // disable copy / LINE if any menu below minimum
+    if(els.btnCopySelected){
+      if(hasBelowMin){
+        els.btnCopySelected.disabled = true;
+        els.btnCopySelected.title = 'ไม่สามารถคัดลอกได้ — มีเมนูที่จำนวนต่ำกว่าขั้นต่ำ';
+      } else {
+        els.btnCopySelected.disabled = false;
+        els.btnCopySelected.title = 'คัดลอกเมนูที่เลือก';
+      }
+    }
+    if(els.btnLineSelected){
+      if(hasBelowMin){
+        els.btnLineSelected.href = '#';
+        els.btnLineSelected.title = 'ไม่สามารถส่ง LINE ได้ — มีเมนูที่จำนวนต่ำกว่าขั้นต่ำ';
+        els.btnLineSelected.style.opacity = '0.45';
+        els.btnLineSelected.style.pointerEvents = 'none';
+      } else {
+        els.btnLineSelected.href = lineUrl;
+        els.btnLineSelected.title = lineMsg;
+        els.btnLineSelected.style.opacity = '';
+        els.btnLineSelected.style.pointerEvents = '';
+      }
+    }
   }
 
   function initControls(){
@@ -824,6 +862,7 @@
     els.selectedTotal = $('selectedTotal');
     els.selectedAvg = $('selectedAvg');
     els.selectedWarn = $('selectedWarn');
+    els.selectedMinWarn = $('selectedMinWarn');
     // shipping
     els.shippingMode = $('shippingMode');
     els.shippingFeeInput = $('shippingFee');
@@ -1094,6 +1133,21 @@
 
     // คัดลอกเฉพาะเมนูที่เลือก (ในกล่อง เมนูที่เลือก)
     if(els.btnCopySelected) els.btnCopySelected.addEventListener('click', function(){
+      // block if any selected menu is below its minimum
+      var ids = Object.keys(state.selected);
+      for(var i=0;i<ids.length;i++){
+        var mm = EED_MENUS.find(function(x){return String(x.id)===String(ids[i]);});
+        if(mm && mm.minPerMenu && state.selected[ids[i]] < mm.minPerMenu){
+          if(els.copyToast){
+            els.copyToast.style.display='block';
+            els.copyToast.style.color = '#DC2626';
+            els.copyToast.style.borderColor = 'rgba(220,38,38,.2)';
+            els.copyToast.textContent = 'ไม่สามารถคัดลอกได้ — มีเมนูที่จำนวนต่ำกว่าขั้นต่ำ';
+            setTimeout(function(){ if(els.copyToast){ els.copyToast.style.display='none'; els.copyToast.style.color=''; els.copyToast.style.borderColor=''; } }, 3000);
+          }
+          return;
+        }
+      }
       var total = state.budgetPerBox * state.quantity;
       var msg = buildLineMessage(total, getFiltered());
       if(!Object.keys(state.selected).length){
