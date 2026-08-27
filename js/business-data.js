@@ -30,6 +30,10 @@ var EED = {
   onTimeRate: '98',             /* % ส่งตรงเวลา */
   menuCount: '30',              /* มีมากกว่า 30 เมนู */
 
+  /* ── ค่าส่ง (ใช้ใน budget-calculator) ── */
+  shippingAutoNote: 'ฟรีเมื่อ 50+ กล่อง น้อยกว่านั้นคิดตามระยะทาง',
+  shippingZoneFees: { bangkok_inner: 120, sukhumvit: 150, ladprao: 180, bangkok_outer: 250, vicinity: 350, other: 0 },
+
   /* ── ข้อความมาตรฐาน (ใช้คำเดียวกับแบบนี้ทุกหน้า) ── */
   quoteTimeTh: 'ภายใน 15 นาทีหลังทัก LINE',
   quoteTimeEn: 'within 15 minutes after messaging us on LINE',

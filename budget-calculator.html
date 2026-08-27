@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <!-- Google Tag Manager -->
-  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  <!-- Google Tag Manager (skip on file://) -->
+  <script>if(location.protocol!=='file:'){(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
   j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-  })(window,document,'script','dataLayer','GTM-W5SJNZF7');</script>
+  })(window,document,'script','dataLayer','GTM-W5SJNZF7');}</script>
   <!-- End Google Tag Manager -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,8 +14,8 @@
   <meta name="description" content="คำนวนงบข้าวกล่องฮาลาล EED HALAL — ใส่จบต่อกล่อง 60/90/120 บาท และจำนวนกล่อง ระบบจะแสดงเมนูที่อยู่ในงบ พร้อมยอดรวมและส่งฟรี 50+ กล่อง คำนวณทันทีแล้วทัก LINE ขอใบเสนอราคาได้เลย">
   <link rel="canonical" href="https://eedhalal.com/budget-calculator.html">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
-  <link rel="apple-touch-icon" href="/img/logo.jpg">
+  <link rel="icon" type="image/jpeg" href="img/logo.jpg">
+  <link rel="apple-touch-icon" href="img/logo.jpg">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <meta name="keywords" content="คำนวนงบข้าวกล่อง, ข้าวกล่อง 60 บาท, ข้าวกล่องฮาลาล ราคา, คำนวณงบจัดเลี้ยง, ข้าวกล่องประชุม ราคา">
   <meta property="og:type" content="website">
@@ -160,6 +160,8 @@
   </style>
 </head>
 <body>
+  <div id="fileWarn" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#FEF2F2;border-bottom:2px solid #FECACA;color:#7F1D1D;padding:.7rem 1rem;text-align:center;font-size:.85rem;font-weight:700">⚠️ เปิดแบบ file:// ภาพบางรายการอาจไม่ขึ้น — กรุณาเปิดผ่าน <code>start-server.bat</code> -> <code>http://localhost:8000/budget-calculator.html</code></div>
+  <script>if(location.protocol==='file:'){var w=document.getElementById('fileWarn'); if(w) w.style.display='block';}</script>
   <!-- Google Tag Manager (noscript) -->
   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W5SJNZF7" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- End Google Tag Manager (noscript) -->
@@ -246,6 +248,91 @@
               </div>
             </div>
 
+            <!-- Delivery Date -->
+            <div class="calc-field" style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:1rem">
+              <label>
+                <span>วันที่ส่ง</span>
+                <span id="deliveryDateHint">เลือกวันที่ต้องการ</span>
+              </label>
+              <div class="calc-input-row">
+                <input id="deliveryDate" class="calc-number" type="date" style="flex:1;text-align:left;padding:0 .9rem;font-size:.95rem">
+                <span style="font-weight:800;color:var(--text-muted);font-size:1.1rem">📅</span>
+              </div>
+              <div class="calc-quick" style="margin-top:.7rem">
+                <button class="calc-chip" data-date="+3">+3 วัน</button>
+                <button class="calc-chip" data-date="+4">+4 วัน</button>
+                <button class="calc-chip" data-date="+7">+7 วัน</button>
+                <button class="calc-chip" data-date="+14">+14 วัน</button>
+                <button class="calc-chip" data-date="nextweek">อาทิตย์หน้า</button>
+              </div>
+              <div style="font-size:.72rem;color:var(--text-muted);margin-top:.45rem;line-height:1.6">⚠️ กำหนดส่งล่วงหน้าอย่างน้อย 3 วัน (ตามเงื่อนไขครัว)</div>
+              <div id="deliveryDateNote" style="margin-top:.6rem;font-size:.78rem;line-height:1.6;color:var(--text-muted);background:var(--bg);border:1px solid var(--border-light);border-radius:10px;padding:.6rem .75rem;display:none"></div>
+              <label style="margin-top:1rem">
+                <span>เวลาส่ง</span>
+                <span id="deliveryTimeHint" style="font-size:.75rem;font-weight:600;color:var(--text-muted)">เลือกเวลา</span>
+              </label>
+              <div class="calc-input-row" style="margin-top:.55rem">
+                <input id="deliveryTime" class="calc-number" type="time" style="flex:1;text-align:left;padding:0 .9rem;font-size:.95rem">
+                <span style="font-weight:800;color:var(--text-muted);font-size:1.1rem">⏰</span>
+              </div>
+              <div class="calc-quick" style="margin-top:.7rem">
+                <button class="calc-chip" data-time="08:00">08:00</button>
+                <button class="calc-chip" data-time="09:00">09:00</button>
+                <button class="calc-chip" data-time="10:00">10:00</button>
+                <button class="calc-chip" data-time="11:00">11:00</button>
+                <button class="calc-chip" data-time="12:00">12:00</button>
+              </div>
+              <div id="deliveryTimeNote" style="margin-top:.6rem;font-size:.78rem;line-height:1.6;color:var(--text-muted);background:var(--bg);border:1px solid var(--border-light);border-radius:10px;padding:.6rem .75rem;display:none"></div>
+            </div>
+
+            <!-- Shipping -->
+            <div class="calc-field" style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:1rem">
+              <label>
+                <span>ค่าส่ง</span>
+                <span id="shippingHint">อัตโนมัติ: ฟรีเมื่อ 50+ กล่อง</span>
+              </label>
+              <div class="calc-input-row" style="margin-top:.6rem">
+                <select id="shippingMode" class="calc-number" style="flex:1;min-width:0;height:42px;border-radius:12px;padding:0 .9rem;font-size:.92rem;font-weight:700;text-align:left">
+                  <option value="auto">อัตโนมัติ — ฟรีเมื่อ 50+ กล่อง / น้อยกว่านั้นคิดตามระยะทาง</option>
+                  <option value="free">บังคับฟรี (โปรโมชั่น)</option>
+                  <option value="manual">ระบุค่าส่งเอง</option>
+                  <option value="zone">คำนวนตามเขต</option>
+                </select>
+              </div>
+              <!-- manual input -->
+              <div id="shippingManualRow" class="calc-input-row" style="display:none;margin-top:.7rem">
+                <div class="calc-stepper">
+                  <button type="button" id="shipDec" aria-label="ลด">−</button>
+                  <div style="width:1px;height:24px;background:var(--border)"></div>
+                  <button type="button" id="shipInc" aria-label="เพิ่ม">+</button>
+                </div>
+                <input id="shippingFee" class="calc-number small" type="number" min="0" max="2000" step="20" value="0">
+                <span style="font-weight:800;color:var(--text-muted)">บาท</span>
+              </div>
+              <!-- zone select -->
+              <div id="shippingZoneRow" style="display:none;margin-top:.7rem">
+                <div class="calc-input-row">
+                  <select id="shippingZone" class="calc-number" style="flex:1;height:42px;border-radius:12px;padding:0 .9rem;font-size:.92rem;font-weight:700;text-align:left">
+                    <option value="bangkok_inner">กรุงเทพชั้นใน (สาทร สีลม พระราม3) — 120 บาท</option>
+                    <option value="sukhumvit">สุขุมวิท — 150 บาท</option>
+                    <option value="ladprao">ลาดพร้าว วังทองหลาง — 180 บาท</option>
+                    <option value="bangkok_outer">กรุงเทพรอบนอก — 250 บาท</option>
+                    <option value="vicinity">ปริมณฑล (นนทบุรี สมุทรปราการ ปทุม) — 350 บาท</option>
+                    <option value="other">อื่นๆ / ต่างจังหวัด — สอบถาม</option>
+                  </select>
+                </div>
+                <div style="font-size:.75rem;color:var(--text-muted);margin-top:.45rem;line-height:1.6">เลือกเขตแล้ว ระบบจะใส่ค่าส่งให้ (ฟรีอัตโนมัติถ้า 50+ กล่อง ทับค่าส่งเป็น 0)</div>
+              </div>
+              <div class="calc-quick" style="margin-top:.7rem">
+                <button class="calc-chip" data-ship="0">ฟรี</button>
+                <button class="calc-chip" data-ship="100">100 บาท</button>
+                <button class="calc-chip" data-ship="180">180 บาท</button>
+                <button class="calc-chip" data-ship="250">250 บาท</button>
+                <button class="calc-chip" data-ship="350">350 บาท</button>
+              </div>
+              <div id="shippingCalcNote" style="margin-top:.6rem;font-size:.78rem;line-height:1.6;color:var(--text-muted);background:var(--bg);border:1px solid var(--border-light);border-radius:10px;padding:.6rem .75rem;display:none"></div>
+            </div>
+
             <!-- Total budget (reverse calc) -->
             <div class="calc-field" style="background:var(--bg);border:1px solid var(--border-light);border-radius:14px;padding:1rem">
               <label>
@@ -256,7 +343,7 @@
                 <input id="totalBudget" class="calc-number" type="number" min="0" step="100" value="1200">
                 <span style="font-weight:800;color:var(--text-muted)">บาท</span>
               </div>
-              <div style="font-size:.75rem;color:var(--text-muted);margin-top:.45rem;line-height:1.6">เช่น มีงบรวม 5,000 บาท จะเลี้ยง 50 คน → พิมพ์ 5000 แล้วดูงบต่อหัวที่คำนวนได้</div>
+              <div style="font-size:.75rem;color:var(--text-muted);margin-top:.45rem;line-height:1.6">เช่น มีงบรวม 5,000 บาท จะเลี้ยง 50 คน → พิมพ์ 5000 แล้วดูงบต่อหัวที่คำนวนได้ (ไม่รวมค่าส่ง)</div>
             </div>
 
             <div id="calcWarnMin" class="calc-warn" style="display:none"></div>
@@ -288,16 +375,34 @@
               </div>
             </div>
 
+            <div id="sumDeliveryRow" style="margin-top:.75rem;display:flex;align-items:center;gap:.5rem;background:var(--bg);border:1px solid var(--border-light);border-radius:12px;padding:.65rem .85rem;font-size:.85rem;font-weight:800;color:var(--primary);flex-wrap:wrap">
+              <span>📅 วันที่ส่ง:</span><span id="sumDeliveryDate" style="color:var(--text);font-weight:900">— ยังไม่เลือก</span>
+              <span id="sumDeliveryWeekday" style="color:var(--text-muted);font-weight:600;font-size:.78rem"></span>
+              <span id="sumDeliveryTime" style="margin-left:auto;color:var(--primary);font-weight:900;display:flex;align-items:center;gap:.35rem"></span>
+            </div>
+
             <div class="calc-summary-total">
               <div class="calc-total-row">
                 <span class="calc-total-label">ยอดรวมประมาณ</span>
                 <span style="font-size:.72rem;opacity:.75;font-weight:700">ราคาสุทธิ · ไม่มี VAT</span>
               </div>
-              <div class="calc-total-row" style="margin-top:.35rem">
-                <div class="calc-total-value"><span id="sumTotal">1,200</span> บาท</div>
-                <div style="font-size:.85rem;opacity:.9;font-weight:700">เฉลี่ย <span id="sumBudgetDup" style="display:none"></span><span id="sumAvgDup"></span> บาท/กล่อง</div>
+              <!-- breakdown -->
+              <div style="margin-top:.65rem;display:grid;gap:.35rem;font-size:.84rem;line-height:1.5">
+                <div style="display:flex;justify-content:space-between;gap:1rem;opacity:.92">
+                  <span>ค่าอาหาร (<span id="sumQtyDup">20</span> กล่อง × <span id="sumBudgetDup2">60</span> บาท)</span>
+                  <strong id="sumFood">1,200 บาท</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:1rem;opacity:.92">
+                  <span id="sumShipLabel">ค่าส่ง</span>
+                  <strong id="sumShip">ฟรี</strong>
+                </div>
+                <div style="height:1px;background:rgba(255,255,255,.18);margin:.25rem 0"></div>
               </div>
-              <div class="calc-total-sub">ออกใบเสนอราคาและใบเสร็จรับเงินได้ · ฮาลาล CICOT HL-2024-0892</div>
+              <div class="calc-total-row" style="margin-top:.15rem">
+                <div class="calc-total-value"><span id="sumTotal">1,200</span> บาท</div>
+                <div style="font-size:.85rem;opacity:.9;font-weight:700">ยอดสุทธิ <span id="sumAvgDup"></span> บาท/กล่อง</div>
+              </div>
+              <div class="calc-total-sub">ออกใบเสนอราคาและใบเสร็จรับเงินได้ · ฮาลาล CICOT HL-2024-0892 · <span id="sumShipSub">ส่งฟรี 50+ กล่อง</span></div>
             </div>
 
             <div class="calc-actions">

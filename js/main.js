@@ -5,36 +5,55 @@
   var LINE_OA_ID = (typeof EED !== 'undefined' && EED.lineId) ? EED.lineId : '@EEDHALAL';
   var PHONE_DISPLAY = (typeof EED !== 'undefined' && EED.phoneDisplay) ? EED.phoneDisplay : '098-871-5179';
   var PHONE_HREF = (typeof EED !== 'undefined' && EED.phoneHref) ? EED.phoneHref : 'tel:+66988715179';
+  var IS_FILE = window.location.protocol === 'file:';
+  function fileAware(p){
+    if(!IS_FILE) return p;
+    // file:// -> make relative, strip leading /
+    if(p.charAt(0)==='/') p = p.substring(1);
+    // if current page is inside /en/ or /blog/, need to go up
+    var inEn = window.location.pathname.indexOf('/en/')!==-1 || window.location.pathname.indexOf('/en')!==-1;
+    var inBlog = window.location.pathname.indexOf('/blog/')!==-1;
+    if(inEn && p.indexOf('en/')!==0 && p.indexOf('blog/')!==0){
+      // from en/file.html, /index.html should be ../index.html
+      p = '../' + p;
+    } else if(inBlog && p.indexOf('blog/')!==0 && p.indexOf('en/')!==0){
+      // from blog/file.html, need ../
+      if(p.indexOf('../')!==0) p = '../' + p;
+      // blog inside en/blog needs ../../
+      if(inEn && window.location.pathname.indexOf('/en/blog/')!==-1) p = '../../' + p.replace(/^\.\.\//,'');
+    }
+    return p;
+  }
   var EN_PREFIX = window.location.pathname.indexOf('/en/') === 0 ? '/en' : '';
   var isEN = EN_PREFIX === '/en';
 
-  var HOME_PATH = EN_PREFIX + '/index.html';
-  var ABOUT_PATH = EN_PREFIX + '/about.html';
-  var STORY_PATH = EN_PREFIX + '/story.html';
-  var CORPORATE_PATH = EN_PREFIX + '/corporate.html';
-  var MENU_PATH = EN_PREFIX + '/popular-menu.html';
-  var SNACK_BOX_PATH = EN_PREFIX + '/snack-box.html';
-  var CONTACT_PATH = EN_PREFIX + '/contact.html';
-  var CATERING_PATH = EN_PREFIX + '/catering.html';
-  var BUFFET_PATH = EN_PREFIX + '/buffet.html';
-  var LIVE_COOKING_PATH = EN_PREFIX + '/live-cooking-station.html';
-  var KHAO_MOK_PATH = EN_PREFIX + '/khao-mok.html';
-  var ORDER_STEPS_PATH = EN_PREFIX + '/order-steps.html';
-  var DELIVERY_AREA_PATH = EN_PREFIX + '/delivery-area.html';
-  var HALAL_CERT_PATH = EN_PREFIX + '/halal-cert.html';
-  var REVIEWS_PATH = EN_PREFIX + '/reviews.html';
-  var FAQ_PATH = EN_PREFIX + '/faq.html';
-  var SATHORN_PATH = EN_PREFIX + '/sathorn.html';
-  var SILOM_PATH = EN_PREFIX + '/silom.html';
-  var SATHORN_SILOM_PATH = EN_PREFIX + '/sathorn-silom.html';
+  var HOME_PATH = fileAware(EN_PREFIX + '/index.html');
+  var ABOUT_PATH = fileAware(EN_PREFIX + '/about.html');
+  var STORY_PATH = fileAware(EN_PREFIX + '/story.html');
+  var CORPORATE_PATH = fileAware(EN_PREFIX + '/corporate.html');
+  var MENU_PATH = fileAware(EN_PREFIX + '/popular-menu.html');
+  var SNACK_BOX_PATH = fileAware(EN_PREFIX + '/snack-box.html');
+  var CONTACT_PATH = fileAware(EN_PREFIX + '/contact.html');
+  var CATERING_PATH = fileAware(EN_PREFIX + '/catering.html');
+  var BUFFET_PATH = fileAware(EN_PREFIX + '/buffet.html');
+  var LIVE_COOKING_PATH = fileAware(EN_PREFIX + '/live-cooking-station.html');
+  var KHAO_MOK_PATH = fileAware(EN_PREFIX + '/khao-mok.html');
+  var ORDER_STEPS_PATH = fileAware(EN_PREFIX + '/order-steps.html');
+  var DELIVERY_AREA_PATH = fileAware(EN_PREFIX + '/delivery-area.html');
+  var HALAL_CERT_PATH = fileAware(EN_PREFIX + '/halal-cert.html');
+  var REVIEWS_PATH = fileAware(EN_PREFIX + '/reviews.html');
+  var FAQ_PATH = fileAware(EN_PREFIX + '/faq.html');
+  var SATHORN_PATH = fileAware(EN_PREFIX + '/sathorn.html');
+  var SILOM_PATH = fileAware(EN_PREFIX + '/silom.html');
+  var SATHORN_SILOM_PATH = fileAware(EN_PREFIX + '/sathorn-silom.html');
 
-  var SUKHUMVIT_PATH = EN_PREFIX + '/sukhumvit.html';
-  var RAMA3_PATH = EN_PREFIX + '/rama3.html';
-  var LADPRAO_PATH = EN_PREFIX + '/ladprao.html';
-  var BLOG_HALAL_VS_NORMAL_PATH = (isEN ? '/en' : '') + '/blog/halal-vs-normal.html';
-  var BLOG_HOW_TO_CHOOSE_PATH = (isEN ? '/en' : '') + '/blog/how-to-choose.html';
-  var BLOG_CICOT_PATH = (isEN ? '/en' : '') + '/blog/cicot-explained.html';
-  var LOGO_PATH = '/img/logo.jpg';
+  var SUKHUMVIT_PATH = fileAware(EN_PREFIX + '/sukhumvit.html');
+  var RAMA3_PATH = fileAware(EN_PREFIX + '/rama3.html');
+  var LADPRAO_PATH = fileAware(EN_PREFIX + '/ladprao.html');
+  var BLOG_HALAL_VS_NORMAL_PATH = fileAware((isEN ? '/en' : '') + '/blog/halal-vs-normal.html');
+  var BLOG_HOW_TO_CHOOSE_PATH = fileAware((isEN ? '/en' : '') + '/blog/how-to-choose.html');
+  var BLOG_CICOT_PATH = fileAware((isEN ? '/en' : '') + '/blog/cicot-explained.html');
+  var LOGO_PATH = IS_FILE ? fileAware('/img/logo.jpg') : '/img/logo.jpg';
   var TRACKING_DEFAULTS = {
     metaPixelId: '',
     ga4MeasurementId: '',

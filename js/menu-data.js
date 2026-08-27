@@ -1,4 +1,7 @@
-/* EED HALAL — Menu database for budget calculator */
+/* EED HALAL — Menu database for budget calculator
+ * SOURCE OF TRUTH: the public calculator reads this file only.
+ * Change price/minPerMenu/toppings here, then commit and deploy.
+ */
 var EED_MENUS = [
   // 60 บาท — มาตรฐาน
   { id: 1, name: "ข้าวกะเพราไก่", price: 60, category: "ข้าวราดแกง", image: "img/menu-kaprao-gai.png", desc: "ผัดกะเพราไฟแรง ไก่สับนุ่ม หอมใบกะเพรา", badge: "", minPerMenu: 5 },
@@ -40,3 +43,18 @@ var EED_MENUS = [
   { id: 36, name: "ข้าวราดแกงโทโพปลาเค็ม", price: 60, category: "ข้าวราดแกง", image: "img/buffet-menu-kaeng-kati.jpg", desc: "แกงโทโพกะทิเข้มข้น ใส่ปลาเค็มและหมูสามชั้น", badge: "ใหม่", minPerMenu: 5 },
   { id: 38, name: "ผัดเขียวหวานแห้งเนื้อ", price: 60, category: "ข้าวราดแกง", image: "img/ผัดเขียวหวาน.png", desc: "ผัดเขียวหวานแห้งเนื้อ หอมเครื่องแกง เข้มข้น จัดจ้าน", badge: "ใหม่", minPerMenu: 5 }
 ];
+
+// Standard add-ons shown on the public calculator.
+// Keep these values here so toppings are identical for every visitor after deploy.
+var EED_DEFAULT_TOPPINGS = [
+  {name: "ไข่ดาว", price: 10},
+  {name: "ไข่เจียว", price: 10},
+  {name: "ไก่ทอด", price: 20}
+];
+EED_MENUS.forEach(function(menu){
+  if(!Array.isArray(menu.toppings) || !menu.toppings.length){
+    menu.toppings = EED_DEFAULT_TOPPINGS.map(function(topping){
+      return {name: topping.name, price: topping.price};
+    });
+  }
+});
