@@ -23,7 +23,7 @@ var EED_MENUS = [
   { id: 16, name: "ข้าวหมกไก่", price: 90, category: "ข้าวหมก", image: "img/menu-khao-mok.png", desc: "ข้าวหมกหอมเครื่องเทศ เสิร์ฟพร้อมไก่นุ่ม", badge: "⭐ Best Seller", minPerMenu: 5 },
   { id: 17, name: "คั่วกลิ้งไก่สับ", price: 90, category: "ข้าวราดแกง", image: "img/คั่วกลิ้งไก.png", desc: "ไก่สับผัดเครื่องคั่วกลิ้งหอมเครื่องเทศใต้", badge: "", minPerMenu: 5 },
   { id: 18, name: "ข้าวผัดปู", price: 90, category: "ข้าวผัด", image: "img/ข้าวผัดปู.png", desc: "เนื้อปูชิ้นเต็มคำผัดข้าวหอมกระทะ", badge: "", minPerMenu: 5 },
-  { id: 19, name: "กระเพราทะเล", price: 90, category: "ข้าวราดแกง", image: "img/กระเพราทะเลไข่ดาว.png", desc: "ผัดกระเพราทะเลรวม กุ้ง หมึก หอย + ไข่ดาว", badge: "", minPerMenu: 5 },
+  { id: 19, name: "ข้าวราดกระพราทะเล", price: 90, category: "ข้าวราดแกง", image: "img/กระเพราทะเลไข่ดาว.png", desc: "ผัดกระเพราทะเลรวม กุ้ง หมึก หอย + ไข่ดาว", badge: "", minPerMenu: 5 },
   { id: 20, name: "ข้าวหมกน่องไก่", price: 90, category: "ข้าวหมก", image: "img/khao-mok-box-opt.jpg", desc: "ข้าวหมกน่องไก่ชิ้นใหญ่", badge: "", minPerMenu: 10 },
   { id: 37, name: "ข้าวหมกเนื้อน่อง", price: 90, category: "ข้าวหมก", image: "img/ข้าวหมกเนื้อ+ซาโมซา.png", desc: "ข้าวหมกหอมเครื่องเทศ เสิร์ฟพร้อมเนื้อน่องนุ่ม", badge: "ใหม่", minPerMenu: 10 },
   { id: 21, name: "ข้าวเนื้อผัดพริกไทยดำ", price: 90, category: "ข้าวราดแกง", image: "img/menu-kaprao-nuea.png", desc: "เนื้อผัดพริกไทยดำหอมๆ", badge: "", minPerMenu: 5 },
