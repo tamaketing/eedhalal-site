@@ -13,7 +13,7 @@
   var LS_CATEGORIES = 'eed_categories_v1';
   var LS_DELETED = 'eed_deleted_v1';
   var LS_NEW_MENUS = 'eed_new_menus_v1';
-  var MENU_CATEGORIES = ['ข้าวราดแกง','ข้าวผัด','เส้น','อาหารอินเดีย','แกง/ต้ม','พรีเมียม'];
+  var MENU_CATEGORIES = ['ข้าวราดแกง','ข้าวผัด','เส้น','อาหารอินเดีย','พรีเมียม'];
   var DEFAULT_ZONES = [
     {id:'bangkok_inner', label:'กรุงเทพชั้นใน (สาทร สีลม พระราม3)', fee:120},
     {id:'sukhumvit', label:'สุขุมวิท', fee:150},
@@ -593,7 +593,7 @@
       if(!cats[m.category]) cats[m.category]=[];
       cats[m.category].push(m);
     });
-    var order = ['ข้าวราดแกง','ข้าวผัด','เส้น','อาหารอินเดีย','แกง/ต้ม','พรีเมียม'];
+    var order = ['ข้าวราดแกง','ข้าวผัด','เส้น','อาหารอินเดีย','พรีเมียม'];
     var sortedCats = Object.keys(cats).sort(function(a,b){
       var ia = order.indexOf(a), ib = order.indexOf(b);
       if(ia===-1) ia=99; if(ib===-1) ib=99;
