@@ -13,6 +13,8 @@
   var LS_IMAGES = 'eed_images_v1';
   var LS_NAMES = 'eed_names_v1';
   var LS_CATEGORIES = 'eed_categories_v1';
+  var LS_DELETED = 'eed_deleted_v1';
+  var LS_NEW_MENUS = 'eed_new_menus_v1';
   var els = {};
   var DEFAULT_SHIP_ZONES = [
     {id:'bangkok_inner', label:'กรุงเทพชั้นใน (สาทร สีลม พระราม3)', fee:120},
@@ -52,6 +54,23 @@
       if(data.images) Object.keys(data.images).forEach(function(id){ var v=String(data.images[id]||'').trim(); if(v) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].image=v; });
       if(data.names) Object.keys(data.names).forEach(function(id){ var v=String(data.names[id]||'').trim(); if(v) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].name=v; });
       if(data.categories) Object.keys(data.categories).forEach(function(id){ var v=String(data.categories[id]||'').trim(); if(v) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].category=v; });
+      if(Array.isArray(data.deleted)){
+        EED_MENUS = EED_MENUS.filter(function(m){ return data.deleted.indexOf(m.id)===-1; });
+      }
+      if(Array.isArray(data.newMenus)){
+        data.newMenus.forEach(function(nm){
+          if(!nm || !nm.name) return;
+          var exists = EED_MENUS.some(function(m){ return m.id === nm.id; });
+          if(!exists){
+            EED_MENUS.push({
+              id: nm.id, name: nm.name, price: parseInt(nm.price,10)||60,
+              category: nm.category||'ข้าวราดแกง', image: nm.image||'img/logo.jpg',
+              desc: nm.desc||'', badge: nm.badge||'ใหม่',
+              minPerMenu: parseInt(nm.minPerMenu,10)||5
+            });
+          }
+        });
+      }
       if(Array.isArray(data.toppings)){
         // global toppings
         EED_MENUS.forEach(function(m){ m.toppings = data.toppings.map(function(t){return {name:String(t.name), price:parseInt(t.price,10)||0};}); });
@@ -76,12 +95,16 @@
       var imgs = JSON.parse(localStorage.getItem(LS_IMAGES)||'null');
       var nms = JSON.parse(localStorage.getItem(LS_NAMES)||'null');
       var cats = JSON.parse(localStorage.getItem(LS_CATEGORIES)||'null');
+      var del = JSON.parse(localStorage.getItem(LS_DELETED)||'null');
+      var newM = JSON.parse(localStorage.getItem(LS_NEW_MENUS)||'null');
       var data={};
       if(p) data.prices=p;
       if(mns) data.mins=mns;
       if(imgs) data.images=imgs;
       if(nms) data.names=nms;
       if(cats) data.categories=cats;
+      if(del) data.deleted=del;
+      if(newM) data.newMenus=newM;
       if(tops) data.toppings=tops;
       if(shipZ) data.shipZones=shipZ;
       if(shipF!==null) data.shipFree=parseInt(shipF,10);

@@ -10,6 +10,8 @@
   var LS_IMAGES = 'eed_images_v1';
   var LS_NAMES = 'eed_names_v1';
   var LS_CATEGORIES = 'eed_categories_v1';
+  var LS_DELETED = 'eed_deleted_v1';
+  var LS_NEW_MENUS = 'eed_new_menus_v1';
   var MENU_CATEGORIES = ['ข้าวราดแกง','ข้าวผัด','เส้น','ข้าวหมก','แกง/ต้ม','พรีเมียม'];
   var DEFAULT_ZONES = [
     {id:'bangkok_inner', label:'กรุงเทพชั้นใน (สาทร สีลม พระราม3)', fee:120},
@@ -258,6 +260,67 @@
     flashSaved();
   }
 
+  // --- Deleted menus ---
+  function getDeleted(){
+    try{
+      var saved = JSON.parse(localStorage.getItem(LS_DELETED)||'null');
+      if(Array.isArray(saved)) return saved.filter(function(id){ return !isNaN(parseInt(id,10)); });
+    }catch(e){}
+    return [];
+  }
+  function saveDeleted(arr){
+    try{
+      localStorage.setItem(LS_DELETED, JSON.stringify(arr));
+      localStorage.setItem('eed_selling_updated_at', String(Date.now()));
+    }catch(e){}
+  }
+  function toggleDeleteMenu(id){
+    var del = getDeleted();
+    var idx = del.indexOf(id);
+    if(idx===-1) del.push(id); else del.splice(idx,1);
+    saveDeleted(del);
+  }
+
+  // --- New menus ---
+  function getNewMenus(){
+    try{
+      var saved = JSON.parse(localStorage.getItem(LS_NEW_MENUS)||'null');
+      if(Array.isArray(saved)) return saved.filter(function(m){ return m && m.name; });
+    }catch(e){}
+    return [];
+  }
+  function saveNewMenus(arr){
+    try{
+      localStorage.setItem(LS_NEW_MENUS, JSON.stringify(arr));
+      localStorage.setItem('eed_selling_updated_at', String(Date.now()));
+    }catch(e){}
+  }
+  function addNewMenu(data){
+    var newMenus = getNewMenus();
+    var maxId = 99;
+    EED_MENUS.forEach(function(m){ if(m.id>maxId) maxId=m.id; });
+    newMenus.forEach(function(m){ if(m.id>maxId) maxId=m.id; });
+    var id = maxId + 1;
+    var menu = {
+      id: id,
+      name: data.name || 'เมนูใหม่',
+      price: parseInt(data.price,10) || 60,
+      category: data.category || 'ข้าวราดแกง',
+      image: data.image || 'img/logo.jpg',
+      desc: data.desc || '',
+      badge: 'ใหม่',
+      minPerMenu: parseInt(data.minPerMenu,10) || 5
+    };
+    newMenus.push(menu);
+    saveNewMenus(newMenus);
+    return menu;
+  }
+  function removeNewMenu(id){
+    var newMenus = getNewMenus();
+    newMenus = newMenus.filter(function(m){ return m.id !== id; });
+    saveNewMenus(newMenus);
+  }
+
   function saveOne(id, price){
     for(var i=0;i<EED_MENUS.length;i++){
       if(String(EED_MENUS[i].id)===String(id)){
@@ -449,8 +512,10 @@
 
   // --- Render ---
   function getFilteredMenus(){
+    var del = getDeleted();
     var q = (state.search||'').toLowerCase().trim();
     return EED_MENUS.filter(function(m){
+      if(del.indexOf(m.id)!==-1) return false;
       var catOk = state.category==='all' || m.category===state.category;
       var searchOk = !q || (m.name||'').toLowerCase().indexOf(q) !== -1;
       return catOk && searchOk;
@@ -475,13 +540,13 @@
     });
 
     if(filtered.length===0){
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">ไม่พบเมนูที่ค้นหา</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-muted)">ไม่พบเมนูที่ค้นหา</td></tr>';
       return;
     }
 
     var html = '';
     sortedCats.forEach(function(cat){
-      html += '<tr style="background:var(--bg);"><td colspan="8" style="font-weight:900;color:var(--primary);padding:.7rem .9rem;font-size:.85rem">'+cat+' <span style="font-weight:600;color:var(--text-muted)">· '+cats[cat].length+' เมนู</span></td></tr>';
+      html += '<tr style="background:var(--bg);"><td colspan="9" style="font-weight:900;color:var(--primary);padding:.7rem .9rem;font-size:.85rem">'+cat+' <span style="font-weight:600;color:var(--text-muted)">· '+cats[cat].length+' เมนู</span></td></tr>';
       cats[cat].forEach(function(m){
         var badge = m.badge ? '<span style="display:inline-block;margin-left:.4rem;background:var(--accent);color:#fff;font-size:.62rem;font-weight:800;padding:.15rem .4rem;border-radius:999px;vertical-align:middle">'+m.badge+'</span>' : '';
         var tier = [];
@@ -498,6 +563,7 @@
           + '<td style="text-align:center"><input type="text" class="img-input" data-id="'+m.id+'" value="'+m.image.replace(/"/g,'&quot;')+'" placeholder="img/menu.png" style="width:160px;height:34px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;font-size:.78rem;font-weight:600;color:var(--text);background:var(--bg)"></td>'
           + '<td style="text-align:center"><input type="text" class="name-input" data-id="'+m.id+'" value="'+m.name.replace(/"/g,'&quot;')+'" placeholder="ชื่อเมนู" style="width:170px;height:34px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;font-size:.78rem;font-weight:700;color:var(--text);background:var(--bg)"></td>'
           + '<td style="text-align:center;font-size:.72rem;font-weight:700;color:'+tierColor+'">'+tierText+'</td>'
+          + '<td style="text-align:center"><button type="button" class="del-menu-btn" data-id="'+m.id+'" style="background:none;border:1px solid #FECACA;border-radius:8px;padding:.25rem .5rem;cursor:pointer;color:#DC2626;font-size:.75rem;font-weight:700" title="ซ่อนเมนูนี้">🗑️</button></td>'
           + '</tr>';
       });
     });
@@ -598,6 +664,18 @@
         updateStats();
       });
     });
+    tbody.querySelectorAll('.del-menu-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = parseInt(this.getAttribute('data-id'),10);
+        var m = EED_MENUS.find(function(x){ return x.id===id; });
+        var label = m ? m.name : 'id:'+id;
+        if(!confirm('ซ่อนเมนู "'+label+'" ?\n(จะไม่แสดงบนหน้าลูกค้า แต่ไม่ลบจริง)')) return;
+        toggleDeleteMenu(id);
+        renderTable();
+        updateStats();
+        flashSaved();
+      });
+    });
   }
 
   function updateStats(){
@@ -631,11 +709,27 @@
     }
   }
 
+  function loadNewMenus(){
+    var newMenus = getNewMenus();
+    newMenus.forEach(function(nm){
+      var exists = EED_MENUS.some(function(m){ return m.id === nm.id; });
+      if(!exists){
+        EED_MENUS.push({
+          id: nm.id, name: nm.name, price: nm.price,
+          category: nm.category, image: nm.image,
+          desc: nm.desc || '', badge: nm.badge || 'ใหม่',
+          minPerMenu: nm.minPerMenu || 5
+        });
+      }
+    });
+  }
+
   function initPlanner(){
     loadSelling();
     loadImages();
     loadNames();
     loadCategories();
+    loadNewMenus();
 
     var catChips = document.querySelectorAll('[data-pcat]');
     var searchInput = $('priceSearch');
@@ -644,6 +738,80 @@
     updateStats();
     renderGlobalToppings();
     renderShipZones();
+
+    // --- Add new menu ---
+    var addNewMenuBtn = $('addNewMenu');
+    var newMenuForm = $('newMenuForm');
+    var saveNewMenuBtn = $('saveNewMenu');
+    var cancelNewMenuBtn = $('cancelNewMenu');
+    if(addNewMenuBtn && newMenuForm){
+      addNewMenuBtn.addEventListener('click', function(){
+        newMenuForm.style.display = newMenuForm.style.display==='none' ? 'block' : 'none';
+      });
+    }
+    if(cancelNewMenuBtn && newMenuForm){
+      cancelNewMenuBtn.addEventListener('click', function(){
+        newMenuForm.style.display='none';
+      });
+    }
+    if(saveNewMenuBtn){
+      saveNewMenuBtn.addEventListener('click', function(){
+        var name = ($('newMenuName')||{}).value||'';
+        name = name.trim();
+        if(!name){ alert('กรุณากรอกชื่อเมนู'); ($('newMenuName')||{}).focus(); return; }
+        var menu = addNewMenu({
+          name: name,
+          category: ($('newMenuCat')||{}).value || 'ข้าวราดแกง',
+          price: ($('newMenuPrice')||{}).value || 60,
+          minPerMenu: ($('newMenuMin')||{}).value || 5,
+          image: ($('newMenuImg')||{}).value || 'img/logo.jpg',
+          desc: ($('newMenuDesc')||{}).value || ''
+        });
+        // reset form
+        if($('newMenuName')) $('newMenuName').value='';
+        if($('newMenuDesc')) $('newMenuDesc').value='';
+        if($('newMenuImg')) $('newMenuImg').value='img/logo.jpg';
+        if($('newMenuPrice')) $('newMenuPrice').value='60';
+        if($('newMenuMin')) $('newMenuMin').value='5';
+        newMenuForm.style.display='none';
+        renderTable();
+        updateStats();
+        flashSaved();
+      });
+    }
+    // --- Show deleted menus ---
+    var showDeletedBtn = $('showDeleted');
+    var deletedListEl = $('deletedList');
+    var deletedItemsEl = $('deletedItems');
+    if(showDeletedBtn && deletedListEl){
+      showDeletedBtn.addEventListener('click', function(){
+        if(deletedListEl.style.display==='none' || !deletedListEl.style.display){
+          var del = getDeleted();
+          if(del.length===0){
+            deletedItemsEl.innerHTML = '<div style="padding:.3rem 0">ไม่มีเมนูที่ซ่อนอยู่</div>';
+          } else {
+            deletedItemsEl.innerHTML = del.map(function(id){
+              var m = EED_MENUS.find(function(x){ return x.id===id; });
+              var label = m ? m.name+' ('+m.price+'บ.)' : 'id:'+id;
+              return '<div style="display:flex;align-items:center;gap:.5rem;margin:.25rem 0;padding:.3rem .5rem;background:rgba(255,255,255,.5);border-radius:8px"><span style="flex:1">'+label+'</span><button type="button" class="restore-menu-btn" data-id="'+id+'" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:.2rem .6rem;font-size:.75rem;font-weight:700;cursor:pointer">คืนค่า</button></div>';
+            }).join('');
+            deletedItemsEl.querySelectorAll('.restore-menu-btn').forEach(function(btn){
+              btn.addEventListener('click', function(){
+                var rid = parseInt(this.getAttribute('data-id'),10);
+                toggleDeleteMenu(rid);
+                renderTable();
+                updateStats();
+                flashSaved();
+                showDeletedBtn.click();
+              });
+            });
+          }
+          deletedListEl.style.display='block';
+        } else {
+          deletedListEl.style.display='none';
+        }
+      });
+    }
 
     var addGlobalToppingBtn = $('addGlobalTopping');
     if(addGlobalToppingBtn) addGlobalToppingBtn.addEventListener('click', function(){
@@ -681,12 +849,14 @@
 
     var resetBtn = $('resetPrices');
     if(resetBtn) resetBtn.addEventListener('click', function(){
-      if(!confirm('รีเซ็ตทุกราคา ขั้นต่ำ รูป ชื่อ และหมวดกลับเป็นค่าเริ่มต้นใน js/menu-data.js ?\n(จะลบ eed_selling_v1, eed_mins_v1, eed_images_v1, eed_names_v1, eed_categories_v1)')) return;
+      if(!confirm('รีเซ็ตทุกราคา ขั้นต่ำ รูป ชื่อ หมวด เมนูที่ซ่อน และเมนูใหม่กลับเป็นค่าเริ่มต้นใน js/menu-data.js ?')) return;
       localStorage.removeItem(LS_SELLING);
       localStorage.removeItem(LS_MINS);
       localStorage.removeItem(LS_IMAGES);
       localStorage.removeItem(LS_NAMES);
       localStorage.removeItem(LS_CATEGORIES);
+      localStorage.removeItem(LS_DELETED);
+      localStorage.removeItem(LS_NEW_MENUS);
       localStorage.removeItem('eed_selling_updated_at');
       EED_MENUS.forEach(function(m){
         if(m._origPrice !== undefined) m.price = m._origPrice;
@@ -734,6 +904,8 @@
         images: images,
         names: names,
         categories: categories,
+        deleted: getDeleted(),
+        newMenus: getNewMenus(),
         toppings: getGlobalToppings(),
         shipZones: getShipZones(),
         shipFree: getFreeThreshold(),

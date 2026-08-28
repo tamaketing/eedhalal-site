@@ -99,10 +99,33 @@
             </div>
           </div>
           <div style="margin-top:.85rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            <button id="addNewMenu" class="btn btn-primary btn-sm" type="button" style="background:var(--accent);color:#fff">+ เพิ่มเมนูใหม่</button>
+            <button id="showDeleted" class="btn btn-outline btn-sm" type="button">ดูเมนูที่ซ่อนอยู่</button>
             <button id="resetPrices" class="btn btn-outline btn-sm" type="button">รีเซ็ตเป็นราคาเริ่มต้น</button>
             <button id="exportJson" class="btn btn-outline btn-sm" type="button">คัดลอก JSON ราคา</button>
             <button id="exportAll" class="btn btn-primary btn-sm" type="button" style="background:var(--primary);color:#fff">⬇ ดาวน์โหลดไฟล์ Deploy (ไม่ต้องมีหลังบ้าน)</button>
             <button id="copyOverrides" class="btn btn-outline btn-sm" type="button">คัดลอก overrides JSON</button>
+          </div>
+          <!-- Add new menu form -->
+          <div id="newMenuForm" style="display:none;margin-top:.85rem;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:1rem 1.25rem">
+            <div style="font-weight:900;font-size:.92rem;color:var(--primary);margin-bottom:.65rem">เพิ่มเมนูใหม่</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem .75rem">
+              <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">ชื่อเมนู *</label><input id="newMenuName" type="text" placeholder="ข้าวราด..." required style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">หมวด</label><select id="newMenuCat" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"><option>ข้าวราดแกง</option><option>ข้าวผัด</option><option>เส้น</option><option>ข้าวหมก</option><option>แกง/ต้ม</option><option>พรีเมียม</option></select></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">ราคา (บาท)</label><input id="newMenuPrice" type="number" value="60" min="10" max="500" step="5" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;font-weight:900;color:var(--primary);margin-top:.25rem"></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">ขั้นต่ำ (กล่อง)</label><input id="newMenuMin" type="number" value="5" min="1" max="50" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;font-weight:900;color:var(--primary);margin-top:.25rem"></div>
+              <div style="grid-column:1/-1"><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">รูป (path ใน img/)</label><input id="newMenuImg" type="text" placeholder="img/menu.png" value="img/logo.jpg" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"></div>
+              <div style="grid-column:1/-1"><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">คำอธิบาย</label><input id="newMenuDesc" type="text" placeholder="..." style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"></div>
+            </div>
+            <div style="display:flex;gap:.5rem;margin-top:.75rem">
+              <button id="saveNewMenu" class="btn btn-primary btn-sm" type="button" style="background:var(--primary);color:#fff">+ บันทึกเมนูใหม่</button>
+              <button id="cancelNewMenu" class="btn btn-outline btn-sm" type="button">ยกเลิก</button>
+            </div>
+          </div>
+          <!-- Deleted menus list -->
+          <div id="deletedList" style="display:none;margin-top:.85rem;background:#FEF2F2;border:1px solid #FECACA;border-radius:14px;padding:1rem 1.25rem">
+            <div style="font-weight:900;font-size:.92rem;color:#7F1D1D;margin-bottom:.45rem">เมนูที่ซ่อนอยู่</div>
+            <div id="deletedItems" style="font-size:.82rem;color:#7F1D1D"></div>
           </div>
            <div style="margin-top:.5rem;font-size:.72rem;color:var(--text-muted);line-height:1.6">กด <b>ดาวน์โหลดไฟล์ Deploy</b> แล้วนำเฉพาะ <code>menu-data.js</code> ไปแทนไฟล์ในโฟลเดอร์ <code>js/</code> จากนั้น Commit/Push ขึ้น GitHub (ดูวิธีใน <code>DEPLOY.md</code>)<br><span style="color:var(--primary);font-weight:700">✓ popular-menu.html จะอัปเดตอัตโนมัติสำหรับคนดู (JS) ส่วน Google/AI ยังเห็น HTML เดิม — ไม่เสีย SEO</span> · <a href="popular-menu.html" target="_blank" style="color:var(--primary);font-weight:800;text-decoration:underline">ดู popular-menu</a></div>
         </div>
@@ -163,6 +186,7 @@
                 <th>รูปภาพ <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ path ได้</span></th>
                 <th>ชื่อเมนู <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ได้</span></th>
                 <th>ตัวอย่างในงบ 60/90/120</th>
+                <th style="width:60px">ลบ</th>
               </tr>
             </thead>
             <tbody id="priceTableBody"></tbody>
