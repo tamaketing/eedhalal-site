@@ -268,6 +268,172 @@
     </section>
     <!-- ─── END HOW IT WORKS ─── -->
 
+    <!-- ─── SNACK BOX BUILDER ─── -->
+    <section class="section" style="padding-top:2rem;padding-bottom:2rem">
+      <div class="container">
+        <div class="section-label section-label-center mb-6" style="justify-content:center">Build Your Own</div>
+        <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:0.5rem;color:var(--primary)">Snack Box Builder — Pick Your Own Menu</h2>
+        <p style="text-align:center;font-size:0.92rem;line-height:1.8;max-width:40rem;margin:0 auto 2rem;color:var(--text-muted)">Choose your dessert, juice and drink. Minimum 40 THB per box — add a savory snack for +40 THB/box. The system calculates the price instantly, then send the summary to LINE for a quotation.</p>
+
+        <div class="sb-layout">
+          <!-- Left: Picker -->
+          <div class="sb-picker">
+            <!-- Quantity -->
+            <div class="sb-section">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">👥</span>
+                <span class="sb-section-title">Number of boxes</span>
+                <span class="sb-section-hint">Min. 50 boxes · Free delivery 50+</span>
+              </div>
+              <div class="sb-input-row">
+                <div class="sb-stepper">
+                  <button type="button" id="sbQtyDec" aria-label="Decrease">−</button>
+                  <div style="width:1px;height:24px;background:var(--border)"></div>
+                  <button type="button" id="sbQtyInc" aria-label="Increase">+</button>
+                </div>
+                <input id="sbQtyNumber" class="sb-number" type="number" min="50" max="1000" step="5" value="50">
+                <span style="font-weight:800;color:var(--text-muted)">boxes</span>
+              </div>
+              <input id="sbQtyRange" class="sb-range" type="range" min="50" max="500" step="5" value="50">
+              <div class="sb-quick">
+                <button class="sb-chip" data-sb-qty="50">50</button>
+                <button class="sb-chip" data-sb-qty="80">80</button>
+                <button class="sb-chip" data-sb-qty="100">100</button>
+                <button class="sb-chip" data-sb-qty="200">200</button>
+              </div>
+            </div>
+
+            <!-- Sweet -->
+            <div class="sb-section">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">🍰</span>
+                <span class="sb-section-title">Dessert</span>
+                <span class="sb-badge"><span id="sbSweetCount">0</span>/1</span>
+              </div>
+              <p class="sb-section-desc">Pick 1 item</p>
+              <div id="sbSweetList" class="sb-check-grid"></div>
+            </div>
+
+            <!-- Savory (optional) -->
+            <div class="sb-section" style="border:1px dashed var(--accent);background:linear-gradient(135deg,#FFFBEB,#FEF3C7)">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">🥐</span>
+                <span class="sb-section-title">Savory Snack</span>
+                <span class="sb-badge" style="background:var(--accent);color:#fff"><span id="sbSavoryCount">0</span></span>
+              </div>
+              <p class="sb-section-desc">Pick any — add menu price per item (optional)</p>
+              <div id="sbSavoryList" class="sb-check-grid"></div>
+            </div>
+
+            <!-- Juice -->
+            <div class="sb-section">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">🍰</span>
+                <span class="sb-section-title">Dessert</span>
+                <span class="sb-badge"><span id="sbSweetCount">0</span>/1</span>
+              </div>
+              <p class="sb-section-desc">Pick 1 item</p>
+              <div id="sbSweetList" class="sb-check-grid"></div>
+            </div>
+
+            <!-- Juice -->
+            <div class="sb-section">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">🧃</span>
+                <span class="sb-section-title">Juice</span>
+                <span class="sb-badge"><span id="sbJuiceCount">0</span>/1</span>
+              </div>
+              <p class="sb-section-desc">Pick 1 item</p>
+              <div id="sbJuiceList" class="sb-check-grid"></div>
+            </div>
+
+            <!-- Addon -->
+            <div class="sb-section">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">☕</span>
+                <span class="sb-section-title">Drink</span>
+              </div>
+              <div id="sbAddonList" class="sb-radio-grid"></div>
+            </div>
+          </div>
+
+          <!-- Right: Summary -->
+          <div class="sb-summary-wrap">
+            <div class="sb-summary">
+              <div class="sb-summary-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Snack Box Summary
+              </div>
+
+              <div class="sb-stat-grid">
+                <div class="sb-stat">
+                  <div class="sb-stat-label">Price/box</div>
+                  <div class="sb-stat-value"><span id="sbSumBudget">40</span> <span class="sb-stat-unit">THB</span></div>
+                </div>
+                <div class="sb-stat">
+                  <div class="sb-stat-label">Quantity</div>
+                  <div class="sb-stat-value"><span id="sbSumQty">50</span> <span class="sb-stat-unit">boxes</span></div>
+                </div>
+                <div class="sb-stat">
+                  <div class="sb-stat-label">Drink</div>
+                  <div class="sb-stat-value" style="font-size:.85rem"><span id="sbSumAddon">Water</span> <span id="sbSumAddonPrice" style="color:#22C55E;font-weight:700">Free</span></div>
+                </div>
+              </div>
+
+              <div class="sb-selected-items">
+                <div class="sb-selected-row">
+                  <span class="sb-selected-label">🍰 Dessert:</span>
+                  <span id="sbSumSweet" class="sb-selected-value">— Not selected —</span>
+                </div>
+                <div class="sb-selected-row">
+                  <span class="sb-selected-label">🥐 Savory:</span>
+                  <span id="sbSumSavory" class="sb-selected-value">— None (Base 40 THB) —</span>
+                </div>
+                <div class="sb-selected-row">
+                  <span class="sb-selected-label">🧃 Juice:</span>
+                  <span id="sbSumJuice" class="sb-selected-value">— Not selected —</span>
+                </div>
+              </div>
+
+              <div class="sb-total-box">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;font-size:.72rem;opacity:.8;text-transform:uppercase;letter-spacing:.12em;font-weight:800">
+                  <span>Estimated Total</span>
+                  <span>No VAT</span>
+                </div>
+                <div style="margin-top:.5rem;display:grid;gap:.3rem;font-size:.84rem">
+                  <div style="display:flex;justify-content:space-between;gap:1rem;opacity:.92">
+                    <span>Food (<span id="sbSumQty2">50</span> boxes)</span>
+                    <strong id="sbSumFood">2,000 THB</strong>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;gap:1rem;opacity:.92">
+                    <span id="sbSumShipLabel">Delivery</span>
+                    <strong id="sbSumShip">Free</strong>
+                  </div>
+                  <div style="height:1px;background:rgba(255,255,255,.18);margin:.2rem 0"></div>
+                </div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-top:.1rem">
+                  <div style="font-size:1.8rem;font-weight:900;letter-spacing:-.03em;line-height:1"><span id="sbSumTotal">2,000</span> THB</div>
+                  <div style="font-size:.82rem;opacity:.9;font-weight:700"><span id="sbSumAvg">40</span> THB/box</div>
+                </div>
+                <div style="font-size:.75rem;opacity:.8;margin-top:.35rem;line-height:1.6">Free delivery 50+ boxes · Halal CICOT HL-2024-0892</div>
+              </div>
+
+              <div class="sb-actions">
+                <a id="sbLineBtn" href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="font-size:1rem;padding:.95rem;width:100%;justify-content:center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Send Summary to LINE
+                </a>
+                <button id="sbCopySummary" class="btn btn-outline btn-sm" type="button" style="width:100%;justify-content:center">Copy Summary</button>
+              </div>
+              <div id="sbCopyToast" class="sb-toast">Copied! Paste in LINE ✓</div>
+              <div class="sb-note">Estimated price — our team confirms final price and delivery slot within 15 min (business hours)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ─── END SNACK BOX BUILDER ─── -->
+
     <section class="snack-box-showcase" aria-labelledby="snack-box-showcase-title">
       <div class="container">
         <div class="snack-box-showcase-card">
@@ -639,6 +805,9 @@
   <script src="../js/business-data.js"></script>
     <script src="../js/tracking-config.js"></script>
   <script src="../js/main.js"></script>
+  <script src="../js/snack-data.js"></script>
+  <script src="../js/snack-hydrate.js"></script>
+  <script src="../js/snack-builder.js"></script>
   <script>
   (function () {
     var cards = document.getElementById('fullSnackMenu');

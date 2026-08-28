@@ -186,6 +186,32 @@
       </div>
     </section>
 
+    <!-- Snack Box menu -->
+    <section class="section section-sand" style="padding-top:1.25rem;padding-bottom:1.25rem">
+      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
+        <div class="planner-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+            <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0">🍪 Snack Box — เมนูเบเกอรี่</h2>
+            <span style="font-size:.75rem;color:var(--text-muted)">ขั้นต่ำ 50 กล่อง · ราคา/ชื่อแก้ได้</span>
+          </div>
+          <div style="margin-top:.5rem;font-size:.75rem;color:var(--text-muted);line-height:1.6">ข้อมูลจาก <code>js/snack-data.js</code> · หน้า <a href="snack-box.html" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline">snack-box.html</a> จะอัปเดตจาก overrides อัตโนมัติ</div>
+          <div class="price-table-wrap" style="margin-top:.85rem">
+            <table class="price-table">
+              <thead>
+                <tr>
+                <th style="text-align:left;padding-left:.9rem">หมวด <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ได้</span></th>
+                <th style="text-align:left">ชื่อเมนู</th>
+                <th>ราคา (บาท) <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ได้</span></th>
+                <th>ชื่อเมนู(แก้) <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ได้</span></th>
+                </tr>
+              </thead>
+              <tbody id="snackTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Price table -->
     <section class="section section-white" style="padding-top:1.25rem">
       <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
@@ -265,6 +291,7 @@
   <div id="footer"></div>
   <script src="js/business-data.js"></script>
   <script src="js/menu-data.js"></script>
+  <script src="js/snack-data.js"></script>
   <script src="js/tracking-config.js"></script>
   <script src="js/main.js"></script>
   <script src="js/budget-planner.js"></script>

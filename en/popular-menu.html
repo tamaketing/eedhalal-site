@@ -264,7 +264,7 @@
         <div style="margin-top:4rem">
           <div class="section-label section-label-center mb-6" style="justify-content:center">Popular Menu</div>
           <h3 style="font-size:1.3rem;font-weight:900;text-align:center;margin-bottom:2rem;color:var(--primary)">The menus companies order most often</h3>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.5rem;margin-bottom:2.25rem">
+          <div id="popularMenuGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.5rem;margin-bottom:2.25rem">
 
             <div style="background:var(--white);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column">
               <div style="aspect-ratio:4/3;overflow:hidden">
@@ -432,6 +432,7 @@
           <h3 style="font-size:1.3rem;font-weight:900;text-align:center;margin-bottom:2rem;color:var(--primary)">EED HALAL Halal Meal Box Menu</h3>
           <p style="text-align:center;font-size:0.85rem;line-height:1.8;opacity:0.6;color:var(--text-muted);margin-bottom:2.5rem">From 60 THB/box, minimum 10 boxes (5 per Thai menu, 10 per Indian menu) — final price depends on quantity. Message LINE for a quote.</p>
 
+          <div id="fullMenuBody">
           <!-- ─── Category: Fried Rice ─── -->
           <div style="margin-bottom:2.5rem">
             <h4 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0 0 1rem">🍳 Fried Rice Dishes</h4>
@@ -555,6 +556,7 @@
               <div class="menu-item"><span class="menu-item-name">🍗 Topping: Fried Chicken</span><span class="menu-item-dots"></span></div>
             </div>
           </div>
+          </div><!-- /fullMenuBody -->
         </div>
         <!-- ─── END FULL MENU CARDS ─── -->
 
@@ -694,8 +696,11 @@
   </main>
   <div id="footer"></div>
   <script src="../js/business-data.js"></script>
-    <script src="../js/tracking-config.js"></script>
+  <script src="../js/menu-data.js"></script>
+  <script src="../js/tracking-config.js"></script>
   <script src="../js/main.js"></script>
+  <!-- SEO-safe hydrate: keeps static HTML for crawlers, updates for humans via JS -->
+  <script src="../js/popular-menu-hydrate.js"></script>
   <script>
   (function () {
     var cards = document.getElementById('fullMenuCards');

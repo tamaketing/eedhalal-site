@@ -531,10 +531,11 @@
     var sel = state.selectedToppings[menuId] || [];
     var sum = 0;
     sel.forEach(function(idx){ if(tops[idx]) sum += tops[idx].price; });
-    // add meat price
+    // add meat price — default to ไก่ (index 0) if not selected
     var meats = getMeatsForMenu(menuId);
     var selMeat = state.selectedMeats[menuId];
-    if(selMeat !== undefined && meats[selMeat]) sum += meats[selMeat].price || 0;
+    if(selMeat === undefined) selMeat = 0; // default to ไก่
+    if(meats[selMeat]) sum += meats[selMeat].price || 0;
     return sum;
   }
   function getSelectedTotals(){
@@ -593,7 +594,8 @@
         var topNames = (state.selectedToppings[id]||[]).map(function(ti){ var t=getToppingsForMenu(id)[ti]; return t? t.name : null; }).filter(Boolean);
         var meatIdx = state.selectedMeats[id];
         var meats = getMeatsForMenu(id);
-        var meatName = (meatIdx !== undefined && meats[meatIdx]) ? meats[meatIdx].name : '';
+        if(meatIdx === undefined) meatIdx = 0; // default to ไก่
+        var meatName = (meats[meatIdx]) ? meats[meatIdx].name : '';
         var topSuffix = '';
         if(meatName || topNames.length){
           var parts = [];
@@ -716,6 +718,7 @@
         var optsHtml = '';
         // Meat selection (radio — pick one)
         if(meats.length){
+          if(selMeat === undefined) selMeat = 0; // default to ไก่
           optsHtml += '<div style="margin-top:.55rem"><div style="font-size:.72rem;font-weight:800;color:var(--primary);margin-bottom:.3rem">เลือกเนื้อสัตว์ (1 อย่าง)</div><div style="display:flex;flex-wrap:wrap;gap:.35rem">'
             + meats.map(function(t, ti){
                 var active = selMeat === ti;
@@ -776,7 +779,7 @@
         var id = this.getAttribute('data-id');
         var act = this.getAttribute('data-act');
         if(act==='toggle'){
-          if(state.selected[id]){ delete state.selected[id]; delete state.selectedToppings[id]; }
+          if(state.selected[id]){ delete state.selected[id]; delete state.selectedToppings[id]; delete state.selectedMeats[id]; }
           else state.selected[id]= Math.max( (function(){ var mm=EED_MENUS.find(function(x){return String(x.id)===String(id);}); return mm? mm.minPerMenu:5; })(), state.quantity ? Math.ceil(state.quantity/2) : 5);
           renderResults();
           updateSummary();
@@ -785,7 +788,7 @@
           renderResults(); updateSummary();
         } else if(act==='dec'){
           state.selected[id] = (state.selected[id]||0)-1;
-          if(state.selected[id]<=0){ delete state.selected[id]; delete state.selectedToppings[id]; }
+          if(state.selected[id]<=0){ delete state.selected[id]; delete state.selectedToppings[id]; delete state.selectedMeats[id]; }
           renderResults(); updateSummary();
         }
       });
@@ -821,9 +824,9 @@
           var mm = EED_MENUS.find(function(x){return String(x.id)===String(mid);});
           state.selected[mid]= Math.max(mm?mm.minPerMenu:5, state.quantity ? Math.ceil(state.quantity/2) : 5);
         }
-        // toggle: if same meat clicked, deselect; else select new
-        if(state.selectedMeats[mid] === ti) delete state.selectedMeats[mid];
-        else state.selectedMeats[mid] = ti;
+        // if same meat clicked, keep it selected (can't deselect — default is ไก่)
+        if(state.selectedMeats[mid] === ti) return;
+        state.selectedMeats[mid] = ti;
         renderResults();
         updateSummary();
       });
@@ -850,7 +853,8 @@
       var topNames = (state.selectedToppings[id]||[]).map(function(ti){ var t=getToppingsForMenu(id)[ti]; return t? t.name+' (+'+t.price+'บ.)' : null; }).filter(Boolean).join(', ');
       var meatIdx = state.selectedMeats[id];
       var meatsList = getMeatsForMenu(id);
-      var meatName = (meatIdx !== undefined && meatsList[meatIdx]) ? meatsList[meatIdx].name : '';
+      if(meatIdx === undefined) meatIdx = 0; // default to ไก่
+      var meatName = (meatsList[meatIdx]) ? meatsList[meatIdx].name : '';
       var topLine = '';
       if(meatName || topNames){
         var lineParts = [];
@@ -893,6 +897,7 @@
         var rid = this.getAttribute('data-remove');
         delete state.selected[rid];
         delete state.selectedToppings[rid];
+        delete state.selectedMeats[rid];
         renderResults(); updateSummary();
       });
     });
@@ -1213,6 +1218,7 @@
     if(clearBtn) clearBtn.addEventListener('click', function(){
       state.selected = {};
       state.selectedToppings = {};
+      state.selectedMeats = {};
       renderResults(); updateSummary();
     });
 

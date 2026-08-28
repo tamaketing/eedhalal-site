@@ -270,6 +270,172 @@
     </section>
     <!-- ─── END HOW IT WORKS ─── -->
 
+    <!-- ─── SNACK BOX BUILDER ─── -->
+    <section class="section" style="padding-top:2rem;padding-bottom:2rem">
+      <div class="container">
+        <div class="section-label section-label-center mb-6" style="justify-content:center">จัดชุดเอง</div>
+        <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:0.5rem;color:var(--primary)">Snack Box Builder — เลือกเมนูเอง</h2>
+        <p style="text-align:center;font-size:0.92rem;line-height:1.8;max-width:40rem;margin:0 auto 2rem;color:var(--text-muted)">เลือกของหวาน น้ำผลไม้ และเครื่องดื่ม ขั้นต่ำ 40 บาท/กล่อง — ต้องการเพิ่มของว่างคาว +40บ/กล่อง ได้เลย ระบบคำนวณราคาให้ทันที แล้วส่งสรุปไป LINE ขอใบเสนอราคาได้</p>
+
+        <div class="sb-layout">
+          <!-- Left: Picker -->
+          <div class="sb-picker">
+            <!-- Quantity -->
+            <div class="sb-section">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">👥</span>
+                <span class="sb-section-title">จำนวนกล่อง</span>
+                <span class="sb-section-hint">ขั้นต่ำ 50 กล่อง · ส่งฟรี 50+</span>
+              </div>
+              <div class="sb-input-row">
+                <div class="sb-stepper">
+                  <button type="button" id="sbQtyDec" aria-label="ลด">−</button>
+                  <div style="width:1px;height:24px;background:var(--border)"></div>
+                  <button type="button" id="sbQtyInc" aria-label="เพิ่ม">+</button>
+                </div>
+                <input id="sbQtyNumber" class="sb-number" type="number" min="50" max="1000" step="5" value="50">
+                <span style="font-weight:800;color:var(--text-muted)">กล่อง</span>
+              </div>
+              <input id="sbQtyRange" class="sb-range" type="range" min="50" max="500" step="5" value="50">
+              <div class="sb-quick">
+                <button class="sb-chip" data-sb-qty="50">50</button>
+                <button class="sb-chip" data-sb-qty="80">80</button>
+                <button class="sb-chip" data-sb-qty="100">100</button>
+                <button class="sb-chip" data-sb-qty="200">200</button>
+              </div>
+            </div>
+
+            <!-- Sweet -->
+            <div class="sb-section">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">🍰</span>
+                <span class="sb-section-title">ของหวาน</span>
+                <span class="sb-badge"><span id="sbSweetCount">0</span>/1</span>
+              </div>
+              <p class="sb-section-desc">เลือกได้ 1 อย่าง</p>
+              <div id="sbSweetList" class="sb-check-grid"></div>
+            </div>
+
+            <!-- Savory (optional) -->
+            <div class="sb-section" style="border:1px dashed var(--accent);background:linear-gradient(135deg,#FFFBEB,#FEF3C7)">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">🥐</span>
+                <span class="sb-section-title">ของว่างคาว</span>
+                <span class="sb-badge" style="background:var(--accent);color:#fff"><span id="sbSavoryCount">0</span></span>
+              </div>
+              <p class="sb-section-desc">เลือกได้ไม่จำกัด บวกราคาตามเมนู (optional)</p>
+              <div id="sbSavoryList" class="sb-check-grid"></div>
+            </div>
+
+            <!-- Juice -->
+            <div class="sb-section">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">🍰</span>
+                <span class="sb-section-title">ของหวาน</span>
+                <span class="sb-badge"><span id="sbSweetCount">0</span>/1</span>
+              </div>
+              <p class="sb-section-desc">เลือกได้ 1 อย่าง</p>
+              <div id="sbSweetList" class="sb-check-grid"></div>
+            </div>
+
+            <!-- Juice -->
+            <div class="sb-section">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">🧃</span>
+                <span class="sb-section-title">น้ำผลไม้</span>
+                <span class="sb-badge"><span id="sbJuiceCount">0</span>/1</span>
+              </div>
+              <p class="sb-section-desc">เลือกได้ 1 อย่าง</p>
+              <div id="sbJuiceList" class="sb-check-grid"></div>
+            </div>
+
+            <!-- Addon -->
+            <div class="sb-section">
+              <div class="sb-section-head">
+                <span class="sb-section-icon">☕</span>
+                <span class="sb-section-title">เครื่องดื่ม</span>
+              </div>
+              <div id="sbAddonList" class="sb-radio-grid"></div>
+            </div>
+          </div>
+
+          <!-- Right: Summary -->
+          <div class="sb-summary-wrap">
+            <div class="sb-summary">
+              <div class="sb-summary-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                สรุปชุด Snack Box
+              </div>
+
+              <div class="sb-stat-grid">
+                <div class="sb-stat">
+                  <div class="sb-stat-label">งบต่อกล่อง</div>
+                  <div class="sb-stat-value"><span id="sbSumBudget">40</span> <span class="sb-stat-unit">บาท</span></div>
+                </div>
+                <div class="sb-stat">
+                  <div class="sb-stat-label">จำนวน</div>
+                  <div class="sb-stat-value"><span id="sbSumQty">50</span> <span class="sb-stat-unit">กล่อง</span></div>
+                </div>
+                <div class="sb-stat">
+                  <div class="sb-stat-label">เครื่องดื่ม</div>
+                  <div class="sb-stat-value" style="font-size:.85rem"><span id="sbSumAddon">น้ำเปล่า</span> <span id="sbSumAddonPrice" style="color:#22C55E;font-weight:700">ฟรี</span></div>
+                </div>
+              </div>
+
+              <div class="sb-selected-items">
+                <div class="sb-selected-row">
+                  <span class="sb-selected-label">🍰 ของหวาน:</span>
+                  <span id="sbSumSweet" class="sb-selected-value">— ยังไม่เลือก —</span>
+                </div>
+                <div class="sb-selected-row">
+                  <span class="sb-selected-label">🥐 ของว่างคาว:</span>
+                  <span id="sbSumSavory" class="sb-selected-value">— ไม่เลือก (Basik 40บ) —</span>
+                </div>
+                <div class="sb-selected-row">
+                  <span class="sb-selected-label">🧃 น้ำผลไม้:</span>
+                  <span id="sbSumJuice" class="sb-selected-value">— ยังไม่เลือก —</span>
+                </div>
+              </div>
+
+              <div class="sb-total-box">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;font-size:.72rem;opacity:.8;text-transform:uppercase;letter-spacing:.12em;font-weight:800">
+                  <span>ยอดรวมประมาณ</span>
+                  <span>ไม่มี VAT</span>
+                </div>
+                <div style="margin-top:.5rem;display:grid;gap:.3rem;font-size:.84rem">
+                  <div style="display:flex;justify-content:space-between;gap:1rem;opacity:.92">
+                    <span>ค่าอาหาร (<span id="sbSumQty2">50</span> กล่อง)</span>
+                    <strong id="sbSumFood">2,000 บาท</strong>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;gap:1rem;opacity:.92">
+                    <span id="sbSumShipLabel">ค่าส่ง</span>
+                    <strong id="sbSumShip">ฟรี</strong>
+                  </div>
+                  <div style="height:1px;background:rgba(255,255,255,.18);margin:.2rem 0"></div>
+                </div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-top:.1rem">
+                  <div style="font-size:1.8rem;font-weight:900;letter-spacing:-.03em;line-height:1"><span id="sbSumTotal">2,000</span> บาท</div>
+                  <div style="font-size:.82rem;opacity:.9;font-weight:700"><span id="sbSumAvg">40</span> บาท/กล่อง</div>
+                </div>
+                <div style="font-size:.75rem;opacity:.8;margin-top:.35rem;line-height:1.6">ส่งฟรี 50+ กล่อง · ฮาลาล CICOT HL-2024-0892</div>
+              </div>
+
+              <div class="sb-actions">
+                <a id="sbLineBtn" href="https://lin.ee/CfvqJTd" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="font-size:1rem;padding:.95rem;width:100%;justify-content:center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  ส่งสรุปนี้ไป LINE ขอใบเสนอราคา
+                </a>
+                <button id="sbCopySummary" class="btn btn-outline btn-sm" type="button" style="width:100%;justify-content:center">คัดลอกสรุป</button>
+              </div>
+              <div id="sbCopyToast" class="sb-toast">คัดลอกแล้ว! วางใน LINE ได้เลย ✓</div>
+              <div class="sb-note">ราคาประมาณการ — ทีมงานยืนยันราคาสุดท้ายและคิวส่งภายใน 15 นาที (เวลาทำการ)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ─── END SNACK BOX BUILDER ─── -->
+
     <section class="snack-box-showcase" aria-labelledby="snack-box-showcase-title">
       <div class="container">
         <div class="snack-box-showcase-card">
@@ -299,7 +465,7 @@
       <div class="container">
         <div style="margin-top:3rem">
           <div class="section-label section-label-center mb-6" style="justify-content:center">สิ่งที่ได้ในงบนี้</div>
-          <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:1.25rem;color:var(--primary)">Snack Box ฮาลาล เริ่มต้น 40 บาท</h2>
+          <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:1.25rem;color:var(--primary)">Snack Box ฮาลาล เริ่มต้น <span id="snackBasePrice">40</span> บาท</h2>
           <p style="text-align:center;font-size:0.92rem;line-height:1.8;max-width:40rem;margin:0 auto 2rem;color:var(--text-muted)">ชุดของว่างประชุมราคาประหยัดเริ่มต้น 40 บาท/กล่อง ราคาจริงขึ้นอยู่กับรายการอาหารและจำนวนที่สั่ง โดยสามารถจัดเป็นชุดของว่าง + เครื่องดื่ม หรือปรับรายการตามงบประมาณได้</p>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;max-width:48rem;margin:0 auto 2rem">
             <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:1.25rem 1rem;text-align:center">
@@ -383,11 +549,10 @@
         <!-- ─── FULL SNACK MENU (hidden until "ดูเมนูของว่างทั้งหมด") ─── -->
         <div class="full-menu" id="fullSnackMenu" style="margin-top:4rem;display:none">
           <div class="section-label section-label-center mb-6" style="justify-content:center">เมนูทั้งหมด</div>
-          <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:2rem;color:var(--primary)">เมนูของว่างฮาลาลที่เลือกใส่ใน Snack Box ได้</h2>
+          <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:1rem;color:var(--primary)">เมนูของว่างฮาลาลที่เลือกใส่ใน Snack Box ได้</h2>
+          <p style="text-align:center;font-size:0.85rem;line-height:1.8;opacity:0.6;color:var(--text-muted);margin-bottom:.5rem">ขั้นต่ำ <strong><span id="snackMinOrder">50</span> กล่อง</strong> · จัดชุดได้ตามงบและจำนวนคน · ทัก LINE เพื่อใบเสนอราคาครับ</p>
 
-          <p style="text-align:center;font-size:0.85rem;line-height:1.8;opacity:0.6;color:var(--text-muted);margin-bottom:2.5rem">จัดชุดได้ตามงบและจำนวนคน — ราคาขึ้นอยู่กับจำนวนสั่ง ทัก LINE เพื่อใบเสนอราคาครับ</p>
-
-          <!-- ─── ประเภท: ย่าง/ปิ้ง ─── -->
+          <!-- ─── ของว่างคาว (static — not managed by planner) ─── -->
           <div style="margin-bottom:2.5rem">
             <h4 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0 0 1rem">🍢 ของว่างย่าง/ปิ้ง</h4>
             <div class="menu-item-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:0.35rem 1.25rem">
@@ -425,7 +590,16 @@
             </div>
           </div>
 
-          <div style="margin-bottom:2.5rem">
+          <!-- ─── เบเกอรี่ (rendered by JS from planner) ─── -->
+          <div id="snackFullMenu"></div>
+
+          <!-- ─── เครื่องดื่ม (rendered by JS from planner) ─── -->
+          <div style="margin-top:2.5rem">
+            <h4 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0 0 1rem">☕ เครื่องดื่ม</h4>
+            <div id="snackAddOns"></div>
+          </div>
+
+          <div style="margin-top:1.5rem">
             <h4 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0 0 1rem">☕ ชุด Coffee Break (ตัวอย่าง)</h4>
             <div class="menu-item-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.35rem 1.25rem">
               <div class="menu-item"><span class="menu-item-name">☕ ชุดประชุมเช้า ซาโมซาไก่ + ขนมจีบกุ้ง + ผลไม้รวมตามฤดูกาล</span><span class="menu-item-dots"></span></div>
@@ -640,6 +814,9 @@
   <script src="js/business-data.js"></script>
     <script src="js/tracking-config.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/snack-data.js"></script>
+  <script src="js/snack-hydrate.js"></script>
+  <script src="js/snack-builder.js"></script>
   <script>
   (function () {
     var cards = document.getElementById('fullSnackMenu');

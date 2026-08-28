@@ -13,6 +13,10 @@
   var LS_CATEGORIES = 'eed_categories_v1';
   var LS_DELETED = 'eed_deleted_v1';
   var LS_NEW_MENUS = 'eed_new_menus_v1';
+  var LS_SNACK_PRICES = 'eed_snack_prices_v1';
+  var LS_SNACK_NAMES = 'eed_snack_names_v1';
+  var LS_SNACK_ADDONS = 'eed_snack_addons_v1';
+  var LS_SNACK_CATEGORIES = 'eed_snack_cats_v1';
   var MENU_CATEGORIES = ['ข้าวราดแกง','ข้าวผัด','เส้น','อาหารอินเดีย','พรีเมียม'];
   var DEFAULT_ZONES = [
     {id:'bangkok_inner', label:'กรุงเทพชั้นใน (สาทร สีลม พระราม3)', fee:120},
@@ -320,6 +324,166 @@
     var newMenus = getNewMenus();
     newMenus = newMenus.filter(function(m){ return m.id !== id; });
     saveNewMenus(newMenus);
+  }
+
+  // --- Snack box management ---
+  function loadSnackPrices(){
+    if(typeof EED_SNACK_MENUS==='undefined') return;
+    try{
+      var saved = JSON.parse(localStorage.getItem(LS_SNACK_PRICES)||'null');
+      if(saved && typeof saved==='object'){
+        for(var id in saved){
+          if(!saved.hasOwnProperty(id)) continue;
+          var v = parseFloat(saved[id]);
+          if(!isNaN(v)){
+            for(var i=0;i<EED_SNACK_MENUS.length;i++){
+              if(EED_SNACK_MENUS[i].id===id){ EED_SNACK_MENUS[i].price=v; break; }
+            }
+          }
+        }
+      }
+    }catch(e){}
+  }
+  function saveSnackPrices(){
+    if(typeof EED_SNACK_MENUS==='undefined') return;
+    try{
+      var obj={};
+      EED_SNACK_MENUS.forEach(function(m){ obj[m.id]=m.price; });
+      localStorage.setItem(LS_SNACK_PRICES, JSON.stringify(obj));
+      localStorage.setItem('eed_selling_updated_at', String(Date.now()));
+    }catch(e){}
+  }
+  function saveOneSnackPrice(id, price){
+    if(typeof EED_SNACK_MENUS==='undefined') return;
+    for(var i=0;i<EED_SNACK_MENUS.length;i++){
+      if(EED_SNACK_MENUS[i].id===id){ EED_SNACK_MENUS[i].price=price; break; }
+    }
+    saveSnackPrices();
+    flashSaved();
+  }
+  function loadSnackNames(){
+    if(typeof EED_SNACK_MENUS==='undefined') return;
+    try{
+      var saved = JSON.parse(localStorage.getItem(LS_SNACK_NAMES)||'null');
+      if(saved && typeof saved==='object'){
+        for(var id in saved){
+          if(!saved.hasOwnProperty(id)) continue;
+          var v = String(saved[id]||'').trim();
+          if(v){
+            for(var i=0;i<EED_SNACK_MENUS.length;i++){
+              if(EED_SNACK_MENUS[i].id===id){ EED_SNACK_MENUS[i].name=v; break; }
+            }
+          }
+        }
+      }
+    }catch(e){}
+  }
+  function saveSnackNames(){
+    if(typeof EED_SNACK_MENUS==='undefined') return;
+    try{
+      var obj={};
+      EED_SNACK_MENUS.forEach(function(m){ obj[m.id]=m.name; });
+      localStorage.setItem(LS_SNACK_NAMES, JSON.stringify(obj));
+      localStorage.setItem('eed_selling_updated_at', String(Date.now()));
+    }catch(e){}
+  }
+  function saveOneSnackName(id, nameVal){
+    if(typeof EED_SNACK_MENUS==='undefined') return;
+    for(var i=0;i<EED_SNACK_MENUS.length;i++){
+      if(EED_SNACK_MENUS[i].id===id){ EED_SNACK_MENUS[i].name=nameVal; break; }
+    }
+    saveSnackNames();
+    flashSaved();
+  }
+  function getSnackAddons(){
+    try{
+      var saved = JSON.parse(localStorage.getItem(LS_SNACK_ADDONS)||'null');
+      if(Array.isArray(saved)) return saved;
+    }catch(e){}
+    return (typeof EED_SNACK_ADDONS!=='undefined') ? JSON.parse(JSON.stringify(EED_SNACK_ADDONS)) : [];
+  }
+  function saveSnackAddons(arr){
+    try{
+      localStorage.setItem(LS_SNACK_ADDONS, JSON.stringify(arr));
+      localStorage.setItem('eed_selling_updated_at', String(Date.now()));
+    }catch(e){}
+  }
+  function loadSnackCats(){
+    if(typeof EED_SNACK_MENUS==='undefined') return;
+    try{
+      var saved = JSON.parse(localStorage.getItem(LS_SNACK_CATEGORIES)||'null');
+      if(saved && typeof saved==='object'){
+        for(var id in saved){
+          if(!saved.hasOwnProperty(id)) continue;
+          var v = String(saved[id]||'').trim();
+          if(v){
+            for(var i=0;i<EED_SNACK_MENUS.length;i++){
+              if(EED_SNACK_MENUS[i].id===id){ EED_SNACK_MENUS[i].category=v; break; }
+            }
+          }
+        }
+      }
+    }catch(e){}
+  }
+  function saveSnackCats(){
+    if(typeof EED_SNACK_MENUS==='undefined') return;
+    try{
+      var obj={};
+      EED_SNACK_MENUS.forEach(function(m){ obj[m.id]=m.category; });
+      localStorage.setItem(LS_SNACK_CATEGORIES, JSON.stringify(obj));
+      localStorage.setItem('eed_selling_updated_at', String(Date.now()));
+    }catch(e){}
+  }
+  function saveOneSnackCat(id, catVal){
+    if(typeof EED_SNACK_MENUS==='undefined') return;
+    for(var i=0;i<EED_SNACK_MENUS.length;i++){
+      if(EED_SNACK_MENUS[i].id===id){ EED_SNACK_MENUS[i].category=catVal; break; }
+    }
+    saveSnackCats();
+    flashSaved();
+  }
+  function renderSnackTable(){
+    var tbody = $('snackTableBody');
+    if(!tbody || typeof EED_SNACK_MENUS==='undefined') return;
+    var cats = (typeof EED_SNACK_CATEGORIES!=='undefined') ? EED_SNACK_CATEGORIES : [];
+    var catOpts = cats.map(function(c){ return '<option value="'+c.id+'">'+escapeHtml(c.label)+'</option>'; }).join('');
+    var html = '';
+    for(var c=0;c<cats.length;c++){
+      var cat = cats[c];
+      var items = EED_SNACK_MENUS.filter(function(m){ return m.category===cat.id; });
+      for(var j=0;j<items.length;j++){
+        var m = items[j];
+        html += '<tr>';
+        html += '<td><select class="snack-cat-select" data-id="'+m.id+'" style="width:100px;height:34px;border:1px solid var(--border);border-radius:8px;padding:0 .4rem;font-size:.82rem;font-weight:700">'+catOpts.replace('value="'+m.category+'"','value="'+m.category+'" selected')+'</select></td>';
+        html += '<td style="font-weight:800">'+escapeHtml(m.name)+'</td>';
+        html += '<td><input type="number" class="snack-price-input" data-id="'+m.id+'" value="'+m.price+'" min="0" max="500" step="5" style="width:72px;height:34px;border:1px solid var(--border);border-radius:8px;text-align:center;font-weight:900;color:var(--primary)"></td>';
+        html += '<td><input type="text" class="snack-name-input" data-id="'+m.id+'" value="'+escapeHtml(m.name)+'" style="width:180px;height:34px;border:1px solid var(--border);border-radius:8px;padding:0 .5rem;font-size:.82rem"></td>';
+        html += '</tr>';
+      }
+    }
+    tbody.innerHTML = html;
+    // event listeners
+    tbody.querySelectorAll('.snack-cat-select').forEach(function(sel){
+      sel.addEventListener('change', function(){
+        saveOneSnackCat(this.getAttribute('data-id'), this.value);
+      });
+    });
+    tbody.querySelectorAll('.snack-price-input').forEach(function(inp){
+      inp.addEventListener('change', function(){
+        var v = parseFloat(this.value);
+        if(isNaN(v) || v<0) v=0;
+        v = Math.min(500, v);
+        this.value = v;
+        saveOneSnackPrice(this.getAttribute('data-id'), v);
+      });
+    });
+    tbody.querySelectorAll('.snack-name-input').forEach(function(inp){
+      inp.addEventListener('change', function(){
+        var v = this.value.trim();
+        if(!v) return;
+        saveOneSnackName(this.getAttribute('data-id'), v);
+      });
+    });
   }
 
   function saveOne(id, price){
@@ -791,6 +955,9 @@
     loadNames();
     loadCategories();
     loadNewMenus();
+    loadSnackPrices();
+    loadSnackNames();
+    loadSnackCats();
 
     var catChips = document.querySelectorAll('[data-pcat]');
     var searchInput = $('priceSearch');
@@ -800,6 +967,7 @@
     renderMeats();
     renderGlobalToppings();
     renderShipZones();
+    renderSnackTable();
 
     // --- Add meat ---
     var addMeatBtn = $('addMeat');
@@ -941,6 +1109,10 @@
       localStorage.removeItem(LS_DELETED);
       localStorage.removeItem(LS_NEW_MENUS);
       localStorage.removeItem(LS_MEATS);
+      localStorage.removeItem(LS_SNACK_PRICES);
+      localStorage.removeItem(LS_SNACK_NAMES);
+      localStorage.removeItem(LS_SNACK_ADDONS);
+      localStorage.removeItem(LS_SNACK_CATEGORIES);
       localStorage.removeItem('eed_selling_updated_at');
       EED_MENUS.forEach(function(m){
         if(m._origPrice !== undefined) m.price = m._origPrice;
@@ -994,6 +1166,10 @@
         toppings: getGlobalToppings(),
         shipZones: getShipZones(),
         shipFree: getFreeThreshold(),
+        snackPrices: (function(){ var o={}; if(typeof EED_SNACK_MENUS!=='undefined') EED_SNACK_MENUS.forEach(function(m){ o[m.id]=m.price; }); return o; })(),
+        snackNames: (function(){ var o={}; if(typeof EED_SNACK_MENUS!=='undefined') EED_SNACK_MENUS.forEach(function(m){ o[m.id]=m.name; }); return o; })(),
+        snackCats: (function(){ var o={}; if(typeof EED_SNACK_MENUS!=='undefined') EED_SNACK_MENUS.forEach(function(m){ o[m.id]=m.category; }); return o; })(),
+        snackAddons: getSnackAddons(),
         exportedAt: new Date().toISOString()
       };
     }

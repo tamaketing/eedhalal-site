@@ -272,7 +272,7 @@
         <div style="margin-top:4rem">
           <div class="section-label section-label-center mb-6" style="justify-content:center">เมนูยอดนิยม</div>
           <h3 style="font-size:1.3rem;font-weight:900;text-align:center;margin-bottom:2rem;color:var(--primary)">เมนูที่องค์กรสั่งบ่อยที่สุด</h3>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.5rem;margin-bottom:2.25rem">
+          <div id="popularMenuGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.5rem;margin-bottom:2.25rem">
 
             <div style="background:var(--white);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column">
               <div style="aspect-ratio:4/3;overflow:hidden">
@@ -449,6 +449,7 @@
 
           <p style="text-align:center;font-size:0.85rem;line-height:1.8;opacity:0.6;color:var(--text-muted);margin-bottom:2.5rem">เริ่มต้น 60 บาท/กล่อง สั่งขั้นต่ำ 10 กล่อง (อาหารไทย 5 กล่อง/เมนู อาหารอินเดีย 10 กล่อง/เมนู) — ราคาสุดท้ายขึ้นอยู่กับจำนวนสั่ง ทัก LINE เพื่อใบเสนอราคา</p>
 
+          <div id="fullMenuBody">
           <!-- ─── ประเภท: เมนูข้าวผัด ─── -->
           <div style="margin-bottom:2.5rem">
             <h4 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0 0 1rem">🍳 เมนูข้าวผัด</h4>
@@ -572,6 +573,7 @@
               <div class="menu-item"><span class="menu-item-name">🍗 ท๊อปปิ้ง: ไก่ทอด</span><span class="menu-item-dots"></span></div>
             </div>
           </div>
+          </div><!-- /fullMenuBody -->
         </div>
         <!-- ─── END FULL MENU CARDS ─── -->
 
@@ -725,8 +727,11 @@
   </main>
   <div id="footer"></div>
   <script src="js/business-data.js"></script>
-    <script src="js/tracking-config.js"></script>
+  <script src="js/menu-data.js"></script>
+  <script src="js/tracking-config.js"></script>
   <script src="js/main.js"></script>
+  <!-- SEO-safe hydrate: keeps static HTML for crawlers, updates for humans via JS -->
+  <script src="js/popular-menu-hydrate.js"></script>
   <script>
   (function () {
     var cards = document.getElementById('fullMenuCards');
