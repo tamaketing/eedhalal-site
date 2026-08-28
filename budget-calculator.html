@@ -152,10 +152,54 @@
     .calc-selected-stat span{font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)}
     /* Buttons small */
     .btn-sm{padding:.5rem .9rem;font-size:.82rem;border-radius:999px}
-    @media(max-width:640px){
+    .btn:disabled,.btn[disabled]{opacity:.45;cursor:not-allowed;pointer-events:none}
+    @media(max-width:960px){
+      .calc-layout{grid-template-columns:1fr}
       .calc-summary{position:static}
+    }
+    @media(max-width:640px){
+      .calc-hero-inner{padding:1.25rem 1rem 1rem}
+      .calc-hero h1{font-size:1.35rem;line-height:1.2}
+      .calc-hero p{font-size:.88rem;line-height:1.7}
+      .calc-wrap{padding:0 1rem}
+      .calc-card-panel{padding:1.1rem}
+      .calc-panel-title{font-size:.95rem}
+      .calc-input-row{gap:.4rem}
+      .calc-stepper button{width:36px;height:36px;font-size:1.1rem}
+      .calc-number{height:38px;font-size:1rem;padding:0 .7rem}
+      .calc-quick{gap:.35rem}
+      .calc-chip{padding:.35rem .65rem;font-size:.75rem}
       .calc-summary-grid{grid-template-columns:1fr 1fr}
-      .calc-total-value{font-size:1.7rem}
+      .calc-stat-value{font-size:1.25rem}
+      .calc-total-value{font-size:1.5rem}
+      .calc-results-head{flex-direction:column;align-items:flex-start;gap:.75rem}
+      .calc-results-head > div:last-child{width:100%}
+      .calc-filter-row{gap:.35rem}
+      .calc-card-cat{font-size:.58rem}
+      .calc-card-title{font-size:.92rem}
+      .calc-card-desc{font-size:.76rem}
+      .calc-select-btn{height:34px;font-size:.78rem}
+      .calc-selected-head{flex-direction:column;align-items:flex-start;gap:.5rem}
+      .calc-selected-row{gap:.6rem;padding:.55rem 0}
+      .calc-selected-row img{width:36px;height:36px}
+      .calc-selected-stats{grid-template-columns:repeat(3,1fr);gap:.5rem}
+      .calc-selected-stat strong{font-size:1.05rem}
+      .calc-selected-stat span{font-size:.58rem}
+      .calc-over{padding:1rem}
+      .calc-over-item{font-size:.8rem}
+      .calc-actions .btn{font-size:.9rem;padding:.8rem}
+      .calc-note{font-size:.68rem}
+      #sumDeliveryRow{font-size:.78rem;flex-direction:column;align-items:flex-start;gap:.35rem}
+      #sumDeliveryTime{margin-left:0}
+      .faq-question{font-size:.88rem}
+      .faq-answer p{font-size:.82rem}
+    }
+    @media(max-width:380px){
+      .calc-hero h1{font-size:1.15rem}
+      .calc-chip{padding:.3rem .55rem;font-size:.7rem}
+      .calc-stat-value{font-size:1.1rem}
+      .calc-total-value{font-size:1.3rem}
+      .calc-selected-stats{grid-template-columns:1fr 1fr}
     }
   </style>
 </head>
@@ -432,6 +476,7 @@
           </div>
           <div id="calcSelectedList"></div>
           <div id="selectedWarn" style="display:none;margin-top:.75rem;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:.6rem .85rem;font-size:.82rem;line-height:1.6;color:#92400E"></div>
+          <div id="selectedMinWarn" style="display:none;margin-top:.75rem;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:.6rem .85rem;font-size:.82rem;line-height:1.6;color:#991B1B;font-weight:700"></div>
           <div class="calc-selected-stats">
             <div class="calc-selected-stat"><strong id="selectedTotal">0</strong><span>ยอดรวม (บาท)</span></div>
             <div class="calc-selected-stat"><strong id="selectedAvg">0</strong><span>เฉลี่ย/กล่อง</span></div>
@@ -464,7 +509,7 @@
               <button class="calc-chip cat" data-cat="ข้าวราดแกง">ข้าวราดแกง</button>
               <button class="calc-chip cat" data-cat="ข้าวผัด">ข้าวผัด</button>
               <button class="calc-chip cat" data-cat="เส้น">เส้น</button>
-              <button class="calc-chip cat" data-cat="ข้าวหมก">ข้าวหมก</button>
+              <button class="calc-chip cat" data-cat="อาหารอินเดีย">อาหารอินเดีย</button>
               <button class="calc-chip cat" data-cat="แกง/ต้ม">แกง/ต้ม</button>
               <button class="calc-chip cat" data-cat="พรีเมียม">พรีเมียม</button>
             </div>
