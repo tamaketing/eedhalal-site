@@ -45,6 +45,14 @@ var EED_MENUS = [
   { id: 39, name: "ข้าวราดกะเพราเนื้อสับคั่ว", price: 60, category: "ข้าวราดแกง", image: "img/menu-kaprao-nuea.png", desc: "เนื้อสับคั่วแห้งหอมกระทะ เผ็ดจัดจ้าน สไตล์กะเพราคั่ว", badge: "ใหม่", minPerMenu: 5 }
 ];
 
+// Standard meat options shown on the public calculator.
+var EED_DEFAULT_MEATS = [
+  { name: "ไก่", price: 0 },
+  { name: "เนื้อ", price: 0 },
+  { name: "ทะเล", price: 0 },
+  { name: "หมู", price: 0 }
+];
+
 // Standard add-ons shown on the public calculator.
 // Keep these values here so toppings are identical for every visitor after deploy.
 var EED_DEFAULT_TOPPINGS = [

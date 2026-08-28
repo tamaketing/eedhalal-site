@@ -176,6 +176,12 @@
   },
   "deleted": [],
   "newMenus": [],
+  "meats": [
+    {"name": "ไก่", "price": 0},
+    {"name": "เนื้อ", "price": 0},
+    {"name": "ทะเล", "price": 0},
+    {"name": "หมู", "price": 0}
+  ],
   "toppings": [
     {
       "name": "ไข่ดาว",

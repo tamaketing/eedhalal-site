@@ -7,6 +7,7 @@
   var LS_SHIP_ZONES = 'eed_ship_zones_v1';
   var LS_SHIP_FREE = 'eed_ship_free_v1';
   var LS_TOPPINGS = 'eed_toppings_v1';
+  var LS_MEATS = 'eed_meats_v1';
   var LS_IMAGES = 'eed_images_v1';
   var LS_NAMES = 'eed_names_v1';
   var LS_CATEGORIES = 'eed_categories_v1';
@@ -387,6 +388,66 @@
   }
 
   // --- One global topping list for every menu ---
+  // --- Meats (เลือกเนื้อสัตว์ — เลือกได้ 1 อย่าง) ---
+  var DEFAULT_MEATS = [
+    {name:'ไก่', price:0},
+    {name:'เนื้อ', price:0},
+    {name:'ทะเล', price:0},
+    {name:'หมู', price:0}
+  ];
+  function getMeats(){
+    try{
+      var saved = JSON.parse(localStorage.getItem(LS_MEATS)||'null');
+      if(Array.isArray(saved)){
+        return saved.filter(function(t){ return t && String(t.name||'').trim(); }).map(function(t){
+          return {name:String(t.name).trim(), price:Math.max(0, parseInt(t.price,10)||0)};
+        });
+      }
+    }catch(e){}
+    return DEFAULT_MEATS.map(function(t){ return {name:t.name, price:t.price}; });
+  }
+  function saveMeats(meats){
+    try{ localStorage.setItem(LS_MEATS, JSON.stringify(meats)); localStorage.setItem('eed_selling_updated_at', String(Date.now())); }catch(e){}
+  }
+  function renderMeats(){
+    var list = $('meatsList');
+    if(!list) return;
+    var meats = getMeats();
+    list.innerHTML = meats.length ? meats.map(function(t, idx){
+      return '<div style="display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;margin-top:.45rem">'
+        + '<input type="text" data-mt-name="'+idx+'" value="'+escapeHtml(t.name)+'" style="flex:1;min-width:150px;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;font-weight:700">'
+        + '<input type="number" data-mt-price="'+idx+'" value="'+t.price+'" min="0" max="500" step="5" style="width:90px;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;text-align:center;font-size:.85rem;font-weight:900;color:var(--primary)">'
+        + '<span style="font-size:.75rem;color:var(--text-muted)">บาท/กล่อง</span>'
+        + '<button type="button" data-mt-delete="'+idx+'" class="btn btn-outline btn-sm" style="color:#DC2626;border-color:#FECACA">ลบ</button>'
+        + '</div>';
+    }).join('') : '<div style="margin-top:.55rem;font-size:.82rem;color:var(--text-muted)">ยังไม่มีเนื้อสัตว์ — เพิ่มรายการด้านล่าง</div>';
+
+    list.querySelectorAll('[data-mt-name],[data-mt-price]').forEach(function(input){
+      input.addEventListener('change', function(){
+        var idx = parseInt(this.getAttribute('data-mt-name') || this.getAttribute('data-mt-price'),10);
+        var current = getMeats();
+        if(!current[idx]) return;
+        if(this.hasAttribute('data-mt-name')) current[idx].name = this.value.trim() || current[idx].name;
+        else current[idx].price = Math.max(0, Math.min(500, parseInt(this.value,10)||0));
+        saveMeats(current);
+        renderMeats();
+        flashSaved();
+      });
+    });
+    list.querySelectorAll('[data-mt-delete]').forEach(function(button){
+      button.addEventListener('click', function(){
+        var idx = parseInt(this.getAttribute('data-mt-delete'),10);
+        var current = getMeats();
+        if(isNaN(idx)) return;
+        current.splice(idx,1);
+        saveMeats(current);
+        renderMeats();
+        flashSaved();
+      });
+    });
+  }
+
+  // --- Toppings (เลือกท็อปปิ้ง — เลือกได้หลายอย่าง) ---
   function getGlobalToppings(){
     try{
       var saved = JSON.parse(localStorage.getItem(LS_TOPPINGS)||'null');
@@ -736,8 +797,30 @@
 
     renderTable();
     updateStats();
+    renderMeats();
     renderGlobalToppings();
     renderShipZones();
+
+    // --- Add meat ---
+    var addMeatBtn = $('addMeat');
+    if(addMeatBtn){
+      addMeatBtn.addEventListener('click', function(){
+        var nameInput = $('meatName');
+        var priceInput = $('meatPrice');
+        var name = nameInput ? nameInput.value.trim() : '';
+        var price = priceInput ? parseInt(priceInput.value,10) : 0;
+        if(!name){ if(nameInput) nameInput.focus(); return; }
+        if(isNaN(price) || price<0) price=0;
+        price = Math.min(500, price);
+        var meats = getMeats();
+        meats.push({name:name, price:price});
+        saveMeats(meats);
+        if(nameInput) nameInput.value='';
+        if(priceInput) priceInput.value='';
+        renderMeats();
+        flashSaved();
+      });
+    }
 
     // --- Add new menu ---
     var addNewMenuBtn = $('addNewMenu');
@@ -857,6 +940,7 @@
       localStorage.removeItem(LS_CATEGORIES);
       localStorage.removeItem(LS_DELETED);
       localStorage.removeItem(LS_NEW_MENUS);
+      localStorage.removeItem(LS_MEATS);
       localStorage.removeItem('eed_selling_updated_at');
       EED_MENUS.forEach(function(m){
         if(m._origPrice !== undefined) m.price = m._origPrice;
@@ -906,6 +990,7 @@
         categories: categories,
         deleted: getDeleted(),
         newMenus: getNewMenus(),
+        meats: getMeats(),
         toppings: getGlobalToppings(),
         shipZones: getShipZones(),
         shipFree: getFreeThreshold(),
@@ -918,7 +1003,8 @@
       downloadText('planner-overrides.json', JSON.stringify(data, null, 2), 'application/json');
       // also generate menu-data.js
        var globalToppings = getGlobalToppings();
-       var lines = ['/* EED HALAL — Menu database for budget calculator — auto-export '+new Date().toLocaleString('th-TH')+' */','var EED_DEFAULT_TOPPINGS = '+JSON.stringify(globalToppings)+';','var EED_MENUS = ['];
+       var globalMeats = getMeats();
+       var lines = ['/* EED HALAL — Menu database for budget calculator — auto-export '+new Date().toLocaleString('th-TH')+' */','var EED_DEFAULT_MEATS = '+JSON.stringify(globalMeats)+';','var EED_DEFAULT_TOPPINGS = '+JSON.stringify(globalToppings)+';','var EED_MENUS = ['];
       EED_MENUS.forEach(function(m, idx){
         var toppings = getGlobalToppings();
         var topStr = toppings.length ? ', toppings: '+JSON.stringify(toppings) : '';

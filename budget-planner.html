@@ -148,22 +148,40 @@
       </div>
     </section>
 
-    <!-- Global toppings -->
-    <section class="section section-sand" style="padding-top:1.25rem;padding-bottom:1.25rem">
+    <!-- Meats (เลือกเนื้อสัตว์) -->
+    <section class="section section-sand" style="padding-top:1.25rem;padding-bottom:.75rem">
       <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
         <div class="planner-card">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-            <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0">ท็อปปิ้งกลาง — ใช้กับทุกเมนู</h2>
-            <span style="font-size:.75rem;color:var(--text-muted)">กรอกครั้งเดียว ลูกค้าเลือกได้ทุกเมนู</span>
+            <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0">🥩 เนื้อสัตว์ — เลือกได้ 1 อย่าง</h2>
+            <span style="font-size:.75rem;color:var(--text-muted)">ลูกค้าเลือกเนื้อก่อน แล้วค่อยเลือกท็อปปิ้ง</span>
+          </div>
+          <div id="meatsList" style="margin-top:.35rem"></div>
+          <div style="display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;margin-top:.65rem">
+            <input id="meatName" type="text" placeholder="ชื่อเนื้อ เช่น ไก่" style="flex:1;min-width:180px;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem">
+            <input id="meatPrice" type="number" placeholder="ราคาเพิ่ม" min="0" max="500" step="5" style="width:100px;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;text-align:center;font-size:.85rem;font-weight:900;color:var(--primary)">
+            <span style="font-size:.75rem;color:var(--text-muted)">บาท/กล่อง</span>
+            <button id="addMeat" class="btn btn-primary btn-sm" type="button">+ เพิ่มเนื้อสัตว์</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toppings (เลือกท็อปปิ้ง) -->
+    <section class="section section-sand" style="padding-top:.75rem;padding-bottom:1.25rem">
+      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
+        <div class="planner-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+            <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0"> toppings — เลือกได้หลายอย่าง</h2>
+            <span style="font-size:.75rem;color:var(--text-muted)">ไข่ดาว, ไข่เจียว, ผลไม้ ฯลฯ</span>
           </div>
           <div id="globalToppingsList" style="margin-top:.35rem"></div>
           <div style="display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;margin-top:.65rem">
             <input id="globalToppingName" type="text" placeholder="ชื่อท็อปปิ้ง เช่น ไข่ดาว" style="flex:1;min-width:180px;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem">
             <input id="globalToppingPrice" type="number" placeholder="ราคาเพิ่ม" min="0" max="500" step="5" style="width:100px;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;text-align:center;font-size:.85rem;font-weight:900;color:var(--primary)">
             <span style="font-size:.75rem;color:var(--text-muted)">บาท/กล่อง</span>
-            <button id="addGlobalTopping" class="btn btn-primary btn-sm" type="button">+ เพิ่มท็อปปิ้งกลาง</button>
+            <button id="addGlobalTopping" class="btn btn-primary btn-sm" type="button">+ เพิ่มท็อปปิ้ง</button>
           </div>
-          <div style="margin-top:.6rem;font-size:.72rem;color:var(--text-muted);line-height:1.6">รายการนี้ใช้ร่วมกันทุกเมนู และจะถูกส่งออกไปในไฟล์ <code>menu-data.js</code> เมื่อกดดาวน์โหลดไฟล์ Deploy</div>
         </div>
       </div>
     </section>
