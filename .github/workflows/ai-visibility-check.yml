@@ -1,0 +1,260 @@
+name: AI Visibility Check
+
+on:
+  schedule:
+    # ทุกวันจันทร์ 08:00 กรุงเทพ = 01:00 UTC
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+  push:
+    paths:
+      - "robots.txt"
+      - "llms.txt"
+      - "llms-full.md"
+      - "sitemap.xml"
+      - "reviews.html"
+      - "en/reviews.html"
+      - "index.html"
+      - "faq.html"
+      - "js/business-data.js"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run GEO/AEO checks
+        id: check
+        shell: bash
+        run: |
+          set -e
+          SITE="https://eedhalal.com"
+          FAIL=0
+          REPORT="## AI Visibility Check — $(date -u +%Y-%m-%d)\n\n"
+          echo "Checking $SITE ..."
+
+          check_url() {
+            local url=$1
+            local expect=$2
+            local label=$3
+            echo "→ $label: $url"
+            CODE=$(curl -s -o /tmp/body.txt -w "%{http_code}" "$url" || echo "000")
+            if [ "$CODE" != "200" ]; then
+              echo "❌ $label HTTP $CODE"
+              REPORT+="- ❌ $label — HTTP $CODE ($url)\n"
+              FAIL=1
+              return 1
+            fi
+            if [ -n "$expect" ]; then
+              if ! grep -q "$expect" /tmp/body.txt; then
+                echo "❌ $label missing: $expect"
+                REPORT+="- ❌ $label — missing \`$expect\`\n"
+                FAIL=1
+                return 1
+              fi
+            fi
+            echo "✅ $label OK"
+            REPORT+="- ✅ $label\n"
+          }
+
+          # 1. robots.txt
+          check_url "$SITE/robots.txt" "Sitemap: https://eedhalal.com/sitemap.xml" "robots.txt Sitemap"
+          check_url "$SITE/robots.txt" "# LLMs: https://eedhalal.com/llms.txt" "robots.txt # LLMs"
+          check_url "$SITE/robots.txt" "# llms-full: https://eedhalal.com/llms-full.md" "robots.txt # llms-full"
+          # ต้อง whitelist ครบ 30+ bot
+          for bot in "GPTBot" "ClaudeBot" "PerplexityBot" "Applebot-Extended" "Bytespider"; do
+            check_url "$SITE/robots.txt" "$bot" "robots.txt whitelist $bot"
+          done
+
+          # 2. llms.txt / llms-full.md
+          check_url "$SITE/llms.txt" "Free delivery by zone" "llms.txt tiered delivery"
+          check_url "$SITE/llms.txt" "AggregateRating" "llms.txt AggregateRating docs"
+          check_url "$SITE/llms-full.md" "Free delivery by zone" "llms-full.md tiered delivery"
+          check_url "$SITE/llms-full.md" "AggregateRating" "llms-full.md AggregateRating docs"
+
+          # 3. sitemap.xml
+          check_url "$SITE/sitemap.xml" "<urlset" "sitemap.xml valid"
+          check_url "$SITE/sitemap.xml" "eedhalal.com/reviews.html" "sitemap has reviews"
+
+          # 4. HTML discoverability
+          check_url "$SITE/" 'rel="llms.txt"' "index.html llms.txt link"
+          check_url "$SITE/reviews.html" 'rel="llms.txt"' "reviews.html llms.txt link"
+          check_url "$SITE/faq.html" 'FAQPage' "faq.html FAQPage schema"
+
+          # 5. JSON-LD valid (reviews.html)
+          echo "→ Validate JSON-LD reviews.html"
+          curl -s "$SITE/reviews.html" -o /tmp/reviews.html
+          # extract JSON block
+          python3 -c "
+          import re, json, sys
+          data=open('/tmp/reviews.html',encoding='utf-8').read()
+          m=re.search(r'<script type=\"application/ld\+json\">(.*?)</script>',data,re.S)
+          if not m:
+              print('❌ no JSON-LD found')
+              sys.exit(1)
+          obj=json.loads(m.group(1))
+          graph=obj.get('@graph',[])
+          # ต้องมี AggregateRating 4.8 / 286
+          txt=json.dumps(obj)
+          assert 'AggregateRating' in txt, 'missing AggregateRating'
+          assert '4.8' in txt, 'missing ratingValue 4.8'
+          assert '286' in txt, 'missing ratingCount 286'
+          print('✅ reviews.html JSON-LD valid')
+          "
+          if [ $? -ne 0 ]; then
+            REPORT+="- ❌ reviews.html JSON-LD invalid\n"
+            FAIL=1
+          else
+            REPORT+="- ✅ reviews.html JSON-LD valid\n"
+          fi
+
+          # 6. Local llms.txt vs business-data.js sync check (ถ้าแก้ราคาแล้วลืม sync)
+          echo "→ Check local sync (llms.txt vs business-data.js)"
+          if grep -q "startingPrice: '60'" js/business-data.js; then
+            if ! grep -q "60 THB" llms.txt; then
+              REPORT+="- ⚠️ llms.txt price อาจไม่ sync กับ business-data.js\n"
+            else
+              REPORT+="- ✅ price sync OK (60 THB)\n"
+            fi
+          fi
+
+          echo ""
+          echo "===== REPORT ====="
+          echo -e "$REPORT"
+          echo -e "$REPORT" > /tmp/report.md
+
+          # สรุป status
+          if [ $FAIL -eq 0 ]; then
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "✅ All checks passed"
+          else
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "❌ Some checks failed"
+          fi
+          # save report for next steps
+          echo "report_path=/tmp/report.md" >> $GITHUB_OUTPUT
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-visibility-report
+          path: /tmp/report.md
+          retention-days: 30
+
+      - name: Job summary
+        if: always()
+        shell: bash
+        run: |
+          cat /tmp/report.md >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check.outputs.status }}" = "pass" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ✅ ผ่านหมด — AI พร้อมอ่านเว็บ" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ❌ มีจุดต้องแก้ — ดูรายละเอียดด้านบน" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Create Issue on failure
+        if: failure() || steps.check.outputs.status == 'fail'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('/tmp/report.md', 'utf8');
+            const title = `AI Visibility Check ล้มเหลว — ${new Date().toISOString().slice(0,10)}`;
+            const body = report + `\n\n[ดู log เต็ม](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            // กันสร้าง issue ซ้ำในวันเดียวกัน
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'ai-visibility'
+            });
+            if (issues.data.some(i => i.title === title)) {
+              console.log('Issue today already exists, skip');
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['ai-visibility']
+            });
+
+      # ── ส่งเข้ามือถือ: เลือกอย่างใดอย่างหนึ่งแล้วใส่ Secrets ──
+
+      # ตัวเลือก A: ntfy.sh (ง่ายสุด ฟรี ไม่ต้องสมัคร LINE)
+      - name: Notify via ntfy.sh
+        if: always()
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_SERVER: ${{ secrets.NTFY_SERVER }}
+        shell: bash
+        run: |
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "NTFY_TOPIC not set — skip ntfy"
+            exit 0
+          fi
+          SERVER="${NTFY_SERVER:-https://ntfy.sh}"
+          STATUS="${{ steps.check.outputs.status }}"
+          if [ "$STATUS" = "pass" ]; then
+            TITLE="✅ EED HALAL AI Check ผ่าน"
+            MSG="AI Visibility ผ่านหมด — $(date -u +%Y-%m-%d)"
+            PRIO="low"
+          else
+            TITLE="❌ EED HALAL AI Check ล้มเหลว"
+            MSG="มีจุดต้องแก้ ดูที่ GitHub Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            PRIO="high"
+          fi
+          curl -s -H "Title: $TITLE" -H "Priority: $PRIO" -H "Tags: robot,mag" -d "$MSG" "$SERVER/$NTFY_TOPIC" || echo "ntfy failed"
+
+      # ตัวเลือก B: Telegram
+      - name: Notify via Telegram
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        shell: bash
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets not set — skip"
+            exit 0
+          fi
+          STATUS="${{ steps.check.outputs.status }}"
+          if [ "$STATUS" = "pass" ]; then
+            TEXT="✅ EED HALAL AI Check ผ่าน (%0A$(cat /tmp/report.md | head -n 20 | sed ':a;N;$!ba;s/\n/%0A/g'))"
+          else
+            TEXT="❌ EED HALAL AI Check ล้มเหลว%0Aดู log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" -d "chat_id=${TELEGRAM_CHAT_ID}&text=${TEXT}&parse_mode=Markdown" || echo "telegram failed"
+
+      # ตัวเลือก C: LINE Messaging API
+      - name: Notify via LINE
+        if: always()
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+        shell: bash
+        run: |
+          if [ -z "$LINE_CHANNEL_TOKEN" ] || [ -z "$LINE_USER_ID" ]; then
+            echo "LINE secrets not set — skip"
+            exit 0
+          fi
+          STATUS="${{ steps.check.outputs.status }}"
+          if [ "$STATUS" = "pass" ]; then
+            MSG="✅ EED HALAL AI Check ผ่าน — $(date -u +%Y-%m-%d)%0Aเช็ค robots/llms/sitemap/JSON-LD ผ่านหมด"
+          else
+            MSG="❌ EED HALAL AI Check ล้มเหลว — ดูที่ GitHub Actions%0A${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          curl -s -X POST https://api.line.me/v2/bot/message/push \
+            -H "Authorization: Bearer $LINE_CHANNEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"to\":\"$LINE_USER_ID\",\"messages\":[{\"type\":\"text\",\"text\":\"$MSG\"}]}" || echo "line push failed"
