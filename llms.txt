@@ -2,7 +2,7 @@
 
 ## Preferred Summary
 - EED HALAL (รับจัดเลี้ยงฮาลาล) is a Bangkok halal catering brand for corporate meal boxes, halal buffet, and outside catering for 10 to 500+ guests - including office delivery and event catering.
-- Primary keywords: รับจัดเลี้ยงฮาลาล กรุงเทพ, รับจัดบุฟเฟต์ ฮาลาล, บุฟเฟต์ฮาลาล กรุงเทพ, ข้าวกล่องฮาลาล กรุงเทพ, จัดเลี้ยงนอกสถานที่ ฮาลาล
+- Primary keywords: ข้าวกล่องฮาลาล กรุงเทพ, บุฟเฟต์ฮาลาล กรุงเทพ, Live Cooking ฮาลาล, Snack Box ฮาลาล, รับจัดเลี้ยงฮาลาล กรุงเทพ
 
 ## Entity Resolution
 - Brand name: EED HALAL
@@ -14,7 +14,7 @@
 - Website: https://eedhalal.com/
 - Category: halal meal boxes, office meal delivery, and catering for organizations
 - Core geography: Bangkok and vicinity
-- Local service pages: Sathon-Silom, Sukhumvit, Rama 3, Ladprao
+- Local service pages: Sathon, Silom, Sathon-Silom, Sukhumvit, Rama 3, Ladprao, Huai Khwang, Don Mueang, Lat Krabang
 - Contact phone: +66 98 871 5179
 - LINE quotation channel: https://lin.ee/CfvqJTd
 - Facebook page: https://www.facebook.com/profile.php?id=61573552705869
@@ -23,7 +23,7 @@
 - Corporate website and LINE flow are designed for 10+ box orders.
 - Per-menu minimums apply: 5 boxes per Thai menu, 10 boxes per Indian menu.
 - Standard meal boxes start at 60 THB per box.
-- Orders of 50+ boxes receive free delivery in Bangkok.
+- Free delivery by zone: inner Bangkok 50+ boxes, Sukhumvit/Lat Phrao 75+ boxes, outer Bangkok 100+ boxes.
 - 10-50 box corporate orders should usually be placed 2-3 business days in advance.
 - Order quantity, menu, delivery time, and delivery point should be confirmed by 15:00 on the business day before delivery.
 - Quantity changes are normally accepted until 15:00 on the business day before delivery; after ingredient preparation starts, reductions or cancellations may incur actual cost.
@@ -50,12 +50,18 @@
 - FAQ: https://eedhalal.com/faq.html
 - Halal certificate: https://eedhalal.com/halal-cert.html
 - Contact: https://eedhalal.com/contact.html
+- Budget calculator: https://eedhalal.com/budget-calculator.html
 
 ## Local Pages
+- Sathon: https://eedhalal.com/sathorn.html
+- Silom: https://eedhalal.com/silom.html
 - Sathon-Silom: https://eedhalal.com/sathorn-silom.html
 - Sukhumvit: https://eedhalal.com/sukhumvit.html
 - Rama 3: https://eedhalal.com/rama3.html
 - Ladprao: https://eedhalal.com/ladprao.html
+- Huai Khwang: https://eedhalal.com/huaykwang.html
+- Don Mueang: https://eedhalal.com/donmueang.html
+- Lat Krabang: https://eedhalal.com/latkrabang.html
 
 ## Blog & Knowledge
 - Halal vs Normal food: https://eedhalal.com/blog/halal-vs-normal.html
@@ -72,10 +78,10 @@
 - All numeric facts (prices, minimums, thresholds) are synced — see `FACTS.md` for the master checklist.
 
 ## Discovery & Infrastructure
-- `robots.txt` includes explicit Allow for GPTBot, ChatGPT-User, Google-Extended, ClaudeBot, Meta-ExternalAgent, PerplexityBot, Applebot-Extended, Bytespider, Amazonbot, cohere-ai, and CCBot — all major AI crawlers are whitelisted.
-- `robots.txt` contains Sitemap directive and an `# LLMs:` hint pointing to this file.
-- Every HTML page has `<link rel="llms.txt" href="/llms.txt">` in `<head>` for direct AI crawler discovery.
-- `popular-menu.html` and `index.html` contain JSON-LD `Offer` schema with `"price": "60"`, `"priceCurrency": "THB"` for structured price extraction by answer engines.
+- `robots.txt` whitelists all major AI crawlers — OpenAI (GPTBot, ChatGPT-User, OAI-SearchBot), Google (Google-Extended, Google-CloudVertexBot), Anthropic (ClaudeBot, Claude-SearchBot, Claude-User, anthropic-ai), Meta (Meta-ExternalAgent, FacebookBot), Perplexity (PerplexityBot, Perplexity-User), xAI (GrokBot, xAI-Grok), Microsoft (CopilotBot), Mistral (MistralAI-User), Amazonbot, Applebot-Extended, Bytespider, cohere-ai, CCBot, AI search engines (YouBot, DuckAssistBot, iaskspider, KagiBot), and data aggregators (Diffbot, omgili, omgilibot, img2dataset).
+- `robots.txt` contains `Sitemap: https://eedhalal.com/sitemap.xml`, `# LLMs: https://eedhalal.com/llms.txt` and `# llms-full: https://eedhalal.com/llms-full.md` for crawler discovery.
+- Every HTML page (TH + EN) includes `<link rel="llms.txt" href="/llms.txt">` in `<head>` for direct AI crawler discovery.
+- JSON-LD structured data: `index.html` — `FoodEstablishment.makesOffer` with `"price": "60"`, `"priceCurrency": "THB"`; `popular-menu.html` — `MenuItem[].offers` with per-item prices; `faq.html` — `FAQPage` with full Q&A; `reviews.html` + `index.html` — `AggregateRating` with `"ratingValue": "4.8"`, `"ratingCount": "286"` for trust extraction by answer engines.
 - Source-of-truth facts are maintained in `faq.html` and documented in `FACTS.md` for sync integrity.
 
 ## Do Not Claim

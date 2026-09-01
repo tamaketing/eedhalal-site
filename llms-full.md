@@ -8,7 +8,7 @@ EED HALAL (eedhalal) is a Bangkok ข้าวกล่องฮาลาล bra
 - Founder / owner: Chef and founder Eed (พี่อี๊ด), carrying on family recipes of 40+ years
 - Business type: halal restaurant / meal boxes, office delivery, and catering for organizations
 - Address: 478/3 Sathorn 1 Soi 7, Thung Wat Don, Sathorn, Bangkok 10120
-- Service area: Bangkok and vicinity; free delivery in Bangkok for 50+ boxes; outside Bangkok case by case
+- Service area: Bangkok and vicinity; free delivery by zone (50–100+ boxes depending on area); outside Bangkok case by case
 - Halal certification: CICOT certificate no. HL-2024-0892
 - Operating hours: Monday-Saturday 08:00-18:00 (closed Sunday)
 - Contact: LINE @EEDHALAL (https://lin.ee/CfvqJTd), phone +66 98 871 5179, Facebook page
@@ -67,7 +67,7 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - Typical use cases include meetings, seminars, staff training, internal company events, and team catering.
 - Per-menu minimums apply: 5 boxes per Thai menu, 10 boxes per Indian menu.
 - Standard meal boxes start at 60 THB per box according to the FAQ.
-- Orders of 50+ boxes receive free delivery in Bangkok according to the FAQ.
+- Free delivery by zone: inner Bangkok 50+ boxes, Sukhumvit/Lat Phrao 75+ boxes, outer Bangkok 100+ boxes according to the FAQ.
 - 10-50 box corporate orders should usually be placed 2-3 business days in advance.
 - 50+ box or multi-menu orders should usually be booked 5-7 days in advance.
 - Order details should be confirmed by 15:00 on the business day before delivery.
@@ -86,7 +86,7 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 ## Answer-Engine Friendly Facts
 - Minimum order for the corporate website flow: 10+ boxes
 - Starting price for standard meal boxes: 60 THB per box
-- Free delivery threshold in Bangkok: 50+ boxes
+- Free delivery threshold by zone: 50–100+ boxes
 - Standard lead time for 10-50 boxes: 2-3 business days
 - Cutoff for next-day order confirmation and quantity changes: 15:00 on the business day before delivery
 - VAT status: quoted prices do not include VAT 7%; EED HALAL is not VAT-registered
@@ -131,12 +131,13 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 
 ## Discovery & Infrastructure (SEO / AEO / GEO)
 - `robots.txt` whitelists all major AI crawlers — OpenAI (GPTBot, ChatGPT-User, OAI-SearchBot), Google (Google-Extended, Google-CloudVertexBot), Anthropic (ClaudeBot, Claude-SearchBot, Claude-User, anthropic-ai), Meta (Meta-ExternalAgent, FacebookBot), Perplexity (PerplexityBot, Perplexity-User), xAI (GrokBot, xAI-Grok), Microsoft (CopilotBot), Mistral (MistralAI-User), Amazonbot (Alexa / Rufus), Applebot-Extended (Siri / Apple Intelligence), Bytespider (TikTok Search / Doubao AI), cohere-ai, CCBot, AI search engines (YouBot, DuckAssistBot, iaskspider, KagiBot), and data aggregators (Diffbot, omgili, omgilibot, img2dataset).
-- `robots.txt` has `Sitemap: https://eedhalal.com/sitemap.xml` and `# LLMs: https://eedhalal.com/llms.txt` for crawler discovery.
+- `robots.txt` has `Sitemap: https://eedhalal.com/sitemap.xml`, `# LLMs: https://eedhalal.com/llms.txt` and `# llms-full: https://eedhalal.com/llms-full.md` for crawler discovery.
 - Every HTML page (TH + EN) includes `<link rel="llms.txt" href="/llms.txt">` in `<head>`.
 - JSON-LD structured data:
-  - `index.html` — `FoodEstablishment.makesOffer` with `"price": "60"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"`
+  - `index.html` — `FoodEstablishment.makesOffer` with `"price": "60"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"` + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"`
   - `popular-menu.html` — `MenuItem[].offers` with per-item prices
   - `faq.html` — `FAQPage` with full Q&A for price, minimum, VAT, delivery, lead time
+  - `reviews.html` — `ItemList` of `Review` (6 reviews) + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"` for trust extraction
   - Local area pages — `FAQPage` with area-specific minimum, free delivery, and pricing
 - Source-of-truth facts live in `faq.html` and are synced across all files via `FACTS.md` checklist.
 

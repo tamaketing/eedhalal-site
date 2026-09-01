@@ -108,3 +108,4 @@ Allow: /
 
 Sitemap: https://eedhalal.com/sitemap.xml
 # LLMs: https://eedhalal.com/llms.txt
+# llms-full: https://eedhalal.com/llms-full.md

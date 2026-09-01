@@ -39,12 +39,28 @@
     "@context": "https://schema.org",
     "@graph": [
       {
+        "@type": "Organization",
+        "@id": "https://eedhalal.com/#organization",
+        "name": "EED HALAL",
+        "url": "https://eedhalal.com/",
+        "logo": "https://eedhalal.com/img/logo.jpg",
+        "telephone": "+66988715179",
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "bestRating": "5",
+          "worstRating": "1",
+          "ratingCount": "286"
+        }
+      },
+      {
         "@type": ["FoodEstablishment", "LocalBusiness"],
         "@id": "https://eedhalal.com/#organization",
         "name": "EED HALAL",
         "url": "https://eedhalal.com/",
         "image": "https://eedhalal.com/img/khao-mok-hero-opt.jpg",
         "telephone": "+66988715179",
+        "priceRange": "$$",
         "servesCuisine": ["Halal", "Thai"],
         "address": {
           "@type": "PostalAddress",
@@ -52,6 +68,13 @@
           "addressLocality": "Bangkok",
           "postalCode": "10120",
           "addressCountry": "TH"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "bestRating": "5",
+          "worstRating": "1",
+          "ratingCount": "286"
         }
       },
       {
