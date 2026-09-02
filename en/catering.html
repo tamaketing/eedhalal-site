@@ -35,116 +35,288 @@
   <meta name="twitter:image" content="https://eedhalal.com/img/logo.jpg">
   <meta name="twitter:image:alt" content="EED HALAL halal restaurant logo">
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Organization",
-        "@id": "https://eedhalal.com/#organization",
-        "name": "EED HALAL",
-        "url": "https://eedhalal.com/",
-        "logo": "https://eedhalal.com/img/logo.jpg",
-        "telephone": "+66988715179",
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "478/3 Sathorn 1 Soi 7, Thung Wat Don, Sathorn",
-          "addressLocality": "Bangkok",
-          "postalCode": "10120",
-          "addressCountry": "TH"
-        },
-        "sameAs": [
-          "https://lin.ee/CfvqJTd",
-          "https://www.facebook.com/profile.php?id=61573552705869"
-        ]
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://eedhalal.com/#organization",
+      "name": "EED HALAL",
+      "url": "https://eedhalal.com/",
+      "logo": "https://eedhalal.com/img/logo.jpg",
+      "telephone": "+66988715179",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "478/3 Sathorn 1 Soi 7, Thung Wat Don, Sathorn",
+        "addressLocality": "Bangkok",
+        "postalCode": "10120",
+        "addressCountry": "TH"
       },
-      {
-        "@type": "Service",
-        "@id": "https://eedhalal.com/en/catering.html#service",
-        "name": "Halal Catering Bangkok | EED HALAL",
-        "description": "Halal catering in Bangkok for corporate events, banquets, merit-making ceremonies, and special events for 100–500+ guests. Choose bulk pot, buffet, or Live Cooking Station, with an on-site team. CICOT halal certified.",
-        "keywords": [
-          "Halal Catering Bangkok",
-          "halal catering for events",
-          "halal buffet catering Bangkok",
-          "halal bulk pot catering",
-          "halal Live Cooking Station",
-          "corporate halal catering"
-        ],
-        "url": "https://eedhalal.com/en/catering.html",
-        "provider": {
-          "@id": "https://eedhalal.com/#organization"
-        },
-        "areaServed": {
+      "sameAs": [
+        "https://lin.ee/CfvqJTd",
+        "https://www.facebook.com/profile.php?id=61573552705869"
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "bestRating": "5",
+        "worstRating": "1",
+        "ratingCount": "286"
+      }
+    },
+    {
+      "@type": "Service",
+      "@id": "https://eedhalal.com/en/catering.html#service",
+      "name": "Halal Catering Bangkok | EED HALAL",
+      "description": "Halal catering in Bangkok for corporate events, banquets, merit-making ceremonies, and special events for 100–500+ guests. Choose bulk pot, buffet, or Live Cooking Station, with an on-site team. CICOT halal certified HL-2024-0892. 150-350 THB per head.",
+      "serviceType": "Halal Catering",
+      "keywords": [
+        "Halal Catering Bangkok",
+        "halal catering for events",
+        "halal buffet catering Bangkok",
+        "halal bulk pot catering",
+        "halal Live Cooking Station",
+        "corporate halal catering"
+      ],
+      "url": "https://eedhalal.com/en/catering.html",
+      "provider": {
+        "@id": "https://eedhalal.com/#organization"
+      },
+      "areaServed": [
+        {
           "@type": "City",
           "name": "Bangkok"
-        },
-        "offers": {
-          "@type": "OfferCatalog",
-          "name": "Halal Catering Services",
-          "itemListElement": [
-            {
-              "@type": "Offer",
-              "name": "Corporate event catering 100-500+ guests"
-            },
-            {
-              "@type": "Offer",
-              "name": "Halal bulk pot service (Yok Mor)"
-            },
-            {
-              "@type": "Offer",
-              "name": "Halal buffet"
-            },
-            {
-              "@type": "Offer",
-              "name": "Live Cooking Station"
-            }
-          ]
         }
+      ],
+      "audience": {
+        "@type": "BusinessAudience",
+        "audienceType": "HR, procurement, office administrators, event coordinators"
       },
-      {
-        "@type": "WebPage",
-        "@id": "https://eedhalal.com/en/catering.html#webpage",
-        "url": "https://eedhalal.com/en/catering.html",
-        "name": "Halal Catering Bangkok | EED HALAL",
-        "description": "Halal catering in Bangkok for corporate events, banquets, and special events for 100–500+ guests. Choose bulk pot, buffet, or Live Cooking Station, with an on-site team. CICOT halal certified.",
-        "inLanguage": "en",
-        "isPartOf": {
-          "@id": "https://eedhalal.com/#website"
-        },
-        "about": {
-          "@id": "https://eedhalal.com/#organization"
-        },
-        "mainEntity": {
-          "@id": "https://eedhalal.com/en/catering.html#service"
-        }
+      "offers": {
+        "@type": "AggregateOffer",
+        "priceCurrency": "THB",
+        "lowPrice": "150",
+        "highPrice": "350",
+        "description": "Halal catering 100-500+ guests, 150-350 THB per head depending on format (bulk pot/buffet/Live Cooking) and guest count",
+        "availability": "https://schema.org/InStock",
+        "offerCount": "3"
       },
-      {
-        "@type": "WebSite",
-        "@id": "https://eedhalal.com/#website",
-        "url": "https://eedhalal.com/",
-        "name": "EED HALAL",
-        "inLanguage": "en"
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Halal Catering Formats - 3 Options",
+        "itemListElement": [
+          {
+            "@type": "OfferCatalog",
+            "name": "Halal Bulk Pot (Yok Mor) - 30-40 guests per pot, for merit events",
+            "url": "https://eedhalal.com/en/catering.html#service-yok-mor"
+          },
+          {
+            "@type": "OfferCatalog",
+            "name": "Halal Buffet - 100-500+ guests, multi-dish with line team",
+            "url": "https://eedhalal.com/en/buffet.html"
+          },
+          {
+            "@type": "OfferCatalog",
+            "name": "Live Cooking Station - chef cooking fresh on site",
+            "url": "https://eedhalal.com/en/live-cooking-station.html"
+          }
+        ]
       },
-      {
-        "@type": "BreadcrumbList",
-        "@id": "https://eedhalal.com/en/catering.html#breadcrumb",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "bestRating": "5",
+        "worstRating": "1",
+        "ratingCount": "286"
+      }
+    },
+    {
+      "@type": "CollectionPage",
+      "@id": "https://eedhalal.com/en/catering.html#collection",
+      "name": "Halal Catering Bangkok | EED HALAL",
+      "description": "Hub for 3 halal catering formats: bulk pot, buffet, Live Cooking for 100-500+ guests. Compare and pick what fits your budget and venue.",
+      "inLanguage": "en",
+      "isPartOf": {
+        "@id": "https://eedhalal.com/#website"
+      },
+      "about": {
+        "@id": "https://eedhalal.com/en/catering.html#service"
+      },
+      "mainEntity": {
+        "@type": "ItemList",
+        "name": "Halal Catering Formats",
         "itemListElement": [
           {
             "@type": "ListItem",
             "position": 1,
-            "name": "Home",
-            "item": "https://eedhalal.com/en/index.html"
+            "item": {
+              "@type": "Service",
+              "name": "Halal Bulk Pot - 30-40 guests per pot",
+              "url": "https://eedhalal.com/en/catering.html#service-yok-mor"
+            }
           },
           {
             "@type": "ListItem",
             "position": 2,
-            "name": "Halal Catering",
-            "item": "https://eedhalal.com/en/catering.html"
+            "item": {
+              "@type": "Service",
+              "name": "Halal Buffet Bangkok - 100-500+ guests",
+              "url": "https://eedhalal.com/en/buffet.html"
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "item": {
+              "@type": "Service",
+              "name": "Live Cooking Station - chef cooking fresh",
+              "url": "https://eedhalal.com/en/live-cooking-station.html"
+            }
           }
         ]
       }
-    ]
-  }
+    },
+    {
+      "@type": "HowTo",
+      "@id": "https://eedhalal.com/en/catering.html#howto",
+      "name": "How to choose and book Halal Catering with EED HALAL",
+      "description": "Choose bulk pot, buffet or Live Cooking for 100-500+ guests",
+      "totalTime": "P7D",
+      "supply": [
+        {
+          "@type": "HowToSupply",
+          "name": "Event type e.g. merit, banquet, corporate"
+        },
+        {
+          "@type": "HowToSupply",
+          "name": "Estimated guest count e.g. 150 guests"
+        },
+        {
+          "@type": "HowToSupply",
+          "name": "Date, time, venue and per-head budget"
+        }
+      ],
+      "step": [
+        {
+          "@type": "HowToStep",
+          "position": 1,
+          "name": "Share event type and guest count",
+          "text": "Tell us event type (merit/banquet/corporate) and estimated guest count via LINE"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 2,
+          "name": "Choose bulk pot, buffet or Live Cooking",
+          "text": "We compare 3 formats to fit your budget and venue — bulk pot 30-40/pot, buffet 100-500+, Live Cooking chef fresh"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 3,
+          "name": "Get quotation and lock date",
+          "text": "Quotation within 15 minutes (business hours) with line team — for 100+ guests book 1-2 weeks ahead"
+        }
+      ]
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://eedhalal.com/en/catering.html#webpage",
+      "url": "https://eedhalal.com/en/catering.html",
+      "name": "Halal Catering Bangkok | EED HALAL",
+      "description": "Halal catering in Bangkok for corporate events, banquets, and special events for 100–500+ guests. Choose bulk pot, buffet, or Live Cooking Station, with an on-site team. CICOT halal certified.",
+      "inLanguage": "en",
+      "isPartOf": {
+        "@id": "https://eedhalal.com/#website"
+      },
+      "about": {
+        "@id": "https://eedhalal.com/en/catering.html#service"
+      },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://eedhalal.com/img/S__54558736_0.jpg"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://eedhalal.com/#website",
+      "url": "https://eedhalal.com/",
+      "name": "EED HALAL",
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://eedhalal.com/en/catering.html#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://eedhalal.com/en/index.html"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Halal Catering",
+          "item": "https://eedhalal.com/en/catering.html"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://eedhalal.com/en/catering.html#faq",
+      "url": "https://eedhalal.com/en/catering.html",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How many guests is Halal Catering for?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Halal catering for 100–500+ guests, 3 formats: bulk pot 30-40 per pot for merit/group events, buffet 100-500+ for corporate/receptions, Live Cooking chef fresh for VIP/events"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How much does Halal Catering cost per head?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Halal catering 150-350 THB per head depending on format (bulk pot/buffet/Live Cooking), guest count and 9 menu categories. Share per-head budget and guest count — we fit the set and send quotation within 15 minutes (business hours)."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What info is needed before quotation?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Event type, estimated guest count, date, time, venue and preference for bulk pot, buffet or Live Cooking plus per-head budget and venue constraints"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How far ahead to book Halal Catering?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "For 100-200 guests book 7-14 days ahead, for 300+ guests 2 weeks or more to lock date, team and menu"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is on-site team included?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes — team helps choose menu, set serving points, refill buffet line and coordinate on the day — bulk pot has serving team, buffet has line team, Live Cooking has chef on site"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is EED HALAL certified Halal?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes — certified by CICOT no. HL-2024-0892. Check details at eedhalal.com/halal-cert.html and request a copy via LINE for corporate documents."
+          }
+        }
+      ]
+    }
+  ]
+}
   </script>
 </head>
 <body class="catering-page">
@@ -284,7 +456,7 @@
             <ul class="service-list">
               <li>Min 10 boxes, starting at 60 THB/box</li>
               <li>Full docs: quotation and regular receipt</li>
-              <li>98% on-time delivery, free delivery 50+ boxes</li>
+              <li>98% on-time delivery, free delivery by zone (50–100+ boxes)</li>
               <li>Fast quotation turnaround on LINE</li>
             </ul>
             <a href="corporate.html" class="btn btn-primary" style="margin-top:1.25rem">View Corporate Service</a>

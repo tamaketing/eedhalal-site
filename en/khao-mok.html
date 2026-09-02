@@ -21,7 +21,7 @@
   <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
   <link rel="apple-touch-icon" href="/img/logo.jpg">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
-  <meta name="keywords" content="halal khao mok, halal khao mok delivery, halal biryani bangkok, halal nasi biryani, khao mok chicken halal, order halal khao mok, halal rice delivery">
+  <meta name="keywords" content="halal khao mok, halal biryani Bangkok, halal rice delivery, order halal khao mok">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="EED HALAL">
   <meta property="og:title" content="Halal Khao Mok Delivery Bangkok | Order Khao Mok Halal | EED HALAL">
@@ -35,11 +35,125 @@
   <meta name="twitter:image" content="https://eedhalal.com/img/khao-mok-hero.png">
   <meta name="twitter:image:alt" content="Halal Khao Mok biryani from EED HALAL">
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "CollectionPage",
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://eedhalal.com/#organization",
+      "name": "EED HALAL",
+      "url": "https://eedhalal.com/",
+      "logo": "https://eedhalal.com/img/logo.jpg",
+      "telephone": "+66988715179",
+      "sameAs": [
+        "https://lin.ee/CfvqJTd",
+        "https://www.facebook.com/profile.php?id=61573552705869"
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "bestRating": "5",
+        "worstRating": "1",
+        "ratingCount": "286"
+      }
+    },
+    {
+      "@type": "Service",
+      "@id": "https://eedhalal.com/en/khao-mok.html#service",
+      "name": "Halal Khao Mok Delivery Bangkok | EED HALAL",
+      "description": "Halal Khao Mok delivery in Bangkok. Order chicken, beef and fish Khao Mok (halal biryani) from EED HALAL - CICOT certified HL-2024-0892, starting at 90 THB per box, 10+ boxes.",
+      "serviceType": "Halal Khao Mok - Halal Biryani",
+      "provider": {
+        "@id": "https://eedhalal.com/#organization"
+      },
+      "areaServed": [
+        {
+          "@type": "City",
+          "name": "Bangkok"
+        }
+      ],
+      "audience": {
+        "@type": "BusinessAudience",
+        "audienceType": "HR, procurement, office administrators, event coordinators"
+      },
+      "offers": {
+        "@type": "AggregateOffer",
+        "priceCurrency": "THB",
+        "lowPrice": "90",
+        "highPrice": "90",
+        "description": "Halal Khao Mok from 90 THB/box, chicken/beef/fish, minimum 10 boxes (Thai 5/menu, Indian 10/menu)",
+        "availability": "https://schema.org/InStock",
+        "offerCount": "3"
+      },
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Halal Khao Mok Menu",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "name": "Chicken Khao Mok - 90 THB"
+          },
+          {
+            "@type": "Offer",
+            "name": "Beef Khao Mok - 90 THB"
+          },
+          {
+            "@type": "Offer",
+            "name": "Fish Khao Mok - 90 THB"
+          }
+        ]
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "bestRating": "5",
+        "worstRating": "1",
+        "ratingCount": "286"
+      }
+    },
+    {
+      "@type": "HowTo",
+      "@id": "https://eedhalal.com/en/khao-mok.html#howto",
+      "name": "How to order Halal Khao Mok from EED HALAL",
+      "description": "Order Halal Khao Mok delivery for meetings, seminars, from 90 THB/box",
+      "totalTime": "P1D",
+      "supply": [
+        {
+          "@type": "HowToSupply",
+          "name": "Khao Mok menu e.g. Chicken 10 boxes"
+        },
+        {
+          "@type": "HowToSupply",
+          "name": "Headcount and date"
+        },
+        {
+          "@type": "HowToSupply",
+          "name": "Delivery location"
+        }
+      ],
+      "step": [
+        {
+          "@type": "HowToStep",
+          "position": 1,
+          "name": "Choose Khao Mok menu",
+          "text": "Choose chicken, beef or fish Khao Mok or mix"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 2,
+          "name": "Share headcount and date",
+          "text": "Share headcount, date and venue via LINE"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 3,
+          "name": "Get quotation and delivery",
+          "text": "We send quotation within 15 minutes (business hours) and deliver fresh"
+        }
+      ]
+    },
+    {
+      "@type": "CollectionPage",
         "@id": "https://eedhalal.com/en/khao-mok.html#webpage",
         "name": "Halal Khao Mok Delivery Bangkok | Order Khao Mok Halal | EED HALAL",
         "description": "Halal Khao Mok delivery in Bangkok. Order chicken, beef and fish Khao Mok (halal biryani) from EED HALAL - CICOT certified, starting at 90 THB per box.",
