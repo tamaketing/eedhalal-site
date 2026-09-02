@@ -139,6 +139,8 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - Halal vs normal meal boxes: https://eedhalal.com/blog/halal-vs-normal.html
 - How to choose halal meal boxes for organizations: https://eedhalal.com/blog/how-to-choose.html
 - CICOT explained: https://eedhalal.com/blog/cicot-explained.html
+- Snack Box 50 people price (40 THB): https://eedhalal.com/blog/snack-box-50-people-40-baht.html
+- Buffet 100 people price (180-350 THB): https://eedhalal.com/blog/buffet-100-people-price.html
 - Glossary of halal food terms (TH): https://eedhalal.com/glossary.html
 - Glossary of halal food terms (EN): https://eedhalal.com/en/glossary.html
 
