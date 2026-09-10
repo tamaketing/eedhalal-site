@@ -17,7 +17,7 @@ Use these names consistently in Meta Ads Manager and Google Ads so the CSV expor
 |---|---|---|---|---|---|---|
 | Corporate | `corporate.html` | `EEDHALAL_{platform}_CORPORATE_20PLUS` | `adset_hr_01` | `creative_101` | `corporate` | `hr-procurement` |
 | Catering | `catering.html` | `EEDHALAL_{platform}_CATERING_100_500PLUS` | `adset_event_01` | `creative_202` | `catering` | `event-catering` |
-| Popular menu | `popular-menu.html` | `EEDHALAL_{platform}_POPULARMENU_START89` | `adset_menu_01` | `creative_303` | `popular-menu` | `price-comparison` |
+| Popular menu | `popular-menu.html` | `EEDHALAL_{platform}_POPULARMENU_START60` | `adset_menu_01` | `creative_303` | `popular-menu` | `price-comparison` |
 | Geo: สาทร-สีลม | `sathorn-silom.html` | `EEDHALAL_{platform}_GEO_SATHORN_SILOM` | `adset_geo_ss_01` | `creative_404` | `sathorn-silom` | `local-delivery` |
 | Geo: สุขุมวิท | `sukhumvit.html` | `EEDHALAL_{platform}_GEO_SUKHUMVIT` | `adset_geo_sukhumvit_01` | `creative_405` | `sukhumvit` | `local-delivery` |
 | Geo: พระราม 3 | `rama3.html` | `EEDHALAL_{platform}_GEO_RAMA3` | `adset_geo_rama3_01` | `creative_406` | `rama3` | `local-delivery` |

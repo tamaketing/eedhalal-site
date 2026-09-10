@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "revision": "2026-09-08",
+  "business": {
+    "name": "EED HALAL",
+    "owner": "เชฟและผู้ก่อตั้ง พี่อี๊ด",
+    "experienceYears": 40,
+    "address": "478/3 ซอยเจริญราษฎร์ 1 แขวงยานนาวา เขตสาทร กทม. 10120",
+    "phone": "098-871-5179",
+    "operatingDays": "จันทร์-เสาร์",
+    "operatingHours": "08:00-18:00",
+    "halalCertificate": "HL-2024-0892"
+  },
+  "services": {
+    "mealBox": {
+      "priceFrom": 60,
+      "premiumPriceFrom": 180,
+      "premiumPriceTo": 250,
+      "minimumOrder": 10,
+      "standardMenuMinimum": 5,
+      "specialMenuMinimum": 10,
+      "menuCountFrom": 30
+    },
+    "snackBox": {
+      "priceFrom": 40,
+      "minimumOrder": 50
+    },
+    "buffet": {
+      "priceFrom": 180,
+      "priceTo": 350,
+      "minimumGuests": 100,
+      "serviceCategories": 9
+    }
+  },
+  "documents": {
+    "vatRegistered": false,
+    "vatRate": 7,
+    "available": ["ใบเสนอราคา", "ใบเสร็จรับเงินแบบธรรมดา"],
+    "taxInvoiceAvailable": false,
+    "quoteWithinMinutes": 15
+  },
+  "delivery": {
+    "carWhenQuantityAbove": 40,
+    "outsideBangkok": "สอบถามรายกรณี"
+  },
+  "leadTimes": [
+    {
+      "minQuantity": 10,
+      "maxQuantity": 50,
+      "minimumBusinessDays": 2,
+      "maximumBusinessDays": 3
+    },
+    {
+      "minQuantity": 51,
+      "maxQuantity": 100,
+      "minimumBusinessDays": 5,
+      "maximumBusinessDays": 7
+    },
+    {
+      "minQuantity": 101,
+      "maxQuantity": null,
+      "minimumWeeks": 1,
+      "maximumWeeks": 2
+    }
+  ],
+  "cutoff": {
+    "time": "15:00",
+    "description": "วันทำการก่อนส่ง"
+  },
+  "urls": {
+    "home": "https://eedhalal.com/",
+    "faq": "https://eedhalal.com/faq.html",
+    "corporate": "https://eedhalal.com/corporate.html",
+    "menu": "https://eedhalal.com/popular-menu.html",
+    "snackBox": "https://eedhalal.com/snack-box.html",
+    "buffet": "https://eedhalal.com/buffet.html",
+    "delivery": "https://eedhalal.com/delivery-area.html",
+    "halal": "https://eedhalal.com/halal-cert.html",
+    "contact": "https://eedhalal.com/contact.html",
+    "about": "https://eedhalal.com/about.html"
+  }
+}

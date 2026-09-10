@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สรุปออเดอร์สำหรับครัว | EED HALAL</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/jpeg" href="img/logo.jpg">
+  <style>
+    .kitchen-page{min-height:100vh;padding:7.5rem 0 4rem;background:linear-gradient(180deg,var(--bg) 0%,#fff 42%,var(--bg) 100%)}
+    .kitchen-wrap{max-width:900px;margin:0 auto;padding:0 1.5rem}
+    .kitchen-breadcrumb{display:flex;gap:.55rem;align-items:center;color:var(--text-muted);font-size:.82rem;font-weight:700}
+    .kitchen-breadcrumb a{color:var(--primary)}
+    .kitchen-heading{margin-top:1rem;display:flex;align-items:flex-end;justify-content:space-between;gap:1.25rem}
+    .kitchen-heading h1{font-size:clamp(1.8rem,4vw,2.7rem);font-weight:950;letter-spacing:-.03em}
+    .kitchen-kicker{display:inline-flex;align-items:center;gap:.45rem;color:var(--accent);font-size:.72rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
+    .kitchen-kicker::before{content:'';width:25px;height:2px;background:var(--accent);border-radius:99px}
+    .kitchen-intro{max-width:43rem;margin-top:.8rem;color:var(--text-muted);line-height:1.8}
+    .kitchen-actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.4rem}
+    .kitchen-actions .btn{min-height:2.9rem}
+    .kitchen-card{margin-top:1.25rem;background:#fff;border:1px solid rgba(29,107,62,.16);border-radius:1.5rem;box-shadow:0 14px 42px rgba(24,52,35,.08);padding:clamp(1rem,3vw,1.6rem)}
+    .kitchen-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+    .kitchen-meta-item{padding:.9rem 1rem;border:1px solid var(--border-light);border-radius:1rem;background:var(--bg-alt)}
+    .kitchen-meta-label{display:block;color:var(--text-muted);font-size:.68rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+    .kitchen-meta-value{display:block;margin-top:.25rem;color:var(--primary);font-size:1rem;font-weight:900;line-height:1.45}
+    .kitchen-section-title{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:1.5rem 0 .7rem;color:var(--primary);font-size:1.05rem;font-weight:900}
+    .kitchen-count{padding:.3rem .65rem;border-radius:99px;background:var(--primary-soft);color:var(--primary);font-size:.75rem;font-weight:900;white-space:nowrap}
+    .kitchen-items{border-top:1px solid var(--border);}
+    .kitchen-item{display:grid;grid-template-columns:2.2rem 1fr auto;gap:.75rem;align-items:center;padding:.9rem 0;border-bottom:1px solid var(--border-light)}
+    .kitchen-item:last-child{border-bottom:0}
+    .kitchen-item-number{display:grid;place-items:center;width:2rem;height:2rem;border-radius:.7rem;background:var(--primary-soft);color:var(--primary);font-size:.82rem;font-weight:950}
+    .kitchen-item-name{font-size:1rem;font-weight:900;line-height:1.35}
+    .kitchen-item-options{margin-top:.2rem;color:var(--primary);font-size:.78rem;font-weight:750;line-height:1.5}
+    .kitchen-item-price{color:var(--text-muted);font-size:.76rem;line-height:1.5;text-align:right;white-space:nowrap}
+    .kitchen-item-qty{display:block;color:var(--primary);font-size:1.05rem;font-weight:950}
+    .kitchen-totals{display:grid;gap:.5rem;margin-top:.8rem;padding-top:1rem;border-top:1px solid var(--border)}
+    .kitchen-total-row{display:flex;justify-content:space-between;gap:1rem;color:var(--text-secondary);font-size:.9rem}
+    .kitchen-total-row strong{color:var(--text);font-weight:900}
+    .kitchen-total-grand{display:flex;justify-content:space-between;gap:1rem;margin-top:.25rem;padding-top:.75rem;border-top:1px dashed var(--border);color:var(--primary);font-size:1.15rem;font-weight:950}
+    .kitchen-note{margin-top:1rem;padding:.8rem 1rem;border:1px solid rgba(200,151,58,.24);border-radius:1rem;background:#fffbeb;color:#765400;font-size:.83rem;line-height:1.7}
+    .kitchen-empty{margin-top:1.25rem;padding:2.5rem 1.25rem;text-align:center;background:#fff;border:1px dashed rgba(29,107,62,.3);border-radius:1.5rem}
+    .kitchen-empty-icon{font-size:2.4rem}
+    .kitchen-empty h2{margin-top:.6rem;font-size:1.2rem;font-weight:900}
+    .kitchen-empty p{max-width:30rem;margin:.45rem auto 0;color:var(--text-muted);font-size:.9rem;line-height:1.7}
+    .kitchen-copy-status{display:none;margin-top:.75rem;padding:.65rem .8rem;border-radius:.8rem;background:var(--primary-soft);border:1px solid rgba(29,107,62,.14);color:var(--primary);font-size:.84rem;font-weight:800;text-align:center}
+    @media(max-width:680px){
+      .kitchen-page{padding-top:6.5rem}
+      .kitchen-heading{display:block}
+      .kitchen-meta{grid-template-columns:1fr 1fr}
+      .kitchen-meta-item:last-child{grid-column:1/-1}
+      .kitchen-item{grid-template-columns:2rem 1fr auto;gap:.6rem}
+      .kitchen-item-price{font-size:.7rem}
+    }
+    @media(max-width:430px){
+      .kitchen-wrap{padding:0 1rem}
+      .kitchen-meta{grid-template-columns:1fr}
+      .kitchen-meta-item:last-child{grid-column:auto}
+      .kitchen-actions{display:grid;grid-template-columns:1fr}
+      .kitchen-actions .btn{width:100%;justify-content:center}
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">ข้ามไปเนื้อหาหลัก</a>
+  <div id="nav"></div>
+  <noscript><nav id="noscript-nav" aria-label="เมนูลัด" style="background:#1d6b3e;padding:.7rem 1rem;text-align:center;line-height:2.1;font-size:.85rem"><a href="https://eedhalal.com/" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">หน้าแรก</a><a href="https://eedhalal.com/corporate.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">ออเดอร์องค์กร</a><a href="https://eedhalal.com/popular-menu.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">เมนู</a><a href="https://eedhalal.com/catering.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">จัดเลี้ยง</a><a href="https://eedhalal.com/delivery-area.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">พื้นที่ส่ง</a><a href="https://eedhalal.com/faq.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">คำถาม</a><a href="https://eedhalal.com/contact.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">ติดต่อ</a></nav></noscript>
+  <main id="main-content" class="kitchen-page">
+    <div class="kitchen-wrap">
+      <div class="kitchen-breadcrumb"><a href="budget-calculator.html">เครื่องคำนวณงบ</a><span>/</span><span>สรุปสำหรับครัว</span></div>
+      <div class="kitchen-heading">
+        <div>
+          <div class="kitchen-kicker">Kitchen order sheet</div>
+          <h1>สรุปออเดอร์สำหรับครัว</h1>
+          <p class="kitchen-intro">เครื่องมือภายในแบบ local-only ไม่มีระบบยืนยันตัวตนและไม่ถูกเผยแพร่บนเว็บไซต์ลูกค้า ตรวจรายการให้ครบก่อนคัดลอกไปวางใน LINE กลุ่มครัว</p>
+        </div>
+      </div>
+      <div class="kitchen-actions">
+        <a href="budget-calculator.html#calculator" class="btn btn-outline">← กลับไปแก้เมนู</a>
+        <button id="copyKitchenOrder" class="btn btn-primary" type="button" disabled>คัดลอกสรุปส่งครัว</button>
+      </div>
+      <div id="copyKitchenStatus" class="kitchen-copy-status" role="status" aria-live="polite"></div>
+
+      <section id="kitchenEmpty" class="kitchen-empty" aria-live="polite">
+        <div class="kitchen-empty-icon">🍱</div>
+        <h2>ยังไม่มีเมนูที่เลือก</h2>
+        <p>กลับไปที่เครื่องคำนวณงบ เลือกเมนูและปรับจำนวนให้ครบก่อน แล้วจึงเปิดหน้านี้อีกครั้ง</p>
+        <a href="budget-calculator.html#calculator" class="btn btn-primary" style="margin-top:1rem">ไปเลือกเมนู</a>
+      </section>
+
+      <section id="kitchenContent" class="kitchen-card" style="display:none" aria-labelledby="kitchenTitle">
+        <div class="kitchen-section-title" style="margin-top:0"><span id="kitchenTitle">รายละเอียดงานจัดส่ง</span><span class="kitchen-count" id="kitchenMenuCount">0 เมนู</span></div>
+        <div class="kitchen-meta">
+          <div class="kitchen-meta-item"><span class="kitchen-meta-label">วันส่ง</span><span class="kitchen-meta-value" id="kitchenDate">ยังไม่ระบุ</span></div>
+          <div class="kitchen-meta-item"><span class="kitchen-meta-label">เวลาส่ง</span><span class="kitchen-meta-value" id="kitchenTime">ยังไม่ระบุ</span></div>
+          <div class="kitchen-meta-item"><span class="kitchen-meta-label">พื้นที่จัดส่ง</span><span class="kitchen-meta-value" id="kitchenDistrict">ยังไม่ระบุ</span></div>
+        </div>
+
+        <div class="kitchen-section-title"><span>รายการที่ต้องเตรียม</span><span class="kitchen-count" id="kitchenTotalQty">0 กล่อง</span></div>
+        <div id="kitchenItems" class="kitchen-items"></div>
+        <div class="kitchen-totals">
+          <div class="kitchen-total-row"><span>ค่าอาหาร</span><strong id="kitchenFoodTotal">0 บาท</strong></div>
+          <div class="kitchen-total-row"><span id="kitchenShippingLabel">ค่าจัดส่ง</span><strong id="kitchenShipping">สอบถาม</strong></div>
+          <div class="kitchen-total-grand"><span>ยอดรวม</span><span id="kitchenGrandTotal">0 บาท</span></div>
+        </div>
+        <div id="kitchenNote" class="kitchen-note" style="display:none"></div>
+      </section>
+    </div>
+  </main>
+  <div id="footer"></div>
+  <script src="js/business-data.js"></script>
+  <script src="js/menu-data.js"></script>
+  <script src="js/tracking-config.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/order-draft.js"></script>
+  <script src="js/kitchen-order.js"></script>
+</body>
+</html>

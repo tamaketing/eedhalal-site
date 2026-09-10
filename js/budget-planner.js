@@ -1,11 +1,11 @@
 (function(){
   'use strict';
-  var PIN = '2024';
-  var LS_AUTH = 'eed_planner_auth';
   var LS_SELLING = 'eed_selling_v1';
   var LS_MINS = 'eed_mins_v1';
   var LS_SHIP_ZONES = 'eed_ship_zones_v1';
+  var LS_SHIP_ZONES_OVERRIDE = 'eed_ship_zones_override_v1';
   var LS_SHIP_FREE = 'eed_ship_free_v1';
+  var LS_SHIP_ZONE_FREE = 'eed_ship_zone_free_v1';
   var LS_TOPPINGS = 'eed_toppings_v1';
   var LS_MEATS = 'eed_meats_v1';
   var LS_IMAGES = 'eed_images_v1';
@@ -17,15 +17,19 @@
   var LS_SNACK_NAMES = 'eed_snack_names_v1';
   var LS_SNACK_ADDONS = 'eed_snack_addons_v1';
   var LS_SNACK_CATEGORIES = 'eed_snack_cats_v1';
+  var LS_NO_MEAT = 'eed_no_meat_v1';
   var MENU_CATEGORIES = ['ข้าวราดแกง','ข้าวผัด','เส้น','อาหารอินเดีย','พรีเมียม'];
-  var DEFAULT_ZONES = [
-    {id:'bangkok_inner', label:'กรุงเทพชั้นใน (สาทร สีลม พระราม3)', fee:120},
-    {id:'sukhumvit', label:'สุขุมวิท', fee:150},
-    {id:'ladprao', label:'ลาดพร้าว วังทองหลาง', fee:180},
-    {id:'bangkok_outer', label:'กรุงเทพรอบนอก', fee:250},
-    {id:'vicinity', label:'ปริมณฑล (นนทบุรี สมุทรปราการ ปทุม)', fee:350},
-    {id:'other', label:'อื่นๆ / ต่างจังหวัด — สอบถาม', fee:0}
-  ];
+  // Zone structure shared with budget-calculator (moto: ≤40 กล่อง, car: >40 กล่อง, districts)
+  function defaultZones(){
+    if(typeof EED !== 'undefined' && EED.shippingZones) return JSON.parse(JSON.stringify(EED.shippingZones));
+    return {
+      zone_1: { moto: 60,  car: 120, districts: ['ยานนาวา','บางคอแหลม','สาทร','คลองสาน','ธนบุรี'] },
+      zone_2: { moto: 110, car: 180, districts: ['บางรัก','ปทุมวัน','วัฒนา','คลองเตย','พระโขนง','ดินแดง','พญาไท','ราชเทวี','ป้อมปราบศัตรูพ่าย','สัมพันธวงศ์'] },
+      zone_3: { moto: 189, car: 230, districts: ['พระนคร','ดุสิต','ห้วยขวาง','วังทองหลาง','บางกะปิ','สวนหลวง','ประเวศ','บางนา','จตุจักร','บางซื่อ','บางกอกใหญ่','บางกอกน้อย','ราษฎร์บูรณะ','จอมทอง'] },
+      zone_4: { moto: 240, car: 320, districts: ['ลาดพร้าว','บึงกุ่ม','สะพานสูง','คันนายาว','ดอนเมือง','หลักสี่','บางเขน','สายไหม','บางพลัด','ภาษีเจริญ','ตลิ่งชัน','ทุ่งครุ'] },
+      zone_5: { moto: 500, car: 500, districts: ['มีนบุรี','หนองจอก','ลาดกระบัง','คลองสามวา','ทวีวัฒนา','บางแค','หนองแขม','บางบอน','บางขุนเทียน'] }
+    };
+  }
 
   var state = {
     category: 'all',
@@ -35,61 +39,10 @@
   function $(id){ return document.getElementById(id); }
   function fmt(n){ return Number(n).toLocaleString('th-TH'); }
 
-  // --- Auth ---
-  function checkAuth(){
-    try{
-      var url = new URL(window.location.href);
-      var key = url.searchParams.get('key');
-      if(key === PIN){
-        localStorage.setItem(LS_AUTH, PIN);
-        url.searchParams.delete('key');
-        window.history.replaceState({}, '', url.pathname + (url.search ? '?' + url.searchParams.toString() : '') + url.hash);
-        return true;
-      }
-      return localStorage.getItem(LS_AUTH) === PIN;
-    }catch(e){ return false; }
-  }
-  function showGate(show){
-    var gate = $('plannerGate');
-    var app = $('plannerApp');
-    if(!gate || !app) return;
-    gate.style.display = show ? 'flex' : 'none';
-    app.style.display = show ? 'none' : 'block';
-  }
   function initGate(){
-    var gate = $('plannerGate');
-    var input = $('gatePin');
-    var btn = $('gateBtn');
-    var err = $('gateErr');
-    if(!gate || !input || !btn) return;
-    function tryAuth(){
-      var v = (input.value||'').trim();
-      if(v===PIN){
-        localStorage.setItem(LS_AUTH, PIN);
-        showGate(false);
-        initPlanner();
-      } else {
-        if(err){
-          err.textContent='รหัสไม่ถูกต้อง ลองอีกครั้ง';
-          err.style.display='block';
-        }
-        input.select();
-      }
-    }
-    btn.addEventListener('click', tryAuth);
-    input.addEventListener('keydown', function(e){ if(e.key==='Enter') tryAuth(); });
-    if(checkAuth()){
-      showGate(false);
-      initPlanner();
-    } else {
-      showGate(true);
-      input.focus();
-    }
-    var logout = $('plannerLogout');
-    if(logout) logout.addEventListener('click', function(){
-      localStorage.removeItem(LS_AUTH);
-      location.reload();
-    });
+    var app = $('plannerApp');
+    if(app) app.style.display = 'block';
+    initPlanner();
   }
 
   // --- Selling price + minPerMenu storage (sync with budget-calculator.html) ---
@@ -507,6 +460,27 @@
     saveMins();
     flashSaved();
   }
+  function getNoMeat(){
+    try{
+      var arr = JSON.parse(localStorage.getItem(LS_NO_MEAT)||'null');
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){}
+    return [];
+  }
+  function saveNoMeat(arr){
+    try{
+      var cleaned = (arr||[]).map(function(id){ return parseInt(id,10)||id; });
+      localStorage.setItem(LS_NO_MEAT, JSON.stringify(cleaned));
+      localStorage.setItem('eed_selling_updated_at', String(Date.now()));
+    }catch(e){}
+  }
+  function toggleNoMeat(id){
+    var arr = getNoMeat();
+    var idx = arr.indexOf(id);
+    if(idx===-1) arr.push(id);
+    else arr.splice(idx,1);
+    saveNoMeat(arr);
+  }
 
   function flashSaved(){
     var el = $('saveStatus');
@@ -516,22 +490,37 @@
     flashSaved._t = setTimeout(function(){ el.style.display='none'; }, 2200);
   }
 
-  // --- Ship zones ---
+  // --- Ship zones (object format: {zoneId:{moto,car,districts}}) ---
   function getShipZones(){
     try{
-      var saved = JSON.parse(localStorage.getItem(LS_SHIP_ZONES)||'null');
-      if(Array.isArray(saved) && saved.length){
-        // validate
-        return saved.filter(function(z){ return z && z.id && z.label !== undefined; }).map(function(z){
-          return {id:String(z.id), label:String(z.label), fee:parseInt(z.fee,10)||0};
-        });
+      var saved = JSON.parse(localStorage.getItem(LS_SHIP_ZONES_OVERRIDE)||'null');
+      if(saved && typeof saved==='object' && Object.keys(saved).length){
+        return normalizeZoneObject(saved);
       }
     }catch(e){}
-    return JSON.parse(JSON.stringify(DEFAULT_ZONES));
+    return defaultZones();
+  }
+  function normalizeZoneObject(obj){
+    var out = {};
+    Object.keys(obj||{}).forEach(function(id){
+      var z = obj[id]||{};
+      out[id] = {
+        moto: parseInt(z.moto,10)||0,
+        car: parseInt(z.car,10)||0,
+        districts: Array.isArray(z.districts) ? z.districts.slice() : (typeof z.districts==='string' ? z.districts.split(',').map(function(s){return s.trim();}).filter(Boolean) : [])
+      };
+    });
+    return out;
   }
   function saveShipZones(zones){
     try{
-      localStorage.setItem(LS_SHIP_ZONES, JSON.stringify(zones));
+      var obj = normalizeZoneObject(zones);
+      localStorage.setItem(LS_SHIP_ZONES_OVERRIDE, JSON.stringify(obj));
+      // keep old key in sync for backward compat (array)
+      var arr = Object.keys(obj).map(function(id){
+        return {id:id, label:id+' ('+(obj[id].districts||[]).join(' ')+')', fee:obj[id].moto};
+      });
+      localStorage.setItem(LS_SHIP_ZONES, JSON.stringify(arr));
       localStorage.setItem('eed_selling_updated_at', String(Date.now()));
     }catch(e){}
   }
@@ -547,6 +536,18 @@
   function saveFreeThreshold(v){
     try{ localStorage.setItem(LS_SHIP_FREE, String(v)); localStorage.setItem('eed_selling_updated_at', String(Date.now())); }catch(e){}
   }
+  function getZoneFreeThresholds(){
+    try{
+      var saved = JSON.parse(localStorage.getItem(LS_SHIP_ZONE_FREE)||'null');
+      if(saved && typeof saved === 'object') return saved;
+    }catch(e){}
+    // fallback to EED defaults
+    if(typeof EED !== 'undefined' && EED.shippingZoneFreeThresholds) return JSON.parse(JSON.stringify(EED.shippingZoneFreeThresholds));
+    return {zone_1:50, zone_2:75, zone_3:75, zone_4:100, zone_5:0};
+  }
+  function saveZoneFreeThresholds(thresholds){
+    try{ localStorage.setItem(LS_SHIP_ZONE_FREE, JSON.stringify(thresholds)); localStorage.setItem('eed_selling_updated_at', String(Date.now())); }catch(e){}
+  }
   function slugify(str){
     return (str||'').toLowerCase().replace(/[^a-z0-9ก-๙]+/g,'_').replace(/^_+|_+$/g,'') || ('zone_'+Date.now());
   }
@@ -557,7 +558,8 @@
     {name:'ไก่', price:0},
     {name:'เนื้อ', price:0},
     {name:'ทะเล', price:0},
-    {name:'หมู', price:0}
+    {name:'ปลา', price:0},
+    {name:'ไม่เอาเนื้อ', price:0}
   ];
   function getMeats(){
     try{
@@ -674,60 +676,90 @@
     if(freeInput) freeInput.value = getFreeThreshold();
     if(!tbody) return;
     var zones = getShipZones();
+    var zoneThresholds = getZoneFreeThresholds();
+    var ids = Object.keys(zones);
     var html = '';
-    zones.forEach(function(z, idx){
-      html += '<tr data-idx="'+idx+'">'
-        + '<td style="min-width:180px"><input type="text" class="ship-label" data-idx="'+idx+'" value="'+z.label.replace(/"/g,'&quot;')+'" placeholder="ชื่อเขต" style="width:100%;height:36px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;font-weight:700"></td>'
-        + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.3rem"><input type="number" class="ship-fee" data-idx="'+idx+'" value="'+z.fee+'" min="0" max="5000" step="10" style="width:92px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFFBEB"><span style="font-size:.72rem;color:var(--text-muted)">บาท</span></div><div style="font-size:.68rem;color:var(--text-muted)">id: '+z.id+'</div></td>'
-        + '<td style="text-align:center"><button class="btn btn-outline btn-sm ship-del" data-idx="'+idx+'" type="button" style="padding:.3rem .6rem;font-size:.75rem;color:#DC2626;border-color:#FECACA">ลบ</button></td>'
+    ids.forEach(function(id){
+      var z = zones[id];
+      var zoneFree = zoneThresholds[id] !== undefined ? zoneThresholds[id] : getFreeThreshold();
+      var districtsTxt = (z.districts||[]).join(', ');
+      html += '<tr data-id="'+id+'">'
+        + '<td style="min-width:120px"><div style="font-size:.8rem;font-weight:900;color:var(--primary)">'+(id==='zone_1'?'โซน 1':id.replace('zone_','โซน '))+'</div><div style="font-size:.68rem;color:var(--text-muted)">id: '+id+'</div></td>'
+        + '<td style="text-align:center"><input type="number" class="ship-moto" data-id="'+id+'" value="'+z.moto+'" min="0" max="5000" step="10" style="width:90px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFFBEB"></td>'
+        + '<td style="text-align:center"><input type="number" class="ship-car" data-id="'+id+'" value="'+z.car+'" min="0" max="5000" step="10" style="width:90px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFF7ED"></td>'
+        + '<td style="min-width:220px"><textarea class="ship-districts" data-id="'+id+'" rows="2" style="width:100%;border:1px solid var(--border);border-radius:10px;padding:.45rem .6rem;font-size:.8rem;line-height:1.5">'+districtsTxt.replace(/</g,'&lt;')+'</textarea></td>'
+        + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.3rem"><input type="number" class="ship-zone-free" data-id="'+id+'" value="'+zoneFree+'" min="0" max="500" step="5" style="width:80px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#F0FDF4"><span style="font-size:.72rem;color:var(--text-muted)">กล่อง</span></div><div style="font-size:.68rem;color:var(--text-muted)">'+(zoneFree > 0 ? 'ฟรีที่ '+zoneFree+'+' : 'ไม่มีส่งฟรี')+'</div></td>'
+        + '<td style="text-align:center"><button class="btn btn-outline btn-sm ship-del" data-id="'+id+'" type="button" style="padding:.3rem .6rem;font-size:.75rem;color:#DC2626;border-color:#FECACA">ลบ</button></td>'
         + '</tr>';
     });
     tbody.innerHTML = html;
     // bind
-    tbody.querySelectorAll('.ship-label').forEach(function(inp){
-      inp.addEventListener('change', function(){
-        var i = parseInt(this.getAttribute('data-idx'),10);
+    tbody.querySelectorAll('.ship-moto').forEach(function(inp){
+      inp.addEventListener('input', function(){
         var zones2 = getShipZones();
-        if(!zones2[i]) return;
-        var newLabel = this.value.trim() || 'เขตใหม่';
-        zones2[i].label = newLabel;
-        // keep id stable unless user wants; regenerate if other exists?
+        var z = zones2[this.getAttribute('data-id')];
+        if(!z) return;
+        var v = parseInt(this.value,10);
+        if(isNaN(v) || v<0) return;
+        z.moto = v;
+        saveShipZones(zones2);
+        flashSaved();
+      });
+    });
+    tbody.querySelectorAll('.ship-car').forEach(function(inp){
+      inp.addEventListener('input', function(){
+        var zones2 = getShipZones();
+        var z = zones2[this.getAttribute('data-id')];
+        if(!z) return;
+        var v = parseInt(this.value,10);
+        if(isNaN(v) || v<0) return;
+        z.car = v;
+        saveShipZones(zones2);
+        flashSaved();
+      });
+    });
+    tbody.querySelectorAll('.ship-districts').forEach(function(inp){
+      inp.addEventListener('change', function(){
+        var id = this.getAttribute('data-id');
+        var zones2 = getShipZones();
+        var z = zones2[id];
+        if(!z) return;
+        z.districts = this.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
         saveShipZones(zones2);
         renderShipZones();
         flashSaved();
       });
     });
-    tbody.querySelectorAll('.ship-fee').forEach(function(inp){
+    tbody.querySelectorAll('.ship-zone-free').forEach(function(inp){
       inp.addEventListener('input', function(){
-        var i = parseInt(this.getAttribute('data-idx'),10);
+        var zoneId = this.getAttribute('data-id');
         var v = parseInt(this.value,10);
         if(isNaN(v) || v<0) return;
-        var zones2 = getShipZones();
-        if(!zones2[i]) return;
-        zones2[i].fee = v;
-        saveShipZones(zones2);
+        var thresholds = getZoneFreeThresholds();
+        thresholds[zoneId] = v;
+        saveZoneFreeThresholds(thresholds);
         flashSaved();
       });
       inp.addEventListener('change', function(){
-        var i = parseInt(this.getAttribute('data-idx'),10);
+        var zoneId = this.getAttribute('data-id');
         var v = parseInt(this.value,10);
         if(isNaN(v) || v<0) v=0;
-        v = Math.max(0, Math.min(5000, v));
+        v = Math.max(0, Math.min(500, v));
         this.value = v;
-        var zones2 = getShipZones();
-        if(!zones2[i]) return;
-        zones2[i].fee = v;
-        saveShipZones(zones2);
+        var thresholds = getZoneFreeThresholds();
+        thresholds[zoneId] = v;
+        saveZoneFreeThresholds(thresholds);
+        renderShipZones();
         flashSaved();
       });
     });
     tbody.querySelectorAll('.ship-del').forEach(function(btn){
       btn.addEventListener('click', function(){
-        var i = parseInt(this.getAttribute('data-idx'),10);
+        var id = this.getAttribute('data-id');
         var zones2 = getShipZones();
-        if(zones2.length <= 1){ alert('ต้องเหลืออย่างน้อย 1 เขต'); return; }
-        if(!confirm('ลบเขต "'+zones2[i].label+'" ?')) return;
-        zones2.splice(i,1);
+        if(Object.keys(zones2).length <= 1){ alert('ต้องเหลืออย่างน้อย 1 เขต'); return; }
+        if(!confirm('ลบโซน "'+id+'" ('+(zones2[id].districts||[]).join(', ')+') ?')) return;
+        delete zones2[id];
         saveShipZones(zones2);
         renderShipZones();
         flashSaved();
@@ -750,6 +782,7 @@
   function renderTable(){
     var tbody = $('priceTableBody');
     if(!tbody) return;
+    var noMeatIds = getNoMeat();
     var filtered = getFilteredMenus();
     // group by category
     var cats = {};
@@ -785,9 +818,10 @@
           + '<td style="text-align:center"><select class="cat-input" data-id="'+m.id+'" style="height:34px;border:1px solid var(--border);border-radius:10px;padding:0 .35rem;font-size:.78rem;font-weight:700;color:var(--text);background:var(--bg);cursor:pointer">'+MENU_CATEGORIES.map(function(c){ return '<option value="'+c+'"'+(c===m.category?' selected':'')+'>'+c+'</option>'; }).join('')+'</select></td>'
           + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.35rem"><input type="number" class="price-input" data-id="'+m.id+'" value="'+m.price+'" min="10" max="500" step="5" style="width:86px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFFBEB"><span style="font-size:.75rem;font-weight:700;color:var(--text-muted)">บาท</span></div><div style="font-size:.68rem;color:var(--text-muted);margin-top:.15rem">เดิม '+fmt(m._origPrice||m.price)+' บาท</div></td>'
           + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.35rem"><input type="number" class="min-input" data-id="'+m.id+'" value="'+m.minPerMenu+'" min="1" max="50" step="1" style="width:72px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFF7ED"><span style="font-size:.75rem;font-weight:700;color:var(--text-muted)">กล่อง</span></div></td>'
-          + '<td style="text-align:center"><input type="text" class="img-input" data-id="'+m.id+'" value="'+m.image.replace(/"/g,'&quot;')+'" placeholder="img/menu.png" style="width:160px;height:34px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;font-size:.78rem;font-weight:600;color:var(--text);background:var(--bg)"></td>'
+          + '<td style="text-align:center"><input type="text" class="img-input" data-id="'+m.id+'" value="'+m.image.replace(/"/g,'&quot;')+'" placeholder="img/logo.jpg" style="width:160px;height:34px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;font-size:.78rem;font-weight:600;color:var(--text);background:var(--bg)"></td>'
           + '<td style="text-align:center"><input type="text" class="name-input" data-id="'+m.id+'" value="'+m.name.replace(/"/g,'&quot;')+'" placeholder="ชื่อเมนู" style="width:170px;height:34px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;font-size:.78rem;font-weight:700;color:var(--text);background:var(--bg)"></td>'
           + '<td style="text-align:center;font-size:.72rem;font-weight:700;color:'+tierColor+'">'+tierText+'</td>'
+          + '<td style="text-align:center"><label title="เมนูนี้ไม่ต้องเลือกเนื้อ (เช่น ข้าวหมก/เซ็ตตายตัว)" style="display:inline-flex;align-items:center;gap:.3rem;cursor:pointer"><input type="checkbox" class="nomeat-input" data-id="'+m.id+'"'+(noMeatIds.indexOf(m.id)!==-1?' checked':'')+' style="width:18px;height:18px;cursor:pointer"><span style="font-size:.66rem;color:var(--text-muted)">ไม่เลือกเนื้อ</span></label></td>'
           + '<td style="text-align:center"><button type="button" class="del-menu-btn" data-id="'+m.id+'" style="background:none;border:1px solid #FECACA;border-radius:8px;padding:.25rem .5rem;cursor:pointer;color:#DC2626;font-size:.75rem;font-weight:700" title="ซ่อนเมนูนี้">🗑️</button></td>'
           + '</tr>';
       });
@@ -901,6 +935,12 @@
         flashSaved();
       });
     });
+    tbody.querySelectorAll('.nomeat-input').forEach(function(inp){
+      inp.addEventListener('change', function(){
+        toggleNoMeat(parseInt(this.getAttribute('data-id'),10));
+        flashSaved();
+      });
+    });
   }
 
   function updateStats(){
@@ -936,7 +976,9 @@
 
   function loadNewMenus(){
     var newMenus = getNewMenus();
+    var del = getDeleted();
     newMenus.forEach(function(nm){
+      if(del.indexOf(nm.id)!==-1) return;
       var exists = EED_MENUS.some(function(m){ return m.id === nm.id; });
       if(!exists){
         EED_MENUS.push({
@@ -1113,6 +1155,7 @@
       localStorage.removeItem(LS_SNACK_NAMES);
       localStorage.removeItem(LS_SNACK_ADDONS);
       localStorage.removeItem(LS_SNACK_CATEGORIES);
+      localStorage.removeItem(LS_SHIP_ZONE_FREE);
       localStorage.removeItem('eed_selling_updated_at');
       EED_MENUS.forEach(function(m){
         if(m._origPrice !== undefined) m.price = m._origPrice;
@@ -1164,8 +1207,11 @@
         newMenus: getNewMenus(),
         meats: getMeats(),
         toppings: getGlobalToppings(),
+        noMeatMenus: getNoMeat(),
         shipZones: getShipZones(),
+        shipCarMinQty: (typeof EED !== 'undefined' && EED.shippingCarMinQty) ? EED.shippingCarMinQty : 40,
         shipFree: getFreeThreshold(),
+        shipZoneFreeThresholds: getZoneFreeThresholds(),
         snackPrices: (function(){ var o={}; if(typeof EED_SNACK_MENUS!=='undefined') EED_SNACK_MENUS.forEach(function(m){ o[m.id]=m.price; }); return o; })(),
         snackNames: (function(){ var o={}; if(typeof EED_SNACK_MENUS!=='undefined') EED_SNACK_MENUS.forEach(function(m){ o[m.id]=m.name; }); return o; })(),
         snackCats: (function(){ var o={}; if(typeof EED_SNACK_MENUS!=='undefined') EED_SNACK_MENUS.forEach(function(m){ o[m.id]=m.category; }); return o; })(),
@@ -1184,7 +1230,10 @@
       EED_MENUS.forEach(function(m, idx){
         var toppings = getGlobalToppings();
         var topStr = toppings.length ? ', toppings: '+JSON.stringify(toppings) : '';
-        var line = '  { id: '+m.id+', name: '+JSON.stringify(m.name)+', price: '+m.price+', category: '+JSON.stringify(m.category)+', image: '+JSON.stringify(m.image)+', desc: '+JSON.stringify(m.desc||'')+', badge: '+JSON.stringify(m.badge||'')+', minPerMenu: '+m.minPerMenu+topStr+' }';
+        var noMeatList = getNoMeat();
+        var noMeatStr = noMeatList.indexOf(m.id)!==-1 ? ', noMeat: true' : '';
+        var imgSafe = String(m.image||'').replace(/\\/g,'/');
+        var line = '  { id: '+m.id+', name: '+JSON.stringify(m.name)+', price: '+m.price+', category: '+JSON.stringify(m.category)+', image: '+JSON.stringify(imgSafe)+', desc: '+JSON.stringify(m.desc||'')+', badge: '+JSON.stringify(m.badge||'')+', minPerMenu: '+m.minPerMenu+topStr+noMeatStr+' }';
         if(idx < EED_MENUS.length-1) line += ',';
         lines.push(line);
       });
@@ -1208,29 +1257,32 @@
 
     var copyLink = $('copyPlannerLink');
     if(copyLink) copyLink.addEventListener('click', function(){
-      var url = window.location.href.split('?')[0] + '?key='+PIN;
+      var url = window.location.href.split('?')[0];
       navigator.clipboard.writeText(url).then(function(){
         copyLink.textContent='คัดลอกลิงก์แล้ว ✓';
-        setTimeout(function(){ copyLink.textContent='คัดลอกลิงก์เจ้าของ'; },1500);
+        setTimeout(function(){ copyLink.textContent='คัดลอกลิงก์เครื่องมือ'; },1500);
       });
     });
 
-    // ship zones add / free threshold / reset
+    // ship zones add / free threshold / reset / save
     var addShipBtn = $('addShipZone');
     if(addShipBtn) addShipBtn.addEventListener('click', function(){
       var zones = getShipZones();
-      var label = prompt('ชื่อเขตใหม่ เช่น บางนา');
+      var label = prompt('ชื่อเขตพื้นที่ใหม่ เช่น บางนา (ใช้แทน id, คั่นด้วย , หลายเขต)');
       if(label===null) return;
       label = (label||'').trim() || 'เขตใหม่';
-      var feeStr = prompt('ค่าส่งเขต "'+label+'" (บาท, 0 = สอบถาม)', '150');
-      if(feeStr===null) return;
-      var fee = parseInt(feeStr,10);
-      if(isNaN(fee) || fee<0) fee=0;
-      var id = slugify(label);
-      // ensure unique id
+      var motoStr = prompt('ค่าส่งมอเตอร์ไซด์ "'+label+'" (บาท ≤40 กล่อง)', '200');
+      if(motoStr===null) return;
+      var moto = parseInt(motoStr,10);
+      if(isNaN(moto) || moto<0) moto=0;
+      var carStr = prompt('ค่าส่งรถยนต์ "'+label+'" (บาท >40 กล่อง)', String(moto+60));
+      if(carStr===null) return;
+      var car = parseInt(carStr,10);
+      if(isNaN(car) || car<0) car=moto;
+      var id = slugify(label) || 'zone_'+Date.now();
       var base=id, n=1;
-      while(zones.some(function(z){ return z.id===id; })){ id = base+'_'+(n++); }
-      zones.push({id:id, label:label, fee:fee});
+      while(zones[id]){ id = base+'_'+(n++); }
+      zones[id] = { moto:moto, car:car, districts: label.split(',').map(function(s){ return s.trim(); }).filter(Boolean) };
       saveShipZones(zones);
       renderShipZones();
       flashSaved();
@@ -1256,9 +1308,11 @@
     }
     var resetShipBtn = $('resetShipZones');
     if(resetShipBtn) resetShipBtn.addEventListener('click', function(){
-      if(!confirm('รีเซ็ตเขตค่าส่งกลับเป็นค่าเริ่มต้น 6 เขต?')) return;
+      if(!confirm('รีเซ็ตโซนค่าส่งกลับเป็นค่าเริ่มต้น 5 โซน (ตาม business-data.js) ?')) return;
+      localStorage.removeItem(LS_SHIP_ZONES_OVERRIDE);
       localStorage.removeItem(LS_SHIP_ZONES);
       localStorage.removeItem(LS_SHIP_FREE);
+      localStorage.removeItem(LS_SHIP_ZONE_FREE);
       renderShipZones();
       flashSaved();
     });

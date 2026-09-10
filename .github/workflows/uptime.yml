@@ -1,0 +1,27 @@
+name: Production Uptime
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Check site and bot health
+        env:
+          SITE_URL: https://eedhalal.com
+          BOT_HEALTH_URL: ${{ secrets.BOT_HEALTH_URL }}
+          BOT_MONITORING_ENABLED: ${{ vars.BOT_MONITORING_ENABLED }}
+          ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+        run: node scripts/smoke-production.mjs

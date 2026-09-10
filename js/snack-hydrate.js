@@ -116,6 +116,7 @@
             }
           }
         }catch(e){}
+        try{ document.dispatchEvent(new CustomEvent('snackCatalogHydrated')); }catch(e){}
         if(cb) cb();
       }).catch(next);
     }
@@ -186,10 +187,7 @@
   function init(){
     if(typeof EED_SNACK_MENUS==='undefined') return;
     applyOverrides();
-    var rendered = false;
     function doRender(){
-      if(rendered) return;
-      rendered = true;
       updatePriceDisplay();
       renderFullMenu();
       renderAddOns();

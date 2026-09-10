@@ -11,6 +11,11 @@
   var FULL_ID = 'fullMenuBody';
   var LS_SELLING = 'eed_selling_v1';
   var LS_MINS = 'eed_mins_v1';
+  var LS_IMAGES = 'eed_images_v1';
+  var LS_NAMES = 'eed_names_v1';
+  var LS_CATEGORIES = 'eed_categories_v1';
+  var LS_DELETED = 'eed_deleted_v1';
+  var LS_NEW_MENUS = 'eed_new_menus_v1';
   var LS_TOPPINGS = 'eed_toppings_v1';
 
   // Popular menu IDs in order — edit here to control what shows on popular-menu.html
@@ -21,13 +26,15 @@
     { key: 'ข้าวผัด',  emoji: '🍳', label: 'เมนูข้าวผัด' },
     { key: 'ข้าวราดแกง', emoji: '🍛', label: 'เมนูข้าวราดแกง' },
     { key: 'เส้น',     emoji: '🍝', label: 'เมนูเส้น' },
-    { key: 'อาหารอินเดีย',  emoji: '🍛', label: 'เมนูอาหารอินเดีย' }
+    { key: 'อาหารอินเดีย',  emoji: '🍛', label: 'เมนูอาหารอินเดีย' },
+    { key: 'พรีเมียม', emoji: '👑', label: 'เมนูพรีเมียม' }
   ];
   var CATS_EN = [
     { key: 'ข้าวผัด',  emoji: '🍳', label: 'Fried Rice Dishes' },
     { key: 'ข้าวราดแกง', emoji: '🍛', label: 'Rice with Curry & Toppings' },
     { key: 'เส้น',     emoji: '🍝', label: 'Noodle Dishes' },
-    { key: 'อาหารอินเดีย',  emoji: '🍛', label: 'Indian Dishes' }
+    { key: 'อาหารอินเดีย',  emoji: '🍛', label: 'Indian Dishes' },
+    { key: 'พรีเมียม', emoji: '👑', label: 'Premium Sets' }
   ];
 
   function escapeHtml(s){
@@ -43,29 +50,33 @@
     return src;
   }
 
+  function applyCatalog(data){
+    if(!data || typeof data!=='object' || typeof EED_MENUS==='undefined') return;
+    var fields={prices:'price',mins:'minPerMenu',images:'image',names:'name',categories:'category'};
+    Object.keys(fields).forEach(function(key){
+      var values=data[key];
+      if(!values || typeof values!=='object') return;
+      Object.keys(values).forEach(function(id){
+        for(var i=0;i<EED_MENUS.length;i++){
+          if(String(EED_MENUS[i].id)!==String(id)) continue;
+          var value=values[id];
+          if(key==='prices') value=parseFloat(value);
+          if(key==='mins') value=parseInt(value,10);
+          if(value!==undefined && value!==null && value!=='') EED_MENUS[i][fields[key]]=value;
+          break;
+        }
+      });
+    });
+    if(Array.isArray(data.toppings)) EED_MENUS.forEach(function(menu){ menu.toppings=data.toppings.map(function(t){ return {name:String(t.name),price:parseInt(t.price,10)||0}; }); });
+    if(Array.isArray(data.deleted)) EED_MENUS=EED_MENUS.filter(function(menu){ return data.deleted.indexOf(menu.id)===-1 && data.deleted.indexOf(String(menu.id))===-1; });
+    if(Array.isArray(data.newMenus)) data.newMenus.forEach(function(menu){
+      if(!menu || menu.id===undefined || !menu.name || EED_MENUS.some(function(item){ return String(item.id)===String(menu.id); })) return;
+      EED_MENUS.push({id:menu.id,name:String(menu.name),price:parseFloat(menu.price)||0,category:String(menu.category||'ข้าวราดแกง'),image:String(menu.image||''),desc:String(menu.desc||''),badge:String(menu.badge||''),minPerMenu:parseInt(menu.minPerMenu,10)||5,toppings:Array.isArray(data.toppings)?data.toppings.map(function(t){ return {name:String(t.name),price:parseInt(t.price,10)||0}; }):[]});
+    });
+  }
+
   function applyOverrides(){
-    try{
-      var prices = JSON.parse(localStorage.getItem(LS_SELLING)||'null');
-      var mins = JSON.parse(localStorage.getItem(LS_MINS)||'null');
-      var tops = JSON.parse(localStorage.getItem(LS_TOPPINGS)||'null');
-      if(prices && typeof prices==='object'){
-        Object.keys(prices).forEach(function(id){
-          var v = parseFloat(prices[id]);
-          if(!isNaN(v)) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].price=v;
-        });
-      }
-      if(mins && typeof mins==='object'){
-        Object.keys(mins).forEach(function(id){
-          var v = parseInt(mins[id],10);
-          if(!isNaN(v)) for(var i=0;i<EED_MENUS.length;i++) if(String(EED_MENUS[i].id)===String(id)) EED_MENUS[i].minPerMenu=v;
-        });
-      }
-      if(Array.isArray(tops)){
-        EED_MENUS.forEach(function(m){
-          m.toppings = tops.map(function(t){ return {name:String(t.name), price:parseInt(t.price,10)||0}; });
-        });
-      }
-    }catch(e){}
+    try{ applyCatalog({prices:JSON.parse(localStorage.getItem(LS_SELLING)||'null'),mins:JSON.parse(localStorage.getItem(LS_MINS)||'null'),images:JSON.parse(localStorage.getItem(LS_IMAGES)||'null'),names:JSON.parse(localStorage.getItem(LS_NAMES)||'null'),categories:JSON.parse(localStorage.getItem(LS_CATEGORIES)||'null'),deleted:JSON.parse(localStorage.getItem(LS_DELETED)||'null'),newMenus:JSON.parse(localStorage.getItem(LS_NEW_MENUS)||'null'),toppings:JSON.parse(localStorage.getItem(LS_TOPPINGS)||'null')}); }catch(e){}
   }
 
   function loadServerOverrides(cb){
@@ -78,21 +89,7 @@
         if(!r.ok) throw new Error('not ok');
         return r.json();
       }).then(function(data){
-        try{
-          if(data.prices) Object.keys(data.prices).forEach(function(id){
-            var v=parseFloat(data.prices[id]);
-            if(!isNaN(v)) for(var k=0;k<EED_MENUS.length;k++) if(String(EED_MENUS[k].id)===String(id)) EED_MENUS[k].price=v;
-          });
-          if(data.mins) Object.keys(data.mins).forEach(function(id){
-            var v=parseInt(data.mins[id],10);
-            if(!isNaN(v)) for(var k=0;k<EED_MENUS.length;k++) if(String(EED_MENUS[k].id)===String(id)) EED_MENUS[k].minPerMenu=v;
-          });
-          if(Array.isArray(data.toppings)){
-            EED_MENUS.forEach(function(m){
-              m.toppings = data.toppings.map(function(t){ return {name:String(t.name), price:parseInt(t.price,10)||0}; });
-            });
-          }
-        }catch(e){}
+        try{ applyCatalog(data); }catch(e){}
         if(cb) cb();
       }).catch(next);
     }

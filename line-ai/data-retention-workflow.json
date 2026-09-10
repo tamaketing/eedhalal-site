@@ -1,0 +1,25 @@
+{
+  "name": "EED HALAL - Purge Conversation Memory",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "days", "triggerAtHour": 2 }] } },
+      "id": "daily-trigger",
+      "name": "Daily Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst cutoff = Date.now() - 24 * 60 * 60 * 1000;\nlet deleted = 0;\nfor (const [key, value] of Object.entries(staticData)) {\n  if (key.startsWith('eedBrief:') && (!value || Number(value.updatedAt) < cutoff)) {\n    delete staticData[key];\n    deleted += 1;\n  }\n}\nreturn [{ json: { deleted, cutoff } }];"
+      },
+      "id": "purge-briefs",
+      "name": "Purge Expired Briefs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    }
+  ],
+  "connections": { "Daily Trigger": { "main": [[{ "node": "Purge Expired Briefs", "type": "main", "index": 0 }]] } },
+  "settings": { "executionOrder": "v1" }
+}

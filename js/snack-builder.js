@@ -20,7 +20,8 @@
     savory: [],   // selected savory ids (optional, +40baht each)
     sweet: [],    // selected sweet ids (max 1)
     juice: [],    // selected juice ids (max 1)
-    addon: 'water' // selected drink addon id
+    addon: 'water', // selected drink addon id
+    deliveryZone: ''
   };
 
   /* ─── Get items by category ─── */
@@ -62,7 +63,29 @@
   }
 
   function calcTotal(){
-    return calcPricePerBox() * state.quantity;
+    return calcPricePerBox() * state.quantity + getShipping().fee;
+  }
+
+  function getShipping(){
+    var zones=typeof EED!=='undefined' && EED.shippingZones ? EED.shippingZones : {};
+    var thresholds=typeof EED!=='undefined' && EED.shippingZoneFreeThresholds ? EED.shippingZoneFreeThresholds : {};
+    var zone=zones[state.deliveryZone];
+    if(!zone) return {fee:0,text:'เลือกเขตเพื่อเช็กค่าส่ง',unknown:true};
+    var freeFrom=parseInt(thresholds[state.deliveryZone],10)||0;
+    if(freeFrom && state.quantity>=freeFrom) return {fee:0,text:'ฟรี ('+freeFrom+'+ กล่อง)',unknown:false};
+    var carMin=typeof EED!=='undefined' ? parseInt(EED.shippingCarMinQty,10)||40 : 40;
+    var fee=state.quantity>carMin ? Number(zone.car)||0 : Number(zone.moto)||0;
+    return {fee:fee,text:fee.toLocaleString('th-TH')+' บาท',unknown:false};
+  }
+
+  function renderDeliveryZones(){
+    var select=$('sbDeliveryZone');
+    if(!select) return;
+    var zones=typeof EED!=='undefined' && EED.shippingZones ? EED.shippingZones : {};
+    select.innerHTML='<option value="">เลือกเขตจัดส่งเพื่อคำนวณ</option>'+Object.keys(zones).map(function(id){
+      return '<option value="'+esc(id)+'"'+(state.deliveryZone===id?' selected':'')+'>'+esc(zones[id].label)+'</option>';
+    }).join('');
+    select.onchange=function(){ state.deliveryZone=this.value; updateSummary(); };
   }
 
   /* ─── Render checkboxes (generic) ─── */
@@ -229,6 +252,7 @@
     var pricePerBox = calcPricePerBox();
     var total = calcTotal();
     var addon = getAddonById(state.addon);
+    var shipping = getShipping();
 
     var elBudget = $('sbSumBudget');
     if(elBudget) elBudget.textContent = pricePerBox;
@@ -269,18 +293,13 @@
         var sm2 = getItemById(state.savory[si]);
         if(sm2) savoryCost += sm2.price;
       }
-      elFood.textContent = ((40 + savoryCost) * state.quantity).toLocaleString('th-TH')+' บาท';
+      elFood.textContent = (pricePerBox * state.quantity).toLocaleString('th-TH')+' บาท';
     }
 
     var elShipLabel = $('sbSumShipLabel');
     var elShip = $('sbSumShip');
-    if(state.quantity>=50){
-      if(elShipLabel) elShipLabel.textContent = 'ค่าส่ง';
-      if(elShip) elShip.textContent = 'ฟรี';
-    } else {
-      if(elShipLabel) elShipLabel.textContent = 'ค่าส่ง (ขั้นต่ำ 50 กล่อง ส่งฟรี)';
-      if(elShip) elShip.textContent = 'สอบถาม';
-    }
+    if(elShipLabel) elShipLabel.textContent = 'ค่าส่งตามเขต';
+    if(elShip) elShip.textContent = shipping.text;
 
     var elTotal = $('sbSumTotal');
     if(elTotal) elTotal.textContent = total.toLocaleString('th-TH');
@@ -302,9 +321,10 @@
       var sm = getItemById(state.savory[si]);
       if(sm) savoryCost += sm.price;
     }
-    var basePrice = 40 + savoryCost;
+    var basePrice = calcPricePerBox();
     lines.push('💰 งบต่อกล่อง: '+basePrice+' บาท');
     lines.push('📦 จำนวน: '+state.quantity+' กล่อง');
+    lines.push('📍 เขตจัดส่ง: '+(state.deliveryZone && typeof EED!=='undefined' ? EED.shippingZones[state.deliveryZone].label : 'ยังไม่ระบุ'));
     lines.push('');
 
     if(state.savory.length){
@@ -335,8 +355,10 @@
       lines.push('');
     }
 
+    var shipping=getShipping();
+    lines.push('🚚 ค่าส่ง: '+shipping.text);
     lines.push('💵 ราคารวม: '+calcTotal().toLocaleString('th-TH')+' บาท');
-    lines.push('('+basePrice+' x '+state.quantity+(addon&&addon.price>0?' + '+addon.price+'บ/กล่อง':'')+')');
+    lines.push('('+basePrice+' x '+state.quantity+(shipping.fee?' + ค่าส่ง '+shipping.fee+'บ':'')+')');
     lines.push('');
     lines.push('📊 ข้อมูลนี้คำนวณจากระบบ — ราคาสุดท้ายทีมงานยืนยันครับ');
 
@@ -394,12 +416,22 @@
   /* ─── Init ─── */
   function init(){
     if(typeof EED_SNACK_MENUS==='undefined') return;
+    renderDeliveryZones();
     renderSweet();
     renderSavory();
     renderJuice();
     renderAddons();
     initQuantity();
     updateSummary();
+
+    document.addEventListener('snackCatalogHydrated', function(){
+      renderDeliveryZones();
+      renderSweet();
+      renderSavory();
+      renderJuice();
+      renderAddons();
+      updateSummary();
+    });
 
     var copyBtn = $('sbCopySummary');
     if(copyBtn) copyBtn.addEventListener('click', copySummary);

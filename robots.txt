@@ -1,6 +1,12 @@
 User-agent: *
 Allow: /
 
+# Internal tools — noindex via meta too, belt-and-braces
+Disallow: /budget-planner.html
+Disallow: /kitchen-order.html
+Disallow: /en.html
+Disallow: /data/
+
 # OpenAI
 User-agent: GPTBot
 Allow: /

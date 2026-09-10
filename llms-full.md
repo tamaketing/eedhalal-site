@@ -7,8 +7,8 @@ EED HALAL (eedhalal) is a Bangkok ข้าวกล่องฮาลาล bra
 - Business name: EED HALAL (operates under this name; no registered company name)
 - Founder / owner: Chef and founder Eed (พี่อี๊ด), carrying on family recipes of 40+ years
 - Business type: halal restaurant / meal boxes, office delivery, and catering for organizations
-- Address: 478/3 Sathorn 1 Soi 7, Thung Wat Don, Sathorn, Bangkok 10120
-- Service area: Bangkok and vicinity; free delivery by zone (50–100+ boxes depending on area); outside Bangkok case by case
+- Address: 478/3 Soi Charoen Rat 1, Yan Nawa, Sathorn, Bangkok 10120
+- Service area: Bangkok; free delivery by zone (50–100+ boxes depending on area); locations outside Bangkok are quoted case by case
 - Halal certification: CICOT certificate no. HL-2024-0892
 - Operating hours: Monday-Saturday 08:00-18:00 (closed Sunday)
 - Contact: LINE @EEDHALAL (https://lin.ee/CfvqJTd), phone +66 98 871 5179, Facebook page
@@ -75,7 +75,7 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - The website is designed around organization-ready orders: meal boxes 10+ boxes (60 THB/box), Snack Box 50+ boxes (40 THB/box), buffet 100–500+ guests.
 - Typical use cases include meetings, seminars, staff training, internal company events, team catering, coffee breaks, and buffet receptions.
 - Per-menu minimums apply for meal boxes: 5 boxes per Thai menu, 10 boxes per Indian menu. Snack Box: minimum 50 boxes per order.
-- Standard meal boxes start at 60 THB per box; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet per head approx 180-350 THB depending on 9 categories and guest count.
+- Standard meal boxes start at 60 THB per box; premium sets range from 180-250 THB; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet per head approx 180-350 THB depending on 9 categories and guest count.
 - Free delivery by zone: inner Bangkok 50+ boxes, Sukhumvit/Lat Phrao 75+ boxes, outer Bangkok 100+ boxes according to the FAQ (Snack Box same zone thresholds).
 - 10-50 box corporate meal box orders should usually be placed 2-3 business days in advance; Snack Box 50-100 boxes 2-3 days; buffet 100-200 guests 7-14 days, 300+ guests 2 weeks.
 - 50+ box or multi-menu meal box orders should usually be booked 5-7 days in advance.

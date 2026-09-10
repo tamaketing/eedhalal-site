@@ -1,0 +1,29 @@
+name: System Data Check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Check repository safety and generated data
+        run: |
+          node scripts/check-repository-safety.mjs
+          node scripts/check-system.mjs
+          node scripts/check-public-site.mjs
+
+      - name: Run business rule tests
+        run: node --test

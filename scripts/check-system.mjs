@@ -1,0 +1,365 @@
+import assert from 'node:assert/strict';
+import { readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import vm from 'node:vm';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+async function readJson(root, relativePath) {
+  return JSON.parse(await readFile(path.join(root, relativePath), 'utf8'));
+}
+
+async function loadLegacyData(root = ROOT) {
+  const context = {
+    document: { readyState: 'complete', querySelectorAll: () => [] },
+    window: {},
+  };
+  vm.createContext(context);
+  vm.runInContext(await readFile(path.join(root, 'js/business-data.js'), 'utf8'), context);
+  vm.runInContext(await readFile(path.join(root, 'js/menu-data.js'), 'utf8'), context);
+  return {
+    business: JSON.parse(JSON.stringify(context.EED)),
+    menus: JSON.parse(JSON.stringify(context.EED_MENUS)),
+  };
+}
+
+export async function loadSystemData(root = ROOT) {
+  const [rules, catalog, legacy] = await Promise.all([
+    readJson(root, 'data/business-rules.json'),
+    readJson(root, 'data/planner-overrides.json'),
+    loadLegacyData(root),
+  ]);
+  return { rules, catalog, legacy };
+}
+
+export function getEffectiveMenus(menus, catalog) {
+  const deleted = new Set(catalog.deleted || []);
+  return menus
+    .filter((menu) => !deleted.has(menu.id))
+    .map((menu) => ({
+      ...menu,
+      name: catalog.names?.[menu.id] ?? menu.name,
+      price: catalog.prices?.[menu.id] ?? menu.price,
+      category: catalog.categories?.[menu.id] ?? menu.category,
+      image: catalog.images?.[menu.id] ?? menu.image,
+      minPerMenu: catalog.mins?.[menu.id] ?? menu.minPerMenu,
+    }));
+}
+
+export function calculateShipping(rules, catalog, district, quantity) {
+  assert.ok(Number.isInteger(quantity) && quantity > 0, 'quantity must be a positive integer');
+  const entry = Object.entries(catalog.shipZones).find(([, zone]) =>
+    zone.districts.some((item) => item.toLocaleLowerCase('th-TH') === district.trim().toLocaleLowerCase('th-TH')),
+  );
+  if (!entry) return { found: false, fee: null, isFree: false, zoneId: null };
+
+  const [zoneId, zone] = entry;
+  const freeFrom = Number(catalog.shipZoneFreeThresholds[zoneId]) || null;
+  const isFree = freeFrom !== null && quantity >= freeFrom;
+  const vehicle = quantity > rules.delivery.carWhenQuantityAbove ? 'car' : 'moto';
+  return {
+    found: true,
+    zoneId,
+    zoneLabel: zone.label,
+    vehicle,
+    freeFrom,
+    isFree,
+    fee: isFree ? 0 : zone[vehicle],
+  };
+}
+
+export function getLeadTime(rules, quantity) {
+  return rules.leadTimes.find((range) =>
+    quantity >= range.minQuantity && (range.maxQuantity === null || quantity <= range.maxQuantity),
+  ) || null;
+}
+
+function formatRange(range) {
+  if (range.maxQuantity === null) return `${range.minQuantity}+ กล่อง: ล่วงหน้า ${range.minimumWeeks}-${range.maximumWeeks} สัปดาห์`;
+  return `${range.minQuantity}-${range.maxQuantity} กล่อง: ล่วงหน้า ${range.minimumBusinessDays}-${range.maximumBusinessDays} วันทำการ`;
+}
+
+export function renderKnowledge(rules, catalog, menus) {
+  const meal = rules.services.mealBox;
+  const snack = rules.services.snackBox;
+  const buffet = rules.services.buffet;
+  const specialMenus = getEffectiveMenus(menus, catalog)
+    .filter((menu) => menu.minPerMenu === meal.specialMenuMinimum)
+    .map((menu) => menu.name)
+    .join(', ');
+  const zoneLines = Object.entries(catalog.shipZones).map(([zoneId, zone]) => {
+    const freeFrom = Number(catalog.shipZoneFreeThresholds[zoneId]) || null;
+    const deliveryText = freeFrom
+      ? `ส่งฟรี ${freeFrom}+ กล่อง, ไม่ถึงเกณฑ์ มอเตอร์ไซค์ ${zone.moto} บาท รถยนต์ ${zone.car} บาท`
+      : `ไม่มีส่งฟรี ต้องสอบถามก่อน ค่าส่งมอเตอร์ไซค์/รถยนต์ ${zone.moto}/${zone.car} บาท`;
+    return `- ${zone.label} (${zone.districts.join(' ')}): ${deliveryText}`;
+  }).join('\n');
+  const leadTimeLines = rules.leadTimes.map((range) => `- ${formatRange(range)}`).join('\n');
+  const menuLines = getEffectiveMenus(menus, catalog)
+    .map((menu) => `- ${menu.name} | ${menu.price} บาท/กล่อง | ขั้นต่ำ ${menu.minPerMenu} กล่อง/เมนู | ${menu.category}`)
+    .join('\n');
+
+  return `# EED HALAL - Knowledge Pack สำหรับ LINE AI
+> GENERATED FILE: สร้างจาก data/business-rules.json + data/planner-overrides.json
+> Business rules revision: ${rules.revision} (schema ${rules.schemaVersion})
+> ห้ามแก้ไฟล์นี้โดยตรง ให้แก้ข้อมูลต้นทางแล้วรัน node scripts/check-system.mjs --write
+
+## 1. ตัวตนร้าน
+- ชื่อ: ${rules.business.name} (ดำเนินงานในนาม ${rules.business.name})
+- เจ้าของ: ${rules.business.owner} สูตรครัวครอบครัว ${rules.business.experienceYears}+ ปี (ไทย+อินเดีย)
+- ที่อยู่: ${rules.business.address}
+- เวลาทำการ: ${rules.business.operatingDays} ${rules.business.operatingHours} (อาทิตย์ปิด)
+- โทร: ${rules.business.phone}
+- ช่องทางติดต่อ: แชท LINE นี้เลย ลูกค้าอยู่ในแชทนี้แล้ว ไม่ต้องแนะนำลิงก์ LINE ซ้ำ
+- เว็บ: ${rules.urls.home}
+- ฮาลาล: รับรอง CICOT เลขที่ ${rules.business.halalCertificate} ขอสำเนาในแชทนี้ได้
+
+## 2. ราคาและขั้นต่ำ
+- ข้าวกล่องมาตรฐาน: เริ่ม ${meal.priceFrom} บาท/กล่อง
+- เมนูพรีเมียม: เริ่ม ${meal.premiumPriceFrom}-${meal.premiumPriceTo} บาท/กล่อง
+- Snack Box: เริ่ม ${snack.priceFrom} บาท/กล่อง ขั้นต่ำ ${snack.minimumOrder} กล่อง
+- บุฟเฟต์: หัวละ ${buffet.priceFrom}-${buffet.priceTo} บาท สำหรับ ${buffet.minimumGuests}+ คน มีทีมหน้างาน ${buffet.serviceCategories} หมวดอาหาร
+- ขั้นต่ำออเดอร์องค์กร: ${meal.minimumOrder}+ กล่อง
+- ขั้นต่ำต่อเมนู: เมนูทั่วไปส่วนมาก ${meal.standardMenuMinimum} กล่อง เมนูที่ต้องเตรียมพิเศษ ${meal.specialMenuMinimum} กล่อง ให้ยึดขั้นต่ำรายเมนูจากระบบ
+- เมนูขั้นต่ำ ${meal.specialMenuMinimum} กล่องปัจจุบัน: ${specialMenus}
+- สั่ง 1 กล่อง: ไม่รับผ่านเว็บ ให้ไปสั่งผ่าน LINEMAN
+- มี ${meal.menuCountFrom}+ เมนู ปรับเผ็ดและเครื่องได้
+
+## 3. ส่งฟรีและค่าส่ง
+- กฎรถ: ออเดอร์ <=${rules.delivery.carWhenQuantityAbove} กล่องใช้เรทมอเตอร์ไซค์, >${rules.delivery.carWhenQuantityAbove} กล่องใช้เรทรถยนต์
+${zoneLines}
+- นอกแผนที่ เช่น นนทบุรี สมุทรปราการ ปทุมธานี และต่างจังหวัด: ไม่มีส่งฟรี ${rules.delivery.outsideBangkok}
+
+## 4. เวลาสั่งล่วงหน้าและ cutoff
+${leadTimeLines}
+- ยืนยันจำนวน เมนู เวลา และจุดส่งภายใน ${rules.cutoff.time} น. ของ${rules.cutoff.description}
+- ใบเสนอราคา: ปกติภายใน ${rules.documents.quoteWithinMinutes} นาทีหลังติดต่อเข้ามาในเวลาทำการ
+- งานเร่งด่วนต้องส่งให้ทีมตรวจคิว ห้ามรับปากแทนครัว
+
+## 5. VAT และเอกสาร
+- ราคาไม่รวม VAT ${rules.documents.vatRate}% เพราะยังไม่ได้จด VAT
+- ออกได้: ${rules.documents.available.join(' + ')}
+- ออกใบกำกับภาษี / Tax Invoice ไม่ได้ทุกกรณี
+- ฝ่ายจัดซื้อแจ้งชื่อบริษัทและที่อยู่ในแชทนี้เพื่อออกเอกสาร
+
+## 6. วิธีสั่งและปิดการขาย
+1. ดูเมนูที่ ${rules.urls.menu} หรือ ${rules.urls.corporate}
+2. แจ้งจำนวน งบต่อหัว วัน เวลา และสถานที่ในแชทนี้
+3. AI ช่วยตรวจข้อมูล คำนวณเบื้องต้น และสรุป brief
+4. ทีมงานตรวจราคา ค่าส่ง และคิวครัวก่อนยืนยันออเดอร์
+
+## 7. กฎกันข้อมูลผิด
+- ห้ามเดาราคา ขั้นต่ำ ค่าส่ง lead time VAT หรือข้อมูลฮาลาล
+- ห้ามบอกว่าส่งทั่วประเทศ มีตะกร้าชำระเงินบนเว็บ หรือออก VAT ได้
+- ถ้าไม่พบข้อมูล ให้ตอบส่วนที่ทราบและระบุส่วนที่ต้องให้ทีมตรวจสอบในแชทนี้ ขอเบอร์เฉพาะเมื่อลูกค้าต้องการให้โทรกลับ
+- เรื่องราคา ส่ง และสั่งซื้อ ต้องแนบลิงก์อ้างอิงจากหัวข้อถัดไป
+
+## 8. ลิงก์อ้างอิง
+- ราคา/ขั้นต่ำ: ${rules.urls.faq}
+- ข้าวกล่ององค์กร: ${rules.urls.corporate}
+- Snack Box: ${rules.urls.snackBox}
+- บุฟเฟต์: ${rules.urls.buffet}
+- พื้นที่ส่ง: ${rules.urls.delivery}
+- ฮาลาล: ${rules.urls.halal}
+- ติดต่อ: ${rules.urls.contact}
+- เกี่ยวกับร้าน: ${rules.urls.about}
+
+## 9. รายการเมนูข้าวกล่องและราคาปัจจุบัน
+ใช้เลือกเมนูตามงบและคำนวณยอดเบื้องต้น ราคานี้ยังไม่รวมค่าส่งและไม่ได้ยืนยันคิวครัว ชื่อเมนูไม่ใช่ข้อมูลส่วนผสมหรือสารก่อภูมิแพ้
+${menuLines}
+`;
+}
+
+function getPromptBody(markdown) {
+  const lines = markdown.trim().split(/\r?\n/);
+  const firstFence = lines.indexOf('```');
+  const lastFence = lines.lastIndexOf('```');
+  if (firstFence === -1 || lastFence <= firstFence) return markdown.trim();
+  return lines.slice(firstFence + 1, lastFence).join('\n').trim();
+}
+
+function syncMenuSource(source, catalog) {
+  const seen = new Set();
+  const synced = source.split(/\r?\n/).map((line) => {
+    const idMatch = line.match(/^\s*\{ id: (\d+),/);
+    if (!idMatch) return line;
+    const id = idMatch[1];
+    seen.add(id);
+    let next = line;
+    const values = {
+      name: catalog.names?.[id],
+      price: catalog.prices?.[id],
+      category: catalog.categories?.[id],
+      image: catalog.images?.[id],
+      minPerMenu: catalog.mins?.[id],
+    };
+    if (values.name !== undefined) next = next.replace(/name: "(?:[^"\\]|\\.)*"/, `name: ${JSON.stringify(values.name)}`);
+    if (values.price !== undefined) next = next.replace(/price: \d+(?:\.\d+)?/, `price: ${values.price}`);
+    if (values.category !== undefined) next = next.replace(/category: "(?:[^"\\]|\\.)*"/, `category: ${JSON.stringify(values.category)}`);
+    if (values.image !== undefined) next = next.replace(/image: "(?:[^"\\]|\\.)*"/, `image: ${JSON.stringify(values.image)}`);
+    if (values.minPerMenu !== undefined) next = next.replace(/minPerMenu: \d+/, `minPerMenu: ${values.minPerMenu}`);
+    return next;
+  }).join('\n');
+  for (const id of Object.keys(catalog.prices)) assert.ok(seen.has(String(id)), `menu ${id} is missing from js/menu-data.js`);
+  return `${synced.replace(/\n*$/, '')}\n`;
+}
+
+function replaceValue(source, pattern, replacement, field) {
+  assert.match(source, pattern, `cannot find ${field} in js/business-data.js`);
+  return source.replace(pattern, replacement);
+}
+
+function syncBusinessSource(source, rules, catalog) {
+  const meal = rules.services.mealBox;
+  const values = {
+    phoneDisplay: rules.business.phone,
+    halalCertificate: rules.business.halalCertificate,
+    operatingHoursTh: rules.business.operatingDays,
+    startingPrice: String(meal.priceFrom),
+    premiumPriceFrom: String(meal.premiumPriceFrom),
+    premiumPriceTo: String(meal.premiumPriceTo),
+    minOrder: String(meal.minimumOrder),
+    thaiMinPerMenu: String(meal.standardMenuMinimum),
+    indianMinPerMenu: String(meal.specialMenuMinimum),
+    freeDeliveryFrom: String(catalog.shipFree),
+    menuCount: String(meal.menuCountFrom),
+  };
+  let synced = source;
+  for (const [field, value] of Object.entries(values)) {
+    const pattern = new RegExp(`(${field}:\\s*)'[^']*'`);
+    synced = replaceValue(synced, pattern, `$1'${value}'`, field);
+  }
+  synced = replaceValue(
+    synced,
+    /(shippingCarMinQty:\s*)\d+/,
+    `$1${rules.delivery.carWhenQuantityAbove}`,
+    'shippingCarMinQty',
+  );
+  const smallLead = rules.leadTimes[0];
+  const mediumLead = rules.leadTimes[1];
+  const largeLead = rules.leadTimes[2];
+  const textValues = {
+    quoteTimeTh: `ภายใน ${rules.documents.quoteWithinMinutes} นาทีหลังทัก LINE`,
+    confirmDeadlineTh: `${rules.cutoff.time} น. ของ${rules.cutoff.description}`,
+    leadSmallTh: `${smallLead.minimumBusinessDays}–${smallLead.maximumBusinessDays} วันทำการ`,
+    leadMediumTh: `${mediumLead.minimumBusinessDays}–${mediumLead.maximumBusinessDays} วันทำการ`,
+    leadLargeTh: `${largeLead.minimumWeeks}–${largeLead.maximumWeeks} สัปดาห์`,
+  };
+  for (const [field, value] of Object.entries(textValues)) {
+    const pattern = new RegExp(`(${field}:\\s*)'[^']*'`);
+    synced = replaceValue(synced, pattern, `$1'${value}'`, field);
+  }
+
+  const thresholds = Object.entries(catalog.shipZoneFreeThresholds)
+    .map(([zoneId, threshold]) => `    ${zoneId}: ${threshold}`)
+    .join(',\n');
+  synced = replaceValue(
+    synced,
+    /  shippingZoneFreeThresholds: \{[\s\S]*?\n  \},/,
+    `  shippingZoneFreeThresholds: {\n${thresholds}\n  },`,
+    'shippingZoneFreeThresholds',
+  );
+  const zones = Object.entries(catalog.shipZones)
+    .map(([zoneId, zone]) => `    ${zoneId}: ${JSON.stringify(zone)}`)
+    .join(',\n');
+  synced = replaceValue(
+    synced,
+    /  shippingZones: \{[\s\S]*?\n  \},/,
+    `  shippingZones: {\n${zones}\n  },`,
+    'shippingZones',
+  );
+  return `${synced.replace(/\r\n/g, '\n').replace(/\n*$/, '')}\n`;
+}
+
+function assertUnique(values, message) {
+  assert.equal(new Set(values).size, values.length, message);
+}
+
+export function validateData(rules, catalog, legacy) {
+  assert.equal(rules.schemaVersion, 1, 'unsupported business rules schema');
+  assert.match(rules.revision, /^\d{4}-\d{2}-\d{2}$/, 'revision must use YYYY-MM-DD');
+  assert.equal(rules.services.mealBox.minimumOrder, 10);
+  assert.deepEqual(
+    new Set(Object.values(catalog.mins)),
+    new Set([rules.services.mealBox.standardMenuMinimum, rules.services.mealBox.specialMenuMinimum]),
+    'menu minimums must be 5 or 10',
+  );
+
+  assertUnique(legacy.menus.map((menu) => menu.id), 'menu IDs must be unique');
+  const districts = Object.values(catalog.shipZones).flatMap((zone) => zone.districts);
+  assertUnique(districts, 'a district cannot belong to multiple delivery zones');
+
+  for (const menu of legacy.menus) {
+    const id = String(menu.id);
+    assert.equal(menu.name, catalog.names[id], `menu ${id} name drift`);
+    assert.equal(menu.price, catalog.prices[id], `menu ${id} price drift`);
+    assert.equal(menu.category, catalog.categories[id], `menu ${id} category drift`);
+    assert.equal(menu.image, catalog.images[id], `menu ${id} image drift`);
+    assert.equal(menu.minPerMenu, catalog.mins[id], `menu ${id} minimum drift`);
+    if (menu.category === 'อาหารอินเดีย') {
+      assert.equal(menu.minPerMenu, rules.services.mealBox.specialMenuMinimum, `Indian menu ${id} must use special minimum`);
+    }
+  }
+
+  const eed = legacy.business;
+  assert.equal(Number(eed.startingPrice), rules.services.mealBox.priceFrom, 'starting price drift');
+  assert.equal(Number(eed.premiumPriceFrom), rules.services.mealBox.premiumPriceFrom, 'premium price drift');
+  assert.equal(Number(eed.premiumPriceTo), rules.services.mealBox.premiumPriceTo, 'premium price drift');
+  assert.equal(Number(eed.minOrder), rules.services.mealBox.minimumOrder, 'minimum order drift');
+  assert.equal(Number(eed.thaiMinPerMenu), rules.services.mealBox.standardMenuMinimum, 'standard menu minimum drift');
+  assert.equal(Number(eed.indianMinPerMenu), rules.services.mealBox.specialMenuMinimum, 'special menu minimum drift');
+  assert.equal(Number(eed.shippingCarMinQty), rules.delivery.carWhenQuantityAbove, 'vehicle threshold drift');
+  assert.equal(catalog.shipCarMinQty, rules.delivery.carWhenQuantityAbove, 'catalog vehicle threshold drift');
+  assert.equal(eed.halalCertificate, rules.business.halalCertificate, 'halal certificate drift');
+  assert.equal(eed.confirmDeadlineTh, `${rules.cutoff.time} น. ของ${rules.cutoff.description}`, 'cutoff drift');
+  assert.equal(eed.leadSmallTh, `${rules.leadTimes[0].minimumBusinessDays}–${rules.leadTimes[0].maximumBusinessDays} วันทำการ`, 'small lead time drift');
+  assert.equal(eed.leadMediumTh, `${rules.leadTimes[1].minimumBusinessDays}–${rules.leadTimes[1].maximumBusinessDays} วันทำการ`, 'medium lead time drift');
+  assert.equal(eed.leadLargeTh, `${rules.leadTimes[2].minimumWeeks}–${rules.leadTimes[2].maximumWeeks} สัปดาห์`, 'large lead time drift');
+
+  for (const [zoneId, zone] of Object.entries(catalog.shipZones)) {
+    assert.deepEqual(eed.shippingZones[zoneId], zone, `${zoneId} delivery data drift`);
+    assert.equal(eed.shippingZoneFreeThresholds[zoneId], catalog.shipZoneFreeThresholds[zoneId], `${zoneId} free threshold drift`);
+  }
+}
+
+export async function checkSystem(root = ROOT) {
+  const data = await loadSystemData(root);
+  validateData(data.rules, data.catalog, data.legacy);
+  const expectedKnowledge = renderKnowledge(data.rules, data.catalog, data.legacy.menus);
+  const actualKnowledge = await readFile(path.join(root, 'line-ai/knowledge-pack.md'), 'utf8');
+  assert.equal(actualKnowledge.replace(/\r\n/g, '\n'), expectedKnowledge, 'AI knowledge is stale; run with --write');
+  const prompt = getPromptBody(await readFile(path.join(root, 'line-ai/system-prompt.md'), 'utf8'));
+  const expectedNodeMessage = `${expectedKnowledge.trim()}\n\n${prompt}\n`;
+  const actualNodeMessage = await readFile(path.join(root, 'line-ai/system-message-node.txt'), 'utf8');
+  assert.equal(actualNodeMessage.replace(/\r\n/g, '\n'), expectedNodeMessage, 'combined n8n system message is stale; run with --write');
+  const workflow = await readJson(root, 'line-ai/n8n-workflow.json');
+  assert.equal(workflow.nodes.find((node) => node.id === 'ai-agent')?.parameters.options.systemMessage, expectedNodeMessage,
+    'workflow system message is stale; run with --write');
+  return data;
+}
+
+async function writeGeneratedFiles(root = ROOT) {
+  const { rules, catalog } = await loadSystemData(root);
+  const businessPath = path.join(root, 'js/business-data.js');
+  const syncedBusinessSource = syncBusinessSource(await readFile(businessPath, 'utf8'), rules, catalog);
+  await writeFile(businessPath, syncedBusinessSource, 'utf8');
+  const menuPath = path.join(root, 'js/menu-data.js');
+  const syncedMenuSource = syncMenuSource(await readFile(menuPath, 'utf8'), catalog);
+  await writeFile(menuPath, syncedMenuSource, 'utf8');
+  const { legacy } = await loadSystemData(root);
+  const knowledge = renderKnowledge(rules, catalog, legacy.menus);
+  await writeFile(path.join(root, 'line-ai/knowledge-pack.md'), knowledge, 'utf8');
+  const prompt = getPromptBody(await readFile(path.join(root, 'line-ai/system-prompt.md'), 'utf8'));
+  await writeFile(path.join(root, 'line-ai/system-message-node.txt'), `${knowledge.trim()}\n\n${prompt}\n`, 'utf8');
+  const workflow = await readJson(root, 'line-ai/n8n-workflow.json');
+  workflow.nodes.find((node) => node.id === 'ai-agent').parameters.options.systemMessage = `${knowledge.trim()}\n\n${prompt}\n`;
+  await writeFile(path.join(root, 'line-ai/n8n-workflow.json'), `${JSON.stringify(workflow, null, 2)}\n`, 'utf8');
+}
+
+const isCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isCli) {
+  if (process.argv.includes('--write')) await writeGeneratedFiles();
+  await checkSystem();
+  console.log('System data, calculator catalog, and AI knowledge are consistent.');
+}

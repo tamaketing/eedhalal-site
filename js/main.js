@@ -38,6 +38,9 @@
   var BUFFET_PATH = fileAware(EN_PREFIX + '/buffet.html');
   var LIVE_COOKING_PATH = fileAware(EN_PREFIX + '/live-cooking-station.html');
   var KHAO_MOK_PATH = fileAware(EN_PREFIX + '/khao-mok.html');
+  var GLOSSARY_PATH = fileAware(EN_PREFIX + '/glossary.html');
+  var BLOG_INDEX_PATH = fileAware('/blog/index.html');
+  var BUDGET_CALC_PATH = fileAware('/budget-calculator.html');
   var ORDER_STEPS_PATH = fileAware(EN_PREFIX + '/order-steps.html');
   var DELIVERY_AREA_PATH = fileAware(EN_PREFIX + '/delivery-area.html');
   var HALAL_CERT_PATH = fileAware(EN_PREFIX + '/halal-cert.html');
@@ -50,6 +53,9 @@
   var SUKHUMVIT_PATH = fileAware(EN_PREFIX + '/sukhumvit.html');
   var RAMA3_PATH = fileAware(EN_PREFIX + '/rama3.html');
   var LADPRAO_PATH = fileAware(EN_PREFIX + '/ladprao.html');
+  var HUAYKWANG_PATH = fileAware(EN_PREFIX + '/huaykwang.html');
+  var DONMUEANG_PATH = fileAware(EN_PREFIX + '/donmueang.html');
+  var LATKRABANG_PATH = fileAware(EN_PREFIX + '/latkrabang.html');
   var BLOG_HALAL_VS_NORMAL_PATH = fileAware((isEN ? '/en' : '') + '/blog/halal-vs-normal.html');
   var BLOG_HOW_TO_CHOOSE_PATH = fileAware((isEN ? '/en' : '') + '/blog/how-to-choose.html');
   var BLOG_CICOT_PATH = fileAware((isEN ? '/en' : '') + '/blog/cicot-explained.html');
@@ -209,7 +215,9 @@
     if (path === '/halal-cert.html') return 'halal_cert';
     if (path === '/reviews.html') return 'reviews';
     if (path === '/faq.html') return 'faq';
-    if (path === '/sathorn.html' || path === '/silom.html' || path === '/sukhumvit.html' || path === '/rama3.html' || path === '/ladprao.html') return 'location';
+    if (path === '/sathorn.html' || path === '/silom.html' || path === '/sathorn-silom.html' || path === '/sukhumvit.html' || path === '/rama3.html' || path === '/ladprao.html' || path === '/huaykwang.html' || path === '/donmueang.html' || path === '/latkrabang.html') return 'location';
+    if (path === '/khao-mok.html' || path === '/glossary.html') return 'menu';
+    if (path === '/budget-calculator.html') return 'calculator';
     if (path.indexOf('/blog/') === 0) return 'blog';
     return 'page';
   }
@@ -532,10 +540,10 @@
         <span class="cicot-badge">CICOT \u2713</span>\
       </div>\
     </a>\
-    <nav class="nav-desktop">\
+    <nav class="nav-desktop" aria-label="Primary">\
       <a href="' + HOME_PATH + '" class="nav-link">Home</a>\
       <div class="nav-dropdown">\
-        <button class="nav-link nav-dropdown-toggle">Services <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <button class="nav-link nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Services <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
         <div class="nav-dropdown-menu">\
           <a href="' + CORPORATE_PATH + '" class="nav-dropdown-item">Corporate Orders</a>\
           <a href="' + CATERING_PATH + '" class="nav-dropdown-item">Catering</a>\
@@ -547,7 +555,7 @@
         </div>\
       </div>\
       <div class="nav-dropdown">\
-        <button class="nav-link nav-dropdown-toggle">About <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <button class="nav-link nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">About <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
         <div class="nav-dropdown-menu">\
           <a href="' + ABOUT_PATH + '" class="nav-dropdown-item">About EED HALAL</a>\
           <a href="' + STORY_PATH + '" class="nav-dropdown-item">Our 40-Year Story</a>\
@@ -612,10 +620,10 @@
         <span class="cicot-badge">CICOT \u2713</span>\
       </div>\
     </a>\
-    <nav class="nav-desktop">\
+    <nav class="nav-desktop" aria-label="หลัก">\
       <a href="' + HOME_PATH + '" class="nav-link">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
       <div class="nav-dropdown">\
-        <button class="nav-link nav-dropdown-toggle">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <button class="nav-link nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
         <div class="nav-dropdown-menu">\
           <a href="' + CORPORATE_PATH + '" class="nav-dropdown-item">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
           <a href="' + CATERING_PATH + '" class="nav-dropdown-item">\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
@@ -627,7 +635,7 @@
         </div>\
       </div>\
       <div class="nav-dropdown">\
-        <button class="nav-link nav-dropdown-toggle">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <button class="nav-link nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
         <div class="nav-dropdown-menu">\
           <a href="' + ABOUT_PATH + '" class="nav-dropdown-item">\u0e23\u0e39\u0e49\u0e08\u0e31\u0e01 EED HALAL</a>\
           <a href="' + STORY_PATH + '" class="nav-dropdown-item">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27 40 \u0e1b\u0e35</a>\
@@ -707,6 +715,7 @@
         <a href="' + STORY_PATH + '">Our Story</a>\
         <a href="' + CORPORATE_PATH + '">Corporate</a>\
         <a href="' + MENU_PATH + '">Popular Menu</a>\
+        <a href="' + KHAO_MOK_PATH + '">Khao Mok</a>\
         <a href="' + SNACK_BOX_PATH + '">Snack Box</a>\
         <a href="' + CATERING_PATH + '">Catering</a>\
         <a href="' + BUFFET_PATH + '">Buffet</a>\
@@ -720,6 +729,7 @@
         <a href="' + BLOG_HOW_TO_CHOOSE_PATH + '">Choosing Halal Vendor</a>\
         <a href="' + BLOG_CICOT_PATH + '">What is CICOT</a>\
         <a href="' + BLOG_HALAL_VS_NORMAL_PATH + '">Halal vs Regular</a>\
+        <a href="' + GLOSSARY_PATH + '">Halal Glossary</a>\
       </div>\
     </div>\
     <div>\
@@ -731,6 +741,9 @@
         <a href="' + SUKHUMVIT_PATH + '">Sukhumvit</a>\
         <a href="' + RAMA3_PATH + '">Rama 3</a>\
         <a href="' + LADPRAO_PATH + '">Lat Phrao</a>\
+        <a href="' + HUAYKWANG_PATH + '">Huai Khwang</a>\
+        <a href="' + DONMUEANG_PATH + '">Don Mueang</a>\
+        <a href="' + LATKRABANG_PATH + '">Lat Krabang</a>\
       </div>\
     </div>\
     <div>\
@@ -775,7 +788,9 @@
         <a href="' + ABOUT_PATH + '">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32</a>\
         <a href="' + STORY_PATH + '">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27\u0e02\u0e2d\u0e07\u0e40\u0e23\u0e32</a>\
         <a href="' + CORPORATE_PATH + '">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
+        <a href="' + BUDGET_CALC_PATH + '">คำนวณงบข้าวกล่อง</a>\
         <a href="' + MENU_PATH + '">\u0e40\u0e21\u0e19\u0e39\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21</a>\
+        <a href="' + KHAO_MOK_PATH + '">ข้าวหมกไก่</a>\
         <a href="' + SNACK_BOX_PATH + '">\u0e02\u0e2d\u0e07\u0e27\u0e48\u0e32\u0e07 Snack Box</a>\
         <a href="' + CATERING_PATH + '">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
         <a href="' + BUFFET_PATH + '">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e15\u0e4c\u0e2e\u0e32\u0e25\u0e32\u0e25</a>\
@@ -789,6 +804,8 @@
         <a href="' + BLOG_HOW_TO_CHOOSE_PATH + '">\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e22\u0e31\u0e07\u0e44\u0e07</a>\
         <a href="' + BLOG_CICOT_PATH + '">CICOT \u0e04\u0e37\u0e2d\u0e2d\u0e30\u0e44\u0e23</a>\
         <a href="' + BLOG_HALAL_VS_NORMAL_PATH + '">\u0e2e\u0e32\u0e25\u0e32\u0e25 vs \u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b</a>\
+        <a href="' + GLOSSARY_PATH + '">อภิธานศัพท์ฮาลาล</a>\
+        <a href="' + BLOG_INDEX_PATH + '">บล็อกทั้งหมด</a>\
       </div>\
     </div>\
     <div>\
@@ -800,6 +817,9 @@
         <a href="' + SUKHUMVIT_PATH + '">\u0e2a\u0e38\u0e02\u0e38\u0e21\u0e27\u0e34\u0e17</a>\
         <a href="' + RAMA3_PATH + '">\u0e1e\u0e23\u0e30\u0e23\u0e32\u0e21 3</a>\
         <a href="' + LADPRAO_PATH + '">\u0e25\u0e32\u0e14\u0e1e\u0e23\u0e49\u0e32\u0e27</a>\
+        <a href="' + HUAYKWANG_PATH + '">ห้วยขวาง</a>\
+        <a href="' + DONMUEANG_PATH + '">ดอนเมือง</a>\
+        <a href="' + LATKRABANG_PATH + '">ลาดกระบัง</a>\
       </div>\
     </div>\
     <div>\
@@ -817,7 +837,7 @@
     <p class="footer-copy">&copy; 2024 EED HALAL. \u0e2e\u0e32\u0e25\u0e32\u0e25\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e15 CICOT</p>\
     <div class="footer-tags">\
       <span>HL-2024-0892</span>\
-      <span>\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21\u0e4c</span>\
+      <span>\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21</span>\
       <span>Grilled</span>\
     </div>\
   </div>\
@@ -855,7 +875,9 @@
       menuCloseLines.forEach(function(el) { el.classList.toggle('hidden', !isOpen); });
     });
 
-    menu.querySelectorAll('.mobile-link').forEach(function(link) {
+    // Plain links (and submenu items) close the menu.
+    // Dropdown toggles are excluded — they expand in place (see handler below).
+    menu.querySelectorAll('.mobile-link:not(.mobile-dropdown-toggle), .mobile-dropdown-item').forEach(function(link) {
       link.addEventListener('click', function() {
         menu.classList.remove('open');
         btn.setAttribute('aria-expanded', 'false');
@@ -875,7 +897,8 @@
     document.querySelectorAll('.mobile-dropdown-toggle').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var dropdown = this.closest('.mobile-dropdown');
-        dropdown.classList.toggle('open');
+        var isOpen = dropdown.classList.toggle('open');
+        this.setAttribute('aria-expanded', String(isOpen));
       });
     });
   }
@@ -901,6 +924,10 @@
         e.stopPropagation();
         var dropdown = this.closest('.nav-dropdown');
         var isOpen = dropdown.classList.toggle('open');
+        this.setAttribute('aria-expanded', String(isOpen));
+        document.querySelectorAll('.nav-dropdown-toggle').forEach(function(b) {
+          if (b !== btn) b.setAttribute('aria-expanded', 'false');
+        });
         document.querySelectorAll('.nav-dropdown').forEach(function(d) {
           if (d !== dropdown) d.classList.remove('open');
         });
@@ -911,6 +938,7 @@
       document.querySelectorAll('[data-dd-menu]').forEach(function(m) { m.classList.remove('show'); });
       document.querySelectorAll('[data-dd-btn]').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
       document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('open'); });
+      document.querySelectorAll('.nav-dropdown-toggle').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
     });
   }
 
@@ -975,7 +1003,7 @@
       return {
         cssClass: 'banner-year-end',
         icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
-        text: '\u0e2a\u0e34\u0e49\u0e19\u0e1b\u0e35\u0e07\u0e1a\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 \u2014 \u0e43\u0e0a\u0e49\u0e2a\u0e34\u0e17\u0e18\u0e34\u0e4c\u0e07\u0e1a\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d \u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e14\u0e48\u0e27\u0e19 \u0e1c\u0e48\u0e2d\u0e19\u0e43\u0e1a\u0e01\u0e32\u0e01\u0e31\u0e1a\u0e20\u0e32\u0e29\u0e35\u0e44\u0e14\u0e49\u0e17\u0e31\u0e19\u0e17\u0e35',
+        text: '\u0e2a\u0e34\u0e49\u0e19\u0e1b\u0e35\u0e07\u0e1a\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 \u2014 \u0e43\u0e0a\u0e49\u0e2a\u0e34\u0e17\u0e18\u0e34\u0e4c\u0e07\u0e1a\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d \u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e14\u0e48\u0e27\u0e19 ออกใบเสนอราคา+ใบเสร็จรับเงินได้ทันที',
         linkText: '\u0e17\u0e31\u0e01 LINE \u0e40\u0e25\u0e22',
         linkHref: QUOTE_LINE_URL
       };
@@ -984,7 +1012,7 @@
     return {
       cssClass: 'banner-default',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
-      text: '\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21 60 \u0e1a\u0e32\u0e17 \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e01\u0e33\u0e01\u0e31\u0e1a\u0e20\u0e32\u0e29\u0e35\u0e44\u0e14\u0e49',
+      text: '\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21 60 \u0e1a\u0e32\u0e17 ออกใบเสนอราคา+ใบเสร็จรับเงินได้',
       linkText: '\u0e17\u0e31\u0e01 LINE \u0e02\u0e2d\u0e43\u0e1a\u0e40\u0e2a\u0e19\u0e2d\u0e23\u0e32\u0e04\u0e32',
       linkHref: QUOTE_LINE_URL
     };
@@ -1039,7 +1067,7 @@
           "image": "https://eedhalal.com/img/khao-mok-box-opt.jpg",
           "address": {
             "@type": "PostalAddress",
-            "streetAddress": "478/3 \u0e16\u0e19\u0e19\u0e2a\u0e32\u0e17\u0e23 1 \u0e0b\u0e2d\u0e22 7 \u0e41\u0e02\u0e27\u0e07\u0e17\u0e38\u0e48\u0e07\u0e27\u0e31\u0e14 \u0e40\u0e02\u0e15\u0e2a\u0e32\u0e17\u0e23",
+            "streetAddress": "478/3 \u0e0b\u0e2d\u0e22\u0e40\u0e08\u0e23\u0e34\u0e0d\u0e23\u0e32\u0e29\u0e0e\u0e23\u0e4c 1 \u0e41\u0e02\u0e27\u0e07\u0e22\u0e32\u0e19\u0e19\u0e32\u0e27\u0e32 \u0e40\u0e02\u0e15\u0e2a\u0e32\u0e17\u0e23",
             "addressLocality": "\u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e\u0e21\u0e2b\u0e32\u0e19\u0e04\u0e23",
             "postalCode": "10120",
             "addressCountry": "TH"
@@ -1069,7 +1097,7 @@
               "name": "\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33\u0e01\u0e35\u0e48\u0e01\u0e25\u0e48\u0e2d\u0e07?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33 10 \u0e01\u0e25\u0e48\u0e2d\u0e07\u0e02\u0e36\u0e49\u0e19\u0e44\u0e1b \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e17\u0e35\u0e48 60 \u0e1a\u0e32\u0e17/\u0e01\u0e25\u0e48\u0e2d\u0e07 \u0e2a\u0e31\u0e48\u0e07 50 \u0e01\u0e25\u0e48\u0e2d\u0e07\u0e02\u0e36\u0e49\u0e19\u0e44\u0e1b\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e1f\u0e23\u0e35\u0e17\u0e31\u0e48\u0e27\u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e\u0e2e\u0e2f"
+                "text": "\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33 10 \u0e01\u0e25\u0e48\u0e2d\u0e07\u0e02\u0e36\u0e49\u0e19\u0e44\u0e1b \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e17\u0e35\u0e48 60 \u0e1a\u0e32\u0e17/\u0e01\u0e25\u0e48\u0e2d\u0e07 ส่งฟรีตามเขต กรุงเทพชั้นใน 50+ กล่อง สุขุมวิท/ลาดพร้าว 75+ กล่อง รอบนอก 100+ กล่อง"
               }
             },
             {
@@ -1077,12 +1105,12 @@
               "name": "EED HALAL \u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e16\u0e36\u0e07\u0e1e\u0e37\u0e49\u0e19\u0e17\u0e35\u0e48\u0e44\u0e2b\u0e19\u0e1a\u0e49\u0e32\u0e07?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "EED HALAL \u0e43\u0e2b\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07\u0e17\u0e31\u0e48\u0e27\u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e\u0e2f \u0e41\u0e25\u0e30\u0e1b\u0e23\u0e34\u0e21\u0e13\u0e11\u0e25 \u0e04\u0e23\u0e2d\u0e1a\u0e04\u0e25\u0e38\u0e21\u0e22\u0e48\u0e32\u0e19\u0e18\u0e38\u0e23\u0e01\u0e34\u0e08\u0e2b\u0e25\u0e31\u0e01 \u0e44\u0e14\u0e49\u0e41\u0e01\u0e48 \u0e2a\u0e32\u0e17\u0e23-\u0e2a\u0e35\u0e25\u0e21 \u0e2a\u0e38\u0e02\u0e38\u0e21\u0e27\u0e34\u0e17 \u0e1e\u0e23\u0e30\u0e23\u0e32\u0e21 3 \u0e25\u0e32\u0e14\u0e1e\u0e23\u0e49\u0e32\u0e27 \u0e41\u0e25\u0e30\u0e2d\u0e35\u0e01\u0e21\u0e32\u0e01\u0e21\u0e32\u0e22"
+                "text": "EED HALAL \u0e43\u0e2b\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07ทั่วกรุงเทพฯ ครอบคลุม\u0e22\u0e48\u0e32\u0e19\u0e18\u0e38\u0e23\u0e01\u0e34\u0e08\u0e2b\u0e25\u0e31\u0e01 \u0e44\u0e14\u0e49\u0e41\u0e01\u0e48 \u0e2a\u0e32\u0e17\u0e23-\u0e2a\u0e35\u0e25\u0e21 \u0e2a\u0e38\u0e02\u0e38\u0e21\u0e27\u0e34\u0e17 \u0e1e\u0e23\u0e30\u0e23\u0e32\u0e21 3 \u0e25\u0e32\u0e14\u0e1e\u0e23\u0e49\u0e32\u0e27 \u0e41\u0e25\u0e30\u0e2d\u0e35\u0e01\u0e21\u0e32\u0e01\u0e21\u0e32\u0e22"
               }
             },
             {
               "@type": "Question",
-              "name": "EED HALAL \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e01\u0e33\u0e01\u0e31\u0e1a\u0e20\u0e32\u0e29\u0e35\u0e44\u0e14\u0e49\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?",
+              "name": "EED HALAL ออกใบเสนอราคา+ใบเสร็จรับเงินได้\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?",
               "acceptedAnswer": {
                 "@type": "Answer",
                 "text": "EED HALAL \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e40\u0e2a\u0e19\u0e2d\u0e23\u0e32\u0e04\u0e32\u0e41\u0e25\u0e30\u0e43\u0e1a\u0e40\u0e2a\u0e23\u0e47\u0e08\u0e23\u0e31\u0e1a\u0e40\u0e07\u0e34\u0e19\u0e41\u0e1a\u0e1a\u0e18\u0e23\u0e23\u0e21\u0e14\u0e32\u0e43\u0e2b\u0e49\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 \u0e17\u0e32\u0e07\u0e23\u0e49\u0e32\u0e19\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e08\u0e14\u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19 VAT \u0e23\u0e32\u0e04\u0e32\u0e17\u0e35\u0e48\u0e40\u0e2a\u0e19\u0e2d\u0e44\u0e21\u0e48\u0e23\u0e27\u0e21 VAT 7%"

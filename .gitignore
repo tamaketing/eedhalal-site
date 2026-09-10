@@ -4,3 +4,21 @@ nul
 Thumbs.db
 .opencode/
 tmp-preview/
+
+# Local browser profiles and visual test artifacts are not source assets.
+tmp-chrome-profile/
+tmp-*.png
+
+# Never commit credentials, n8n execution payloads, or customer leads.
+.env
+.env.*
+!.env.example
+leads/*
+!leads/.gitkeep
+line-ai/execution-*.json
+line-ai/*workflow-export*.json
+line-ai/*.sqlite
+line-ai/*.sqlite-*
+line-ai/*.db
+line-ai/*.db-*
+line-ai/*.log

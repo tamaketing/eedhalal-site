@@ -1,0 +1,39 @@
+{
+  "richMenu": {
+    "name": "EED HALAL main",
+    "chatBarText": "เมนู EED HALAL",
+    "selected": true,
+    "size": { "width": 2500, "height": 843 },
+    "areas": [
+      {
+        "bounds": { "x": 0, "y": 0, "width": 625, "height": 843 },
+        "action": { "type": "uri", "label": "ดูเมนู", "uri": "https://eedhalal.com/popular-menu.html" }
+      },
+      {
+        "bounds": { "x": 625, "y": 0, "width": 625, "height": 843 },
+        "action": { "type": "uri", "label": "คำนวณงบ", "uri": "https://eedhalal.com/budget-calculator.html" }
+      },
+      {
+        "bounds": { "x": 1250, "y": 0, "width": 625, "height": 843 },
+        "action": { "type": "uri", "label": "ขอใบเสนอราคา", "uri": "https://lin.ee/CfvqJTd" }
+      },
+      {
+        "bounds": { "x": 1875, "y": 0, "width": 625, "height": 843 },
+        "action": { "type": "message", "label": "คุยกับแอดมิน", "text": "ขอคุยกับแอดมินครับ" }
+      }
+    ]
+  },
+  "designNote": "ภาพ 2500x843 แบ่ง 4 ช่องเท่ากัน ข้อความ: ดูเมนู เริ่ม 60 | คำนวณงบ | ขอใบเสนอราคา 15 นาที | คุยกับแอดมิน อัปโหลดที่ LINE OA Manager > Rich Menu > Create (ไม่ต้องยิง API ก็ได้)",
+  "greetingMessage": "สวัสดีครับ EED HALAL ข้าวกล่องฮาลาล เริ่ม 60 บาท สั่ง 10+ กล่องครับ พิมพ์จำนวน+วันมาได้เลย หรือกดเมนูด้านล่างครับ",
+  "keywordReplies_FREE_LINE_ONLY": [
+    { "keyword": ["ราคา", "กี่บาท", "price"], "reply": "เมนูมาตรฐานเริ่ม 60 บาท/กล่องครับ เซ็ตพรีเมียม 180-250 บาท บอกจำนวน+งบมาเดี๋ยวช่วยจัดให้ครับ https://eedhalal.com/faq.html" },
+    { "keyword": ["ขั้นต่ำ", "สั่งกี่กล่อง"], "reply": "รับ 10+ กล่องครับ ไทย 5/เมนู อินเดีย 10/เมนู น้อยกว่านั้นสั่ง LINEMAN ได้ครับ https://eedhalal.com/faq.html" },
+    { "keyword": ["ส่งฟรี", "ค่าส่ง"], "reply": "ส่งฟรีตามเขตครับ ชั้นใน 50+ สุขุมวิท/ลาดพร้าว 75+ รอบนอก 100+ บอกเขตมาเดี๋ยวเช็กให้ครับ https://eedhalal.com/delivery-area.html" },
+    { "keyword": ["ฮาลาล", "halal", "CICOT"], "reply": "มี CICOT HL-2024-0892 ครับ ขอสำเนาทาง LINE นี้ได้เลย https://eedhalal.com/halal-cert.html" },
+    { "keyword": ["บิล", "VAT", "ใบกำกับ", "invoice"], "reply": "ออกใบเสนอราคา+ใบเสร็จธรรมดาได้ครับ ออก VAT ไม่ได้ครับ (ยังไม่จด VAT) แจ้งชื่อบริษัท+ที่อยู่มาได้เลยครับ" },
+    { "keyword": ["ด่วน", "พรุ่งนี้"], "reply": "เคสด่วนต้องยืนยันก่อน 15:00 วันนี้ครับ บอกจำนวน+เมนู+จุดส่งมาด่วนเลยครับ" },
+    { "keyword": ["บุฟเฟต์", "buffet"], "reply": "บุฟเฟต์ 100+ คน หัวละ 180-350 มีทีมหน้างานครับ บอกจำนวน+งบ/หัว+วันมาได้เลย https://eedhalal.com/buffet.html" },
+    { "keyword": ["snack", "ของว่าง", "coffee break"], "reply": "Snack Box เริ่ม 40 บาท ขั้นต่ำ 50 กล่องครับ บอกจำนวน+งบมาได้เลย https://eedhalal.com/snack-box.html" },
+    { "keyword": ["แอดมิน", "คน", "ติดต่อ"], "reply": "รับเรื่องครับ ทีมตอบ จ-ส 08:00-18:00 ฝากเบอร์ไว้ได้เลย หรือทัก https://lin.ee/CfvqJTd ครับ" }
+  ]
+}

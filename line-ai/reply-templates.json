@@ -1,0 +1,36 @@
+{
+  "quickReplyAfterAI": {
+    "items": [
+      { "type": "action", "action": { "type": "message", "label": "ขอใบเสนอราคา", "text": "ขอใบเสนอราคาครับ จำนวน 30 กล่อง งบ 70/หัว ส่งวันที่..." } },
+      { "type": "action", "action": { "type": "uri", "label": "คำนวณงบเอง", "uri": "https://eedhalal.com/budget-calculator.html" } },
+      { "type": "action", "action": { "type": "message", "label": "คุยกับแอดมิน", "text": "ขอคุยกับแอดมินครับ" } }
+    ],
+    "howToUse": "ในโหนด Reply to LINE ของ n8n เพิ่ม quickReply นี้ต่อท้ายทุกคำตอบ AI เพื่อดันลูกค้าไปปิดยอด ไม่ต้องพิมพ์เอง"
+  },
+  "flexQuoteCard": {
+    "type": "flex",
+    "altText": "สรุปbriefส่งทีม EED HALAL",
+    "contents": {
+      "type": "bubble",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          { "type": "text", "text": "EED HALAL — สรุปเพื่อขอใบเสนอราคา", "weight": "bold", "size": "md" },
+          { "type": "text", "text": "จำนวน: {qty} กล่อง | งบ: {budget}/หัว", "size": "sm", "margin": "md" },
+          { "type": "text", "text": "วันส่ง: {date} | เขต: {zone}", "size": "sm" },
+          { "type": "text", "text": "เริ่ม 60 บาท ขั้นต่ำ 10 กล่อง ส่งฟรีตามเขต 50/75/100+", "size": "xs", "color": "#888888", "wrap": true, "margin": "md" }
+        ]
+      },
+      "footer": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          { "type": "button", "style": "primary", "action": { "type": "uri", "label": "ส่งให้ทีมทาง LINE", "uri": "https://lin.ee/CfvqJTd" } },
+          { "type": "button", "style": "secondary", "action": { "type": "uri", "label": "ดูเมนู", "uri": "https://eedhalal.com/popular-menu.html" } }
+        ]
+      }
+    }
+  },
+  "n8nHumanHandoff": "ถ้า AI ตอบ fallback (ไม่มีข้อมูล) หรือลูกค้าพิมพ์ 'แอดมิน' ให้ n8n ส่ง Flex นี้ + แจ้งเตือนเข้ากลุ่ม LINE แอดมินด้วย Push message (อันนี้ถึงจะกินโควต้า 300/เดือน แต่ใช้เฉพาะเคสต้องคนตอบ คุ้ม)"
+}
