@@ -3,13 +3,14 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const [calculatorHtml, popularHtml, snackHtml, popularSource, snackHydrateSource, snackBuilderSource] = await Promise.all([
+const [calculatorHtml, popularHtml, snackHtml, popularSource, snackHydrateSource, snackBuilderSource, plannerSource] = await Promise.all([
   readFile(new URL('../budget-calculator.html', import.meta.url), 'utf8'),
   readFile(new URL('../popular-menu.html', import.meta.url), 'utf8'),
   readFile(new URL('../snack-box.html', import.meta.url), 'utf8'),
   readFile(new URL('../js/popular-menu-hydrate.js', import.meta.url), 'utf8'),
   readFile(new URL('../js/snack-hydrate.js', import.meta.url), 'utf8'),
   readFile(new URL('../js/snack-builder.js', import.meta.url), 'utf8'),
+  readFile(new URL('../js/budget-planner.js', import.meta.url), 'utf8'),
 ]);
 
 function element(id) {
@@ -91,14 +92,14 @@ test('snack box hydrates menus and renders delivery-zone choices', () => {
     EED_SNACK_CATEGORIES: [{ id: 'sweet', emoji: '*', label: 'ของหวาน' }],
     EED_SNACK_ADDONS: [{ id: 'water', name: 'น้ำเปล่า', emoji: '*', price: 0 }],
     EED_SNACK_BASE_PRICE: 40,
-    EED_SNACK_MIN_ORDER: 50,
+    EED_SNACK_MIN_ORDER: 30,
   });
   vm.runInNewContext(snackHydrateSource, context);
 
   assert.equal(elements.snackFullMenu.getAttribute('data-hydrated'), 'true');
   assert.match(elements.snackFullMenu.innerHTML, /บราวนี่/);
   assert.equal(elements.snackBasePrice.textContent, '40');
-  assert.equal(elements.snackMinOrder.textContent, '50');
+  assert.equal(elements.snackMinOrder.textContent, '30');
 });
 
 test('snack box builder updates summary in a browser-like context', () => {
@@ -121,10 +122,28 @@ test('snack box builder updates summary in a browser-like context', () => {
   vm.runInNewContext(snackBuilderSource, context);
 
   assert.match(elements.sbDeliveryZone.innerHTML, /zone_1/);
-  assert.equal(elements.sbSumQty.textContent, '50');
+  assert.equal(elements.sbSumQty.textContent, '30');
   assert.match(elements.sbSumShip.textContent, /เลือกเขต/);
   elements.sbQtyInc.dispatch('click');
-  assert.equal(elements.sbSumQty.textContent, '55');
+  assert.equal(elements.sbSumQty.textContent, '35');
+});
+
+test('planner applies local menu overrides without authentication or browser dependencies', () => {
+  const stored = new Map([
+    ['eed_selling_v1', JSON.stringify({ 1: 85 })],
+    ['eed_mins_v1', JSON.stringify({ 1: 8 })],
+  ]);
+  const { context, elements } = browserContext(['plannerApp', 'priceTableBody', 'statCount', 'statCat', 'statRange', 'statLast', 'globalToppingsList', 'meatsList', 'snackTableBody'], {
+    EED_MENUS: [{ id: 1, name: 'เมนูทดสอบ', price: 60, category: 'ข้าวราดแกง', image: 'img/test.jpg', minPerMenu: 5 }],
+    EED_DEFAULT_TOPPINGS: [],
+    EED_SNACK_MENUS: [],
+    localStorage: { getItem(key) { return stored.get(key) ?? null; }, setItem(key, value) { stored.set(key, value); }, removeItem(key) { stored.delete(key); } },
+  });
+  vm.runInNewContext(plannerSource, context);
+
+  assert.equal(elements.plannerApp.style.display, 'block');
+  assert.equal(context.EED_MENUS[0].price, 85);
+  assert.equal(context.EED_MENUS[0].minPerMenu, 8);
 });
 
 test('public pages load their browser enhancers after shared data scripts', () => {

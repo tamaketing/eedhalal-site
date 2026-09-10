@@ -8,9 +8,6 @@
   var LS_SELLING = 'eed_selling_v1';
   var LS_MINS = 'eed_mins_v1';
   var LS_TOPPINGS = 'eed_toppings_v1';
-  var LS_SHIP_ZONES = 'eed_ship_zones_v1';
-  var LS_SHIP_ZONES_OVERRIDE = 'eed_ship_zones_override_v1';
-  var LS_SHIP_FREE = 'eed_ship_free_v1';
   var LS_IMAGES = 'eed_images_v1';
   var LS_NAMES = 'eed_names_v1';
   var LS_CATEGORIES = 'eed_categories_v1';
@@ -22,12 +19,7 @@
 
   /* ── Zone lookup ── */
   function getShippingZones(){
-    // 1) planner override (moto/car/districts object) saved to localStorage
-    try{
-      var saved = JSON.parse(localStorage.getItem(LS_SHIP_ZONES_OVERRIDE)||'null');
-      if(saved && typeof saved === 'object' && Object.keys(saved).length) return saved;
-    }catch(e){}
-    // 2) fallback to business-data.js default
+    // Delivery policy is generated from data/business-rules.json.
     if(typeof EED !== 'undefined' && EED.shippingZones) return EED.shippingZones;
     return {};
   }
@@ -82,10 +74,6 @@
   }
   function getFreeThreshold(zone){
     var fallback = 50;
-    try{
-      var v = localStorage.getItem(LS_SHIP_FREE);
-      if(v!==null) fallback = parseInt(v,10)||50;
-    }catch(e){}
     if(typeof EED !== 'undefined' && EED.freeDeliveryFrom) fallback = parseInt(EED.freeDeliveryFrom,10)||fallback;
     if(typeof EED !== 'undefined' && EED.shippingZoneFreeThresholds && zone){
       var t = EED.shippingZoneFreeThresholds[zone];
@@ -134,10 +122,6 @@
         else window.EED_DEFAULT_MEATS = data.meats.slice();
       }
       if(Array.isArray(data.noMeatMenus)) localStorage.setItem(LS_NO_MEAT, JSON.stringify(data.noMeatMenus));
-      if(Array.isArray(data.shipZones)) localStorage.setItem(LS_SHIP_ZONES, JSON.stringify(data.shipZones));
-      else if(data.shipZones && typeof data.shipZones==='object') localStorage.setItem(LS_SHIP_ZONES_OVERRIDE, JSON.stringify(data.shipZones));
-      if(data.shipFree!==undefined) localStorage.setItem(LS_SHIP_FREE, String(data.shipFree));
-      if(data.shipZoneFreeThresholds && typeof EED !== 'undefined') EED.shippingZoneFreeThresholds = data.shipZoneFreeThresholds;
     }catch(e){}
   }
   function loadLocalOverrides(){
@@ -145,9 +129,6 @@
       var p = JSON.parse(localStorage.getItem(LS_SELLING)||'null');
       var mns = JSON.parse(localStorage.getItem(LS_MINS)||'null');
       var tops = JSON.parse(localStorage.getItem(LS_TOPPINGS)||'null');
-      var shipZ = JSON.parse(localStorage.getItem(LS_SHIP_ZONES)||'null');
-      var shipZNew = JSON.parse(localStorage.getItem(LS_SHIP_ZONES_OVERRIDE)||'null');
-      var shipF = localStorage.getItem(LS_SHIP_FREE);
       var imgs = JSON.parse(localStorage.getItem(LS_IMAGES)||'null');
       var nms = JSON.parse(localStorage.getItem(LS_NAMES)||'null');
       var cats = JSON.parse(localStorage.getItem(LS_CATEGORIES)||'null');
@@ -166,9 +147,6 @@
       if(meats) data.meats=meats;
       if(noMeat) data.noMeatMenus=noMeat;
       if(tops) data.toppings=tops;
-      if(shipZ) data.shipZones=shipZ;
-      else if(shipZNew && typeof shipZNew==='object' && Object.keys(shipZNew).length) data.shipZones=shipZNew;
-      if(shipF!==null) data.shipFree=parseInt(shipF,10);
       if(Object.keys(data).length) applyOverrides(data);
     }catch(e){}
   }
@@ -407,7 +385,7 @@
     // free / shipping label in top stat
     if(els.summaryFree){
       if(freeDelivery){
-        els.summaryFree.textContent = 'ส่งฟรีทั่วกรุงเทพฯ';
+        els.summaryFree.textContent = 'ส่งฟรีตามเขตที่เลือก';
         els.summaryFree.style.color = 'var(--primary)';
       } else {
         var rawDistrict2 = state.district ? String(state.district).trim() : '';
@@ -847,7 +825,7 @@
       lines.push('• ค่าอาหาร (ประมาณการ): ' + formatMoney(foodTotal) + ' บาท');
     }
     if(freeDelivery){
-      lines.push('• ค่าจัดส่ง: ฟรี (ครบ ' + formatMoney(freeFrom) + ' กล่อง ส่งฟรีทั่วกรุงเทพฯ)');
+      lines.push('• ค่าจัดส่ง: ฟรี (ครบ ' + formatMoney(freeFrom) + ' กล่องตามเขตที่เลือก)');
     } else {
       if(state.shippingMode === 'auto'){
         lines.push('• ค่าจัดส่ง: คิดตามระยะทาง (ฟรีเมื่อครบ ' + formatMoney(freeFrom) + ' กล่อง)');

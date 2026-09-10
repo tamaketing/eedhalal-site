@@ -1,9 +1,9 @@
 /* EED HALAL — Snack Box Data
  * Static snack menu data for snack-box.html
- * Override from planner via planner-overrides.json or localStorage
+ * Catalog entries may be overridden by the planner; business minimums are canonical.
  */
 var EED_SNACK_BASE_PRICE = 40; // บาท/กล่อง (fixed)
-var EED_SNACK_MIN_ORDER = 50;  // กล่อง (fixed)
+var EED_SNACK_MIN_ORDER = 30;  // กล่อง (generated from business-rules.json)
 
 /* Categories */
 var EED_SNACK_CATEGORIES = [

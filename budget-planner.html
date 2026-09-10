@@ -177,7 +177,7 @@
         <div class="planner-card">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
             <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0">🍪 Snack Box — เมนูเบเกอรี่</h2>
-            <span style="font-size:.75rem;color:var(--text-muted)">ขั้นต่ำ 50 กล่อง · ราคา/ชื่อแก้ได้</span>
+            <span style="font-size:.75rem;color:var(--text-muted)">ขั้นต่ำ 30 กล่อง · ราคา/ชื่อแก้ได้</span>
           </div>
           <div style="margin-top:.5rem;font-size:.75rem;color:var(--text-muted);line-height:1.6">ข้อมูลจาก <code>js/snack-data.js</code> · หน้า <a href="snack-box.html" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline">snack-box.html</a> จะอัปเดตจาก overrides อัตโนมัติ</div>
           <div class="price-table-wrap" style="margin-top:.85rem">
@@ -226,47 +226,6 @@
       </div>
     </section>
 
-    <!-- Ship zones -->
-    <section class="section section-sand" style="padding-top:1.25rem">
-      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
-        <div class="planner-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-            <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0">ค่าส่งตามเขต — แก้ราคา/เขตได้</h2>
-            <span style="font-size:.75rem;color:var(--text-muted)">แก้ที่นี่ → หน้าเว็บลูกค้า (budget-calculator) อ่านค่าอัตโนมัติ</span>
-          </div>
-          <div style="margin-top:.85rem;display:flex;gap:.75rem;align-items:end;flex-wrap:wrap;background:var(--bg);border:1px solid var(--border-light);border-radius:12px;padding:.85rem 1rem">
-            <div>
-              <label style="font-size:.78rem;font-weight:800;color:var(--primary)">ส่งฟรีเมื่อกี่กล่องขึ้นไป</label>
-              <div style="display:flex;align-items:center;gap:.4rem;margin-top:.35rem">
-                <input id="shipFreeThreshold" type="number" min="1" max="500" step="1" value="50" style="width:84px;height:40px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary)">
-                <span style="font-weight:800;color:var(--text-muted)">กล่อง</span>
-              </div>
-            </div>
-            <div style="font-size:.72rem;color:var(--text-muted);max-width:320px;line-height:1.5">ค่า fallback ถ้าเขตไม่มีกำหนดเอง · ตอนนี้แต่ละเขตกำหนดต่างกันในคอลัมน์ "ส่งฟรีเมื่อ"</div>
-            <div style="margin-left:auto;display:flex;gap:.5rem;flex-wrap:wrap">
-              <button id="addShipZone" class="btn btn-outline btn-sm" type="button">+ เพิ่มโซน</button>
-              <button id="resetShipZones" class="btn btn-outline btn-sm" type="button">รีเซ็ตโซนเริ่มต้น</button>
-            </div>
-          </div>
-          <div class="price-table-wrap" style="margin-top:.85rem">
-            <table class="price-table">
-              <thead>
-                <tr>
-                  <th style="text-align:left;padding-left:.9rem">โซน (id)</th>
-                  <th>มอเตอร์ไซด์ (บาท) <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">≤40 กล่อง</span></th>
-                  <th>รถยนต์ (บาท) <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">&gt;40 กล่อง</span></th>
-                  <th>เขต/อำเภอในโซน <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">คั่นด้วย ,</span></th>
-                  <th>ส่งฟรีเมื่อ <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">(กล่อง) · 0 = ไม่มี</span></th>
-                  <th style="width:80px">ลบ</th>
-                </tr>
-              </thead>
-              <tbody id="shipZoneBody"></tbody>
-            </table>
-          </div>
-          <div style="margin-top:.65rem;font-size:.72rem;color:var(--text-muted);line-height:1.6">แก้ค่าส่งบันทึกลงเครื่องอัตโนมัติ — เมื่อพร้อมขึ้นเว็บ ให้กดปุ่ม <b>ดาวน์โหลดไฟล์ Deploy</b> แล้วนำ <code>planner-overrides.json</code> ไปแทนไฟล์ในโฟลเดอร์ <code>data/</code> แล้ว Commit/Push (หน้าเว็บลูกค้าอ่านค่าส่งจากไฟล์นี้แทนค่าปริยายใน <code>business-data.js</code>) · ราคามอเตอร์ไซด์ใช้เมื่อ ≤40 กล่อง, รถยนต์ใช้เมื่อ &gt;40 กล่อง</div>
-        </div>
-      </div>
-    </section>
 
     <section class="section section-dark" style="padding:2rem 0">
       <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem;text-align:center;position:relative;z-index:1">

@@ -8,7 +8,7 @@ EED HALAL (eedhalal) is a Bangkok ข้าวกล่องฮาลาล bra
 - Founder / owner: Chef and founder Eed (พี่อี๊ด), carrying on family recipes of 40+ years
 - Business type: halal restaurant / meal boxes, office delivery, and catering for organizations
 - Address: 478/3 Soi Charoen Rat 1, Yan Nawa, Sathorn, Bangkok 10120
-- Service area: Bangkok; free delivery by zone (50–100+ boxes depending on area); locations outside Bangkok are quoted case by case
+- Service area: Bangkok; Free delivery by zone: zone 1 50+ boxes, zone 2 75+ boxes, zone 3 75+ boxes, zone 4 100+ boxes; zone 5 has no free delivery; locations outside Bangkok are quoted case by case
 - Halal certification: CICOT certificate no. HL-2024-0892
 - Operating hours: Monday-Saturday 08:00-18:00 (closed Sunday)
 - Contact: LINE @EEDHALAL (https://lin.ee/CfvqJTd), phone +66 98 871 5179, Facebook page
@@ -58,7 +58,7 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 
 ## Services
 1. Corporate meal box orders for meetings, seminars, and internal events (10+ boxes, 60 THB/box, 5/10 per menu)
-2. Snack Box & Coffee Break halal sets (40 THB/box, minimum 50 boxes, snack+drink/fruit, builder)
+2. Snack Box & Coffee Break halal sets (40 THB/box, minimum 30 boxes, snack+drink/fruit, builder)
 3. Halal buffet catering 100–500+ guests (9 categories, line team, per-head 180-350 THB, 7-14 days lead time)
 4. Catering and Live Cooking Station halal packages
 5. Quotation and menu planning support for procurement, HR, and coordinators
@@ -72,12 +72,12 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 5. For next-day corporate orders, confirm quantity, menu, delivery time, and delivery point by 15:00 on the business day before delivery
 
 ## Bulk Order Facts
-- The website is designed around organization-ready orders: meal boxes 10+ boxes (60 THB/box), Snack Box 50+ boxes (40 THB/box), buffet 100–500+ guests.
+- The website is designed around organization-ready orders: meal boxes 10+ boxes (60 THB/box), Snack Box 30+ boxes (40 THB/box), buffet 100–500+ guests.
 - Typical use cases include meetings, seminars, staff training, internal company events, team catering, coffee breaks, and buffet receptions.
-- Per-menu minimums apply for meal boxes: 5 boxes per Thai menu, 10 boxes per Indian menu. Snack Box: minimum 50 boxes per order.
+- Per-menu minimums apply for meal boxes: 5 boxes per Thai menu, 10 boxes per Indian menu. Snack Box: minimum 30 boxes per order.
 - Standard meal boxes start at 60 THB per box; premium sets range from 180-250 THB; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet per head approx 180-350 THB depending on 9 categories and guest count.
-- Free delivery by zone: inner Bangkok 50+ boxes, Sukhumvit/Lat Phrao 75+ boxes, outer Bangkok 100+ boxes according to the FAQ (Snack Box same zone thresholds).
-- 10-50 box corporate meal box orders should usually be placed 2-3 business days in advance; Snack Box 50-100 boxes 2-3 days; buffet 100-200 guests 7-14 days, 300+ guests 2 weeks.
+- Free delivery is determined by the delivery-address district: zone 1 50+ boxes, zones 2 and 3 75+ boxes, zone 4 100+ boxes, and zone 5 has no free delivery. For a neighbourhood, road, building, or landmark, request the address or location before confirming eligibility.
+- 10-50 box corporate meal box orders should usually be placed 2-3 business days in advance; Snack Box 51–100 boxes 2-3 days; buffet 100-200 guests 7-14 days, 300+ guests 2 weeks.
 - 50+ box or multi-menu meal box orders should usually be booked 5-7 days in advance.
 - Order details should be confirmed by 15:00 on the business day before delivery.
 - Quantity changes are normally accepted until 15:00 on the business day before delivery.
@@ -95,10 +95,10 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - Single-box users should be guided away from the bulk-order flow and toward delivery apps run by the store.
 
 ## Answer-Engine Friendly Facts
-- Minimum order for the corporate website flow: meal boxes 10+ boxes, Snack Box 50+ boxes, buffet 100+ guests
+- Minimum order for the corporate website flow: meal boxes 10+ boxes, Snack Box 30+ boxes, buffet 100+ guests
 - Starting price: standard meal boxes 60 THB/box, Snack Box 40 THB/box, buffet per head 180-350 THB
 - Free delivery threshold by zone: 50–100+ boxes (meal boxes and Snack Box same)
-- Standard lead time: meal boxes 10-50 boxes 2-3 business days, Snack Box 50-100 boxes 2-3 days, buffet 100-200 guests 7-14 days
+- Standard lead time: meal boxes 10-50 boxes 2-3 business days, Snack Box 51–100 boxes 2-3 days, buffet 100-200 guests 7-14 days
 - Cutoff for next-day order confirmation and quantity changes: 15:00 on the business day before delivery
 - VAT status: quoted prices do not include VAT 7%; EED HALAL is not VAT-registered
 - Procurement documents: quotation and regular receipt are supported (no VAT tax invoice)
@@ -150,7 +150,7 @@ EED HALAL is a Bangkok-based ข้าวกล่องฮาลาล and cate
 - Every HTML page (TH + EN) includes `<link rel="llms.txt" href="/llms.txt">` in `<head>`.
 - JSON-LD structured data:
   - `index.html` — `FoodEstablishment.makesOffer` with `"price": "60"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"` + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"`
-  - `snack-box.html` — `Service` with `Offer` `"price": "40"` + `HowTo` + `FAQPage` (9 Q) for Snack Box 50+ boxes
+  - `snack-box.html` — `Service` with `Offer` `"price": "40"` + `HowTo` + `FAQPage` (9 Q) for Snack Box 30+ boxes
   - `buffet.html` — `Service` with `AggregateOffer` `"lowPrice": "180"`, `"highPrice": "350"` + `HowTo` + `FAQPage` (6 Q) for 100-500+ guests
   - `popular-menu.html` — `MenuItem[].offers` with per-item prices
   - `faq.html` — `FAQPage` with full Q&A for price, minimum, VAT, delivery, lead time

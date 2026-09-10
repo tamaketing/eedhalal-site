@@ -16,7 +16,7 @@
 
   /* ─── State ─── */
   var state = {
-    quantity: 50,
+    quantity: 30,
     savory: [],   // selected savory ids (optional, +40baht each)
     sweet: [],    // selected sweet ids (max 1)
     juice: [],    // selected juice ids (max 1)
@@ -76,6 +76,10 @@
     var carMin=typeof EED!=='undefined' ? parseInt(EED.shippingCarMinQty,10)||40 : 40;
     var fee=state.quantity>carMin ? Number(zone.car)||0 : Number(zone.moto)||0;
     return {fee:fee,text:fee.toLocaleString('th-TH')+' บาท',unknown:false};
+  }
+
+  function getMinimumOrder(){
+    return typeof EED !== 'undefined' && EED.snackMinOrder ? parseInt(EED.snackMinOrder,10) || 30 : 30;
   }
 
   function renderDeliveryZones(){
@@ -224,8 +228,8 @@
     if(!num) return;
 
     function setQty(v){
-      v = parseInt(v,10)||50;
-      if(v<50) v=50;
+      v = parseInt(v,10)||getMinimumOrder();
+      if(v<getMinimumOrder()) v=getMinimumOrder();
       if(v>1000) v=1000;
       state.quantity = v;
       num.value = v;
@@ -233,6 +237,9 @@
       updateSummary();
     }
 
+    num.min = getMinimumOrder();
+    if(range) range.min = getMinimumOrder();
+    setQty(state.quantity);
     num.addEventListener('change', function(){ setQty(this.value); });
     if(range) range.addEventListener('input', function(){ setQty(this.value); });
     if(dec) dec.addEventListener('click', function(){ setQty(state.quantity-5); });

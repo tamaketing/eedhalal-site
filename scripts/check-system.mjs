@@ -18,9 +18,11 @@ async function loadLegacyData(root = ROOT) {
   vm.createContext(context);
   vm.runInContext(await readFile(path.join(root, 'js/business-data.js'), 'utf8'), context);
   vm.runInContext(await readFile(path.join(root, 'js/menu-data.js'), 'utf8'), context);
+  vm.runInContext(await readFile(path.join(root, 'js/snack-data.js'), 'utf8'), context);
   return {
     business: JSON.parse(JSON.stringify(context.EED)),
     menus: JSON.parse(JSON.stringify(context.EED_MENUS)),
+    snackMinimumOrder: context.EED_SNACK_MIN_ORDER,
   };
 }
 
@@ -49,13 +51,13 @@ export function getEffectiveMenus(menus, catalog) {
 
 export function calculateShipping(rules, catalog, district, quantity) {
   assert.ok(Number.isInteger(quantity) && quantity > 0, 'quantity must be a positive integer');
-  const entry = Object.entries(catalog.shipZones).find(([, zone]) =>
+  const entry = Object.entries(rules.delivery.zones).find(([, zone]) =>
     zone.districts.some((item) => item.toLocaleLowerCase('th-TH') === district.trim().toLocaleLowerCase('th-TH')),
   );
   if (!entry) return { found: false, fee: null, isFree: false, zoneId: null };
 
   const [zoneId, zone] = entry;
-  const freeFrom = Number(catalog.shipZoneFreeThresholds[zoneId]) || null;
+  const freeFrom = Number(zone.freeFrom) || null;
   const isFree = freeFrom !== null && quantity >= freeFrom;
   const vehicle = quantity > rules.delivery.carWhenQuantityAbove ? 'car' : 'moto';
   return {
@@ -88,8 +90,8 @@ export function renderKnowledge(rules, catalog, menus) {
     .filter((menu) => menu.minPerMenu === meal.specialMenuMinimum)
     .map((menu) => menu.name)
     .join(', ');
-  const zoneLines = Object.entries(catalog.shipZones).map(([zoneId, zone]) => {
-    const freeFrom = Number(catalog.shipZoneFreeThresholds[zoneId]) || null;
+  const zoneLines = Object.entries(rules.delivery.zones).map(([zoneId, zone]) => {
+    const freeFrom = Number(zone.freeFrom) || null;
     const deliveryText = freeFrom
       ? `ส่งฟรี ${freeFrom}+ กล่อง, ไม่ถึงเกณฑ์ มอเตอร์ไซค์ ${zone.moto} บาท รถยนต์ ${zone.car} บาท`
       : `ไม่มีส่งฟรี ต้องสอบถามก่อน ค่าส่งมอเตอร์ไซค์/รถยนต์ ${zone.moto}/${zone.car} บาท`;
@@ -101,7 +103,7 @@ export function renderKnowledge(rules, catalog, menus) {
     .join('\n');
 
   return `# EED HALAL - Knowledge Pack สำหรับ LINE AI
-> GENERATED FILE: สร้างจาก data/business-rules.json + data/planner-overrides.json
+> GENERATED FILE: สร้างจาก data/business-rules.json + data/planner-overrides.json (catalog only)
 > Business rules revision: ${rules.revision} (schema ${rules.schemaVersion})
 > ห้ามแก้ไฟล์นี้โดยตรง ให้แก้ข้อมูลต้นทางแล้วรัน node scripts/check-system.mjs --write
 
@@ -222,7 +224,8 @@ function syncBusinessSource(source, rules, catalog) {
     minOrder: String(meal.minimumOrder),
     thaiMinPerMenu: String(meal.standardMenuMinimum),
     indianMinPerMenu: String(meal.specialMenuMinimum),
-    freeDeliveryFrom: String(catalog.shipFree),
+    snackMinOrder: String(rules.services.snackBox.minimumOrder),
+    freeDeliveryFrom: String(rules.delivery.freeThresholdDefault),
     menuCount: String(meal.menuCountFrom),
   };
   let synced = source;
@@ -251,8 +254,8 @@ function syncBusinessSource(source, rules, catalog) {
     synced = replaceValue(synced, pattern, `$1'${value}'`, field);
   }
 
-  const thresholds = Object.entries(catalog.shipZoneFreeThresholds)
-    .map(([zoneId, threshold]) => `    ${zoneId}: ${threshold}`)
+  const thresholds = Object.entries(rules.delivery.zones)
+    .map(([zoneId, zone]) => `    ${zoneId}: ${zone.freeFrom}`)
     .join(',\n');
   synced = replaceValue(
     synced,
@@ -260,7 +263,7 @@ function syncBusinessSource(source, rules, catalog) {
     `  shippingZoneFreeThresholds: {\n${thresholds}\n  },`,
     'shippingZoneFreeThresholds',
   );
-  const zones = Object.entries(catalog.shipZones)
+  const zones = Object.entries(rules.delivery.zones)
     .map(([zoneId, zone]) => `    ${zoneId}: ${JSON.stringify(zone)}`)
     .join(',\n');
   synced = replaceValue(
@@ -272,6 +275,15 @@ function syncBusinessSource(source, rules, catalog) {
   return `${synced.replace(/\r\n/g, '\n').replace(/\n*$/, '')}\n`;
 }
 
+function syncSnackSource(source, rules) {
+  return replaceValue(
+    source,
+    /(var EED_SNACK_MIN_ORDER = )\d+/,
+    `$1${rules.services.snackBox.minimumOrder}`,
+    'EED_SNACK_MIN_ORDER',
+  );
+}
+
 function assertUnique(values, message) {
   assert.equal(new Set(values).size, values.length, message);
 }
@@ -280,6 +292,7 @@ export function validateData(rules, catalog, legacy) {
   assert.equal(rules.schemaVersion, 1, 'unsupported business rules schema');
   assert.match(rules.revision, /^\d{4}-\d{2}-\d{2}$/, 'revision must use YYYY-MM-DD');
   assert.equal(rules.services.mealBox.minimumOrder, 10);
+  assert.equal(rules.services.snackBox.minimumOrder, 30, 'Snack Box minimum must be 30');
   assert.deepEqual(
     new Set(Object.values(catalog.mins)),
     new Set([rules.services.mealBox.standardMenuMinimum, rules.services.mealBox.specialMenuMinimum]),
@@ -287,8 +300,18 @@ export function validateData(rules, catalog, legacy) {
   );
 
   assertUnique(legacy.menus.map((menu) => menu.id), 'menu IDs must be unique');
-  const districts = Object.values(catalog.shipZones).flatMap((zone) => zone.districts);
+  assert.ok(Object.keys(rules.delivery.zones).length > 0, 'at least one delivery zone is required');
+  const districts = Object.values(rules.delivery.zones).flatMap((zone) => zone.districts);
   assertUnique(districts, 'a district cannot belong to multiple delivery zones');
+  for (const [zoneId, zone] of Object.entries(rules.delivery.zones)) {
+    assert.ok(Number.isInteger(zone.moto) && zone.moto >= 0, `${zoneId} motorcycle fee must be valid`);
+    assert.ok(Number.isInteger(zone.car) && zone.car >= 0, `${zoneId} car fee must be valid`);
+    assert.ok(Number.isInteger(zone.freeFrom) && zone.freeFrom >= 0, `${zoneId} free threshold must be valid`);
+    assert.ok(Array.isArray(zone.districts) && zone.districts.length > 0, `${zoneId} must contain districts`);
+  }
+  for (const field of ['shipZones', 'shipCarMinQty', 'shipFree', 'shipZoneFreeThresholds']) {
+    assert.equal(catalog[field], undefined, `planner catalog must not define business delivery policy: ${field}`);
+  }
 
   for (const menu of legacy.menus) {
     const id = String(menu.id);
@@ -309,17 +332,18 @@ export function validateData(rules, catalog, legacy) {
   assert.equal(Number(eed.minOrder), rules.services.mealBox.minimumOrder, 'minimum order drift');
   assert.equal(Number(eed.thaiMinPerMenu), rules.services.mealBox.standardMenuMinimum, 'standard menu minimum drift');
   assert.equal(Number(eed.indianMinPerMenu), rules.services.mealBox.specialMenuMinimum, 'special menu minimum drift');
+  assert.equal(Number(eed.snackMinOrder), rules.services.snackBox.minimumOrder, 'Snack Box minimum drift');
+  assert.equal(legacy.snackMinimumOrder, rules.services.snackBox.minimumOrder, 'Snack Box runtime minimum drift');
   assert.equal(Number(eed.shippingCarMinQty), rules.delivery.carWhenQuantityAbove, 'vehicle threshold drift');
-  assert.equal(catalog.shipCarMinQty, rules.delivery.carWhenQuantityAbove, 'catalog vehicle threshold drift');
   assert.equal(eed.halalCertificate, rules.business.halalCertificate, 'halal certificate drift');
   assert.equal(eed.confirmDeadlineTh, `${rules.cutoff.time} น. ของ${rules.cutoff.description}`, 'cutoff drift');
   assert.equal(eed.leadSmallTh, `${rules.leadTimes[0].minimumBusinessDays}–${rules.leadTimes[0].maximumBusinessDays} วันทำการ`, 'small lead time drift');
   assert.equal(eed.leadMediumTh, `${rules.leadTimes[1].minimumBusinessDays}–${rules.leadTimes[1].maximumBusinessDays} วันทำการ`, 'medium lead time drift');
   assert.equal(eed.leadLargeTh, `${rules.leadTimes[2].minimumWeeks}–${rules.leadTimes[2].maximumWeeks} สัปดาห์`, 'large lead time drift');
 
-  for (const [zoneId, zone] of Object.entries(catalog.shipZones)) {
+  for (const [zoneId, zone] of Object.entries(rules.delivery.zones)) {
     assert.deepEqual(eed.shippingZones[zoneId], zone, `${zoneId} delivery data drift`);
-    assert.equal(eed.shippingZoneFreeThresholds[zoneId], catalog.shipZoneFreeThresholds[zoneId], `${zoneId} free threshold drift`);
+    assert.equal(eed.shippingZoneFreeThresholds[zoneId], zone.freeFrom, `${zoneId} free threshold drift`);
   }
 }
 
@@ -347,6 +371,8 @@ async function writeGeneratedFiles(root = ROOT) {
   const menuPath = path.join(root, 'js/menu-data.js');
   const syncedMenuSource = syncMenuSource(await readFile(menuPath, 'utf8'), catalog);
   await writeFile(menuPath, syncedMenuSource, 'utf8');
+  const snackPath = path.join(root, 'js/snack-data.js');
+  await writeFile(snackPath, syncSnackSource(await readFile(snackPath, 'utf8'), rules), 'utf8');
   const { legacy } = await loadSystemData(root);
   const knowledge = renderKnowledge(rules, catalog, legacy.menus);
   await writeFile(path.join(root, 'line-ai/knowledge-pack.md'), knowledge, 'utf8');

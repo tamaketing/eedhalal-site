@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ORIGIN = 'https://eedhalal.com';
+const thaiAddressPolicy = 'ค่าจัดส่งและเงื่อนไขส่งฟรีขึ้นอยู่กับเขตของสถานที่จัดส่ง กรุณาระบุที่อยู่หรือพิกัดเพื่อเช็กค่าจัดส่ง';
 
 async function listHtml(directory, relative = '') {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -56,8 +57,17 @@ function getHreflangs(html) {
 }
 
 function jsonLdBodies(html) {
-  return [...html.matchAll(/<script\b(?=[^>]*\btype=["']application\/ld\+json["'])[^>]*>([\s\S]*?)<\/script>/gi)].map((match) => match[1].trim());
+  const activeHtml = html.replace(/<!--[\s\S]*?-->/g, '');
+  return [...activeHtml.matchAll(/<script\b(?=[^>]*\btype=["']application\/ld\+json["'])[^>]*>([\s\S]*?)<\/script>/gi)].map((match) => match[1].trim());
 }
+
+const localFaqBaselines = {
+  'ladprao.html': ['EED HALAL ส่งข้าวกล่องฮาลาลในลาดพร้าวฟรีไหม?', 'สั่งข้าวกล่องฮาลาลในลาดพร้าวขั้นต่ำกี่กล่อง?', 'EED HALAL มีใบรับรองฮาลาลหรือไม่?', 'ต้องสั่งข้าวกล่องฮาลาลล่วงหน้ากี่วัน?'],
+  'rama3.html': ['EED HALAL ส่งข้าวกล่องฮาลาลในพระราม 3 ฟรีไหม?', 'สั่งข้าวกล่องฮาลาลในพระราม 3 ขั้นต่ำกี่กล่อง?', 'EED HALAL มีใบรับรองฮาลาลหรือไม่?', 'ต้องสั่งข้าวกล่องฮาลาลล่วงหน้ากี่วัน?'],
+  'sathorn-silom.html': ['EED HALAL ส่งสาทร-สีลมฟรีไหม?', 'สั่งข้าวกล่องฮาลาลในสาทร-สีลมขั้นต่ำกี่กล่อง?', 'EED HALAL มีใบรับรองฮาลาลหรือไม่?', 'ต้องสั่งข้าวกล่องฮาลาลล่วงหน้ากี่วัน?'],
+  'silom.html': ['มีบริการข้าวกล่องฮาลาลส่งถึงออฟฟิศในสีลมไหม?', 'ข้าวกล่องฮาลาลสีลมราคาเริ่มต้นเท่าไหร่?', 'รับทำข้าวกล่องฮาลาลสำหรับประชุมไหม?', 'EED HALAL ส่งข้าวกล่องฮาลาลในสีลมฟรีไหม?', 'สั่งข้าวกล่องฮาลาลในสีลมขั้นต่ำกี่กล่อง?', 'EED HALAL มีใบรับรองฮาลาลหรือไม่?', 'ต้องสั่งข้าวกล่องฮาลาลล่วงหน้ากี่วัน?'],
+  'sukhumvit.html': ['EED HALAL ส่งข้าวกล่องฮาลาลในสุขุมวิทฟรีไหม?', 'สั่งข้าวกล่องฮาลาลในสุขุมวิทขั้นต่ำกี่กล่อง?', 'EED HALAL มีใบรับรองฮาลาลหรือไม่?', 'ต้องสั่งข้าวกล่องฮาลาลล่วงหน้ากี่วัน?'],
+};
 
 async function exists(relativePath) {
   try {
@@ -92,9 +102,33 @@ export async function checkPublicSite(root = ROOT) {
       if (hreflangs.th !== th || hreflangs.en !== en || hreflangs['x-default'] !== th) failures.push(`${file}: incomplete reciprocal hreflang links`);
     }
 
-    jsonLdBodies(html).forEach((body) => {
-      try { JSON.parse(body); } catch (error) { failures.push(`${file}: invalid JSON-LD (${error.message})`); }
+    const graphs = jsonLdBodies(html).flatMap((body) => {
+      try {
+        const parsed = JSON.parse(body);
+        return parsed['@graph'] ?? [parsed];
+      } catch (error) {
+        failures.push(`${file}: invalid JSON-LD (${error.message})`);
+        return [];
+      }
     });
+
+    if (localFaqBaselines[file]) {
+      const types = new Set(graphs.map((node) => node['@type']));
+      if (graphs.length !== 5) failures.push(`${file}: JSON-LD must contain exactly one copy of each required type`);
+      for (const type of ['Organization', 'WebPage', 'Service', 'BreadcrumbList', 'FAQPage']) {
+        if (!types.has(type)) failures.push(`${file}: JSON-LD is missing required ${type}`);
+      }
+      const faqs = graphs.filter((node) => node['@type'] === 'FAQPage');
+      if (faqs.length !== 1) failures.push(`${file}: must contain exactly one FAQPage`);
+      const questions = faqs[0]?.mainEntity ?? [];
+      if (questions.length !== localFaqBaselines[file].length || !questions.every((question, index) => question.name === localFaqBaselines[file][index])) {
+        failures.push(`${file}: FAQ JSON-LD does not match the baseline questions`);
+      }
+      if (questions.some((question) => question.acceptedAnswer?.text.includes('ส่งฟรี') && question.acceptedAnswer.text !== thaiAddressPolicy)) {
+        failures.push(`${file}: FAQ JSON-LD contains a non-canonical delivery answer`);
+      }
+      if (jsonLdBodies(html).some((body) => body.includes('priceValidUntil'))) failures.push(`${file}: JSON-LD must not include priceValidUntil`);
+    }
 
     banned.forEach((pattern) => { if (pattern.test(html)) failures.push(`${file}: contains obsolete claim ${pattern}`); });
 
@@ -124,6 +158,30 @@ export async function checkPublicSite(root = ROOT) {
   if (!thaiFaq.includes('พื้นที่นอกกรุงเทพฯ สอบถามเป็นรายกรณี') || !englishFaq.includes('outside Bangkok is quoted case by case')) failures.push('FAQ: outside-Bangkok policy is missing');
   if (!llms.includes('premium sets range from 180-250 THB') || !llms.includes('outside Bangkok are quoted case by case')) failures.push('llms.txt: customer facts are stale');
   if (!richMenu.includes('เซ็ตพรีเมียม 180-250 บาท')) failures.push('line-ai/rich-menu.json: premium-set reply is stale');
+
+  const rules = JSON.parse(await readFile(path.join(ROOT, 'data/business-rules.json'), 'utf8'));
+  const englishAddressPolicy = 'Delivery fees and free-delivery eligibility depend on the district of the delivery address. Please provide the address or location for confirmation.';
+  const thaiDelivery = `zone 1 ${rules.delivery.zones.zone_1.freeFrom}+ กล่อง, zone 2 ${rules.delivery.zones.zone_2.freeFrom}+ กล่อง, zone 3 ${rules.delivery.zones.zone_3.freeFrom}+ กล่อง, zone 4 ${rules.delivery.zones.zone_4.freeFrom}+ กล่อง, zone 5 ไม่มีส่งฟรี`;
+  const englishDelivery = `zone 1 ${rules.delivery.zones.zone_1.freeFrom}+ boxes, zone 2 ${rules.delivery.zones.zone_2.freeFrom}+ boxes, zone 3 ${rules.delivery.zones.zone_3.freeFrom}+ boxes, zone 4 ${rules.delivery.zones.zone_4.freeFrom}+ boxes; zone 5 has no free delivery`;
+  const llmsFull = await readFile(path.join(ROOT, 'llms-full.md'), 'utf8');
+  if (!thaiFaq.includes(thaiDelivery) || !englishFaq.includes(englishDelivery)) failures.push('FAQ: Thai and English delivery thresholds must match business rules');
+  if (!thaiFaq.includes('10–50 กล่อง') || !thaiFaq.includes('51–100 กล่อง') || !thaiFaq.includes('101+ กล่อง')) failures.push('FAQ: Thai lead-time ranges must be exclusive');
+  if (!englishFaq.includes('10–50 boxes') || !englishFaq.includes('51–100 boxes') || !englishFaq.includes('101+ boxes')) failures.push('FAQ: English lead-time ranges must be exclusive');
+  if (!llms.includes(`minimum ${rules.services.snackBox.minimumOrder} boxes`) || !llmsFull.includes(`minimum ${rules.services.snackBox.minimumOrder} boxes`)) failures.push('LLM files: Snack Box minimum is stale');
+  const obsoletePolicy = /(?:50[–-]75\+?\s*(?:กล่อง|boxes)|ขั้นต่ำ\s*50\s*กล่อง|minimum\s*50\s*boxes|ไม่ส่งปริมณฑล)/i;
+  for (const [file, html] of contents) {
+    if (obsoletePolicy.test(html)) failures.push(`${file}: contains obsolete business-policy text`);
+  }
+  for (const file of ['silom.html', 'sathorn.html', 'sathorn-silom.html', 'sukhumvit.html', 'rama3.html', 'ladprao.html']) {
+    const content = contents.get(file);
+    if (!content.includes(thaiAddressPolicy)) failures.push(`${file}: ambiguous local-area delivery policy is missing`);
+    if (/(?:ส่งฟรี\s*(?:50|75)\+\s*กล่อง|ออเดอร์\s*(?:50|75)\s*กล่องขึ้นไป[^<"]*ส่งฟรี)/.test(content)) failures.push(`${file}: must not guarantee a threshold for an ambiguous local area`);
+  }
+  for (const file of ['en/silom.html', 'en/sathorn.html', 'en/sathorn-silom.html', 'en/sukhumvit.html', 'en/rama3.html', 'en/ladprao.html']) {
+    const content = contents.get(file);
+    if (!content.includes(englishAddressPolicy)) failures.push(`${file}: ambiguous local-area delivery policy is missing`);
+    if (/(?:free delivery\s*(?:50|75)\+\s*boxes|orders of\s*(?:50|75)\+\s*boxes[^<"]*free delivery)/i.test(content)) failures.push(`${file}: must not guarantee a threshold for an ambiguous local area`);
+  }
 
   assert.deepEqual(failures, [], `Public site validation failed:\n${failures.join('\n')}`);
   console.log(`Public site validation passed for ${publicFiles.length} indexable pages.`);

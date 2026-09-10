@@ -19,7 +19,7 @@
           { "type": "text", "text": "EED HALAL — สรุปเพื่อขอใบเสนอราคา", "weight": "bold", "size": "md" },
           { "type": "text", "text": "จำนวน: {qty} กล่อง | งบ: {budget}/หัว", "size": "sm", "margin": "md" },
           { "type": "text", "text": "วันส่ง: {date} | เขต: {zone}", "size": "sm" },
-          { "type": "text", "text": "เริ่ม 60 บาท ขั้นต่ำ 10 กล่อง ส่งฟรีตามเขต 50/75/100+", "size": "xs", "color": "#888888", "wrap": true, "margin": "md" }
+          { "type": "text", "text": "เริ่ม 60 บาท ขั้นต่ำ 10 กล่อง ส่งฟรีตามเขต 50/75/100+ ตามเขตของที่อยู่", "size": "xs", "color": "#888888", "wrap": true, "margin": "md" }
         ]
       },
       "footer": {

@@ -2,10 +2,6 @@
   'use strict';
   var LS_SELLING = 'eed_selling_v1';
   var LS_MINS = 'eed_mins_v1';
-  var LS_SHIP_ZONES = 'eed_ship_zones_v1';
-  var LS_SHIP_ZONES_OVERRIDE = 'eed_ship_zones_override_v1';
-  var LS_SHIP_FREE = 'eed_ship_free_v1';
-  var LS_SHIP_ZONE_FREE = 'eed_ship_zone_free_v1';
   var LS_TOPPINGS = 'eed_toppings_v1';
   var LS_MEATS = 'eed_meats_v1';
   var LS_IMAGES = 'eed_images_v1';
@@ -19,17 +15,6 @@
   var LS_SNACK_CATEGORIES = 'eed_snack_cats_v1';
   var LS_NO_MEAT = 'eed_no_meat_v1';
   var MENU_CATEGORIES = ['ข้าวราดแกง','ข้าวผัด','เส้น','อาหารอินเดีย','พรีเมียม'];
-  // Zone structure shared with budget-calculator (moto: ≤40 กล่อง, car: >40 กล่อง, districts)
-  function defaultZones(){
-    if(typeof EED !== 'undefined' && EED.shippingZones) return JSON.parse(JSON.stringify(EED.shippingZones));
-    return {
-      zone_1: { moto: 60,  car: 120, districts: ['ยานนาวา','บางคอแหลม','สาทร','คลองสาน','ธนบุรี'] },
-      zone_2: { moto: 110, car: 180, districts: ['บางรัก','ปทุมวัน','วัฒนา','คลองเตย','พระโขนง','ดินแดง','พญาไท','ราชเทวี','ป้อมปราบศัตรูพ่าย','สัมพันธวงศ์'] },
-      zone_3: { moto: 189, car: 230, districts: ['พระนคร','ดุสิต','ห้วยขวาง','วังทองหลาง','บางกะปิ','สวนหลวง','ประเวศ','บางนา','จตุจักร','บางซื่อ','บางกอกใหญ่','บางกอกน้อย','ราษฎร์บูรณะ','จอมทอง'] },
-      zone_4: { moto: 240, car: 320, districts: ['ลาดพร้าว','บึงกุ่ม','สะพานสูง','คันนายาว','ดอนเมือง','หลักสี่','บางเขน','สายไหม','บางพลัด','ภาษีเจริญ','ตลิ่งชัน','ทุ่งครุ'] },
-      zone_5: { moto: 500, car: 500, districts: ['มีนบุรี','หนองจอก','ลาดกระบัง','คลองสามวา','ทวีวัฒนา','บางแค','หนองแขม','บางบอน','บางขุนเทียน'] }
-    };
-  }
 
   var state = {
     category: 'all',
@@ -490,67 +475,6 @@
     flashSaved._t = setTimeout(function(){ el.style.display='none'; }, 2200);
   }
 
-  // --- Ship zones (object format: {zoneId:{moto,car,districts}}) ---
-  function getShipZones(){
-    try{
-      var saved = JSON.parse(localStorage.getItem(LS_SHIP_ZONES_OVERRIDE)||'null');
-      if(saved && typeof saved==='object' && Object.keys(saved).length){
-        return normalizeZoneObject(saved);
-      }
-    }catch(e){}
-    return defaultZones();
-  }
-  function normalizeZoneObject(obj){
-    var out = {};
-    Object.keys(obj||{}).forEach(function(id){
-      var z = obj[id]||{};
-      out[id] = {
-        moto: parseInt(z.moto,10)||0,
-        car: parseInt(z.car,10)||0,
-        districts: Array.isArray(z.districts) ? z.districts.slice() : (typeof z.districts==='string' ? z.districts.split(',').map(function(s){return s.trim();}).filter(Boolean) : [])
-      };
-    });
-    return out;
-  }
-  function saveShipZones(zones){
-    try{
-      var obj = normalizeZoneObject(zones);
-      localStorage.setItem(LS_SHIP_ZONES_OVERRIDE, JSON.stringify(obj));
-      // keep old key in sync for backward compat (array)
-      var arr = Object.keys(obj).map(function(id){
-        return {id:id, label:id+' ('+(obj[id].districts||[]).join(' ')+')', fee:obj[id].moto};
-      });
-      localStorage.setItem(LS_SHIP_ZONES, JSON.stringify(arr));
-      localStorage.setItem('eed_selling_updated_at', String(Date.now()));
-    }catch(e){}
-  }
-  function getFreeThreshold(){
-    try{
-      var v = localStorage.getItem(LS_SHIP_FREE);
-      if(v!==null) return parseInt(v,10)||50;
-    }catch(e){}
-    // fallback to EED or 50
-    if(typeof EED !== 'undefined' && EED.freeDeliveryFrom) return parseInt(EED.freeDeliveryFrom,10)||50;
-    return 50;
-  }
-  function saveFreeThreshold(v){
-    try{ localStorage.setItem(LS_SHIP_FREE, String(v)); localStorage.setItem('eed_selling_updated_at', String(Date.now())); }catch(e){}
-  }
-  function getZoneFreeThresholds(){
-    try{
-      var saved = JSON.parse(localStorage.getItem(LS_SHIP_ZONE_FREE)||'null');
-      if(saved && typeof saved === 'object') return saved;
-    }catch(e){}
-    // fallback to EED defaults
-    if(typeof EED !== 'undefined' && EED.shippingZoneFreeThresholds) return JSON.parse(JSON.stringify(EED.shippingZoneFreeThresholds));
-    return {zone_1:50, zone_2:75, zone_3:75, zone_4:100, zone_5:0};
-  }
-  function saveZoneFreeThresholds(thresholds){
-    try{ localStorage.setItem(LS_SHIP_ZONE_FREE, JSON.stringify(thresholds)); localStorage.setItem('eed_selling_updated_at', String(Date.now())); }catch(e){}
-  }
-  function slugify(str){
-    return (str||'').toLowerCase().replace(/[^a-z0-9ก-๙]+/g,'_').replace(/^_+|_+$/g,'') || ('zone_'+Date.now());
-  }
 
   // --- One global topping list for every menu ---
   // --- Meats (เลือกเนื้อสัตว์ — เลือกได้ 1 อย่าง) ---
@@ -666,102 +590,6 @@
         current.splice(idx,1);
         saveGlobalToppings(current);
         renderGlobalToppings();
-        flashSaved();
-      });
-    });
-  }
-  function renderShipZones(){
-    var tbody = $('shipZoneBody');
-    var freeInput = $('shipFreeThreshold');
-    if(freeInput) freeInput.value = getFreeThreshold();
-    if(!tbody) return;
-    var zones = getShipZones();
-    var zoneThresholds = getZoneFreeThresholds();
-    var ids = Object.keys(zones);
-    var html = '';
-    ids.forEach(function(id){
-      var z = zones[id];
-      var zoneFree = zoneThresholds[id] !== undefined ? zoneThresholds[id] : getFreeThreshold();
-      var districtsTxt = (z.districts||[]).join(', ');
-      html += '<tr data-id="'+id+'">'
-        + '<td style="min-width:120px"><div style="font-size:.8rem;font-weight:900;color:var(--primary)">'+(id==='zone_1'?'โซน 1':id.replace('zone_','โซน '))+'</div><div style="font-size:.68rem;color:var(--text-muted)">id: '+id+'</div></td>'
-        + '<td style="text-align:center"><input type="number" class="ship-moto" data-id="'+id+'" value="'+z.moto+'" min="0" max="5000" step="10" style="width:90px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFFBEB"></td>'
-        + '<td style="text-align:center"><input type="number" class="ship-car" data-id="'+id+'" value="'+z.car+'" min="0" max="5000" step="10" style="width:90px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#FFF7ED"></td>'
-        + '<td style="min-width:220px"><textarea class="ship-districts" data-id="'+id+'" rows="2" style="width:100%;border:1px solid var(--border);border-radius:10px;padding:.45rem .6rem;font-size:.8rem;line-height:1.5">'+districtsTxt.replace(/</g,'&lt;')+'</textarea></td>'
-        + '<td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:.3rem"><input type="number" class="ship-zone-free" data-id="'+id+'" value="'+zoneFree+'" min="0" max="500" step="5" style="width:80px;height:36px;border:1px solid var(--border);border-radius:10px;text-align:center;font-weight:900;color:var(--primary);background:#F0FDF4"><span style="font-size:.72rem;color:var(--text-muted)">กล่อง</span></div><div style="font-size:.68rem;color:var(--text-muted)">'+(zoneFree > 0 ? 'ฟรีที่ '+zoneFree+'+' : 'ไม่มีส่งฟรี')+'</div></td>'
-        + '<td style="text-align:center"><button class="btn btn-outline btn-sm ship-del" data-id="'+id+'" type="button" style="padding:.3rem .6rem;font-size:.75rem;color:#DC2626;border-color:#FECACA">ลบ</button></td>'
-        + '</tr>';
-    });
-    tbody.innerHTML = html;
-    // bind
-    tbody.querySelectorAll('.ship-moto').forEach(function(inp){
-      inp.addEventListener('input', function(){
-        var zones2 = getShipZones();
-        var z = zones2[this.getAttribute('data-id')];
-        if(!z) return;
-        var v = parseInt(this.value,10);
-        if(isNaN(v) || v<0) return;
-        z.moto = v;
-        saveShipZones(zones2);
-        flashSaved();
-      });
-    });
-    tbody.querySelectorAll('.ship-car').forEach(function(inp){
-      inp.addEventListener('input', function(){
-        var zones2 = getShipZones();
-        var z = zones2[this.getAttribute('data-id')];
-        if(!z) return;
-        var v = parseInt(this.value,10);
-        if(isNaN(v) || v<0) return;
-        z.car = v;
-        saveShipZones(zones2);
-        flashSaved();
-      });
-    });
-    tbody.querySelectorAll('.ship-districts').forEach(function(inp){
-      inp.addEventListener('change', function(){
-        var id = this.getAttribute('data-id');
-        var zones2 = getShipZones();
-        var z = zones2[id];
-        if(!z) return;
-        z.districts = this.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
-        saveShipZones(zones2);
-        renderShipZones();
-        flashSaved();
-      });
-    });
-    tbody.querySelectorAll('.ship-zone-free').forEach(function(inp){
-      inp.addEventListener('input', function(){
-        var zoneId = this.getAttribute('data-id');
-        var v = parseInt(this.value,10);
-        if(isNaN(v) || v<0) return;
-        var thresholds = getZoneFreeThresholds();
-        thresholds[zoneId] = v;
-        saveZoneFreeThresholds(thresholds);
-        flashSaved();
-      });
-      inp.addEventListener('change', function(){
-        var zoneId = this.getAttribute('data-id');
-        var v = parseInt(this.value,10);
-        if(isNaN(v) || v<0) v=0;
-        v = Math.max(0, Math.min(500, v));
-        this.value = v;
-        var thresholds = getZoneFreeThresholds();
-        thresholds[zoneId] = v;
-        saveZoneFreeThresholds(thresholds);
-        renderShipZones();
-        flashSaved();
-      });
-    });
-    tbody.querySelectorAll('.ship-del').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var id = this.getAttribute('data-id');
-        var zones2 = getShipZones();
-        if(Object.keys(zones2).length <= 1){ alert('ต้องเหลืออย่างน้อย 1 เขต'); return; }
-        if(!confirm('ลบโซน "'+id+'" ('+(zones2[id].districts||[]).join(', ')+') ?')) return;
-        delete zones2[id];
-        saveShipZones(zones2);
-        renderShipZones();
         flashSaved();
       });
     });
@@ -1008,7 +836,6 @@
     updateStats();
     renderMeats();
     renderGlobalToppings();
-    renderShipZones();
     renderSnackTable();
 
     // --- Add meat ---
@@ -1155,7 +982,6 @@
       localStorage.removeItem(LS_SNACK_NAMES);
       localStorage.removeItem(LS_SNACK_ADDONS);
       localStorage.removeItem(LS_SNACK_CATEGORIES);
-      localStorage.removeItem(LS_SHIP_ZONE_FREE);
       localStorage.removeItem('eed_selling_updated_at');
       EED_MENUS.forEach(function(m){
         if(m._origPrice !== undefined) m.price = m._origPrice;
@@ -1208,10 +1034,6 @@
         meats: getMeats(),
         toppings: getGlobalToppings(),
         noMeatMenus: getNoMeat(),
-        shipZones: getShipZones(),
-        shipCarMinQty: (typeof EED !== 'undefined' && EED.shippingCarMinQty) ? EED.shippingCarMinQty : 40,
-        shipFree: getFreeThreshold(),
-        shipZoneFreeThresholds: getZoneFreeThresholds(),
         snackPrices: (function(){ var o={}; if(typeof EED_SNACK_MENUS!=='undefined') EED_SNACK_MENUS.forEach(function(m){ o[m.id]=m.price; }); return o; })(),
         snackNames: (function(){ var o={}; if(typeof EED_SNACK_MENUS!=='undefined') EED_SNACK_MENUS.forEach(function(m){ o[m.id]=m.name; }); return o; })(),
         snackCats: (function(){ var o={}; if(typeof EED_SNACK_MENUS!=='undefined') EED_SNACK_MENUS.forEach(function(m){ o[m.id]=m.category; }); return o; })(),
@@ -1264,58 +1086,6 @@
       });
     });
 
-    // ship zones add / free threshold / reset / save
-    var addShipBtn = $('addShipZone');
-    if(addShipBtn) addShipBtn.addEventListener('click', function(){
-      var zones = getShipZones();
-      var label = prompt('ชื่อเขตพื้นที่ใหม่ เช่น บางนา (ใช้แทน id, คั่นด้วย , หลายเขต)');
-      if(label===null) return;
-      label = (label||'').trim() || 'เขตใหม่';
-      var motoStr = prompt('ค่าส่งมอเตอร์ไซด์ "'+label+'" (บาท ≤40 กล่อง)', '200');
-      if(motoStr===null) return;
-      var moto = parseInt(motoStr,10);
-      if(isNaN(moto) || moto<0) moto=0;
-      var carStr = prompt('ค่าส่งรถยนต์ "'+label+'" (บาท >40 กล่อง)', String(moto+60));
-      if(carStr===null) return;
-      var car = parseInt(carStr,10);
-      if(isNaN(car) || car<0) car=moto;
-      var id = slugify(label) || 'zone_'+Date.now();
-      var base=id, n=1;
-      while(zones[id]){ id = base+'_'+(n++); }
-      zones[id] = { moto:moto, car:car, districts: label.split(',').map(function(s){ return s.trim(); }).filter(Boolean) };
-      saveShipZones(zones);
-      renderShipZones();
-      flashSaved();
-    });
-    var freeInput = $('shipFreeThreshold');
-    if(freeInput){
-      freeInput.addEventListener('input', function(){
-        var v = parseInt(this.value,10);
-        if(isNaN(v) || v<1) return;
-        v = Math.max(1, Math.min(500, v));
-        saveFreeThreshold(v);
-        flashSaved();
-      });
-      freeInput.addEventListener('change', function(){
-        var v = parseInt(this.value,10);
-        if(isNaN(v) || v<1) v=50;
-        v = Math.max(1, Math.min(500, v));
-        this.value = v;
-        saveFreeThreshold(v);
-        renderShipZones();
-        flashSaved();
-      });
-    }
-    var resetShipBtn = $('resetShipZones');
-    if(resetShipBtn) resetShipBtn.addEventListener('click', function(){
-      if(!confirm('รีเซ็ตโซนค่าส่งกลับเป็นค่าเริ่มต้น 5 โซน (ตาม business-data.js) ?')) return;
-      localStorage.removeItem(LS_SHIP_ZONES_OVERRIDE);
-      localStorage.removeItem(LS_SHIP_ZONES);
-      localStorage.removeItem(LS_SHIP_FREE);
-      localStorage.removeItem(LS_SHIP_ZONE_FREE);
-      renderShipZones();
-      flashSaved();
-    });
   }
 
   if(document.readyState==='loading'){

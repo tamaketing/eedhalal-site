@@ -1,6 +1,6 @@
 # EED HALAL - Knowledge Pack สำหรับ LINE AI
-> GENERATED FILE: สร้างจาก data/business-rules.json + data/planner-overrides.json
-> Business rules revision: 2026-09-08 (schema 1)
+> GENERATED FILE: สร้างจาก data/business-rules.json + data/planner-overrides.json (catalog only)
+> Business rules revision: 2026-09-10 (schema 1)
 > ห้ามแก้ไฟล์นี้โดยตรง ให้แก้ข้อมูลต้นทางแล้วรัน node scripts/check-system.mjs --write
 
 ## 1. ตัวตนร้าน
@@ -16,7 +16,7 @@
 ## 2. ราคาและขั้นต่ำ
 - ข้าวกล่องมาตรฐาน: เริ่ม 60 บาท/กล่อง
 - เมนูพรีเมียม: เริ่ม 180-250 บาท/กล่อง
-- Snack Box: เริ่ม 40 บาท/กล่อง ขั้นต่ำ 50 กล่อง
+- Snack Box: เริ่ม 40 บาท/กล่อง ขั้นต่ำ 30 กล่อง
 - บุฟเฟต์: หัวละ 180-350 บาท สำหรับ 100+ คน มีทีมหน้างาน 9 หมวดอาหาร
 - ขั้นต่ำออเดอร์องค์กร: 10+ กล่อง
 - ขั้นต่ำต่อเมนู: เมนูทั่วไปส่วนมาก 5 กล่อง เมนูที่ต้องเตรียมพิเศษ 10 กล่อง ให้ยึดขั้นต่ำรายเมนูจากระบบ
