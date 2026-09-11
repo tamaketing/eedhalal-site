@@ -22,3 +22,9 @@ line-ai/*.sqlite-*
 line-ai/*.db
 line-ai/*.db-*
 line-ai/*.log
+
+# Phase 1 — local-only image archive (272 unused files, ~271 MB).
+# img/ = deploy (90 used files, ~50 MB). img_archive_local/ stays on machine only.
+img_archive_local/
+# Empty legacy staging dir (all content moved to img/ root or img_archive_local/).
+img/picmenu/

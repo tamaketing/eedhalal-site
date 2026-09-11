@@ -28,7 +28,8 @@ export function synchronize(source, language, expected) {
   if (startAt < 0 || endAt < 0 || source.indexOf(start, startAt + start.length) >= 0) {
     throw new Error(`expected one ${start} section`);
   }
-  const replacement = `${start}\n${expected}\n${end}`;
+  const eol = source.includes('\r\n') ? '\r\n' : '\n';
+  const replacement = `${start}${eol}${expected}${eol}${end}`;
   return source.slice(0, startAt) + replacement + source.slice(endAt + end.length);
 }
 
