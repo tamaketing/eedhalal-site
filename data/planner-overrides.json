@@ -127,7 +127,7 @@
     "39": "img/menu-kaprao-nuea.jpg",
     "104": "img/logo.jpg",
     "105": "img/logo.jpg",
-    "106": "img/logo.jpg",
+    "106": "img/เมนูข้าวจาน/Tom Yum Fried Rice.png",
     "107": "img/logo.jpg",
     "108": "img/logo.jpg",
     "109": "img/logo.jpg",
@@ -264,7 +264,7 @@
       "name": "ข้าวผัดต้มยำ",
       "price": 60,
       "category": "ข้าวผัด",
-      "image": "img/logo.jpg",
+      "image": "img/เมนูข้าวจาน/Tom Yum Fried Rice.png",
       "desc": "ข้าวผัดต้มยำแห้ง รสจัดจ้าน หอมเครื่องสมุนไพรสด",
       "badge": "ใหม่",
       "minPerMenu": 5
