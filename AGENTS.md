@@ -27,6 +27,7 @@
 ## Change Process
 
 - Before editing, assess the impact of the change and identify every affected file, feature, channel, language, and integration.
+- For business-data changes, look up `data/sync-manifest.json` first: it lists every file each fact must appear in, and `node scripts/check-business-sync.mjs --check` fails until ALL of them are updated (no `--write` by design: prose must be edited by hand to preserve SEO/tone).
 - After editing, run all relevant existing tests, validation commands, builds, and/or linters available in the project.
 - In the final summary, explicitly list every file changed and state which verification commands were run and their results.
 

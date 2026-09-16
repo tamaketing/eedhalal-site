@@ -1,5 +1,7 @@
 # Campaign LP Map
 
+Goal priority (ตั้งแต่ 16/9/2026): `Event / Catering` คือกลุ่มหลัก กลุ่มอื่น (Corporate / Menu / Geo) เป็นทางเข้ารอง ห้ามเปลี่ยนชื่อ campaign / ad set / UTM เพราะผูกกับ live campaign
+
 Round 1 rule:
 - Use the existing pages as LPs.
 - Do not create new LP pages yet.
@@ -7,15 +9,15 @@ Round 1 rule:
 
 ## Standard Mapping
 
-- `HR / Procurement / Office Admin / Event Coordinator`
+- `Event / Catering / Banquet / Family` (Primary)
+  - LP: [`catering.html`](./catering.html)
+  - Angle: halal catering, buffet, yok mor, event presentation
+
+- `HR / Procurement / Office Admin / Event Coordinator` (Supporting)
   - LP: [`corporate.html`](./corporate.html)
   - Angle: quotation-ready corporate meal boxes, 20+ boxes, document support, on-time delivery
   - Dedicated LP (Round 2): [`lp-corporate-meeting.html`](./lp-corporate-meeting.html)
   - Angle: hyper-targeted to HR/procurement pain points — quotation, procurement documents, on-time delivery, budget control, menu variety. No catering/no single-order noise.
-
-- `Event / Catering / Banquet / Family`
-  - LP: [`catering.html`](./catering.html)
-  - Angle: halal catering, buffet, yok mor, event presentation
 
 - `Menu Browsers / Price Comparers / Warm Leads`
   - LP: [`popular-menu.html`](./popular-menu.html)

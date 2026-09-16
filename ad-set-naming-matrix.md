@@ -13,15 +13,15 @@ Use these names consistently in Meta Ads Manager and Google Ads so the CSV expor
 
 ## Matrix
 
-| Segment | LP | Campaign name example | Shared ad set / ad group | Creative ID | lp_audience | lp_intent |
-|---|---|---|---|---|---|---|
-| Corporate | `corporate.html` | `EEDHALAL_{platform}_CORPORATE_20PLUS` | `adset_hr_01` | `creative_101` | `corporate` | `hr-procurement` |
-| Catering | `catering.html` | `EEDHALAL_{platform}_CATERING_100_500PLUS` | `adset_event_01` | `creative_202` | `catering` | `event-catering` |
-| Popular menu | `popular-menu.html` | `EEDHALAL_{platform}_POPULARMENU_START60` | `adset_menu_01` | `creative_303` | `popular-menu` | `price-comparison` |
-| Geo: สาทร-สีลม | `sathorn-silom.html` | `EEDHALAL_{platform}_GEO_SATHORN_SILOM` | `adset_geo_ss_01` | `creative_404` | `sathorn-silom` | `local-delivery` |
-| Geo: สุขุมวิท | `sukhumvit.html` | `EEDHALAL_{platform}_GEO_SUKHUMVIT` | `adset_geo_sukhumvit_01` | `creative_405` | `sukhumvit` | `local-delivery` |
-| Geo: พระราม 3 | `rama3.html` | `EEDHALAL_{platform}_GEO_RAMA3` | `adset_geo_rama3_01` | `creative_406` | `rama3` | `local-delivery` |
-| Geo: ลาดพร้าว | `ladprao.html` | `EEDHALAL_{platform}_GEO_LADPRAO` | `adset_geo_ladprao_01` | `creative_407` | `ladprao` | `local-delivery` |
+| Segment | LP | Campaign name example | Shared ad set / ad group | Creative ID | lp_audience | lp_intent | Priority |
+|---|---|---|---|---|---|---|---|
+| Catering | `catering.html` | `EEDHALAL_{platform}_CATERING_100_500PLUS` | `adset_event_01` | `creative_202` | `catering` | `event-catering` | Primary |
+| Corporate | `corporate.html` | `EEDHALAL_{platform}_CORPORATE_20PLUS` | `adset_hr_01` | `creative_101` | `corporate` | `hr-procurement` | Supporting |
+| Popular menu | `popular-menu.html` | `EEDHALAL_{platform}_POPULARMENU_START60` | `adset_menu_01` | `creative_303` | `popular-menu` | `price-comparison` | Supporting |
+| Geo: สาทร-สีลม | `sathorn-silom.html` | `EEDHALAL_{platform}_GEO_SATHORN_SILOM` | `adset_geo_ss_01` | `creative_404` | `sathorn-silom` | `local-delivery` | Supporting |
+| Geo: สุขุมวิท | `sukhumvit.html` | `EEDHALAL_{platform}_GEO_SUKHUMVIT` | `adset_geo_sukhumvit_01` | `creative_405` | `sukhumvit` | `local-delivery` | Supporting |
+| Geo: พระราม 3 | `rama3.html` | `EEDHALAL_{platform}_GEO_RAMA3` | `adset_geo_rama3_01` | `creative_406` | `rama3` | `local-delivery` | Supporting |
+| Geo: ลาดพร้าว | `ladprao.html` | `EEDHALAL_{platform}_GEO_LADPRAO` | `adset_geo_ladprao_01` | `creative_407` | `ladprao` | `local-delivery` | Supporting |
 
 ## Join Notes
 

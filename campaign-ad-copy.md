@@ -1,32 +1,34 @@
 # Campaign Ad Copy
 
+Goal priority (ตั้งแต่ 16/9/2026): เป้าหมายหลักคือ**งานจัดเลี้ยงฮาลาล** (Catering = Primary) — Corporate / Popular Menu / Location เป็นทางเข้ารองที่เลี้ยง intent ข้าวกล่ององค์กรและเทียบเมนู ห้ามเปลี่ยนชื่อ campaign / ad set / creative ID เพราะผูกกับ live campaign และ join key ใน `ad-set-naming-matrix.md`
+
 Notes:
 - `popular-menu.html` is intentionally `LINE-first`; no `tel:` CTA is used on that page.
 - Google headline target: up to 40 characters.
 - Meta headline target: up to 125 characters.
 
-## Corporate
-
-| Platform | LP | Headline | Description / Primary Text |
-|---|---|---|---|
-| Google | `corporate.html` | `ข้าวกล่ององค์กร 10+ กล่อง` | `เอกสารครบ ส่งตรงเวลา 98% สำหรับ HR และจัดซื้อ` |
-| Meta | `corporate.html` | `ข้าวกล่ององค์กร 10+ กล่อง เอกสารองค์กรครบ ส่งตรงเวลา 98%` | `สำหรับ HR และจัดซื้อที่ต้องเลี้ยงประชุม เทรนนิ่ง หรือมื้อทีมงาน บอกวัน จำนวน และงบต่อหัวมาได้เลย เราช่วยออกใบเสนอราคาและใบเสร็จรับเงินให้ครบ` |
-
-## Catering
+## Catering (Primary)
 
 | Platform | LP | Headline | Description / Primary Text |
 |---|---|---|---|
 | Google | `catering.html` | `จัดเลี้ยงฮาลาล กรุงเทพฯ` | `มีทีมช่วยดูแลตั้งแต่การเตรียมอาหาร การจัดจุดเสิร์ฟ ไปจนถึงการประสานงานหน้างาน เลือกบุฟเฟต์ บุฟเฟต์ หรือ Live Cooking Station ได้` |
 | Meta | `catering.html` | `จัดเลี้ยงฮาลาล กรุงเทพฯ งานองค์กร งานเลี้ยง อีเวนต์ พร้อมทีมหน้างาน` | `มีทีมช่วยดูแลตั้งแต่การเตรียมอาหาร การจัดจุดเสิร์ฟ ไปจนถึงการประสานงานหน้างาน` |
 
-## Popular Menu
+## Corporate (Supporting)
+
+| Platform | LP | Headline | Description / Primary Text |
+|---|---|---|---|
+| Google | `corporate.html` | `ข้าวกล่ององค์กร 20+ กล่อง` | `เอกสารครบ ส่งตรงเวลา 98% สำหรับ HR และจัดซื้อ` |
+| Meta | `corporate.html` | `ข้าวกล่ององค์กร 20+ กล่อง เอกสารองค์กรครบ ส่งตรงเวลา 98%` | `สำหรับ HR และจัดซื้อที่ต้องเลี้ยงประชุม เทรนนิ่ง หรือมื้อทีมงาน บอกวัน จำนวน และงบต่อหัวมาได้เลย เราช่วยออกใบเสนอราคาและใบเสร็จรับเงินให้ครบ` |
+
+## Popular Menu (Supporting)
 
 | Platform | LP | Headline | Description / Primary Text |
 |---|---|---|---|
 | Google | `popular-menu.html` | `เมนูฮาลาล เริ่ม 60 บาท เทียบราคา` | `ดูราคาแต่ละโปรตีนแบบชัด ๆ หน้าเดียว เหมาะกับคนที่คุมงบต่อกล่อง` |
 | Meta | `popular-menu.html` | `เมนูฮาลาล เริ่ม 60 บาท เทียบราคา งบง่าย` | `หน้าเดียวเทียบงบได้ง่าย เหมาะกับคนที่อยากคุมงบต่อกล่องและเลือกเมนูสำหรับออฟฟิศให้เร็วที่สุด` |
 
-## Location
+## Location (Supporting)
 
 | Area | LP | Platform | Headline | Description / Primary Text |
 |---|---|---|---|---|

@@ -76,6 +76,8 @@
 **Config อยู่ที่:** `js/business-data.js` → `shippingZones` (moto/car/districts/label) + `shippingZoneFreeThresholds`
 **Fallback:** `freeDeliveryFrom: '50'` (ใช้ถ้าเขตไม่มีใน map)
 
+**มติ 16/9/2026 — นโยบายค่าขนส่งแยกตามแบบบริการ:** ข้าวกล่อง/Snack Box ใช้ตารางโซนข้างบน (มีตัวเลข ห้ามถอด) / งานจัดเลี้ยงทุกแบบ (บุฟเฟต์ ค็อกเทล โต๊ะจีน/โต๊ะไทย Set Menu Live Cooking) **ไม่มีตารางค่าขนส่ง** เพราะรถ ทีม และอุปกรณ์ต่างกัน ให้ลูกค้าสอบถามเพื่อประเมินรายกรณี ทีมสรุปยอดในใบเสนอราคา — ห้ามเอาตารางโซนกล่องไปอ้างกับงานจัดเลี้ยง
+
 **Checklist เมื่อเปลี่ยนเงื่อนไขส่งฟรี:**
 - [ ] `js/business-data.js` → `shippingZoneFreeThresholds` + `shippingZones` (moto/car/districts/label) + `shippingCarMinQty` + `freeDeliveryFrom` + `shippingAutoNote`
 - [ ] `data/planner-overrides.json` → `shipZoneFreeThresholds`
@@ -210,6 +212,7 @@
 ## กฎการ Sync (ใช้คู่กับ llms-full.md)
 
 0. **ข้อมูลกลางแบบ machine-readable** — กฎธุรกิจอยู่ที่ `data/business-rules.json` และเมนู/ราคา/ค่าส่งอยู่ที่ `data/planner-overrides.json` จากนั้นรัน `node scripts/check-system.mjs --write` และ `node --test` ทุกครั้ง
+- **ทะเบียนไฟล์ที่ต้องแก้ครบ (`data/sync-manifest.json`)** — 8 facts (ราคาเริ่ม/ขั้นต่ำข้าวกล่อง/เลขฮาลาล/คำสัญญา 15 นาที/cutoff/VAT/มัดจำ/ขั้นต่ำ Snack Box) ผูกกับไฟล์ที่ต้องมีข้อความนั้นรวม 260 จุด + สแกนข้อความต้องห้าม (เลขฮาลาลเก่า, อ้างออกเอกสารภาษีที่ออกไม่ได้, อ้างราคารวมภาษีแล้ว) — `node scripts/check-business-sync.mjs --check` จะลิสต์ไฟล์ที่แก้ไม่ครบให้ทั้งหมด เพิ่มไฟล์ใหม่เข้าเว็บต้องเพิ่มชื่อไฟล์ลง manifest ด้วย
 
 1. **business-rules.json = source of truth** — แก้ `data/business-rules.json` ก่อน แล้วซิงก์ FAQ เว็บ และฐานความรู้ AI ให้ตรงกัน
 2. **llms files** — ตัวเลขใน `llms.txt` และ `llms-full.md` ต้องตรงกับ FAQ ทุกประการ
