@@ -14,6 +14,7 @@ import {
   transitionDraft,
   validateDraft,
 } from '../line-ai/draft-schema.mjs';
+import { isUniqueViolation } from '../db/index.mjs';
 import { recordAudit } from './audit.mjs';
 import { ConflictError, NotFoundError, ValidationError } from './errors.mjs';
 import { sanitizeMetadata } from './sanitize.mjs';
@@ -31,6 +32,7 @@ export function toDraftRow(draft) {
     draftResponse: draft.draftResponse,
     ownerFinalResponse: draft.ownerFinalResponse || null,
     finalAction: draft.finalAction || null,
+    sourceEventId: draft.sourceEventId || null,
     status: draft.status,
     source: draft.source,
     aiModel: draft.aiModel || '',
@@ -55,6 +57,7 @@ export function fromDraftRow(row) {
     draftResponse: row.draftResponse,
     ownerFinalResponse: row.ownerFinalResponse || null,
     finalAction: row.finalAction || null,
+    sourceEventId: row.sourceEventId || null,
     status: row.status,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -84,6 +87,7 @@ export async function persistDraft(repos, input = {}, actor = { type: 'AI', id: 
     ruleRevision: input.ruleRevision || '',
     metadata,
   });
+  draft.sourceEventId = cleanEventId(input.sourceEventId);
   const errors = validateDraft(draft);
   if (errors.length) throw new Error(`invalid draft: ${errors.join('; ')}`);
   // Draft row + audit record commit together (one transaction on PostgreSQL).
@@ -97,6 +101,34 @@ export async function persistDraft(repos, input = {}, actor = { type: 'AI', id: 
     });
     return fromDraftRow(saved);
   });
+}
+
+function cleanEventId(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim().slice(0, 128);
+  return trimmed || null;
+}
+
+// Idempotent persist for webhook retries: the same LINE source event reuses
+// the already-persisted draft ({ deduped: true }) instead of duplicating it.
+// Genuinely new events (no or unknown id) create new drafts as before.
+export async function persistDraftOnce(repos, input = {}, actor = { type: 'AI', id: '' }) {
+  const eventId = cleanEventId(input.sourceEventId);
+  if (eventId) {
+    const existing = await repos.drafts.findBySourceEventId(eventId);
+    if (existing) return { ...fromDraftRow(existing), deduped: true };
+  }
+  try {
+    const created = await persistDraft(repos, { ...input, sourceEventId: eventId });
+    return { ...created, deduped: false };
+  } catch (error) {
+    // Lost a unique race on source_event_id: reuse the winner.
+    if (eventId && isUniqueViolation(error)) {
+      const winner = await repos.drafts.findBySourceEventId(eventId);
+      if (winner) return { ...fromDraftRow(winner), deduped: true };
+    }
+    throw error;
+  }
 }
 
 const SPECIFIC_EVENTS = Object.freeze({

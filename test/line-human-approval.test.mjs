@@ -50,15 +50,19 @@ function webhookEvent(text = '80 กล่อง ส่งวัฒนา ส่
   };
 }
 
-function runBuildDraft(aiItem, event) {
-  const stored = {};
-  const code = byId.get('build-draft').parameters.jsCode;
+function runNormalize(aiItem, event) {
+  const code = byId.get('normalize-event').parameters.jsCode;
   const [result] = runCode(code, {
     $input: { first: () => ({ json: aiItem }) },
     $: () => ({ first: () => ({ json: { body: { events: [event] } } }) }),
-    $getWorkflowStaticData: () => stored,
   });
-  return { draft: result.json.draft, stored };
+  return result.json;
+}
+
+function runVerifyDraft(persistOutput) {
+  const code = byId.get('verify-draft').parameters.jsCode;
+  const [result] = runCode(code, { $input: { first: () => ({ json: persistOutput }) } });
+  return result.json;
 }
 
 // A. AI output must never reach a LINE customer sender.
@@ -66,43 +70,49 @@ test('A: workflow has no customer auto-send path from AI output', () => {
   assert.deepEqual(findCustomerSenders(workflow), []);
   assert.ok(!workflow.nodes.some((node) => node.name === 'Reply to LINE'));
   assert.ok(!workflow.nodes.some((node) => node.name === 'Show Loading'));
+  assert.ok(!workflow.nodes.some((node) => node.name === 'Build Draft'));
   const stops = reachable('AI Agent', workflow.connections);
-  assert.ok(stops.includes('Build Draft'), 'AI must flow into Build Draft');
-  assert.equal(stops.length, 2, `AI must terminate at Build Draft, got: ${stops.join(', ')}`);
+  for (const terminal of ['Normalize Event', 'Resolve Customer', 'Evaluate Lead', 'Persist Draft', 'Verify Draft']) {
+    assert.ok(stops.includes(terminal), `AI must flow into ${terminal}`);
+  }
+  assert.ok(!stops.some((name) => /reply|push|sender|kitchen/i.test(name)), `no sender reachable: ${stops.join(', ')}`);
 });
 
-// B. Every customer message ends as a Draft waiting for the owner.
-test('B: AI path produces a WAITING_FOR_HUMAN draft and stops', () => {
+// B. Normalization prepares a safe persistence payload (server forces the state).
+test('B: AI path normalizes into an Internal API payload', () => {
   const event = webhookEvent();
-  const aiItem = {
+  const payload = runNormalize({
     body: { events: [event] },
     hasSafeAnswer: false,
     budgetContext: '',
     responseSource: 'conversation-ai',
     output: 'สวัสดีค่ะ 80 กล่องส่งวัฒนาได้ค่ะ',
-  };
-  const { draft, stored } = runBuildDraft(aiItem, event);
-  assert.equal(draft.status, 'WAITING_FOR_HUMAN');
-  assert.equal(draft.customerId, 'Utestcustomer01');
-  assert.equal(draft.channel, 'line');
-  assert.equal(draft.incomingMessage, event.message.text);
-  assert.equal(draft.draftResponse, aiItem.output);
-  assert.equal(draft.source, 'conversation-ai');
-  assert.deepEqual(validateDraft(draft), []);
-  assert.ok(stored[`eedDraft:${draft.draftId}`], 'draft must be staged for owner review');
+  }, event);
+  assert.equal(payload.lineUserId, 'Utestcustomer01');
+  assert.equal(payload.channel, 'line');
+  assert.equal(payload.incomingMessage, event.message.text);
+  assert.equal(payload.draftResponse, 'สวัสดีค่ะ 80 กล่องส่งวัฒนาได้ค่ะ');
+  assert.equal(payload.source, 'conversation-ai');
+  assert.equal(payload.sourceEventId, 'm1');
+  assert.ok(!('status' in payload), 'state is forced server-side, never by n8n');
 });
 
-test('B: deterministic fallback also produces a WAITING_FOR_HUMAN draft', () => {
+test('B: deterministic fallback normalizes without inventing identifiers', () => {
   const event = webhookEvent('', 'user');
   event.message = { id: 'm2', type: 'image' };
-  const { draft } = runBuildDraft(
+  const payload = runNormalize(
     { body: { events: [event] }, hasSafeAnswer: true, output: 'ตอนนี้ผมอ่านได้เฉพาะข้อความครับ' },
     event,
   );
-  assert.equal(draft.status, 'WAITING_FOR_HUMAN');
-  assert.equal(draft.source, 'deterministic-fallback');
-  assert.equal(draft.incomingMessage, '[non-text message: image]');
-  assert.deepEqual(validateDraft(draft), []);
+  assert.equal(payload.source, 'deterministic-fallback');
+  assert.equal(payload.incomingMessage, '[non-text message: image]');
+  assert.equal(payload.sourceEventId, 'm2');
+});
+
+test('B: verify guard accepts WAITING_FOR_HUMAN and rejects anything else', () => {
+  const ok = runVerifyDraft({ draft: { draftId: 'LD-1', status: 'WAITING_FOR_HUMAN' }, deduped: false });
+  assert.equal(ok.status, 'WAITING_FOR_HUMAN');
+  assert.throws(() => runVerifyDraft({ draft: { draftId: 'LD-1', status: 'APPROVED' } }), /WAITING_FOR_HUMAN/);
 });
 
 // C. Kitchen auto-push stays disabled.
@@ -121,7 +131,7 @@ test('D: router menus and draft revision match the source of truth', async () =>
     embedded,
     getEffectiveMenus(legacy.menus, catalog).map(({ name, price, minPerMenu }) => ({ name, price, minPerMenu })),
   );
-  assert.ok(byId.get('build-draft').parameters.jsCode.includes(JSON.stringify(rules.revision)));
+  assert.ok(byId.get('normalize-event').parameters.jsCode.includes(JSON.stringify(rules.revision)));
   const agentMessage = byId.get('ai-agent').parameters.options.systemMessage;
   const knowledge = await readFile(new URL('../line-ai/knowledge-pack.md', import.meta.url), 'utf8');
   assert.ok(agentMessage.startsWith(knowledge.trim().split('\n')[0]));

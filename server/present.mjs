@@ -45,6 +45,7 @@ export function presentDraft(draft) {
     draftResponse: draft.draftResponse,
     ownerFinalResponse: draft.ownerFinalResponse,
     finalAction: draft.finalAction,
+    sourceEventId: draft.sourceEventId || null,
     status: draft.status,
     source: draft.source,
     aiModel: draft.aiModel,

@@ -16,8 +16,8 @@
 // never touches `pg`; the driver loads only when a pool query runs.
 
 const CUSTOMER_COLUMNS = ['id', 'line_user_id', 'display_name', 'phone', 'email', 'company_name', 'tax_id', 'address', 'notes', 'created_at', 'updated_at'];
-const LEAD_COLUMNS = ['id', 'customer_id', 'source', 'service_type', 'event_date', 'quantity', 'location', 'budget_per_person', 'status', 'summary', 'created_at', 'updated_at'];
-const DRAFT_COLUMNS = ['id', 'draft_id', 'customer_id', 'lead_id', 'channel', 'incoming_message', 'draft_response', 'owner_final_response', 'final_action', 'status', 'source', 'ai_model', 'rule_revision', 'metadata', 'history', 'created_at', 'updated_at', 'approved_at', 'sent_at'];
+const LEAD_COLUMNS = ['id', 'customer_id', 'source', 'service_type', 'event_date', 'quantity', 'location', 'budget_per_person', 'status', 'summary', 'source_event_id', 'created_at', 'updated_at'];
+const DRAFT_COLUMNS = ['id', 'draft_id', 'customer_id', 'lead_id', 'channel', 'incoming_message', 'draft_response', 'owner_final_response', 'final_action', 'status', 'source', 'ai_model', 'rule_revision', 'metadata', 'history', 'source_event_id', 'created_at', 'updated_at', 'approved_at', 'sent_at'];
 const AUDIT_COLUMNS = ['id', 'entity_type', 'entity_id', 'action', 'actor_type', 'actor_id', 'before_data', 'after_data', 'created_at'];
 
 function toCamel(row) {
@@ -81,14 +81,21 @@ function buildRepos(run) {
   const leads = {
     kind: 'leads',
     async create(row) {
-      const values = [row.id, row.customerId, row.source ?? 'line', row.serviceType ?? null, row.eventDate ?? null, row.quantity ?? null, row.location ?? null, row.budgetPerPerson ?? null, row.status ?? 'NEW', row.summary ?? ''];
+      const values = [row.id, row.customerId, row.source ?? 'line', row.serviceType ?? null, row.eventDate ?? null, row.quantity ?? null, row.location ?? null, row.budgetPerPerson ?? null, row.status ?? 'NEW', row.summary ?? '', row.sourceEventId ?? null];
       return mapOne(await run(
-        `INSERT INTO leads (${LEAD_COLUMNS.slice(0, 10).join(', ')}) VALUES (${placeholders(10)}) RETURNING *`,
+        `INSERT INTO leads (${LEAD_COLUMNS.slice(0, 11).join(', ')}) VALUES (${placeholders(11)}) RETURNING *`,
         values,
       ));
     },
     async findById(id) {
       return mapOne(await run('SELECT * FROM leads WHERE id = $1', [id]));
+    },
+    async findByCustomerAndEvent(customerId, sourceEventId) {
+      if (!sourceEventId) return null;
+      return mapOne(await run(
+        'SELECT * FROM leads WHERE customer_id = $1 AND source_event_id = $2',
+        [customerId, sourceEventId],
+      ));
     },
     async listByCustomer(customerId) {
       return mapAll(await run('SELECT * FROM leads WHERE customer_id = $1 ORDER BY created_at ASC', [customerId]));
@@ -112,14 +119,18 @@ function buildRepos(run) {
   const drafts = {
     kind: 'drafts',
     async create(row) {
-      const values = [row.id, row.draftId, row.customerId ?? null, row.leadId ?? null, row.channel ?? 'line', row.incomingMessage ?? '', row.draftResponse ?? '', row.ownerFinalResponse ?? null, row.finalAction ?? null, row.status ?? 'WAITING_FOR_HUMAN', row.source ?? 'conversation-ai', row.aiModel ?? '', row.ruleRevision ?? '', JSON.stringify(row.metadata ?? {}), JSON.stringify(row.history ?? [])];
+      const values = [row.id, row.draftId, row.customerId ?? null, row.leadId ?? null, row.channel ?? 'line', row.incomingMessage ?? '', row.draftResponse ?? '', row.ownerFinalResponse ?? null, row.finalAction ?? null, row.status ?? 'WAITING_FOR_HUMAN', row.source ?? 'conversation-ai', row.aiModel ?? '', row.ruleRevision ?? '', JSON.stringify(row.metadata ?? {}), JSON.stringify(row.history ?? []), row.sourceEventId ?? null];
       return mapOne(await run(
-        `INSERT INTO drafts (${DRAFT_COLUMNS.slice(0, 15).join(', ')}) VALUES (${placeholders(15)}) RETURNING *`,
+        `INSERT INTO drafts (${DRAFT_COLUMNS.slice(0, 16).join(', ')}) VALUES (${placeholders(16)}) RETURNING *`,
         values,
       ));
     },
     async findById(id) {
       return mapOne(await run('SELECT * FROM drafts WHERE id = $1', [id]));
+    },
+    async findBySourceEventId(sourceEventId) {
+      if (!sourceEventId) return null;
+      return mapOne(await run('SELECT * FROM drafts WHERE source_event_id = $1', [sourceEventId]));
     },
     async findByDraftId(draftId) {
       return mapOne(await run('SELECT * FROM drafts WHERE draft_id = $1', [draftId]));

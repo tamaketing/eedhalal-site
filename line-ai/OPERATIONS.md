@@ -7,29 +7,32 @@ LINE customer
   -> webhook-gateway.mjs (verifies X-Line-Signature, forwards with EED_WEBHOOK_FORWARD_SECRET)
   -> n8n: LINE Webhook -> Verify Webhook Gateway -> Deterministic FAQ
   -> Has Safe Answer? -> AI Agent (or deterministic fallback)
-  -> Build Draft (status WAITING_FOR_HUMAN, workflow ENDS here)
+  -> Normalize Event -> Resolve Customer (Internal API)
+  -> Evaluate Lead (Internal API) -> Persist Draft (Internal API, PostgreSQL)
+  -> Verify Draft (asserts WAITING_FOR_HUMAN, workflow ENDS here)
 ```
 
 - No node in `n8n-workflow.json` may reply/push to a LINE customer or push
   to the kitchen group. `node scripts/check-system.mjs` (and
   `test/line-human-approval.test.mjs`) fails the build if a sender exists.
-- AI output is a draft only. The owner reviews each draft out-of-band
-  (n8n execution record -> draft JSON) and replies manually in LINE OA:
-  approve/send as-is, edit first, ask the customer for missing info
+- AI output is a draft only. The owner reviews each persisted draft
+  (Internal API list filtered by WAITING_FOR_HUMAN) and replies manually in
+  LINE OA: approve/send as-is, edit first, ask the customer for missing info
   (regenerate next turn), or reject. Only a future owner-triggered sender
   node may deliver messages, never the AI path.
 - Kitchen auto-push stays disabled until the approval sender exists.
   Do not re-add the old `Push to Kitchen Group` / `Upsert CRM Lead` nodes.
-- Drafts are staged in n8n workflow static data (`eedDraft:<id>`, purged
-  with the 24-hour briefs). The schema in `line-ai/draft-schema.mjs` is the
-  single definition so a later PostgreSQL move only swaps the store adapter.
+- Drafts persist in PostgreSQL via the Internal API chain (no static Draft
+  staging on the success path). The schema in `line-ai/draft-schema.mjs` is
+  the single domain contract; storage adapters only map it 1:1.
 - Central database: see `docs/database.md`. `DB_ADAPTER` (memory/file/
   postgres), `DB_DIR`, `DATABASE_URL` live in the host environment, never in
-  the repo. Static-data staging in n8n is an explicitly marked ingress
-  fallback; the persistent repository is the source of truth.
-- Internal business API: see `docs/internal-api.md`. Phase 4A builds and
-  proves it locally only — DO NOT connect production n8n to it yet, do not
-  re-import the workflow for it, do not change production credentials.
+  the repo. PostgreSQL is the durable Draft source of truth.
+- Internal business API: see `docs/internal-api.md`. Phase 4B-2 defines the
+  persistence chain in git, but DO NOT import it into live n8n, activate it,
+  or change production credentials until the owner approves after review.
+  n8n authenticates with the `EED Internal API` HTTP Header Auth credential
+  and `$env.INTERNAL_API_BASE_URL` (default http://127.0.0.1:8788).
 - PostgreSQL runtime: see `docs/database.md` (fail-closed startup, lifecycle,
   `/readiness`, migrations, real-PG integration gate). Production n8n stays
   disconnected; no sender, no kitchen push.
@@ -56,12 +59,12 @@ The Desktop launchers call `D:\eedhalal\START-EED-BOT.cmd`, which runs `line-ai/
 
 ## Workflow changes
 - Run `node scripts/check-system.mjs --write` after changing the prompt or menu source; this synchronizes the knowledge pack, combined system message, template agent prompt, deterministic router menus, and draft revision.
-- After pulling this foundation, re-import `n8n-workflow.json` in n8n and
-  ACTIVATE it so the old auto-reply/auto-push production workflow is
-  replaced. Verify in n8n that no `Reply to LINE`, `Show Loading`, HTTP
-  `push`, or kitchen nodes remain, then send one test message and confirm
-  the execution ends at `Build Draft` with `status: WAITING_FOR_HUMAN`
-  and nothing arrives in LINE.
+- After the owner approves the Phase 4B-2 workflow for import: re-import
+  `n8n-workflow.json` in n8n (it deactivates on CLI import — publish again),
+  create the `EED Internal API` header-auth credential, verify the chain ends
+  at `Verify Draft`, then send one controlled test message and confirm a
+  PostgreSQL Draft with `status: WAITING_FOR_HUMAN` and zero outbound LINE.
+  Until then, live n8n keeps running the previously approved workflow.
 - Import workflow templates through the n8n UI. For the existing conversation workflow, `node line-ai/publish-workflow.mjs` updates only the conversation nodes while preserving its model credentials and LINE/CRM integrations; set `N8N_BASE_URL`, `N8N_API_KEY`, and `N8N_LINE_WORKFLOW_ID` first, then publish the saved draft in n8n.
 - The `Deterministic FAQ` node in the existing workflow now prepares conversation input: text must set `hasSafeAnswer=false` so it reaches AI Agent and memory. Only unsupported message types receive a fixed fallback. Explicit per-box budgets are filtered against current menu prices before the AI call.
 - Without an API key, use supported n8n export/import commands. `prepare-conversation-update.mjs` reads the ignored `live-workflow-export-before.json` backup, selects `N8N_LINE_WORKFLOW_ID`, and generates a candidate plus a manual-only evaluation workflow. CLI import deactivates a workflow; publish it again and restart n8n to load the new version. Never execute a production workflow as a test: it can send LINE messages and update CRM records.

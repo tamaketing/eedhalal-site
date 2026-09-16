@@ -1,13 +1,15 @@
 # EED HALAL Internal Business API (Phase 4A)
 
-> Status: built and locally proven. **NOT YET CONNECTED TO PRODUCTION N8N.**
-> Production LINE still ends at the n8n `Build Draft` static staging; this API
-> is the persistent path that n8n and the Owner Console will use next.
+> Status: built and locally proven. **Defined in git, NOT yet imported to
+> live n8n (owner approval required first).**
+> Production LINE still runs the previously approved workflow; this API
+> is the persistent path the new workflow definition already calls.
 
 ## Current after Phase 4A (two separate tracks)
 
 ```
-LINE production → Gateway → n8n → AI → Build Draft (static staging, unchanged)
+LINE production → Gateway → n8n → AI → Normalize → Internal API chain
+(defined in `line-ai/n8n-workflow.json`, awaiting import approval)
 
 Separately (new, proven locally):
 
@@ -76,3 +78,20 @@ $env:EED_INTERNAL_API_SECRET='local-dev-secret'
 $env:DB_ADAPTER='memory'
 node server/internal-api.mjs   # http://127.0.0.1:8788
 ```
+
+## Production deployment checklist (PREPARED — DO NOT EXECUTE yet)
+
+1. Create production database `eedhalal` + least-privilege app role
+   (NOT `eedhalal_test` / `eedhalal_tester`).
+2. Set `DB_ADAPTER=postgres` in the production host environment.
+3. Set `DATABASE_URL` in the host secret manager (never in the repo).
+4. Set `EED_INTERNAL_API_SECRET` in the host secret manager.
+5. Run `node db/migrate.mjs status`, then `up`, until zero pending.
+6. Start the Internal API; verify `/readiness` reports ready.
+7. Create the `EED Internal API` HTTP Header Auth credential in n8n
+   (header `Authorization: Bearer <secret>`) + set `INTERNAL_API_BASE_URL`.
+8. Import the reviewed `line-ai/n8n-workflow.json` (do NOT activate yet).
+9. Send one controlled LINE test message.
+10. Verify the PostgreSQL Draft (`WAITING_FOR_HUMAN`, correct customer/lead).
+11. Confirm zero outbound LINE traffic in the execution.
+12. Only then consider activation — explicit owner approval required.

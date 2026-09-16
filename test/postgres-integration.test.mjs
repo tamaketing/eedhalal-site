@@ -18,6 +18,9 @@ import { maybeCreateLead } from '../services/leads.mjs';
 // - database name must contain "test", or host must be loopback,
 //   and must not be a known production name -> otherwise REFUSE
 // - cleanup truncates ONLY the 4 known tables (never anything arbitrary)
+// NOTE: run PostgreSQL-backed suites serialized
+// (node --test --test-concurrency=1 ...) — parallel files share this
+// database and their truncate hooks would otherwise overlap.
 
 const TEST_URL = process.env.EED_TEST_DATABASE_URL || '';
 const BLOCKED_DATABASES = new Set(['postgres', 'production', 'prod', 'eedhalal', 'template1']);

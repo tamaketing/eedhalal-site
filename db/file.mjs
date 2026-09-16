@@ -117,6 +117,9 @@ export function createFileAdapter(dir) {
       return exclusive(async () => {
         const tables = await load();
         if (tables.leads[row.id]) throw conflict(`lead ${row.id} already exists`);
+        if (row.sourceEventId != null && Object.values(tables.leads).some(
+          (r) => r.customerId === row.customerId && r.sourceEventId === row.sourceEventId,
+        )) throw conflict(`lead for event ${row.sourceEventId} already exists`);
         tables.leads[row.id] = stamp({ ...row }, true, now);
         await persist();
         return clone(tables.leads[row.id]);
@@ -124,6 +127,13 @@ export function createFileAdapter(dir) {
     },
     async findById(id) {
       return exclusive(async () => clone((await load()).leads[id] || null));
+    },
+    async findByCustomerAndEvent(customerId, sourceEventId) {
+      if (!sourceEventId) return null;
+      return exclusive(async () => {
+        const rows = Object.values((await load()).leads);
+        return clone(rows.find((r) => r.customerId === customerId && r.sourceEventId === sourceEventId) || null);
+      });
     },
     async listByCustomer(customerId) {
       return exclusive(async () =>
@@ -149,6 +159,9 @@ export function createFileAdapter(dir) {
         if (Object.values(tables.drafts).some((r) => r.draftId === row.draftId)) {
           throw conflict(`draftId ${row.draftId} already exists`);
         }
+        if (row.sourceEventId != null && Object.values(tables.drafts).some(
+          (r) => r.sourceEventId === row.sourceEventId,
+        )) throw conflict(`draft for event ${row.sourceEventId} already exists`);
         tables.drafts[row.id] = stamp({ ...row }, true, now);
         await persist();
         return clone(tables.drafts[row.id]);
@@ -161,6 +174,13 @@ export function createFileAdapter(dir) {
       return exclusive(async () => {
         const rows = Object.values((await load()).drafts);
         return clone(rows.find((r) => r.draftId === draftId) || null);
+      });
+    },
+    async findBySourceEventId(sourceEventId) {
+      if (!sourceEventId) return null;
+      return exclusive(async () => {
+        const rows = Object.values((await load()).drafts);
+        return clone(rows.find((r) => r.sourceEventId === sourceEventId) || null);
       });
     },
     async listByStatus(status) {

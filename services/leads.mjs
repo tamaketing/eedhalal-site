@@ -5,6 +5,7 @@
 // action in a later phase). No Order/Job is created here.
 
 import { randomUUID } from 'node:crypto';
+import { isUniqueViolation } from '../db/index.mjs';
 import { recordAudit } from './audit.mjs';
 import { sanitizeMetadata } from './sanitize.mjs';
 
@@ -96,30 +97,58 @@ export function buildLeadRow(input = {}) {
     budgetPerPerson: input.budgetPerPerson == null ? null : Number(input.budgetPerPerson),
     status: 'NEW',
     summary: String(input.summary || ''),
+    sourceEventId: input.sourceEventId ? String(input.sourceEventId) : null,
   };
 }
 
-export async function maybeCreateLead(repos, { customerId, message, actor } = {}) {
+function cleanEventId(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim().slice(0, 128);
+  return trimmed || null;
+}
+
+export async function maybeCreateLead(repos, { customerId, message, actor, sourceEventId } = {}) {
   const signals = extractLeadSignals(message);
-  if (!shouldCreateLead(signals)) return { lead: null, signals };
-  const created = await repos.transaction(async (tx) => {
-    const lead = await tx.leads.create(buildLeadRow({
-      customerId,
-      serviceType: signals.serviceType,
-      eventDate: signals.eventDate,
-      quantity: signals.quantity,
-      location: signals.location,
-      budgetPerPerson: signals.budget ?? null,
-      summary: JSON.stringify(sanitizeMetadata({ signals }).signals || {}).slice(0, 500),
-    }));
-    await recordAudit(tx, {
-      entityType: 'lead', entityId: lead.id, action: 'LEAD_CREATED',
-      actorType: actor?.type || 'SYSTEM', actorId: actor?.id || '',
-      beforeData: null, afterData: { id: lead.id, customerId, status: lead.status },
+  if (!shouldCreateLead(signals)) return { lead: null, signals, deduped: false };
+  const eventId = cleanEventId(sourceEventId);
+  // Retry of the same LINE event reuses the persisted lead — never a duplicate.
+  if (eventId) {
+    const existing = await repos.transaction((tx) => tx.leads.findByCustomerAndEvent(customerId, eventId));
+    if (existing) return { lead: existing, signals, deduped: true };
+  }
+  try {
+    const created = await repos.transaction(async (tx) => {
+      // Re-check inside the transaction: a concurrent retry may have won.
+      if (eventId) {
+        const winner = await tx.leads.findByCustomerAndEvent(customerId, eventId);
+        if (winner) return { lead: winner, deduped: true };
+      }
+      const lead = await tx.leads.create(buildLeadRow({
+        customerId,
+        serviceType: signals.serviceType,
+        eventDate: signals.eventDate,
+        quantity: signals.quantity,
+        location: signals.location,
+        budgetPerPerson: signals.budget ?? null,
+        summary: JSON.stringify(sanitizeMetadata({ signals }).signals || {}).slice(0, 500),
+        sourceEventId: eventId,
+      }));
+      await recordAudit(tx, {
+        entityType: 'lead', entityId: lead.id, action: 'LEAD_CREATED',
+        actorType: actor?.type || 'SYSTEM', actorId: actor?.id || '',
+        beforeData: null, afterData: { id: lead.id, customerId, status: lead.status },
+      });
+      return { lead, deduped: false };
     });
-    return lead;
-  });
-  return { lead: created, signals };
+    return { lead: created.lead, signals, deduped: created.deduped };
+  } catch (error) {
+    // Lost a unique race on (customer_id, source_event_id): reuse the winner.
+    if (eventId && isUniqueViolation(error)) {
+      const winner = await repos.leads.findByCustomerAndEvent(customerId, eventId);
+      if (winner) return { lead: winner, signals, deduped: true };
+    }
+    throw error;
+  }
 }
 
 export async function setLeadStatus(repos, leadId, to, actor = { type: 'OWNER', id: '' }) {

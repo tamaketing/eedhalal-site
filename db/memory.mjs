@@ -64,12 +64,22 @@ export function createMemoryAdapter() {
     kind: 'leads',
     async create(row, now = new Date().toISOString()) {
       if (tables.leads.has(row.id)) throw conflict(`lead ${row.id} already exists`);
+      if (row.sourceEventId != null && [...tables.leads.values()].some(
+        (r) => r.customerId === row.customerId && r.sourceEventId === row.sourceEventId,
+      )) throw conflict(`lead for event ${row.sourceEventId} already exists`);
       const saved = withTimestamps({ ...row }, true, now);
       tables.leads.set(saved.id, saved);
       return clone(saved);
     },
     async findById(id) {
       return clone(tables.leads.get(id) || null);
+    },
+    async findByCustomerAndEvent(customerId, sourceEventId) {
+      if (!sourceEventId) return null;
+      for (const row of tables.leads.values()) {
+        if (row.customerId === customerId && row.sourceEventId === sourceEventId) return clone(row);
+      }
+      return null;
     },
     async listByCustomer(customerId) {
       return [...tables.leads.values()].filter((row) => row.customerId === customerId).map(clone);
@@ -89,6 +99,9 @@ export function createMemoryAdapter() {
       if (tables.drafts.has(row.id)) throw conflict(`draft ${row.id} already exists`);
       for (const existing of tables.drafts.values()) {
         if (existing.draftId === row.draftId) throw conflict(`draftId ${row.draftId} already exists`);
+        if (row.sourceEventId != null && existing.sourceEventId === row.sourceEventId) {
+          throw conflict(`draft for event ${row.sourceEventId} already exists`);
+        }
       }
       const saved = withTimestamps({ ...row }, true, now);
       tables.drafts.set(saved.id, saved);
@@ -100,6 +113,13 @@ export function createMemoryAdapter() {
     async findByDraftId(draftId) {
       for (const row of tables.drafts.values()) {
         if (row.draftId === draftId) return clone(row);
+      }
+      return null;
+    },
+    async findBySourceEventId(sourceEventId) {
+      if (!sourceEventId) return null;
+      for (const row of tables.drafts.values()) {
+        if (row.sourceEventId === sourceEventId) return clone(row);
       }
       return null;
     },

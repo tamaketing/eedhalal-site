@@ -74,6 +74,7 @@ try {
     $env:N8N_LISTEN_ADDRESS = '127.0.0.1'
     $env:N8N_PORT = '5678'
     $env:N8N_BLOCK_ENV_ACCESS_IN_NODE = 'false'
+    if ([string]::IsNullOrWhiteSpace($env:INTERNAL_API_BASE_URL)) { $env:INTERNAL_API_BASE_URL = 'http://127.0.0.1:8788' }
     $env:LINE_GATEWAY_HOST = '127.0.0.1'
     $env:LINE_GATEWAY_PORT = '8787'
     Write-Host 'Starting n8n...'

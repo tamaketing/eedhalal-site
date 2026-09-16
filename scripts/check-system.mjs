@@ -375,21 +375,30 @@ function parseRouterMenus(jsCode) {
   return JSON.parse(match[1]);
 }
 
-function parseDraftRevision(jsCode) {
+function parseRevision(jsCode, nodeName) {
   const match = String(jsCode || '').match(/const RULE_REVISION = ("(?:[^"\\]|\\.)*");/);
-  assert.ok(match, 'Build Draft node must embed RULE_REVISION');
+  assert.ok(match, `${nodeName} node must embed RULE_REVISION`);
   return JSON.parse(match[1]);
 }
 
 export async function checkWorkflowFoundation(workflow, rules, catalog, legacy) {
   // Dynamic import: conversation-update.mjs imports this module, so a static
   // import here would create a module cycle.
-  const { buildConversationRouter, buildDraftNodeCode, findCustomerSenders, findKitchenAutoPush } =
-    await import('../line-ai/conversation-update.mjs');
+  const {
+    buildConversationRouter,
+    buildNormalizeNodeCode,
+    buildVerifyDraftNodeCode,
+    findCustomerSenders,
+    findKitchenAutoPush,
+    findPersistenceMisconfigurations,
+    findStaticDraftStores,
+  } = await import('../line-ai/conversation-update.mjs');
   const byId = new Map(workflow.nodes.map((node) => [node.id, node]));
   const router = byId.get('deterministic-faq');
-  const draft = byId.get('build-draft');
-  assert.ok(router && draft, 'workflow must contain Deterministic FAQ and Build Draft nodes');
+  const normalize = byId.get('normalize-event');
+  const verify = byId.get('verify-draft');
+  assert.ok(router && normalize && verify, 'workflow must contain the persistence chain (Deterministic FAQ, Normalize Event, Verify Draft)');
+  assert.ok(!byId.get('build-draft'), 'legacy Build Draft node must be removed (PostgreSQL is the Draft store)');
   const effective = getEffectiveMenus(legacy.menus, catalog)
     .map(({ name, price, minPerMenu }) => ({ name, price, minPerMenu }));
   assert.deepEqual(parseRouterMenus(router.parameters.jsCode), effective, 'Deterministic FAQ menus are stale; run with --write');
@@ -398,15 +407,31 @@ export async function checkWorkflowFoundation(workflow, rules, catalog, legacy) 
     buildConversationRouter(getEffectiveMenus(legacy.menus, catalog)),
     'Deterministic FAQ code is stale; run with --write',
   );
-  assert.equal(parseDraftRevision(draft.parameters.jsCode), rules.revision, 'Build Draft RULE_REVISION is stale; run with --write');
+  assert.equal(parseRevision(normalize.parameters.jsCode, 'Normalize Event'), rules.revision, 'Normalize Event RULE_REVISION is stale; run with --write');
   assert.equal(
-    draft.parameters.jsCode,
-    buildDraftNodeCode(rules.revision),
-    'Build Draft code is stale; run with --write',
+    normalize.parameters.jsCode,
+    buildNormalizeNodeCode(rules.revision),
+    'Normalize Event code is stale; run with --write',
   );
+  assert.equal(
+    verify.parameters.jsCode,
+    buildVerifyDraftNodeCode(),
+    'Verify Draft code is stale; run with --write',
+  );
+  const chain = workflow.connections;
+  assert.equal(chain['AI Agent']?.main?.[0]?.[0]?.node, 'Normalize Event', 'AI output must enter normalization');
+  assert.equal(chain['Normalize Event']?.main?.[0]?.[0]?.node, 'Resolve Customer', 'normalization must resolve the customer first');
+  assert.equal(chain['Resolve Customer']?.main?.[0]?.[0]?.node, 'Evaluate Lead', 'customer must precede lead evaluation');
+  assert.equal(chain['Evaluate Lead']?.main?.[0]?.[0]?.node, 'Persist Draft', 'lead evaluation must precede draft persistence');
+  assert.equal(chain['Persist Draft']?.main?.[0]?.[0]?.node, 'Verify Draft', 'persistence must end at the Verify Draft guard');
   assert.deepEqual(findCustomerSenders(workflow), [], 'workflow must not contain customer auto-send nodes');
   assert.deepEqual(findKitchenAutoPush(workflow), [], 'workflow must not contain kitchen auto-push nodes');
-  assert.equal(workflow.connections['AI Agent']?.main?.[0]?.[0]?.node, 'Build Draft', 'AI output must end at Build Draft');
+  assert.deepEqual(findStaticDraftStores(workflow), [], 'workflow must not stage Drafts in static data');
+  assert.deepEqual(
+    findPersistenceMisconfigurations(workflow),
+    [],
+    `persistence nodes misconfigured:\n${findPersistenceMisconfigurations(workflow).join('\n')}`,
+  );
 }
 
 export async function checkSystem(root = ROOT) {
@@ -441,12 +466,14 @@ async function writeGeneratedFiles(root = ROOT) {
   await writeFile(path.join(root, 'line-ai/knowledge-pack.md'), knowledge, 'utf8');
   const prompt = getPromptBody(await readFile(path.join(root, 'line-ai/system-prompt.md'), 'utf8'));
   await writeFile(path.join(root, 'line-ai/system-message-node.txt'), `${knowledge.trim()}\n\n${prompt}\n`, 'utf8');
-  const { buildConversationRouter, buildDraftNodeCode } = await import('../line-ai/conversation-update.mjs');
+  const { buildConversationRouter, buildNormalizeNodeCode, buildVerifyDraftNodeCode } = await import('../line-ai/conversation-update.mjs');
   const workflow = await readJson(root, 'line-ai/n8n-workflow.json');
   workflow.nodes.find((node) => node.id === 'ai-agent').parameters.options.systemMessage = `${knowledge.trim()}\n\n${prompt}\n`;
   workflow.nodes.find((node) => node.id === 'deterministic-faq').parameters.jsCode =
     buildConversationRouter(getEffectiveMenus(legacy.menus, catalog));
-  workflow.nodes.find((node) => node.id === 'build-draft').parameters.jsCode = buildDraftNodeCode(rules.revision);
+  workflow.nodes.find((node) => node.id === 'normalize-event').parameters.jsCode =
+    buildNormalizeNodeCode(rules.revision);
+  workflow.nodes.find((node) => node.id === 'verify-draft').parameters.jsCode = buildVerifyDraftNodeCode();
   await writeFile(path.join(root, 'line-ai/n8n-workflow.json'), `${JSON.stringify(workflow, null, 2)}\n`, 'utf8');
 }
 

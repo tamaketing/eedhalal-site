@@ -54,8 +54,7 @@ has run in production, never alter production schema by hand.
 
 ```
 n8n ──X direct SQL (forbidden; CI fails on direct LINE calls/lineMessaging senders)
-n8n Build Draft ──> static-data staging (INGRESS FALLBACK queue, marked in code)
-services/drafts.mjs ──> DraftRepository ──> PostgreSQL   (SOURCE OF TRUTH)
+n8n Normalize Event ──> Internal API chain ──> PostgreSQL   (SOURCE OF TRUTH)
 ```
 
 Phase 3 builds the service boundary + contract first (this is allowed by the
@@ -121,6 +120,9 @@ Guardrails: without the variable the test SKIPS (never fails, never touches
 anything); with it, the target is refused unless the database name contains
 `test` or the host is loopback, production-like names are blocked even on
 loopback, and cleanup truncates only the 4 known tables.
+Run PostgreSQL-backed suites serialized
+(`node --test --test-concurrency=1 test/persist-e2e.test.mjs test/postgres-integration.test.mjs`):
+parallel files share one test database and their truncate hooks overlap.
 Status 2026-09-17: ran green (9/9) against local PostgreSQL 17 test database
 `eedhalal_test` — REAL PG VERIFIED on this host. Re-run on any new host
 before trusting it there.

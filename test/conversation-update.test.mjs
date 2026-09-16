@@ -46,14 +46,38 @@ test('catalog knowledge uses overrides and excludes deleted menus', async () => 
 });
 
 test('conversation update preserves model credentials and business integrations', () => {
+  const httpNode = (name) => ({
+    name,
+    type: 'n8n-nodes-base.httpRequest',
+    parameters: {
+      method: 'POST',
+      url: "={{ ($env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8788') + '/api/v1/x' }}",
+      authentication: 'genericCredentialType',
+      genericAuthType: 'httpHeaderAuth',
+      options: { timeout: 10000 },
+    },
+    credentials: { httpHeaderAuth: { id: null, name: 'EED Internal API' } },
+  });
   const workflow = { nodes: [
     { name: 'AI Agent', parameters: { options: { maxIterations: 4 } } },
     { name: 'Deterministic FAQ', parameters: {} },
     { name: 'Gemini Chat Model', parameters: { modelName: 'existing-model' }, credentials: { gemini: { id: 'existing' } } },
     { name: 'Simple Memory', parameters: { contextWindowLength: 10 } },
-    { name: 'Build Draft', parameters: {} },
+    { name: 'Normalize Event', parameters: {} },
+    httpNode('Resolve Customer'),
+    httpNode('Evaluate Lead'),
+    httpNode('Persist Draft'),
+    { name: 'Verify Draft', parameters: {} },
     { name: 'Has Safe Answer?', parameters: {} },
-  ], connections: { 'Has Safe Answer?': { main: [[{ node: 'Build Draft' }], [{ node: 'AI Agent' }]] }, 'AI Agent': { main: [[{ node: 'Build Draft' }]] } } };
+  ], connections: {
+    'Has Safe Answer?': { main: [[{ node: 'Normalize Event' }], [{ node: 'AI Agent' }]] },
+    'AI Agent': { main: [[{ node: 'Normalize Event' }]] },
+    'Normalize Event': { main: [[{ node: 'Resolve Customer' }]] },
+    'Resolve Customer': { main: [[{ node: 'Evaluate Lead' }]] },
+    'Evaluate Lead': { main: [[{ node: 'Persist Draft' }]] },
+    'Persist Draft': { main: [[{ node: 'Verify Draft' }]] },
+    'Verify Draft': { main: [[]] },
+  } };
   const original = structuredClone(workflow);
   const updated = updateConversation(workflow, 'new prompt', [], '2026-09-16');
   assert.deepEqual(workflow, original);
@@ -61,6 +85,9 @@ test('conversation update preserves model credentials and business integrations'
   assert.deepEqual(updated.connections, original.connections);
   assert.equal(updated.nodes[0].parameters.options.maxIterations, 4);
   assert.equal(updated.nodes[0].parameters.options.systemMessage, 'new prompt');
-  assert.match(updated.nodes[4].parameters.jsCode, /WAITING_FOR_HUMAN/);
-  assert.match(updated.nodes[4].parameters.jsCode, /2026-09-16/);
+  const normalize = updated.nodes.find((node) => node.name === 'Normalize Event');
+  assert.match(normalize.parameters.jsCode, /sourceEventId/);
+  assert.match(normalize.parameters.jsCode, /2026-09-16/);
+  const verify = updated.nodes.find((node) => node.name === 'Verify Draft');
+  assert.match(verify.parameters.jsCode, /WAITING_FOR_HUMAN/);
 });

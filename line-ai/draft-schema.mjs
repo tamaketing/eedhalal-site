@@ -5,11 +5,11 @@
 // The owner later moves the draft to APPROVED / EDITED / REGENERATED /
 // REJECTED, and only an explicit owner-triggered sender may deliver it.
 //
-// Storage in this phase is temporary (n8n workflow static data via the
-// Build Draft node, see buildDraftNodeCode in conversation-update.mjs).
-// This module is the SINGLE schema definition so a future move to
-// PostgreSQL (or any database) only replaces the store adapter —
-// business logic and status transitions stay unchanged.
+// Storage is the persistent repository (services/drafts.mjs -> DraftRepository,
+// PostgreSQL in production), written via the Internal API persistence chain
+// (see Normalize Event in conversation-update.mjs).
+// This module is the SINGLE schema definition so storage changes only remap
+// fields — business logic and status transitions stay unchanged.
 //
 // DO NOT DO YET (out of scope): Accounting, Finance, Quotation PDF,
 // Receipt, Invoice, Supplier, Job Costing, extra AI agents, full dashboard.

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 
 // Human-approval foundation: nodes that contact a customer directly.
-// AI output must end at the Build Draft node (WAITING_FOR_HUMAN) instead.
+// AI output must flow into the persistence chain (ending at Verify Draft),
+// never into a sender.
 export const CUSTOMER_SENDER_OPERATIONS = Object.freeze([
   'reply',
   'push',
@@ -10,6 +11,12 @@ export const CUSTOMER_SENDER_OPERATIONS = Object.freeze([
   'narrowcast',
   'displayLoading',
 ]);
+
+// The n8n credential (header auth) that carries EED_INTERNAL_API_SECRET.
+// The JSON holds this NAME only — the secret itself lives in n8n's store.
+export const INTERNAL_API_CREDENTIAL_NAME = 'EED Internal API';
+export const INTERNAL_API_URL_EXPRESSION =
+  "={{ ($env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8788') + '/api/v1/___PATH___' }}";
 
 export function findCustomerSenders(workflow) {
   const hits = [];
@@ -37,20 +44,59 @@ export function findKitchenAutoPush(workflow) {
   return hits;
 }
 
-// Code for the terminal "Build Draft" node. It NEVER calls LINE: it turns
-// the AI (or deterministic fallback) text into a Draft with status
-// WAITING_FOR_HUMAN, stages it in workflow static data as an INGRESS FALLBACK
-// queue, and ends the workflow for owner review.
-// Source of truth is the persistent repository (services/drafts.mjs ->
-// DraftRepository, see docs/database.md), NOT this static staging. Until the
-// internal API exists (Phase 4), n8n cannot write the repository directly, so
-// this fallback stays explicitly marked and holds no business logic.
-export function buildDraftNodeCode(ruleRevision = '') {
+// Static Draft staging must not exist on the success path: PostgreSQL (via
+// the Internal API chain below) is the single durable Draft store.
+export function findStaticDraftStores(workflow) {
+  const hits = [];
+  for (const node of workflow?.nodes || []) {
+    const code = node.parameters?.jsCode || '';
+    if (/\beedDraft:/.test(code) || /\$getWorkflowStaticData/.test(code)) hits.push(node.name);
+  }
+  return hits;
+}
+
+// Guards for the Internal API HTTP nodes: header-auth credential by NAME
+// only (never a literal secret), env-based URL, timeout, no database access.
+export function findPersistenceMisconfigurations(workflow) {
+  const problems = [];
+  for (const name of ['Resolve Customer', 'Evaluate Lead', 'Persist Draft']) {
+    const node = (workflow?.nodes || []).find((n) => n.name === name);
+    if (!node) {
+      problems.push(`${name}: missing`);
+      continue;
+    }
+    const params = node.parameters || {};
+    if (node.type !== 'n8n-nodes-base.httpRequest') problems.push(`${name}: must be an HTTP Request node`);
+    if (params.authentication !== 'genericCredentialType' || params.genericAuthType !== 'httpHeaderAuth') {
+      problems.push(`${name}: must use HTTP Header Auth credential`);
+    }
+    const credentialName = node.credentials?.httpHeaderAuth?.name;
+    if (credentialName !== INTERNAL_API_CREDENTIAL_NAME) {
+      problems.push(`${name}: must reference the '${INTERNAL_API_CREDENTIAL_NAME}' credential by name`);
+    }
+    if (typeof params.url !== 'string' || !params.url.includes('$env.INTERNAL_API_BASE_URL')) {
+      problems.push(`${name}: URL must derive from $env.INTERNAL_API_BASE_URL`);
+    }
+    if (JSON.stringify(params).match(/Bearer\s+[A-Za-z0-9\-_~+/=]{20,}/)) {
+      problems.push(`${name}: must not embed a bearer secret`);
+    }
+    if (/DATABASE_URL|postgres:\/\//i.test(JSON.stringify(params))) {
+      problems.push(`${name}: n8n must never touch the database directly`);
+    }
+    if (!params.options?.timeout) problems.push(`${name}: must set a request timeout`);
+  }
+  return problems;
+}
+
+// Code for the "Normalize Event" node. It NEVER calls LINE and NEVER writes
+// static staging: it turns the AI (or deterministic fallback) text plus the
+// LINE webhook event into a flat, safe payload for the Internal API chain.
+// Stable LINE identifiers (message.id, webhookEventId) become sourceEventId
+// so retried deliveries deduplicate instead of duplicating business records.
+export function buildNormalizeNodeCode(ruleRevision = '') {
   const revision = JSON.stringify(String(ruleRevision || ''));
-  return `// EED HALAL human-approval foundation — this node NEVER sends to LINE.
-// It converts AI/deterministic output into a Draft (WAITING_FOR_HUMAN).
-// Static-data staging below is an INGRESS FALLBACK queue only; the source of
-// truth is the persistent repository (services/drafts.mjs). See docs/database.md.
+  return `// EED HALAL persistence chain — normalization only. No LINE calls,
+// no static writes. PostgreSQL (via Internal API) is the Draft store.
 const RULE_REVISION = ${revision};
 function readNode(name) {
   try { return $(name).first().json; } catch (error) { return null; }
@@ -60,39 +106,90 @@ const incoming = $input.first().json || {};
 const event = webhook.body?.events?.[0] || incoming.body?.events?.[0] || {};
 const source = event.source || {};
 const message = event.message || {};
-const customerId = source.userId || '';
+const delivery = event.deliveryContext || {};
+const sourceEventId = message.id || event.webhookEventId || delivery.webhookEventId || null;
 const channel = source.groupId ? 'line-group' : source.roomId ? 'line-room' : 'line';
 const incomingMessage = message.type === 'text'
   ? String(message.text || '')
   : (message.type ? '[non-text message: ' + message.type + ']' : '');
 const aiText = String(incoming.output ?? incoming.text ?? '');
 const isFallback = incoming.responseSource !== 'conversation-ai';
-const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
-const now = new Date().toISOString();
-const draft = {
-  draftId: 'LD-' + stamp + '-' + rand,
-  customerId,
-  leadId: null,
+return [{ json: {
+  lineUserId: source.userId || '',
+  displayName: '',
   channel,
   incomingMessage,
   draftResponse: aiText,
-  status: 'WAITING_FOR_HUMAN',
-  createdAt: now,
-  updatedAt: now,
-  approvedAt: null,
-  sentAt: null,
   source: isFallback ? 'deterministic-fallback' : 'conversation-ai',
   aiModel: 'models/gemini-2.5-flash',
   ruleRevision: RULE_REVISION,
-  metadata: { replyToken: event.replyToken || null, budgetContext: incoming.budgetContext || null },
-  history: [{ at: now, from: null, to: 'WAITING_FOR_HUMAN', actor: 'system' }],
-};
-try {
-  const store = $getWorkflowStaticData('global');
-  store['eedDraft:' + draft.draftId] = draft;
-} catch (error) {}
-return [{ json: { draft } }];`;
+  sourceEventId,
+  replyToken: event.replyToken || null,
+  budgetContext: incoming.budgetContext || null,
+} }];`;
+}
+
+// Declarative Internal API call. Auth comes from the n8n credential store
+// (HTTP Header Auth named 'EED Internal API'); the secret never appears here.
+export function buildApiHttpNode({ id, name, apiPath, jsonBody, position }) {
+  return {
+    parameters: {
+      method: 'POST',
+      url: INTERNAL_API_URL_EXPRESSION.replace('___PATH___', apiPath),
+      authentication: 'genericCredentialType',
+      genericAuthType: 'httpHeaderAuth',
+      sendBody: true,
+      specifyBody: 'json',
+      jsonBody,
+      options: { timeout: 10000 },
+    },
+    credentials: { httpHeaderAuth: { id: null, name: INTERNAL_API_CREDENTIAL_NAME } },
+    id,
+    name,
+    type: 'n8n-nodes-base.httpRequest',
+    typeVersion: 4.2,
+    position,
+  };
+}
+
+export function buildPersistenceNodes() {
+  return [
+    buildApiHttpNode({
+      id: 'resolve-customer',
+      name: 'Resolve Customer',
+      apiPath: 'customers/resolve',
+      jsonBody: '={\n  "lineUserId": "{{ $json.lineUserId }}",\n  "displayName": "{{ $json.displayName }}"\n}',
+      position: [1260, 300],
+    }),
+    buildApiHttpNode({
+      id: 'evaluate-lead',
+      name: 'Evaluate Lead',
+      apiPath: 'leads/evaluate',
+      jsonBody: '={\n  "customerId": "{{ $("Resolve Customer").item.json.customer.id }}",\n  "message": "{{ $("Normalize Event").item.json.incomingMessage }}",\n  "sourceEventId": "{{ $("Normalize Event").item.json.sourceEventId }}"\n}',
+      position: [1460, 300],
+    }),
+    buildApiHttpNode({
+      id: 'persist-draft',
+      name: 'Persist Draft',
+      apiPath: 'drafts',
+      jsonBody: '={\n  "customerId": "{{ $("Resolve Customer").item.json.customer.id }}",\n  "leadId": "{{ $("Evaluate Lead").item.json.lead?.id || null }}",\n  "channel": "{{ $("Normalize Event").item.json.channel }}",\n  "incomingMessage": "{{ $("Normalize Event").item.json.incomingMessage }}",\n  "draftResponse": "{{ $("Normalize Event").item.json.draftResponse }}",\n  "source": "{{ $("Normalize Event").item.json.source }}",\n  "aiModel": "{{ $("Normalize Event").item.json.aiModel }}",\n  "ruleRevision": "{{ $("Normalize Event").item.json.ruleRevision }}",\n  "sourceEventId": "{{ $("Normalize Event").item.json.sourceEventId }}",\n  "metadata": {{ JSON.stringify({ replyToken: $("Normalize Event").item.json.replyToken, budgetContext: $("Normalize Event").item.json.budgetContext }) }}\n}',
+      position: [1660, 300],
+    }),
+  ];
+}
+
+// Code for the terminal "Verify Draft" node: asserts the persisted Draft came
+// back WAITING_FOR_HUMAN and STOPS. No LINE calls, no static writes, no
+// fallback. Any failure surfaces as a failed execution for the owner.
+export function buildVerifyDraftNodeCode() {
+  return `// EED HALAL persistence chain — terminal guard. Asserts PostgreSQL holds
+// a WAITING_FOR_HUMAN draft, then STOPS. Never sends, never stores.
+const out = $input.first().json || {};
+const draft = out.draft || {};
+if (draft.status !== 'WAITING_FOR_HUMAN') {
+  throw new Error('Draft persistence did not return WAITING_FOR_HUMAN; stopping without LINE send.');
+}
+return [{ json: { draftId: draft.draftId || null, status: draft.status, deduped: !!out.deduped } }];`;
 }
 export function buildConversationRouter(menus = []) {
 return `const menus = ${JSON.stringify(menus.map(({ name, price, minPerMenu }) => ({ name, price, minPerMenu })))};
@@ -113,25 +210,44 @@ export const conversationRouter = buildConversationRouter();
 
 export function updateConversation(workflow, systemMessage, menus = [], ruleRevision = '') {
   const updated = structuredClone(workflow);
-  const agent = updated.nodes.find((node) => node.name === 'AI Agent');
-  const router = updated.nodes.find((node) => node.name === 'Deterministic FAQ');
-  const model = updated.nodes.find((node) => node.name === 'Gemini Chat Model');
-  const memory = updated.nodes.find((node) => node.name === 'Simple Memory');
-  const draft = updated.nodes.find((node) => node.name === 'Build Draft');
+  const byName = (name) => updated.nodes.find((node) => node.name === name);
+  const agent = byName('AI Agent');
+  const router = byName('Deterministic FAQ');
+  const model = byName('Gemini Chat Model');
+  const memory = byName('Simple Memory');
+  const normalize = byName('Normalize Event');
+  const resolve = byName('Resolve Customer');
+  const evaluate = byName('Evaluate Lead');
+  const persist = byName('Persist Draft');
+  const verify = byName('Verify Draft');
   const routerBranch = updated.connections['Has Safe Answer?'];
-  assert.ok(agent && router && model && memory && draft && routerBranch, 'Expected human-approval nodes are missing (AI Agent, Deterministic FAQ, Has Safe Answer?, Build Draft, Gemini Chat Model, Simple Memory).');
+  assert.ok(agent && router && model && memory && normalize && resolve && evaluate && persist && verify && routerBranch,
+    'Expected persistence-chain nodes are missing (AI Agent, Deterministic FAQ, Has Safe Answer?, Normalize Event, Resolve Customer, Evaluate Lead, Persist Draft, Verify Draft, Gemini Chat Model, Simple Memory).');
+  assert.ok(!byName('Build Draft'), 'Legacy Build Draft node must be removed (PostgreSQL is the Draft store).');
   assert.ok(model.credentials && Object.keys(model.credentials).length, 'The existing model needs a configured credential.');
+  const chain = updated.connections;
   assert.equal(routerBranch?.main?.[1]?.[0]?.node, agent.name, 'AI fallback branch is missing.');
-  assert.equal(routerBranch?.main?.[0]?.[0]?.node, draft.name, 'Deterministic branch must end at Build Draft.');
-  assert.equal(updated.connections['AI Agent']?.main?.[0]?.[0]?.node, draft.name, 'AI output must end at Build Draft (no auto-send).');
+  assert.equal(routerBranch?.main?.[0]?.[0]?.node, normalize.name, 'Deterministic branch must enter normalization.');
+  assert.equal(chain['AI Agent']?.main?.[0]?.[0]?.node, normalize.name, 'AI output must enter normalization (no auto-send).');
+  assert.equal(chain['Normalize Event']?.main?.[0]?.[0]?.node, resolve.name, 'Normalization must resolve the customer first.');
+  assert.equal(chain['Resolve Customer']?.main?.[0]?.[0]?.node, evaluate.name, 'Customer must precede lead evaluation.');
+  assert.equal(chain['Evaluate Lead']?.main?.[0]?.[0]?.node, persist.name, 'Lead evaluation must precede draft persistence.');
+  assert.equal(chain['Persist Draft']?.main?.[0]?.[0]?.node, verify.name, 'Persistence must end at the Verify Draft guard.');
+  const terminalEdges = (chain['Verify Draft']?.main || []).flat().filter((edge) => edge?.node);
+  assert.deepEqual(terminalEdges, [], 'Verify Draft is terminal (STOP, never a sender).');
   const senders = findCustomerSenders(updated);
   assert.deepEqual(senders, [], `Customer auto-send nodes must not exist: ${senders.join(', ')}`);
   const kitchenPush = findKitchenAutoPush(updated);
   assert.deepEqual(kitchenPush, [], `Kitchen auto-push nodes must stay disabled: ${kitchenPush.join(', ')}`);
+  const staticStores = findStaticDraftStores(updated);
+  assert.deepEqual(staticStores, [], `Static Draft staging must not exist: ${staticStores.join(', ')}`);
+  const misconfigurations = findPersistenceMisconfigurations(updated);
+  assert.deepEqual(misconfigurations, [], `Persistence nodes misconfigured:\n${misconfigurations.join('\n')}`);
   agent.parameters.options = { ...agent.parameters.options, systemMessage };
   agent.parameters.text = "={{ 'เวลาปัจจุบันประเทศไทย: ' + $now.setZone('Asia/Bangkok').toISO() + '\\nข้อความลูกค้า: ' + $json.body.events[0].message.text + ($json.budgetContext || '') }}";
   router.parameters.jsCode = buildConversationRouter(menus);
-  draft.parameters.jsCode = buildDraftNodeCode(ruleRevision);
+  normalize.parameters.jsCode = buildNormalizeNodeCode(ruleRevision);
+  verify.parameters.jsCode = buildVerifyDraftNodeCode();
   // Do not mix different customers' conversation history in a shared group.
   memory.parameters.sessionKey = "={{ ($json.body.events[0].source.groupId || $json.body.events[0].source.roomId || 'direct') + ':' + $json.body.events[0].source.userId }}";
   // Remove only orphan connection entries left by deleted nodes.

@@ -71,16 +71,23 @@ test('ping reports adapter readiness without secrets', async () => {
   });
 });
 
-test('migrations apply 001 then 002 and rerun safely', async () => {
+test('migrations apply in order and rerun safely', async () => {
   const fake = createFakePg();
   const env = { DB_ADAPTER: 'postgres' };
+  const { readdir } = await import('node:fs/promises');
+  const { default: path } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '../db/migrations');
+  const expected = (await readdir(dir)).filter((f) => /^\d+_.*\.sql$/.test(f)).sort()
+    .map((f) => f.replace(/\.sql$/, ''));
+  assert.ok(expected.length >= 3, 'migrations 001-003 expected');
   const before = await migrateStatus(env, fake.query);
-  assert.deepEqual(before.pending, ['001_core', '002_owner_final']);
+  assert.deepEqual(before.pending, expected);
   const first = await migrateUp(env, fake.query);
-  assert.deepEqual(first.applied, ['001_core', '002_owner_final']);
+  assert.deepEqual(first.applied, expected);
   const second = await migrateUp(env, fake.query);
   assert.deepEqual(second.applied, []);
   const after = await migrateStatus(env, fake.query);
   assert.deepEqual(after.pending, []);
-  assert.deepEqual(after.applied, ['001_core', '002_owner_final']);
+  assert.deepEqual(after.applied, expected);
 });

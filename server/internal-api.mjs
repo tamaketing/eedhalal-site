@@ -8,7 +8,8 @@
 //   POST /api/v1/customers/resolve { lineUserId, displayName? }
 //   POST /api/v1/leads/evaluate    { customerId, message, context? }
 //   POST /api/v1/drafts            { customerId, leadId?, channel?, incomingMessage,
-//                                    draftResponse, source?, aiModel?, ruleRevision?, metadata? }
+//                                    draftResponse, source?, aiModel?, ruleRevision?,
+//                                    sourceEventId?, metadata? } -> 201 (200 + deduped on retry)
 //   GET  /api/v1/drafts?status=&limit=
 //   GET  /api/v1/drafts/:id        (UUID id or human draftId)
 //   POST /api/v1/drafts/:id/approve { ownerId?, expectedUpdatedAt?, expectedStatus? }
@@ -27,7 +28,7 @@ import { presentCustomer, presentDraft, presentLead } from './present.mjs';
 import { ConflictError, NotFoundError, UnauthorizedError, ValidationError } from '../services/errors.mjs';
 import { maybeCreateLead } from '../services/leads.mjs';
 import { resolveCustomer } from '../services/customers.mjs';
-import { approveDraft, editDraft, persistDraft, rejectDraft } from '../services/drafts.mjs';
+import { approveDraft, editDraft, persistDraftOnce, rejectDraft } from '../services/drafts.mjs';
 
 const MAX_BODY_BYTES = 256 * 1024;
 const DEFAULT_LIMIT = 20;
@@ -157,10 +158,12 @@ export function createInternalApi({ repos, env = process.env } = {}) {
         const message = needString(body.message, 'message');
         const customer = await store.customers.findById(customerId);
         if (!customer) throw new NotFoundError(`customer not found: ${customerId}`);
-        const { lead, signals } = await maybeCreateLead(store, {
-          customerId, message, actor: { type: 'SYSTEM', id: 'internal-api' },
+        const { lead, signals, deduped } = await maybeCreateLead(store, {
+          customerId, message,
+          sourceEventId: typeof body.sourceEventId === 'string' ? body.sourceEventId : null,
+          actor: { type: 'SYSTEM', id: 'internal-api' },
         });
-        send(response, 200, { shouldCreate: !!lead, signals, lead: presentLead(lead) });
+        send(response, 200, { shouldCreate: !!lead, signals, lead: presentLead(lead), deduped: !!deduped });
         return;
       }
 
@@ -174,7 +177,7 @@ export function createInternalApi({ repos, env = process.env } = {}) {
           const lead = await store.leads.findById(String(body.leadId));
           if (!lead) throw new NotFoundError(`lead not found: ${body.leadId}`);
         }
-        const draft = await persistDraft(store, {
+        const draft = await persistDraftOnce(store, {
           customerId,
           leadId: body.leadId ? String(body.leadId) : null,
           channel: body.channel ? String(body.channel) : 'line',
@@ -183,9 +186,10 @@ export function createInternalApi({ repos, env = process.env } = {}) {
           source: body.source ? String(body.source) : 'conversation-ai',
           aiModel: body.aiModel ? String(body.aiModel) : '',
           ruleRevision: body.ruleRevision ? String(body.ruleRevision) : '',
+          sourceEventId: typeof body.sourceEventId === 'string' ? body.sourceEventId : null,
           metadata: body.metadata && typeof body.metadata === 'object' ? body.metadata : {},
         }, { type: 'AI', id: '' });
-        send(response, 201, { draft: presentDraft(draft) });
+        send(response, draft.deduped ? 200 : 201, { draft: presentDraft(draft), deduped: !!draft.deduped });
         return;
       }
 

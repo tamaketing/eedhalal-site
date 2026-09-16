@@ -43,6 +43,13 @@ export function createFakePg() {
       for (const key of uniques[table] || []) {
         if (row[key] != null && [...store.values()].some((r) => r[key] === row[key])) throw duplicate();
       }
+      // Mirrors migration 003 partial unique indexes.
+      if (table === 'drafts' && row.source_event_id != null &&
+        [...store.values()].some((r) => r.source_event_id === row.source_event_id)) throw duplicate();
+      if (table === 'leads' && row.source_event_id != null &&
+        [...store.values()].some((r) => r.customer_id === row.customer_id && r.source_event_id === row.source_event_id)) {
+        throw duplicate();
+      }
       store.set(row.id, row);
       return { rows: [{ ...row }] };
     }
@@ -80,6 +87,8 @@ export function createFakePg() {
     // Full migration files (multi-statement DDL): accept without simulating.
     if (/CREATE TABLE IF NOT EXISTS (customers|leads|drafts|audit_logs)/.test(clean)) return { rows: [] };
     if (/ALTER TABLE drafts ADD COLUMN IF NOT EXISTS/.test(clean)) return { rows: [] };
+    if (/ALTER TABLE leads ADD COLUMN IF NOT EXISTS/.test(clean)) return { rows: [] };
+    if (/CREATE UNIQUE INDEX IF NOT EXISTS/.test(clean)) return { rows: [] };
     throw new Error(`fake pg: unsupported query ${clean.slice(0, 80)}`);
   }
 
