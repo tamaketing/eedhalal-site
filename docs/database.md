@@ -89,6 +89,42 @@ node --test test/central-database.test.mjs
 4. `node db/migrate.mjs status` → `node db/migrate.mjs up`.
 5. Schedule `pg_dump` backups (below) and test a restore quarterly.
 
+## PostgreSQL runtime rules (Phase 4B-1)
+
+- **Fail closed:** `DB_ADAPTER=postgres` with an unreachable/misconfigured
+  database refuses to start the API — never silently falls back to
+  memory/file/static staging.
+- **Lifecycle:** startup runs a connectivity check first; SIGINT/SIGTERM stop
+  accepting requests, then close the pool cleanly.
+- **Readiness:** `GET /healthz` = process alive; `GET /readiness` = database
+  reachable (`{ ready, adapter }`, no hosts/users/passwords/URLs/secrets).
+- **Concurrency:** owner actions use `UPDATE ... WHERE id AND status AND
+  updated_at` (0 rows = HTTP 409) — safe across processes.
+- **Atomicity:** draft state change + audit records commit in one transaction.
+- **TLS:** set `PGSSLMODE=require` (or `?sslmode=require` in the URL) to
+  verify the server certificate. Verification is never disabled by this repo.
+- **Migrations:** versioned, transactional per migration, recorded in
+  `schema_migrations`, guarded by an advisory lock, safe to rerun.
+- **Known driver behavior:** `NUMERIC` (e.g. `budget_per_person`) reads back
+  as string from real `pg` — coerce with `Number()` at use sites.
+
+## Real-PostgreSQL integration test
+
+```powershell
+# Password via PGPASSWORD (from the setup step) or .pgpass — never in the repo.
+$env:PGPASSWORD = '<from-step-2>'
+$env:EED_TEST_DATABASE_URL = 'postgres://eedhalal_tester@localhost:5432/eedhalal_test'
+node --test test/postgres-integration.test.mjs
+```
+
+Guardrails: without the variable the test SKIPS (never fails, never touches
+anything); with it, the target is refused unless the database name contains
+`test` or the host is loopback, production-like names are blocked even on
+loopback, and cleanup truncates only the 4 known tables.
+Status 2026-09-17: ran green (9/9) against local PostgreSQL 17 test database
+`eedhalal_test` — REAL PG VERIFIED on this host. Re-run on any new host
+before trusting it there.
+
 ## Backup / restore (no passwords in repo — pass via env/prompts)
 
 ```bash

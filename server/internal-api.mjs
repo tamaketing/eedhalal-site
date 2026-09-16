@@ -84,9 +84,18 @@ function needString(value, field) {
   return value;
 }
 
+function withTimeout(promise, ms) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('timed out')), ms);
+  });
+  return Promise.race([promise.finally(() => clearTimeout(timer)), timeout]);
+}
+
 export function createInternalApi({ repos, env = process.env } = {}) {
   if (!repos) throw new Error('repos are required.');
   const store = repos;
+  const adapterKind = (env.DB_ADAPTER || 'memory').toLowerCase();
 
   async function findDraft(id) {
     return (await store.drafts.findById(id)) || (await store.drafts.findByDraftId(id));
@@ -99,6 +108,19 @@ export function createInternalApi({ repos, env = process.env } = {}) {
 
       if (request.method === 'GET' && pathname === '/healthz') {
         send(response, 200, { status: 'ok' });
+        return;
+      }
+
+      // Liveness vs readiness: healthz = process alive; readiness = database
+      // reachable. Only the adapter name is exposed — never hosts, users,
+      // passwords, URLs, or secrets.
+      if (request.method === 'GET' && pathname === '/readiness') {
+        try {
+          await withTimeout(store.ping(), 5000);
+          send(response, 200, { ready: true, adapter: adapterKind });
+        } catch {
+          send(response, 503, { ready: false, adapter: adapterKind });
+        }
         return;
       }
 
@@ -219,9 +241,28 @@ async function main() {
   const host = env.INTERNAL_API_HOST || '127.0.0.1';
   const port = Number(env.INTERNAL_API_PORT || 8788);
   if (!env.EED_INTERNAL_API_SECRET) throw new Error('EED_INTERNAL_API_SECRET is required.');
-  const { server } = createInternalApi({ repos: createAdapter(env), env });
+  const repos = createAdapter(env);
+  // Fail closed: never accept traffic when postgres is configured but down.
+  // (No silent fallback to memory/file/static staging.)
+  try {
+    await withTimeout(repos.ping(), 10000);
+  } catch (error) {
+    await repos.close?.().catch(() => {});
+    throw new Error(`database not ready for adapter ${(env.DB_ADAPTER || 'memory').toLowerCase()}: ${error.message}`);
+  }
+  const { server } = createInternalApi({ repos, env });
   await new Promise((resolve) => server.listen(port, host, resolve));
   console.log(`Internal business API listening on http://${host}:${port} (loopback only)`);
+  const shutdown = (signal) => {
+    server.close(async () => {
+      await repos.close?.().catch(() => {});
+      process.exit(0);
+    });
+    // Force out if connections linger.
+    setTimeout(() => process.exit(0), 5000).unref();
+  };
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

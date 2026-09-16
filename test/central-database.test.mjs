@@ -15,75 +15,7 @@ import { extractLeadSignals, maybeCreateLead, setLeadStatus, shouldCreateLead } 
 import { resolveCustomer } from '../services/customers.mjs';
 import { sanitizeMetadata } from '../services/sanitize.mjs';
 import { readFile } from 'node:fs/promises';
-
-// Minimal fake for the postgres adapter's query surface: understands the exact
-// INSERT/SELECT/UPDATE shapes db/postgres.mjs emits, enforces UNIQUE like
-// PostgreSQL (code 23505), and returns JSONB columns as objects.
-function createFakePg() {
-  const tables = { customers: new Map(), leads: new Map(), drafts: new Map(), audit_logs: new Map() };
-  const uniques = { customers: ['line_user_id'], drafts: ['draft_id'] };
-  const JSON_COLS = new Set(['metadata', 'history', 'before_data', 'after_data']);
-  const duplicate = () => Object.assign(new Error('duplicate key value'), { code: '23505' });
-  const decode = (col, value) => (JSON_COLS.has(col) && typeof value === 'string' ? JSON.parse(value) : value);
-
-  async function query(text, params = []) {
-    const clean = text.trim().replace(/\s+/g, ' ');
-    let match;
-    if ((match = clean.match(/^INSERT INTO (\w+) \(([^)]+)\) VALUES/i))) {
-      const table = match[1];
-      const cols = match[2].split(',').map((s) => s.trim());
-      const now = new Date().toISOString();
-      const row = {};
-      cols.forEach((col, i) => { row[col] = decode(col, params[i]); });
-      if (!row.created_at) row.created_at = now;
-      if (table !== 'audit_logs' && !row.updated_at) row.updated_at = now;
-      if (table === 'drafts') {
-        if (!('approved_at' in row)) row.approved_at = null;
-        if (!('sent_at' in row)) row.sent_at = null;
-      }
-      const store = tables[table];
-      if (!store) throw new Error(`fake pg: unknown table ${table}`);
-      if (store.has(row.id)) throw duplicate();
-      for (const key of uniques[table] || []) {
-        if (row[key] != null && [...store.values()].some((r) => r[key] === row[key])) throw duplicate();
-      }
-      store.set(row.id, row);
-      return { rows: [{ ...row }] };
-    }
-    if ((match = clean.match(/^SELECT \* FROM (\w+)(?: WHERE (.+?))?(?: ORDER BY created_at ASC)?$/i))) {
-      const table = match[1];
-      let rows = [...(tables[table] || new Map()).values()];
-      const where = match[2];
-      if (where) {
-        for (const cond of where.split(/\s+AND\s+/i)) {
-          const parts = cond.trim().match(/^(\w+) = \$(\d+)$/);
-          if (!parts) throw new Error(`fake pg: unsupported condition ${cond}`);
-          rows = rows.filter((r) => r[parts[1]] === params[Number(parts[2]) - 1]);
-        }
-      }
-      rows = rows.slice().sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
-      return { rows: rows.map((r) => ({ ...r })) };
-    }
-    if ((match = clean.match(/^UPDATE (\w+) SET (.+) WHERE id = \$(\d+) RETURNING \*$/i))) {
-      const table = match[1];
-      const store = tables[table];
-      const id = params[Number(match[3]) - 1];
-      const row = store.get(id);
-      if (!row) return { rows: [] };
-      for (const part of match[2].split(',').map((s) => s.trim())) {
-        if (part === 'updated_at = now()') {
-          row.updated_at = new Date().toISOString();
-          continue;
-        }
-        const parts = part.match(/^(\w+) = \$(\d+)$/);
-        row[parts[1]] = decode(parts[1], params[Number(parts[2]) - 1]);
-      }
-      return { rows: [{ ...row }] };
-    }
-    throw new Error(`fake pg: unsupported query ${clean.slice(0, 80)}`);
-  }
-  return { query, tables };
-}
+import { createFakePg } from '../test-helpers/fake-pg.mjs';
 
 async function fileRepos() {
   const dir = await mkdtemp(path.join(tmpdir(), 'eed-db-'));
@@ -256,6 +188,7 @@ test('J: quote intent with facts creates a NEW lead', async () => {
   assert.equal(lead.status, 'NEW');
   assert.equal(lead.serviceType, 'buffet');
   assert.equal(lead.quantity, 100);
+  assert.equal(Number(lead.budgetPerPerson), 250);
   const draft = await persistDraft(repos, {
     customerId: customer.id, leadId: lead.id, incomingMessage: message,
     draftResponse: 'รับทราบค่ะ', ruleRevision: '2026-09-16',

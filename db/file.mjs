@@ -19,10 +19,13 @@ const TABLES = ['customers', 'leads', 'drafts', 'auditLogs'];
 export function createFileAdapter(dir) {
   if (!dir) throw new Error('DB_DIR is required for the file adapter.');
   let queue = Promise.resolve();
+  let depth = 0;
   const state = { loaded: false, tables: null };
 
-  // Serialize all mutations/reads that depend on file contents.
+  // Serialize all mutations/reads that depend on file contents. Re-entrant:
+  // code already inside a transaction runs directly instead of re-queueing.
   function exclusive(task) {
+    if (depth > 0) return task();
     const run = queue.then(task, task);
     queue = run.catch(() => {});
     return run;
@@ -173,6 +176,21 @@ export function createFileAdapter(dir) {
         return clone(tables.drafts[id]);
       });
     },
+    // Atomic within this process (runs inside the exclusive queue with no
+    // interleaving read-modify-write). Cross-process races rely on the
+    // service-layer unique retry; PostgreSQL enforces it at the database.
+    async updateIfCurrent(id, patch, expected = {}, now = new Date().toISOString()) {
+      return exclusive(async () => {
+        const tables = await load();
+        const current = tables.drafts[id];
+        if (!current) return null;
+        if (expected.status !== undefined && current.status !== expected.status) return null;
+        if (expected.updatedAt !== undefined && current.updatedAt !== expected.updatedAt) return null;
+        tables.drafts[id] = stamp({ ...current, ...patch, id }, false, now);
+        await persist();
+        return clone(tables.drafts[id]);
+      });
+    },
   };
 
   const auditLogs = {
@@ -199,7 +217,30 @@ export function createFileAdapter(dir) {
     },
   };
 
-  return { customers, leads, drafts, auditLogs };
+  return {
+    customers,
+    leads,
+    drafts,
+    auditLogs,
+    // Groups several repository calls into one exclusive section so no other
+    // task in this process can interleave between them. Repos passed to fn
+    // are the same objects (re-entrant via the depth counter above).
+    async transaction(fn) {
+      return exclusive(async () => {
+        depth += 1;
+        try {
+          return await fn({ customers, leads, drafts, auditLogs });
+        } finally {
+          depth -= 1;
+        }
+      });
+    },
+    async ping() {
+      await load();
+      return { ok: true, adapter: 'file' };
+    },
+    async close() {},
+  };
 }
 
 export { isUniqueViolation };

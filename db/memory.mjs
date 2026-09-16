@@ -20,7 +20,6 @@ export function createMemoryAdapter() {
     drafts: new Map(),
     auditLogs: new Map(),
   };
-
   const customers = {
     kind: 'customers',
     async create(row, now = new Date().toISOString()) {
@@ -114,6 +113,18 @@ export function createMemoryAdapter() {
       tables.drafts.set(id, next);
       return clone(next);
     },
+    // Atomic compare-and-swap: applies only when the row still matches the
+    // state the caller saw. Returns null on conflict (caller maps to 409).
+    // Single-threaded here, so check-and-write is naturally atomic.
+    async updateIfCurrent(id, patch, expected = {}, now = new Date().toISOString()) {
+      const current = tables.drafts.get(id);
+      if (!current) return null;
+      if (expected.status !== undefined && current.status !== expected.status) return null;
+      if (expected.updatedAt !== undefined && current.updatedAt !== expected.updatedAt) return null;
+      const next = withTimestamps({ ...current, ...patch, id }, false, now);
+      tables.drafts.set(id, next);
+      return clone(next);
+    },
   };
 
   // Append-only by construction: no update/delete methods exist.
@@ -137,7 +148,20 @@ export function createMemoryAdapter() {
     },
   };
 
-  return { customers, leads, drafts, auditLogs };
+  return {
+    customers,
+    leads,
+    drafts,
+    auditLogs,
+    // Single-threaded: the callback already runs atomically.
+    async transaction(fn) {
+      return fn({ customers, leads, drafts, auditLogs });
+    },
+    async ping() {
+      return { ok: true, adapter: 'memory' };
+    },
+    async close() {},
+  };
 }
 
 function conflict(message) {

@@ -102,34 +102,40 @@ export function buildLeadRow(input = {}) {
 export async function maybeCreateLead(repos, { customerId, message, actor } = {}) {
   const signals = extractLeadSignals(message);
   if (!shouldCreateLead(signals)) return { lead: null, signals };
-  const lead = await repos.leads.create(buildLeadRow({
-    customerId,
-    serviceType: signals.serviceType,
-    eventDate: signals.eventDate,
-    quantity: signals.quantity,
-    location: signals.location,
-    summary: JSON.stringify(sanitizeMetadata({ signals }).signals || {}).slice(0, 500),
-  }));
-  await recordAudit(repos, {
-    entityType: 'lead', entityId: lead.id, action: 'LEAD_CREATED',
-    actorType: actor?.type || 'SYSTEM', actorId: actor?.id || '',
-    beforeData: null, afterData: { id: lead.id, customerId, status: lead.status },
+  const created = await repos.transaction(async (tx) => {
+    const lead = await tx.leads.create(buildLeadRow({
+      customerId,
+      serviceType: signals.serviceType,
+      eventDate: signals.eventDate,
+      quantity: signals.quantity,
+      location: signals.location,
+      budgetPerPerson: signals.budget ?? null,
+      summary: JSON.stringify(sanitizeMetadata({ signals }).signals || {}).slice(0, 500),
+    }));
+    await recordAudit(tx, {
+      entityType: 'lead', entityId: lead.id, action: 'LEAD_CREATED',
+      actorType: actor?.type || 'SYSTEM', actorId: actor?.id || '',
+      beforeData: null, afterData: { id: lead.id, customerId, status: lead.status },
+    });
+    return lead;
   });
-  return { lead, signals };
+  return { lead: created, signals };
 }
 
 export async function setLeadStatus(repos, leadId, to, actor = { type: 'OWNER', id: '' }) {
   if (!LEAD_STATUSES.includes(to)) throw new Error(`unknown lead status: ${to}`);
-  const current = await repos.leads.findById(leadId);
-  if (!current) throw new Error(`lead not found: ${leadId}`);
-  if (!allowedLeadTransitionsFrom(current.status).includes(to)) {
-    throw new Error(`illegal lead transition: ${current.status} -> ${to}`);
-  }
-  const next = await repos.leads.update(leadId, { status: to });
-  await recordAudit(repos, {
-    entityType: 'lead', entityId: leadId, action: 'LEAD_STATUS_CHANGED',
-    actorType: actor.type || 'OWNER', actorId: actor.id || '',
-    beforeData: { status: current.status }, afterData: { status: to },
+  return repos.transaction(async (tx) => {
+    const current = await tx.leads.findById(leadId);
+    if (!current) throw new Error(`lead not found: ${leadId}`);
+    if (!allowedLeadTransitionsFrom(current.status).includes(to)) {
+      throw new Error(`illegal lead transition: ${current.status} -> ${to}`);
+    }
+    const next = await tx.leads.update(leadId, { status: to });
+    await recordAudit(tx, {
+      entityType: 'lead', entityId: leadId, action: 'LEAD_STATUS_CHANGED',
+      actorType: actor.type || 'OWNER', actorId: actor.id || '',
+      beforeData: { status: current.status }, afterData: { status: to },
+    });
+    return next;
   });
-  return next;
 }

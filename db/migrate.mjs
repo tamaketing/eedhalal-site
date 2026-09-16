@@ -45,6 +45,12 @@ export async function migrateUp(env = process.env, query) {
       const sql = await readFile(migration.file, 'utf8');
       await run('BEGIN');
       try {
+        // Serializes concurrent migrate runs (multi-process safe).
+        await run('SELECT pg_advisory_xact_lock(hashtext($1))', ['eedhalal-migrate']);
+        if ((await appliedVersions(run)).has(migration.version)) {
+          await run('COMMIT');
+          continue;
+        }
         await run(sql);
         await run('INSERT INTO schema_migrations (version) VALUES ($1)', [migration.version]);
         await run('COMMIT');
@@ -66,14 +72,21 @@ export async function migrateStatus(env = process.env, query) {
     return { adapter: kind, pending: [], note: 'schemaless adapter: no SQL migrations required' };
   }
   if (!query && !env.DATABASE_URL) throw new Error('DATABASE_URL is required for migration status.');
-  const run = query || (await (async () => {
-    const { default: pg } = await import('pg');
-    const pool = new pg.Pool({ connectionString: env.DATABASE_URL });
-    return async (text, params) => pool.query(text, params);
-  })());
-  const applied = await appliedVersions(run);
-  const pending = (await listMigrations()).map((m) => m.version).filter((v) => !applied.has(v));
-  return { adapter: 'postgres', applied: [...applied], pending };
+  let pool = null;
+  const run = query || (async (text, params) => {
+    if (!pool) {
+      const { default: pg } = await import('pg');
+      pool = new pg.Pool({ connectionString: env.DATABASE_URL });
+    }
+    return pool.query(text, params);
+  });
+  try {
+    const applied = await appliedVersions(run);
+    const pending = (await listMigrations()).map((m) => m.version).filter((v) => !applied.has(v));
+    return { adapter: 'postgres', applied: [...applied], pending };
+  } finally {
+    if (pool) await pool.end();
+  }
 }
 
 async function main() {

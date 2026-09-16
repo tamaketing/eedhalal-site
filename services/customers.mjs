@@ -29,13 +29,15 @@ export async function resolveCustomer(repos, input = {}, actor = { type: 'SYSTEM
     const existing = await repos.customers.findByLineUserId(lineUserId);
     if (existing) return existing;
     try {
-      const created = await repos.customers.create(buildCustomerRow({ ...input, lineUserId }));
-      await recordAudit(repos, {
-        entityType: 'customer', entityId: created.id, action: 'CUSTOMER_CREATED',
-        actorType: actor.type || 'SYSTEM', actorId: actor.id || '',
-        beforeData: null, afterData: { id: created.id, lineUserId, displayName: created.displayName },
+      return await repos.transaction(async (tx) => {
+        const created = await tx.customers.create(buildCustomerRow({ ...input, lineUserId }));
+        await recordAudit(tx, {
+          entityType: 'customer', entityId: created.id, action: 'CUSTOMER_CREATED',
+          actorType: actor.type || 'SYSTEM', actorId: actor.id || '',
+          beforeData: null, afterData: { id: created.id, lineUserId, displayName: created.displayName },
+        });
+        return created;
       });
-      return created;
     } catch (error) {
       // Lost a race: someone else created this lineUserId first. Re-read.
       if (!isUniqueViolation(error)) throw error;

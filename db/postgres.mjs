@@ -1,13 +1,19 @@
 // EED HALAL — PostgreSQL repository adapter (production target).
-// Same repository contract as db/memory.mjs and db/file.mjs.
+// Same repository contract as db/memory.mjs and db/file.mjs, plus:
+//   drafts.updateIfCurrent(id, patch, {status?, updatedAt?}) — atomic
+//     compare-and-swap (0 rows = conflict), the cross-process guard for
+//     owner actions.
+//   transaction(fn) — BEGIN/COMMIT/ROLLBACK around state change + audit so
+//     they commit together. Business rules stay in services/*, never in SQL.
 //
 // Usage:
-//   createPostgresAdapter({ query })            // injected query fn (tests, custom pools)
-//   createPostgresAdapter({ connectionString }) // lazy `pg` import on first use
+//   createPostgresAdapter({ query })  // injected query fn (tests, custom pools;
+//                                     // transaction() degrades to direct call)
+//   createPostgresAdapter({ connectionString, ssl })  // lazy `pg` pool
 //
 // The `pg` package is intentionally NOT a repo dependency (see docs/database.md):
 // install it only on hosts that set DB_ADAPTER=postgres. Importing this module
-// never touches `pg`; the driver loads only when a connectionString query runs.
+// never touches `pg`; the driver loads only when a pool query runs.
 
 const CUSTOMER_COLUMNS = ['id', 'line_user_id', 'display_name', 'phone', 'email', 'company_name', 'tax_id', 'address', 'notes', 'created_at', 'updated_at'];
 const LEAD_COLUMNS = ['id', 'customer_id', 'source', 'service_type', 'event_date', 'quantity', 'location', 'budget_per_person', 'status', 'summary', 'created_at', 'updated_at'];
@@ -28,18 +34,7 @@ function placeholders(count, start = 1) {
   return Array.from({ length: count }, (_, i) => `$${start + i}`).join(', ');
 }
 
-export function createPostgresAdapter({ connectionString, query } = {}) {
-  if (!query && !connectionString) throw new Error('postgres adapter needs query or connectionString.');
-  let pool = null;
-  async function run(text, params = []) {
-    if (query) return query(text, params);
-    if (!pool) {
-      const { default: pg } = await import('pg');
-      pool = new pg.Pool({ connectionString });
-    }
-    return pool.query(text, params);
-  }
-
+function buildRepos(run) {
   function mapOne(result) {
     const row = result.rows?.[0];
     return row ? toCamel(row) : null;
@@ -133,26 +128,12 @@ export function createPostgresAdapter({ connectionString, query } = {}) {
       return mapAll(await run('SELECT * FROM drafts WHERE status = $1 ORDER BY created_at ASC', [status]));
     },
     async update(id, patch) {
-      const sets = [];
-      const values = [];
-      const map = { draftId: 'draft_id', customerId: 'customer_id', leadId: 'lead_id', channel: 'channel', incomingMessage: 'incoming_message', draftResponse: 'draft_response', ownerFinalResponse: 'owner_final_response', finalAction: 'final_action', status: 'status', source: 'source', aiModel: 'ai_model', ruleRevision: 'rule_revision', approvedAt: 'approved_at', sentAt: 'sent_at' };
-      for (const [camel, column] of Object.entries(map)) {
-        if (patch[camel] !== undefined) {
-          sets.push(`${column} = $${values.length + 1}`);
-          values.push(patch[camel]);
-        }
-      }
-      if (patch.metadata !== undefined) {
-        sets.push(`metadata = $${values.length + 1}`);
-        values.push(JSON.stringify(patch.metadata));
-      }
-      if (patch.history !== undefined) {
-        sets.push(`history = $${values.length + 1}`);
-        values.push(JSON.stringify(patch.history));
-      }
-      sets.push('updated_at = now()');
-      values.push(id);
-      return mapOne(await run(`UPDATE drafts SET ${sets.join(', ')} WHERE id = $${values.length} RETURNING *`, values));
+      return applyDraftUpdate(run, id, patch, {});
+    },
+    // Atomic guard for owner actions across processes: the write lands only
+    // when the row still matches the state the owner saw. Null = conflict.
+    async updateIfCurrent(id, patch, expected = {}) {
+      return applyDraftUpdate(run, id, patch, expected);
     },
   };
 
@@ -176,5 +157,102 @@ export function createPostgresAdapter({ connectionString, query } = {}) {
     },
   };
 
-  return { customers, leads, drafts, auditLogs, close: async () => { if (pool) await pool.end(); } };
+  return { customers, leads, drafts, auditLogs };
+}
+
+async function applyDraftUpdate(run, id, patch, expected) {
+  const sets = [];
+  const values = [];
+  const map = { draftId: 'draft_id', customerId: 'customer_id', leadId: 'lead_id', channel: 'channel', incomingMessage: 'incoming_message', draftResponse: 'draft_response', ownerFinalResponse: 'owner_final_response', finalAction: 'final_action', status: 'status', source: 'source', aiModel: 'ai_model', ruleRevision: 'rule_revision', approvedAt: 'approved_at', sentAt: 'sent_at' };
+  for (const [camel, column] of Object.entries(map)) {
+    if (patch[camel] !== undefined) {
+      sets.push(`${column} = $${values.length + 1}`);
+      values.push(patch[camel]);
+    }
+  }
+  if (patch.metadata !== undefined) {
+    sets.push(`metadata = $${values.length + 1}`);
+    values.push(JSON.stringify(patch.metadata));
+  }
+  if (patch.history !== undefined) {
+    sets.push(`history = $${values.length + 1}`);
+    values.push(JSON.stringify(patch.history));
+  }
+  sets.push('updated_at = now()');
+  const conditions = ['id = $1'];
+  const params = [id, ...values];
+  if (expected.status !== undefined) {
+    conditions.push(`status = $${params.length + 1}`);
+    params.push(expected.status);
+  }
+  if (expected.updatedAt !== undefined) {
+    // PostgreSQL now() carries microseconds but JS ISO strings round-trip at
+    // millisecond precision: compare truncated, otherwise every guarded write
+    // would conflict with itself. (Two writes inside the same millisecond
+    // still race on the status guard; documented in docs/database.md.)
+    conditions.push(`date_trunc('milliseconds', updated_at) = date_trunc('milliseconds', $${params.length + 1}::timestamptz)`);
+    params.push(expected.updatedAt);
+  }
+  // Renumber SET placeholders to follow $1 (id).
+  const renumbered = sets.map((clause) => clause.replace(/\$(\d+)/g, (_, n) => `$${Number(n) + 1}`));
+  const result = await run(
+    `UPDATE drafts SET ${renumbered.join(', ')} WHERE ${conditions.join(' AND ')} RETURNING *`,
+    params,
+  );
+  const row = result.rows?.[0];
+  return row ? toCamel(row) : null;
+}
+
+export function createPostgresAdapter({ connectionString, query, ssl } = {}) {
+  if (!query && !connectionString) throw new Error('postgres adapter needs query or connectionString.');
+  let pool = null;
+  async function poolQuery(text, params = []) {
+    if (!pool) {
+      const { default: pg } = await import('pg');
+      pool = new pg.Pool({ connectionString, ...(ssl ? { ssl } : {}) });
+    }
+    return pool.query(text, params);
+  }
+  const run = query || poolQuery;
+  const repos = buildRepos(run);
+
+  return {
+    ...repos,
+    // Draft state change + audit commit together. With a real pool this is a
+    // single database transaction; with an injected plain query fn it runs
+    // directly (documented: no atomicity without a pool/client).
+    async transaction(fn) {
+      if (query || !connectionString) return fn(repos);
+      if (!pool) {
+        const { default: pg } = await import('pg');
+        pool = new pg.Pool({ connectionString, ...(ssl ? { ssl } : {}) });
+      }
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const out = await fn(buildRepos((text, params = []) => client.query(text, params)));
+        await client.query('COMMIT');
+        return out;
+      } catch (error) {
+        try {
+          await client.query('ROLLBACK');
+        } catch {
+          // Rollback failure must not mask the original error.
+        }
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+    async ping() {
+      await run('SELECT 1 AS ok');
+      return { ok: true, adapter: 'postgres' };
+    },
+    async close() {
+      if (pool) {
+        await pool.end();
+        pool = null;
+      }
+    },
+  };
 }

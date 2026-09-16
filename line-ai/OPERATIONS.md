@@ -30,6 +30,9 @@ LINE customer
 - Internal business API: see `docs/internal-api.md`. Phase 4A builds and
   proves it locally only — DO NOT connect production n8n to it yet, do not
   re-import the workflow for it, do not change production credentials.
+- PostgreSQL runtime: see `docs/database.md` (fail-closed startup, lifecycle,
+  `/readiness`, migrations, real-PG integration gate). Production n8n stays
+  disconnected; no sender, no kitchen push.
 - Business data always derives from `data/business-rules.json` +
   `data/planner-overrides.json` via `node scripts/check-system.mjs --write`
   (knowledge pack, system message, router menus, draft revision).

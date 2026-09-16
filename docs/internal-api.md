@@ -37,7 +37,8 @@ never stack traces.
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/healthz` | no auth |
+| GET | `/healthz` | no auth (process alive) |
+| GET | `/readiness` | no auth (`{ ready, adapter }`, no secrets) |
 | POST | `/customers/resolve` | `{ lineUserId, displayName? }`, idempotent |
 | POST | `/leads/evaluate` | `{ customerId, message }` → `{ shouldCreate, signals, lead }` |
 | POST | `/drafts` | status forced `WAITING_FOR_HUMAN`; caller cannot set SENT |

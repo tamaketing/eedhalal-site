@@ -86,14 +86,17 @@ export async function persistDraft(repos, input = {}, actor = { type: 'AI', id: 
   });
   const errors = validateDraft(draft);
   if (errors.length) throw new Error(`invalid draft: ${errors.join('; ')}`);
-  const saved = await repos.drafts.create(toDraftRow(draft));
-  await recordAudit(repos, {
-    entityType: 'draft', entityId: saved.id, action: 'DRAFT_CREATED',
-    actorType: actor.type || 'AI', actorId: actor.id || '',
-    beforeData: null,
-    afterData: { draftId: saved.draftId, status: saved.status, customerId: saved.customerId },
+  // Draft row + audit record commit together (one transaction on PostgreSQL).
+  return repos.transaction(async (tx) => {
+    const saved = await tx.drafts.create(toDraftRow(draft));
+    await recordAudit(tx, {
+      entityType: 'draft', entityId: saved.id, action: 'DRAFT_CREATED',
+      actorType: actor.type || 'AI', actorId: actor.id || '',
+      beforeData: null,
+      afterData: { draftId: saved.draftId, status: saved.status, customerId: saved.customerId },
+    });
+    return fromDraftRow(saved);
   });
-  return fromDraftRow(saved);
 }
 
 const SPECIFIC_EVENTS = Object.freeze({
@@ -106,8 +109,8 @@ const SPECIFIC_EVENTS = Object.freeze({
 function checkConcurrency(current, options = {}) {
   // Optimistic concurrency: the owner console sends back the state it acted
   // on. Anything stale or already moved is a 409, never a silent overwrite.
-  // Limitation (documented): check-then-write is not a row lock; full
-  // PostgreSQL `UPDATE ... WHERE updated_at` fencing arrives in Phase 4B.
+  // updateIfCurrent() re-checks atomically at the database row, so this
+  // pre-check is an early, friendly rejection — the row guard is final.
   if (options.expectedStatus !== undefined && current.status !== options.expectedStatus) {
     throw new ConflictError(`stale draft: expected ${options.expectedStatus}, found ${current.status}`);
   }
@@ -141,106 +144,79 @@ function toServiceError(error, id) {
   throw error;
 }
 
-export function changeDraftStatus(repos, id, to, actor = { type: 'OWNER', id: '' }, patch = {}, options = {}) {
-  return withDraftLock(id, async () => {
-  try {
-    const current = await repos.drafts.findById(id);
+// Every owner action runs as: in-process lock -> transaction -> re-read ->
+// explicit client expectations -> domain transition -> ATOMIC compare-and-swap
+// (updateIfCurrent guards on the freshly read status+updatedAt) -> audit.
+// Losers get ConflictError (HTTP 409); state change + audit commit together.
+async function applyOwnerAction(repos, id, to, { ownerId = '', patch = {}, auditActions = ['DRAFT_STATUS_CHANGED'], options = {} } = {}) {
+  const owner = ownerId || 'owner';
+  return withDraftLock(id, () => repos.transaction(async (tx) => {
+    const current = await tx.drafts.findById(id);
     if (!current) throw new NotFoundError(`draft not found: ${id}`);
     checkConcurrency(current, options);
-    const next = transitionDraft(fromDraftRow(current), to, actor.id || actor.type || 'owner');
-    const merged = { ...toDraftRow({ ...next, dbId: current.id }), ...sanitizedPatch(patch) };
-    const saved = await repos.drafts.update(id, merged);
-    const events = ['DRAFT_STATUS_CHANGED'];
-    if (SPECIFIC_EVENTS[to]) events.push(SPECIFIC_EVENTS[to]);
-    for (const action of events) {
-      await recordAudit(repos, {
-        entityType: 'draft', entityId: id, action,
-        actorType: actor.type || 'OWNER', actorId: actor.id || '',
+    const next = transitionDraft(fromDraftRow(current), to, owner);
+    const finalPatch = { ...patch };
+    if (to === 'APPROVED' && finalPatch.ownerFinalResponse === undefined) {
+      // Approve-without-edit rule, computed from the fresh read so a racing
+      // edit can never be regressed: the final text mirrors the AI draft.
+      finalPatch.ownerFinalResponse = current.ownerFinalResponse || current.draftResponse;
+      finalPatch.finalAction = 'APPROVED';
+    }
+    const saved = await tx.drafts.updateIfCurrent(
+      current.id,
+      { ...toDraftRow({ ...next, dbId: current.id }), ...finalPatch },
+      { status: current.status, updatedAt: current.updatedAt },
+    );
+    if (!saved) throw new ConflictError('stale draft: changed concurrently, refresh and retry');
+    for (const action of auditActions) {
+      await recordAudit(tx, {
+        entityType: 'draft', entityId: current.id, action,
+        actorType: 'OWNER', actorId: ownerId,
         beforeData: { status: current.status }, afterData: { status: to },
       });
     }
     return fromDraftRow(saved);
-  } catch (error) {
-    throw toServiceError(error, id);
-  }
+  }).catch((error) => { throw toServiceError(error, id); }));
+}
+
+export function changeDraftStatus(repos, id, to, actor = { type: 'OWNER', id: '' }, patch = {}, options = {}) {
+  const events = ['DRAFT_STATUS_CHANGED'];
+  if (SPECIFIC_EVENTS[to]) events.push(SPECIFIC_EVENTS[to]);
+  return applyOwnerAction(repos, id, to, {
+    ownerId: actor.id || '',
+    patch: sanitizedPatch(patch),
+    auditActions: events,
+    options,
   });
 }
 
 // Owner approval actions. Actor is ALWAYS the authenticated owner context —
 // a client-supplied actorType is never trusted.
 export function approveDraft(repos, id, { ownerId = '', expectedUpdatedAt, expectedStatus } = {}) {
-  return withDraftLock(id, async () => {
-  try {
-  const current = await repos.drafts.findById(id);
-  if (!current) throw new NotFoundError(`draft not found: ${id}`);
-  checkConcurrency(current, { expectedUpdatedAt, expectedStatus });
-  // Approve-without-edit rule: the final text mirrors the AI draft so that
-  // ownerFinalResponse is always the "what the owner actually sent" record.
-  const saved = await repos.drafts.update(id, {
-    ...toDraftRow({
-      ...transitionDraft(fromDraftRow(current), 'APPROVED', ownerId || 'owner'),
-      dbId: current.id,
-      ownerFinalResponse: current.ownerFinalResponse || current.draftResponse,
-      finalAction: 'APPROVED',
-    }),
-  }).catch((error) => { throw toServiceError(error, id); });
-  await auditTransition(repos, current, 'APPROVED', ownerId, ['DRAFT_STATUS_CHANGED', 'DRAFT_APPROVED']);
-  return fromDraftRow(saved);
-  } catch (error) {
-    throw toServiceError(error, id);
-  }
+  return applyOwnerAction(repos, id, 'APPROVED', {
+    ownerId,
+    auditActions: ['DRAFT_STATUS_CHANGED', 'DRAFT_APPROVED'],
+    options: { expectedUpdatedAt, expectedStatus },
   });
 }
 
 export function editDraft(repos, id, { ownerId = '', finalText = '', expectedUpdatedAt, expectedStatus } = {}) {
-  return withDraftLock(id, async () => {
-  try {
   if (!String(finalText).trim()) throw new ValidationError('edit needs owner finalText');
-  const current = await repos.drafts.findById(id);
-  if (!current) throw new NotFoundError(`draft not found: ${id}`);
-  checkConcurrency(current, { expectedUpdatedAt, expectedStatus });
   // The original AI draft (draftResponse) is never overwritten.
-  const saved = await repos.drafts.update(id, {
-    ...toDraftRow({
-      ...transitionDraft(fromDraftRow(current), 'EDITED', ownerId || 'owner'),
-      dbId: current.id,
-      ownerFinalResponse: String(finalText),
-      finalAction: 'EDITED',
-    }),
-  }).catch((error) => { throw toServiceError(error, id); });
-  await auditTransition(repos, current, 'EDITED', ownerId, ['DRAFT_STATUS_CHANGED', 'DRAFT_EDITED']);
-  return fromDraftRow(saved);
-  } catch (error) {
-    throw toServiceError(error, id);
-  }
+  return applyOwnerAction(repos, id, 'EDITED', {
+    ownerId,
+    patch: { ownerFinalResponse: String(finalText), finalAction: 'EDITED' },
+    auditActions: ['DRAFT_STATUS_CHANGED', 'DRAFT_EDITED'],
+    options: { expectedUpdatedAt, expectedStatus },
   });
 }
 
 export function rejectDraft(repos, id, { ownerId = '', expectedUpdatedAt, expectedStatus } = {}) {
-  return withDraftLock(id, async () => {
-  try {
-  const current = await repos.drafts.findById(id);
-  if (!current) throw new NotFoundError(`draft not found: ${id}`);
-  checkConcurrency(current, { expectedUpdatedAt, expectedStatus });
-  const saved = await repos.drafts.update(id, {
-    ...toDraftRow({ ...transitionDraft(fromDraftRow(current), 'REJECTED', ownerId || 'owner'), dbId: current.id }),
-  }).catch((error) => { throw toServiceError(error, id); });
-  await auditTransition(repos, current, 'REJECTED', ownerId, ['DRAFT_STATUS_CHANGED', 'DRAFT_REJECTED']);
-  return fromDraftRow(saved);
-  } catch (error) {
-    throw toServiceError(error, id);
-  }
+  return applyOwnerAction(repos, id, 'REJECTED', {
+    ownerId,
+    auditActions: ['DRAFT_STATUS_CHANGED', 'DRAFT_REJECTED'],
+    options: { expectedUpdatedAt, expectedStatus },
   });
-}
-
-async function auditTransition(repos, current, to, ownerId, actions) {
-  for (const action of actions) {
-    await recordAudit(repos, {
-      entityType: 'draft', entityId: current.id, action,
-      actorType: 'OWNER', actorId: ownerId || '',
-      beforeData: { status: current.status }, afterData: { status: to },
-    });
-  }
 }
 
 function sanitizedPatch(patch) {
