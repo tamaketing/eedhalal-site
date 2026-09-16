@@ -11,7 +11,7 @@
 
 const CUSTOMER_COLUMNS = ['id', 'line_user_id', 'display_name', 'phone', 'email', 'company_name', 'tax_id', 'address', 'notes', 'created_at', 'updated_at'];
 const LEAD_COLUMNS = ['id', 'customer_id', 'source', 'service_type', 'event_date', 'quantity', 'location', 'budget_per_person', 'status', 'summary', 'created_at', 'updated_at'];
-const DRAFT_COLUMNS = ['id', 'draft_id', 'customer_id', 'lead_id', 'channel', 'incoming_message', 'draft_response', 'status', 'source', 'ai_model', 'rule_revision', 'metadata', 'history', 'created_at', 'updated_at', 'approved_at', 'sent_at'];
+const DRAFT_COLUMNS = ['id', 'draft_id', 'customer_id', 'lead_id', 'channel', 'incoming_message', 'draft_response', 'owner_final_response', 'final_action', 'status', 'source', 'ai_model', 'rule_revision', 'metadata', 'history', 'created_at', 'updated_at', 'approved_at', 'sent_at'];
 const AUDIT_COLUMNS = ['id', 'entity_type', 'entity_id', 'action', 'actor_type', 'actor_id', 'before_data', 'after_data', 'created_at'];
 
 function toCamel(row) {
@@ -117,9 +117,9 @@ export function createPostgresAdapter({ connectionString, query } = {}) {
   const drafts = {
     kind: 'drafts',
     async create(row) {
-      const values = [row.id, row.draftId, row.customerId ?? null, row.leadId ?? null, row.channel ?? 'line', row.incomingMessage ?? '', row.draftResponse ?? '', row.status ?? 'WAITING_FOR_HUMAN', row.source ?? 'conversation-ai', row.aiModel ?? '', row.ruleRevision ?? '', JSON.stringify(row.metadata ?? {}), JSON.stringify(row.history ?? [])];
+      const values = [row.id, row.draftId, row.customerId ?? null, row.leadId ?? null, row.channel ?? 'line', row.incomingMessage ?? '', row.draftResponse ?? '', row.ownerFinalResponse ?? null, row.finalAction ?? null, row.status ?? 'WAITING_FOR_HUMAN', row.source ?? 'conversation-ai', row.aiModel ?? '', row.ruleRevision ?? '', JSON.stringify(row.metadata ?? {}), JSON.stringify(row.history ?? [])];
       return mapOne(await run(
-        `INSERT INTO drafts (${DRAFT_COLUMNS.slice(0, 13).join(', ')}) VALUES (${placeholders(13)}) RETURNING *`,
+        `INSERT INTO drafts (${DRAFT_COLUMNS.slice(0, 15).join(', ')}) VALUES (${placeholders(15)}) RETURNING *`,
         values,
       ));
     },
@@ -135,7 +135,7 @@ export function createPostgresAdapter({ connectionString, query } = {}) {
     async update(id, patch) {
       const sets = [];
       const values = [];
-      const map = { draftId: 'draft_id', customerId: 'customer_id', leadId: 'lead_id', channel: 'channel', incomingMessage: 'incoming_message', draftResponse: 'draft_response', status: 'status', source: 'source', aiModel: 'ai_model', ruleRevision: 'rule_revision', approvedAt: 'approved_at', sentAt: 'sent_at' };
+      const map = { draftId: 'draft_id', customerId: 'customer_id', leadId: 'lead_id', channel: 'channel', incomingMessage: 'incoming_message', draftResponse: 'draft_response', ownerFinalResponse: 'owner_final_response', finalAction: 'final_action', status: 'status', source: 'source', aiModel: 'ai_model', ruleRevision: 'rule_revision', approvedAt: 'approved_at', sentAt: 'sent_at' };
       for (const [camel, column] of Object.entries(map)) {
         if (patch[camel] !== undefined) {
           sets.push(`${column} = $${values.length + 1}`);

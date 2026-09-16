@@ -53,7 +53,7 @@ has run in production, never alter production schema by hand.
 ## n8n integration boundary
 
 ```
-n8n ──X direct SQL (forbidden; CI fails on api.line.me/lineMessaging senders)
+n8n ──X direct SQL (forbidden; CI fails on direct LINE calls/lineMessaging senders)
 n8n Build Draft ──> static-data staging (INGRESS FALLBACK queue, marked in code)
 services/drafts.mjs ──> DraftRepository ──> PostgreSQL   (SOURCE OF TRUTH)
 ```
@@ -64,6 +64,10 @@ Internal API (same shared-secret pattern as `webhook-gateway.mjs`) exposing
 `POST /internal/drafts` (AI/owner actors only, never a LINE sender); n8n
 replaces the static-data write with a call to it. The service functions and
 their tests do not change — only the transport does.
+
+> Phase 4A update: the Internal API now exists (`server/internal-api.mjs`,
+> see `docs/internal-api.md`) and is proven locally, but production n8n is
+> intentionally NOT connected to it yet.
 
 ## Development setup
 

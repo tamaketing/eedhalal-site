@@ -27,6 +27,9 @@ LINE customer
   postgres), `DB_DIR`, `DATABASE_URL` live in the host environment, never in
   the repo. Static-data staging in n8n is an explicitly marked ingress
   fallback; the persistent repository is the source of truth.
+- Internal business API: see `docs/internal-api.md`. Phase 4A builds and
+  proves it locally only — DO NOT connect production n8n to it yet, do not
+  re-import the workflow for it, do not change production credentials.
 - Business data always derives from `data/business-rules.json` +
   `data/planner-overrides.json` via `node scripts/check-system.mjs --write`
   (knowledge pack, system message, router menus, draft revision).
