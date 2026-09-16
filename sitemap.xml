@@ -497,4 +497,31 @@
     <lastmod>2026-09-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
-  </url></urlset>
+  </url>  <url>
+    <loc>https://eedhalal.com/cocktail.html</loc>
+    <lastmod>2026-09-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://eedhalal.com/table-service.html</loc>
+    <lastmod>2026-09-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://eedhalal.com/set-menu.html</loc>
+    <lastmod>2026-09-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://eedhalal.com/catering-brief.html</loc>
+    <lastmod>2026-09-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url><loc>https://eedhalal.com/en/cocktail.html</loc><lastmod>2026-09-16</lastmod></url>
+  <url><loc>https://eedhalal.com/en/table-service.html</loc><lastmod>2026-09-16</lastmod></url>
+  <url><loc>https://eedhalal.com/en/set-menu.html</loc><lastmod>2026-09-16</lastmod></url>
+</urlset>

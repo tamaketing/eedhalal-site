@@ -35,10 +35,10 @@ test('premium menu prices stay within the approved range', () => {
   });
 });
 
-test('order minimum accepts 10 boxes and rejects 9', () => {
+test('order minimum accepts 20 boxes and rejects 19', () => {
   const minimum = data.rules.services.mealBox.minimumOrder;
-  assert.equal(9 >= minimum, false);
-  assert.equal(10 >= minimum, true);
+  assert.equal(19 >= minimum, false);
+  assert.equal(20 >= minimum, true);
 });
 
 test('Snack Box minimum accepts 30 boxes and rejects 29', () => {
@@ -102,10 +102,10 @@ test('unknown districts require a manual quote', () => {
   );
 });
 
-test('lead-time ranges have no overlap at 50 and 100 boxes', () => {
+test('meal-box lead time starts at the published 20-box minimum', () => {
   assert.deepEqual(
-    [49, 50, 51, 100, 101].map((quantity) => getLeadTime(data.rules, quantity)?.minQuantity),
-    [10, 10, 51, 51, 101],
+    [19, 20, 50, 100, 101].map((quantity) => getLeadTime(data.rules, quantity)?.minQuantity),
+    [undefined, 20, 20, 20, 20],
   );
-  assert.equal(getLeadTime(data.rules, 9), null);
+  assert.equal(getLeadTime(data.rules, 19), null);
 });

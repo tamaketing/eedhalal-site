@@ -8,7 +8,7 @@
 
 | ค่า | 60 THB/box |
 |-----|-----------|
-| FAQ (source of truth) | `faq.html` — ข้อความ Q3 + JSON-LD FAQPage |
+| FAQ (synchronized public copy) | `faq.html` — ข้อความ Q3 + JSON-LD FAQPage |
 | llms.txt | `llms.txt:19` |
 | llms-full.md | `llms-full.md:49`, `llms-full.md:69` |
 | schema (index) | `index.html` — `FoodEstablishment.makesOffer.price` |
@@ -32,9 +32,9 @@
 
 ## 2. ขั้นต่ำการสั่ง (Minimum Order)
 
-| ค่า | 10+ boxes (corporate) |
+| ค่า | 20+ boxes (corporate) |
 |-----|----------------------|
-| FAQ (source of truth) | `faq.html` — Q2 (JSON-LD + visible) |
+| FAQ (synchronized public copy) | `faq.html` — Q2 (JSON-LD + visible) |
 | llms.txt | `llms.txt:17` |
 | llms-full.md | `llms-full.md:47`, `llms-full.md:67` |
 | หน้า HTML | `index.html`, `corporate.html`, area pages, `delivery-area.html` |
@@ -95,7 +95,7 @@
 
 | ค่า | ไม่รวม VAT 7% (ไม่ได้จด VAT) |
 |-----|-----------------------------|
-| FAQ (source of truth) | `faq.html` — Q5 (JSON-LD + visible) |
+| FAQ (synchronized public copy) | `faq.html` — Q5 (JSON-LD + visible) |
 | llms.txt | `llms.txt:24` |
 | llms-full.md | `llms-full.md:57`, `llms-full.md:72` |
 | schema | `index.html`, `faq.html` (FAQPage) |
@@ -120,7 +120,7 @@
 
 | ค่า | Quotation / Invoice / Receipt (ไม่มี VAT Invoice) |
 |-----|--------------------------------------------------|
-| FAQ (source of truth) | `faq.html` — Q5 |
+| FAQ (synchronized public copy) | `faq.html` — Q5 |
 | llms.txt | `llms.txt:25` |
 | llms-full.md | `llms-full.md:58`, `llms-full.md:73` |
 
@@ -130,7 +130,7 @@
 
 | ค่า | CICOT HL-2024-0892 |
 |-----|-------------------|
-| FAQ (source of truth) | `faq.html` — Q1 |
+| FAQ (synchronized public copy) | `faq.html` — Q1 |
 | llms.txt | `llms.txt:26` |
 | llms-full.md | `llms-full.md:76` |
 
@@ -142,17 +142,30 @@
 
 | ค่า | รายละเอียด |
 |-----|-----------|
-| 10-50 boxes | 2-3 วันทำการล่วงหน้า |
-| 51-100 boxes | 5-7 วันทำการล่วงหน้า |
-| 101+ boxes | 1-2 สัปดาห์ล่วงหน้า |
+| ข้าวกล่อง 20+ กล่อง | แนะนำสั่งล่วงหน้าอย่างน้อย 1 วัน |
+| งานจัดเลี้ยงทุกประเภท | แนะนำจองอย่างน้อย 7 วัน |
 | Cutoff | ยืนยันรายละเอียดภายใน 15:00 น. ของวันทำการก่อนส่ง |
-| FAQ (source of truth) | `faq.html` — Q6, Q7 |
+| FAQ (synchronized public copy) | `faq.html` — Q6, Q7 |
 | llms.txt | `llms.txt:22`, `llms.txt:23` |
 | llms-full.md | `llms-full.md:53-57` |
 
 ---
 
-## 8. Entity (About Page) — ข้อมูลธุรกิจที่ AI ใช้อ้างอิง
+## 8. บริการจัดเลี้ยงฮาลาลและการชำระเงิน
+
+| บริการ | ราคาเริ่มต้น / ขั้นต่ำ / ขอบเขตบริการ |
+|--------|-----------------------------------------|
+| บุฟเฟต์ฮาลาล | 200 บาท/หัว, ขั้นต่ำ 30 คน, รองรับ 30+ คน, เมนู 7 หมวด, ทีมจัดไลน์ เติมอาหาร และดูแลหน้างาน |
+| Live Cooking / ซุ้มปรุงสด | 200 บาท/หัว, รองรับ 30+ คน, เชฟปรุงสดจานต่อจาน ออกแบบตามธีม เหมาะกับงาน VIP อีเวนต์ และงานเปิดตัว |
+| Cocktail / Finger Food | 200 บาท/หัว, ขั้นต่ำ 30 คน, รองรับ 30+ คน, ชิ้นพอดีคำดีไซน์พรีเมียม พร้อมทีมจัดดิสเพลย์ เดินเสิร์ฟ และดูแลหน้างาน |
+| โต๊ะจีน / โต๊ะไทย | 3,000 บาท/โต๊ะ (8–10 ท่าน), ขั้นต่ำ 3 โต๊ะ, รองรับ 3+ โต๊ะ, คาว-หวาน 7–8 รายการ พร้อมทีมเซ็ตติ้งและเสิร์ฟตามคอร์ส |
+| Set Menu / Sit-down Dinner | 350 บาท/หัว, ขั้นต่ำ 30 คน, รองรับ 30–500 คน, 3–5 คอร์ส พร้อมทีมเสิร์ฟและดูแลหน้างานระดับ VIP |
+| ข้าวกล่องฮาลาล | 60 บาท/กล่อง, ขั้นต่ำ 20 กล่อง, รองรับ 20–1000+ กล่อง, วัตถุดิบฮาลาล 100% ซีลปิดมิดชิด และจัดส่งตรงเวลา |
+| การชำระเงิน | มัดจำ 50% เพื่อยืนยันวันจอง; งานจัดเลี้ยงชำระส่วนที่เหลือก่อนวันงาน 7 วัน; ข้าวกล่องชำระส่วนที่เหลือก่อนส่งมอบ 1 วัน |
+
+---
+
+## 9. Entity (About Page) — ข้อมูลธุรกิจที่ AI ใช้อ้างอิง
 
 | ค่า | รายละเอียด |
 |-----|-----------|
@@ -198,7 +211,7 @@
 
 0. **ข้อมูลกลางแบบ machine-readable** — กฎธุรกิจอยู่ที่ `data/business-rules.json` และเมนู/ราคา/ค่าส่งอยู่ที่ `data/planner-overrides.json` จากนั้นรัน `node scripts/check-system.mjs --write` และ `node --test` ทุกครั้ง
 
-1. **FAQ = source of truth** — ความถูกต้องของตัวเลขต้องตรงกับ `faq.html` เสมอ
+1. **business-rules.json = source of truth** — แก้ `data/business-rules.json` ก่อน แล้วซิงก์ FAQ เว็บ และฐานความรู้ AI ให้ตรงกัน
 2. **llms files** — ตัวเลขใน `llms.txt` และ `llms-full.md` ต้องตรงกับ FAQ ทุกประการ
 3. **Schema JSON-LD** — ราคาใน `makesOffer`, `MenuItem.offers`, `FAQPage` ต้องตรงกับ FAQ
 4. **EN vs TH** — หน้า `en/` ทุกหน้าต้อง sync พร้อมกันกับฝั่งไทยเสมอ

@@ -46,7 +46,8 @@
       "name": "EED HALAL",
       "url": "https://eedhalal.com/",
       "logo": "https://eedhalal.com/img/logo.jpg",
-      "telephone": "+66988715179"
+      "telephone": "+66988715179",
+      "description": "EED HALAL รับจัดเลี้ยงฮาลาล กรุงเทพฯ สำหรับงานองค์กร งานเลี้ยง และอีเวนต์"
     },
     {
       "@type": "WebApplication",
@@ -89,7 +90,7 @@
           "name": "งบ 60 บาท ได้เมนูอะไรบ้าง?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "งบ 60 บาทได้เมนูมาตรฐาน 24 เมนู เช่น ข้าวกะเพราไก่ ผัดไทยกุ้งสด ผัดซีอิ๊วเนื้อ ข้าวผัดทะเล ข้าวไก่กะเทียม ฯลฯ ขั้นต่ำ 10 กล่อง (ไทย 5 กล่อง/เมนู)"
+            "text": "งบ 60 บาทได้เมนูมาตรฐาน 24 เมนู เช่น ข้าวกะเพราไก่ ผัดไทยกุ้งสด ผัดซีอิ๊วเนื้อ ข้าวผัดทะเล ข้าวไก่กะเทียม ฯลฯ ขั้นต่ำ 20 กล่อง (ไทย 5 กล่อง/เมนู)"
           }
         },
         {
@@ -112,7 +113,7 @@
     }
   ]
 }
-  </script>
+</script>
   <style>
     /* Calculator specific */
     .calc-wrap{max-width:1200px;margin:0 auto;padding:0 1.5rem}
@@ -584,8 +585,9 @@
             <span>คำนวณงบ</span>
           </div>
           <div class="section-label" style="margin-top:.5rem">เครื่องคำนวณงบ EED HALAL</div>
-          <h1 style="font-size:2.2rem;font-weight:900;line-height:1.1;letter-spacing:-.02em;color:var(--primary);margin-top:.75rem" class="md:text-5xl">คำนวณงบข้าวกล่องฮาลาล<br>ใส่งบ 60 บาท ได้เมนูอะไรบ้าง?</h1>
-          <p style="max-width:44rem;margin-top:1rem;font-size:1rem;line-height:1.8;color:var(--text-muted)">ลูกค้าองค์กรใช้หน้านี้บ่อยที่สุดครับ — ลองเลื่อนงบต่อกล่องและจำนวนกล่อง ระบบจะกรองเมนูที่อยู่ในงบให้ทันที พร้อมยอดรวมและส่วนลดส่งฟรี <span style="color:var(--primary);font-weight:700">เริ่มต้น 60 บาท/กล่อง ขั้นต่ำ 10 กล่อง</span></p>
+          <!-- Catering quotations use service-specific units; this calculator remains meal-box only. -->
+<h1 style="font-size:2.2rem;font-weight:900;line-height:1.1;letter-spacing:-.02em;color:var(--primary);margin-top:.75rem" class="md:text-5xl">คำนวณงบข้าวกล่องฮาลาล<br>ใส่งบ 60 บาท ได้เมนูอะไรบ้าง?</h1>
+          <p style="max-width:44rem;margin-top:1rem;font-size:1rem;line-height:1.8;color:var(--text-muted)">ลูกค้าองค์กรใช้หน้านี้บ่อยที่สุดครับ — ลองเลื่อนงบต่อกล่องและจำนวนกล่อง ระบบจะกรองเมนูที่อยู่ในงบให้ทันที พร้อมยอดรวมและส่วนลดส่งฟรี <span style="color:var(--primary);font-weight:700">เริ่มต้น 60 บาท/กล่อง ขั้นต่ำ 20 กล่อง</span></p>
           <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem">
             <a href="#calculator" class="btn btn-primary">เริ่มคำนวณเลย</a>
             <a href="popular-menu.html" class="btn btn-outline">ดูเมนูทั้งหมด</a>
@@ -598,7 +600,7 @@
           <div class="calc-visual-amount"><strong>60</strong><span>บาท / กล่อง</span></div>
           <div class="calc-visual-track"><span></span></div>
           <div class="calc-visual-meta"><span>60 บาท</span><span>ปรับได้ถึง 300 บาท</span></div>
-          <div class="calc-visual-bottom"><i>✓</i><span>เมนูฮาลาล CICOT · ขั้นต่ำ 10 กล่อง</span></div>
+          <div class="calc-visual-bottom"><i>✓</i><span>เมนูฮาลาล CICOT · ขั้นต่ำ 20 กล่อง</span></div>
         </div>
       </div>
     </section>
@@ -653,7 +655,7 @@
               <div class="calc-field">
               <label>
                 <span>จำนวนกล่อง</span>
-                <span>ขั้นต่ำ 10 กล่อง</span>
+                <span>ขั้นต่ำ 20 กล่อง</span>
               </label>
               <div class="calc-input-row">
                 <div class="calc-stepper">
@@ -661,10 +663,10 @@
                   <div style="width:1px;height:24px;background:var(--border)"></div>
                   <button type="button" id="qtyInc" aria-label="เพิ่ม">+</button>
                 </div>
-                <input id="qtyNumber" class="calc-number small" type="number" min="1" max="500" step="1" value="20">
+                <input id="qtyNumber" class="calc-number small" type="number" min="20" max="500" step="1" value="20">
                 <span style="font-weight:800;color:var(--text-muted)">กล่อง</span>
               </div>
-              <input id="qtyRange" class="calc-range" type="range" min="10" max="200" step="5" value="20">
+              <input id="qtyRange" class="calc-range" type="range" min="20" max="200" step="5" value="20">
               <div class="calc-quick">
                 <button class="calc-chip" data-qty="10">10 กล่อง</button>
                 <button class="calc-chip" data-qty="20">20 กล่อง</button>
@@ -964,7 +966,7 @@
           <div class="faq-list" style="margin-top:1.5rem">
             <div class="faq-item open">
               <button class="faq-question" type="button"><span>งบ 60 บาท ได้เมนูอะไรบ้าง?</span><span class="arrow">▼</span></button>
-              <div class="faq-answer" style="display:block"><p style="font-weight:700;color:var(--primary)">ได้เมนูมาตรฐาน 24 เมนู</p><p>เช่น ข้าวกะเพราไก่, กะเพราเนื้อ, ผัดไทยกุ้งสด, ผัดซีอิ๊วเนื้อ, ข้าวผัดทะเล, ข้าวไก่กะเทียม, ผัดเขียวหวานแห้งไก่, กระเพราไก่สับ, ผัดเปรี้ยวหวานไก่, ผัดผักรวมไก่, ผัดพริกแกงไก่ถั่วฝักยาว, แกงโทโพปลาเค็ม ฯลฯ ทุกเมนูฮาลาล CICOT ขั้นต่ำ 10 กล่อง (ไทย 5 กล่อง/เมนู)</p></div>
+              <div class="faq-answer" style="display:block"><p style="font-weight:700;color:var(--primary)">ได้เมนูมาตรฐาน 24 เมนู</p><p>เช่น ข้าวกะเพราไก่, กะเพราเนื้อ, ผัดไทยกุ้งสด, ผัดซีอิ๊วเนื้อ, ข้าวผัดทะเล, ข้าวไก่กะเทียม, ผัดเขียวหวานแห้งไก่, กระเพราไก่สับ, ผัดเปรี้ยวหวานไก่, ผัดผักรวมไก่, ผัดพริกแกงไก่ถั่วฝักยาว, แกงโทโพปลาเค็ม ฯลฯ ทุกเมนูฮาลาล CICOT ขั้นต่ำ 20 กล่อง (ไทย 5 กล่อง/เมนู)</p></div>
             </div>
             <div class="faq-item">
               <button class="faq-question" type="button"><span>ถ้ามีงบรวม 5,000 บาท ต้องเลี้ยง 50 คน ทำอย่างไร?</span><span class="arrow">▼</span></button>
@@ -996,7 +998,10 @@
     </section>
   </main>
 
-  <div id="footer"></div>
+  <!-- BUSINESS-RULES:SERVICE-LINKS -->
+<nav class="service-discovery container" aria-label="เลือกบริการฮาลาล"><p>EED HALAL รับจัดเลี้ยงฮาลาล กรุงเทพฯ สำหรับงานองค์กร งานเลี้ยง และอีเวนต์</p><a href="/buffet.html">บุฟเฟต์ฮาลาล</a> · <a href="/cocktail.html">ค็อกเทลฮาลาล</a> · <a href="/table-service.html">โต๊ะจีน / โต๊ะไทยฮาลาล</a> · <a href="/set-menu.html">อาหารชุด / Sit-down Dinner ฮาลาล</a> · <a href="/live-cooking-station.html">ซุ้มอาหาร / Live Station ฮาลาล</a> · <a href="/corporate.html">ข้าวกล่องฮาลาล</a></nav>
+<!-- /BUSINESS-RULES:SERVICE-LINKS -->
+<div id="footer"></div>
   <script src="js/business-data.js"></script>
   <script src="js/menu-data.js"></script>
   <script src="js/tracking-config.js"></script>

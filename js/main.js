@@ -36,6 +36,9 @@
   var CONTACT_PATH = fileAware(EN_PREFIX + '/contact.html');
   var CATERING_PATH = fileAware(EN_PREFIX + '/catering.html');
   var BUFFET_PATH = fileAware(EN_PREFIX + '/buffet.html');
+  var COCKTAIL_PATH = fileAware(EN_PREFIX + '/cocktail.html');
+  var TABLE_SERVICE_PATH = fileAware(EN_PREFIX + '/table-service.html');
+  var SET_MENU_PATH = fileAware(EN_PREFIX + '/set-menu.html');
   var LIVE_COOKING_PATH = fileAware(EN_PREFIX + '/live-cooking-station.html');
   var KHAO_MOK_PATH = fileAware(EN_PREFIX + '/khao-mok.html');
   var GLOSSARY_PATH = fileAware(EN_PREFIX + '/glossary.html');
@@ -207,7 +210,7 @@
     if (path === '/contact.html') return 'contact';
     if (path === '/corporate.html') return 'corporate';
     if (path === '/catering.html') return 'catering';
-    if (path === '/buffet.html' || path === '/live-cooking-station.html') return 'catering';
+    if (['/buffet.html', '/cocktail.html', '/table-service.html', '/set-menu.html', '/live-cooking-station.html'].indexOf(path) !== -1) return 'catering';
     if (path === '/popular-menu.html') return 'menu';
     if (path === '/snack-box.html') return 'menu';
     if (path === '/order-steps.html') return 'order_steps';
@@ -545,10 +548,13 @@
       <div class="nav-dropdown">\
         <button class="nav-link nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Services <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
         <div class="nav-dropdown-menu">\
-          <a href="' + CORPORATE_PATH + '" class="nav-dropdown-item">Corporate Orders</a>\
           <a href="' + CATERING_PATH + '" class="nav-dropdown-item">Catering</a>\
           <a href="' + BUFFET_PATH + '" class="nav-dropdown-item">Buffet</a>\
+          <a href="' + COCKTAIL_PATH + '" class="nav-dropdown-item">Cocktail / Finger Food</a>\
+          <a href="' + TABLE_SERVICE_PATH + '" class="nav-dropdown-item">Chinese / Thai Table</a>\
+          <a href="' + SET_MENU_PATH + '" class="nav-dropdown-item">Set Menu / Sit-down Dinner</a>\
           <a href="' + LIVE_COOKING_PATH + '" class="nav-dropdown-item">Live Cooking Station</a>\
+          <a href="' + CORPORATE_PATH + '" class="nav-dropdown-item">Corporate Orders</a>\
           <a href="' + SNACK_BOX_PATH + '" class="nav-dropdown-item">Snack Box</a>\
           <a href="' + MENU_PATH + '" class="nav-dropdown-item">Menu</a>\
           <a href="' + KHAO_MOK_PATH + '" class="nav-dropdown-item">Khao Mok</a>\
@@ -584,10 +590,13 @@
       <div class="mobile-dropdown">\
         <button class="mobile-link mobile-dropdown-toggle">Services <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
         <div class="mobile-dropdown-menu">\
-          <a href="' + CORPORATE_PATH + '" class="mobile-dropdown-item">Corporate Orders</a>\
           <a href="' + CATERING_PATH + '" class="mobile-dropdown-item">Catering</a>\
           <a href="' + BUFFET_PATH + '" class="mobile-dropdown-item">Buffet</a>\
+          <a href="' + COCKTAIL_PATH + '" class="mobile-dropdown-item">Cocktail / Finger Food</a>\
+          <a href="' + TABLE_SERVICE_PATH + '" class="mobile-dropdown-item">Chinese / Thai Table</a>\
+          <a href="' + SET_MENU_PATH + '" class="mobile-dropdown-item">Set Menu / Sit-down Dinner</a>\
           <a href="' + LIVE_COOKING_PATH + '" class="mobile-dropdown-item">Live Cooking Station</a>\
+          <a href="' + CORPORATE_PATH + '" class="mobile-dropdown-item">Corporate Orders</a>\
           <a href="' + SNACK_BOX_PATH + '" class="mobile-dropdown-item">Snack Box</a>\
           <a href="' + MENU_PATH + '" class="mobile-dropdown-item">Menu</a>\
           <a href="' + KHAO_MOK_PATH + '" class="mobile-dropdown-item">Khao Mok</a>\
@@ -625,10 +634,13 @@
       <div class="nav-dropdown">\
         <button class="nav-link nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
         <div class="nav-dropdown-menu">\
-          <a href="' + CORPORATE_PATH + '" class="nav-dropdown-item">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
           <a href="' + CATERING_PATH + '" class="nav-dropdown-item">\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
           <a href="' + BUFFET_PATH + '" class="nav-dropdown-item">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e48\u0e15\u0e4c</a>\
+          <a href="' + COCKTAIL_PATH + '" class="nav-dropdown-item">ค็อกเทลฮาลาล</a>\
+          <a href="' + TABLE_SERVICE_PATH + '" class="nav-dropdown-item">โต๊ะจีน / โต๊ะไทยฮาลาล</a>\
+          <a href="' + SET_MENU_PATH + '" class="nav-dropdown-item">อาหารชุดฮาลาล</a>\
           <a href="' + LIVE_COOKING_PATH + '" class="nav-dropdown-item">Live Cooking Station</a>\
+          <a href="' + CORPORATE_PATH + '" class="nav-dropdown-item">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
           <a href="' + SNACK_BOX_PATH + '" class="nav-dropdown-item">Snack Box</a>\
           <a href="' + MENU_PATH + '" class="nav-dropdown-item">\u0e40\u0e21\u0e19\u0e39</a>\
           <a href="' + KHAO_MOK_PATH + '" class="nav-dropdown-item">\u0e02\u0e49\u0e32\u0e27\u0e2b\u0e21\u0e01</a>\
@@ -664,10 +676,13 @@
       <div class="mobile-dropdown">\
         <button class="mobile-link mobile-dropdown-toggle">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
         <div class="mobile-dropdown-menu">\
-          <a href="' + CORPORATE_PATH + '" class="mobile-dropdown-item">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
           <a href="' + CATERING_PATH + '" class="mobile-dropdown-item">\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
           <a href="' + BUFFET_PATH + '" class="mobile-dropdown-item">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e48\u0e15\u0e4c</a>\
+          <a href="' + COCKTAIL_PATH + '" class="mobile-dropdown-item">ค็อกเทลฮาลาล</a>\
+          <a href="' + TABLE_SERVICE_PATH + '" class="mobile-dropdown-item">โต๊ะจีน / โต๊ะไทยฮาลาล</a>\
+          <a href="' + SET_MENU_PATH + '" class="mobile-dropdown-item">อาหารชุดฮาลาล</a>\
           <a href="' + LIVE_COOKING_PATH + '" class="mobile-dropdown-item">Live Cooking Station</a>\
+          <a href="' + CORPORATE_PATH + '" class="mobile-dropdown-item">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
           <a href="' + SNACK_BOX_PATH + '" class="mobile-dropdown-item">Snack Box</a>\
           <a href="' + MENU_PATH + '" class="mobile-dropdown-item">\u0e40\u0e21\u0e19\u0e39</a>\
           <a href="' + KHAO_MOK_PATH + '" class="mobile-dropdown-item">\u0e02\u0e49\u0e32\u0e27\u0e2b\u0e21\u0e01</a>\
@@ -713,13 +728,16 @@
         <a href="' + HOME_PATH + '">Home</a>\
         <a href="' + ABOUT_PATH + '">About Us</a>\
         <a href="' + STORY_PATH + '">Our Story</a>\
-        <a href="' + CORPORATE_PATH + '">Corporate</a>\
         <a href="' + MENU_PATH + '">Popular Menu</a>\
         <a href="' + KHAO_MOK_PATH + '">Khao Mok</a>\
         <a href="' + SNACK_BOX_PATH + '">Snack Box</a>\
         <a href="' + CATERING_PATH + '">Catering</a>\
         <a href="' + BUFFET_PATH + '">Buffet</a>\
+        <a href="' + COCKTAIL_PATH + '">Cocktail / Finger Food</a>\
+        <a href="' + TABLE_SERVICE_PATH + '">Chinese / Thai Table</a>\
+        <a href="' + SET_MENU_PATH + '">Set Menu / Sit-down Dinner</a>\
         <a href="' + LIVE_COOKING_PATH + '">Live Cooking Station</a>\
+        <a href="' + CORPORATE_PATH + '">Corporate</a>\
         <a href="' + CONTACT_PATH + '">Contact</a>\
         <a href="' + ORDER_STEPS_PATH + '">How to Order</a>\
         <a href="' + DELIVERY_AREA_PATH + '">Delivery Areas</a>\
@@ -787,14 +805,17 @@
         <a href="' + HOME_PATH + '">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
         <a href="' + ABOUT_PATH + '">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32</a>\
         <a href="' + STORY_PATH + '">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27\u0e02\u0e2d\u0e07\u0e40\u0e23\u0e32</a>\
-        <a href="' + CORPORATE_PATH + '">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
         <a href="' + BUDGET_CALC_PATH + '">คำนวณงบข้าวกล่อง</a>\
         <a href="' + MENU_PATH + '">\u0e40\u0e21\u0e19\u0e39\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21</a>\
         <a href="' + KHAO_MOK_PATH + '">ข้าวหมกไก่</a>\
         <a href="' + SNACK_BOX_PATH + '">\u0e02\u0e2d\u0e07\u0e27\u0e48\u0e32\u0e07 Snack Box</a>\
         <a href="' + CATERING_PATH + '">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
         <a href="' + BUFFET_PATH + '">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e15\u0e4c\u0e2e\u0e32\u0e25\u0e32\u0e25</a>\
+        <a href="' + COCKTAIL_PATH + '">ค็อกเทลฮาลาล</a>\
+        <a href="' + TABLE_SERVICE_PATH + '">โต๊ะจีน / โต๊ะไทยฮาลาล</a>\
+        <a href="' + SET_MENU_PATH + '">อาหารชุดฮาลาล</a>\
         <a href="' + LIVE_COOKING_PATH + '">Live Cooking Station</a>\
+        <a href="' + CORPORATE_PATH + '">\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23</a>\
         <a href="' + CONTACT_PATH + '">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
         <a href="' + ORDER_STEPS_PATH + '">\u0e02\u0e31\u0e49\u0e19\u0e15\u0e2d\u0e19\u0e2a\u0e31\u0e48\u0e07\u0e07\u0e32\u0e19</a>\
         <a href="' + DELIVERY_AREA_PATH + '">\u0e1e\u0e37\u0e49\u0e19\u0e17\u0e35\u0e48\u0e43\u0e2b\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23</a>\

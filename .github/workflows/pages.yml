@@ -32,6 +32,7 @@ jobs:
         run: |
           node scripts/check-repository-safety.mjs
           node scripts/check-system.mjs
+          node scripts/sync-catering-content.mjs --check
           node scripts/check-public-site.mjs
           node --test
 

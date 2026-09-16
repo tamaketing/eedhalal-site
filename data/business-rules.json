@@ -1,9 +1,15 @@
 {
   "schemaVersion": 1,
-  "revision": "2026-09-10",
+  "revision": "2026-09-16",
   "business": {
     "name": "EED HALAL",
     "owner": "เชฟและผู้ก่อตั้ง พี่อี๊ด",
+    "halalRegistration": {
+      "operator": "อาทิตย์ กลัดไวยเนตร",
+      "halalCoordinator": "ศศิธร กลัดไวยเนตร",
+      "email": "eedh23113@gmail.com",
+      "employeeTotal": 4
+    },
     "experienceYears": 40,
     "address": "478/3 ซอยเจริญราษฎร์ 1 แขวงยานนาวา เขตสาทร กทม. 10120",
     "phone": "098-871-5179",
@@ -16,26 +22,74 @@
       "priceFrom": 60,
       "premiumPriceFrom": 180,
       "premiumPriceTo": 250,
-      "minimumOrder": 10,
+      "minimumOrder": 20,
       "standardMenuMinimum": 5,
       "specialMenuMinimum": 10,
-      "menuCountFrom": 30
+      "menuCountFrom": 30,
+      "maximumOrder": null,
+      "leadTimeDays": 1,
+      "halalMaterial": "วัตถุดิบฮาลาล 100%",
+      "packaging": "ซีลปิดมิดชิด สะอาดปลอดภัย",
+      "fulfillment": "จัดส่งถึงหน้างานตรงเวลา"
     },
     "snackBox": {
       "priceFrom": 40,
       "minimumOrder": 30
     },
     "buffet": {
-      "priceFrom": 180,
-      "priceTo": 350,
-      "minimumGuests": 100,
-      "serviceCategories": 9
+      "priceFrom": 200,
+      "priceTo": null,
+      "minimumGuests": 30,
+      "maximumGuests": null,
+      "serviceCategories": 7,
+      "leadTimeDays": 7,
+      "serviceTeam": "จัดไลน์ เติมอาหาร และดูแลหน้างาน"
+    },
+    "liveCooking": {
+      "priceFrom": 200,
+      "minimumGuests": 30,
+      "maximumGuests": null,
+      "leadTimeDays": 7,
+      "serviceStyle": "เชฟปรุงสดจานต่อจาน ออกแบบตามธีม",
+      "recommendedFor": "งาน VIP อีเวนต์ และงานเปิดตัว"
+    },
+    "cocktail": {
+      "priceFrom": 200,
+      "minimumGuests": 30,
+      "maximumGuests": null,
+      "leadTimeDays": 7,
+      "serviceStyle": "ชิ้นพอดีคำดีไซน์พรีเมียม",
+      "serviceTeam": "จัดดิสเพลย์ เดินเสิร์ฟ และดูแลหน้างาน"
+    },
+    "tableService": {
+      "priceFromPerTable": 3000,
+      "seatsFrom": 8,
+      "seatsTo": 10,
+      "minimumTables": 3,
+      "maximumTables": null,
+      "courseCountFrom": 7,
+      "courseCountTo": 8,
+      "leadTimeDays": 7,
+      "serviceTeam": "เซ็ตติ้งโต๊ะ เสิร์ฟตามคอร์ส และดูแลหน้างาน"
+    },
+    "setMenu": {
+      "priceFrom": 350,
+      "minimumGuests": 30,
+      "maximumGuests": 500,
+      "courseCountFrom": 3,
+      "courseCountTo": 5,
+      "leadTimeDays": 7,
+      "serviceStyle": "อาหารเสิร์ฟเป็นคอร์สส่วนตัว",
+      "serviceTeam": "เสิร์ฟตามลำดับคอร์ส คุมจังหวะอาหาร และดูแลหน้างานระดับ VIP"
     }
   },
   "documents": {
     "vatRegistered": false,
     "vatRate": 7,
-    "available": ["ใบเสนอราคา", "ใบเสร็จรับเงินแบบธรรมดา"],
+    "available": [
+      "ใบเสนอราคา",
+      "ใบเสร็จรับเงินแบบธรรมดา"
+    ],
     "taxInvoiceAvailable": false,
     "quoteWithinMinutes": 15
   },
@@ -49,58 +103,106 @@
         "moto": 60,
         "car": 120,
         "freeFrom": 50,
-        "districts": ["ยานนาวา", "บางคอแหลม", "สาทร", "คลองสาน", "ธนบุรี"]
+        "districts": [
+          "ยานนาวา",
+          "บางคอแหลม",
+          "สาทร",
+          "คลองสาน",
+          "ธนบุรี"
+        ]
       },
       "zone_2": {
         "label": "สุขุมวิท-ปทุมวัน",
         "moto": 110,
         "car": 180,
         "freeFrom": 75,
-        "districts": ["บางรัก", "ปทุมวัน", "วัฒนา", "คลองเตย", "พระโขนง", "ดินแดง", "พญาไท", "ราชเทวี", "ป้อมปราบศัตรูพ่าย", "สัมพันธวงศ์"]
+        "districts": [
+          "บางรัก",
+          "ปทุมวัน",
+          "วัฒนา",
+          "คลองเตย",
+          "พระโขนง",
+          "ดินแดง",
+          "พญาไท",
+          "ราชเทวี",
+          "ป้อมปราบศัตรูพ่าย",
+          "สัมพันธวงศ์"
+        ]
       },
       "zone_3": {
         "label": "ลาดพร้าว-ห้วยขวาง",
         "moto": 189,
         "car": 230,
         "freeFrom": 75,
-        "districts": ["พระนคร", "ดุสิต", "ห้วยขวาง", "วังทองหลาง", "บางกะปิ", "สวนหลวง", "ประเวศ", "บางนา", "จตุจักร", "บางซื่อ", "บางกอกใหญ่", "บางกอกน้อย", "ราษฎร์บูรณะ", "จอมทอง"]
+        "districts": [
+          "พระนคร",
+          "ดุสิต",
+          "ห้วยขวาง",
+          "วังทองหลาง",
+          "บางกะปิ",
+          "สวนหลวง",
+          "ประเวศ",
+          "บางนา",
+          "จตุจักร",
+          "บางซื่อ",
+          "บางกอกใหญ่",
+          "บางกอกน้อย",
+          "ราษฎร์บูรณะ",
+          "จอมทอง"
+        ]
       },
       "zone_4": {
         "label": "กรุงเทพรอบนอก",
         "moto": 240,
         "car": 320,
         "freeFrom": 100,
-        "districts": ["ลาดพร้าว", "บึงกุ่ม", "สะพานสูง", "คันนายาว", "ดอนเมือง", "หลักสี่", "บางเขน", "สายไหม", "บางพลัด", "ภาษีเจริญ", "ตลิ่งชัน", "ทุ่งครุ"]
+        "districts": [
+          "ลาดพร้าว",
+          "บึงกุ่ม",
+          "สะพานสูง",
+          "คันนายาว",
+          "ดอนเมือง",
+          "หลักสี่",
+          "บางเขน",
+          "สายไหม",
+          "บางพลัด",
+          "ภาษีเจริญ",
+          "ตลิ่งชัน",
+          "ทุ่งครุ"
+        ]
       },
       "zone_5": {
         "label": "ปริมณฑล/ไกล (สอบถามก่อน)",
         "moto": 500,
         "car": 500,
         "freeFrom": 0,
-        "districts": ["มีนบุรี", "หนองจอก", "ลาดกระบัง", "คลองสามวา", "ทวีวัฒนา", "บางแค", "หนองแขม", "บางบอน", "บางขุนเทียน"]
+        "districts": [
+          "มีนบุรี",
+          "หนองจอก",
+          "ลาดกระบัง",
+          "คลองสามวา",
+          "ทวีวัฒนา",
+          "บางแค",
+          "หนองแขม",
+          "บางบอน",
+          "บางขุนเทียน"
+        ]
       }
     }
   },
   "leadTimes": [
     {
-      "minQuantity": 10,
-      "maxQuantity": 50,
-      "minimumBusinessDays": 2,
-      "maximumBusinessDays": 3
-    },
-    {
-      "minQuantity": 51,
-      "maxQuantity": 100,
-      "minimumBusinessDays": 5,
-      "maximumBusinessDays": 7
-    },
-    {
-      "minQuantity": 101,
+      "minQuantity": 20,
       "maxQuantity": null,
-      "minimumWeeks": 1,
-      "maximumWeeks": 2
+      "minimumBusinessDays": 1,
+      "maximumBusinessDays": null
     }
   ],
+  "paymentTerms": {
+    "bookingDepositPercent": 50,
+    "cateringBalanceDaysBeforeEvent": 7,
+    "mealBoxBalanceDaysBeforeDelivery": 1
+  },
   "cutoff": {
     "time": "15:00",
     "description": "วันทำการก่อนส่ง"
@@ -112,9 +214,44 @@
     "menu": "https://eedhalal.com/popular-menu.html",
     "snackBox": "https://eedhalal.com/snack-box.html",
     "buffet": "https://eedhalal.com/buffet.html",
+    "catering": "https://eedhalal.com/catering.html",
+    "liveCooking": "https://eedhalal.com/live-cooking-station.html",
     "delivery": "https://eedhalal.com/delivery-area.html",
     "halal": "https://eedhalal.com/halal-cert.html",
     "contact": "https://eedhalal.com/contact.html",
-    "about": "https://eedhalal.com/about.html"
+    "about": "https://eedhalal.com/about.html",
+    "cocktail": "https://eedhalal.com/cocktail.html",
+    "tableService": "https://eedhalal.com/table-service.html",
+    "setMenu": "https://eedhalal.com/set-menu.html"
+  },
+  "positioning": {
+    "primaryService": "halalCatering",
+    "descriptionTh": "EED HALAL รับจัดเลี้ยงฮาลาล กรุงเทพฯ สำหรับงานองค์กร งานเลี้ยง และอีเวนต์",
+    "descriptionEn": "EED HALAL provides halal catering in Bangkok for corporate events and celebrations.",
+    "servicePriority": [
+      "buffet",
+      "cocktail",
+      "tableService",
+      "setMenu",
+      "liveCooking",
+      "mealBox"
+    ],
+    "serviceNamesTh": [
+      "บุฟเฟต์ฮาลาล",
+      "ค็อกเทลฮาลาล",
+      "โต๊ะจีน / โต๊ะไทยฮาลาล",
+      "อาหารชุด / Sit-down Dinner ฮาลาล",
+      "ซุ้มอาหาร / Live Station ฮาลาล",
+      "ข้าวกล่องฮาลาล"
+    ],
+    "serviceNamesEn": [
+      "Halal Buffet",
+      "Halal Cocktail / Finger Food",
+      "Halal Chinese / Thai Table",
+      "Halal Set Menu / Sit-down Dinner",
+      "Halal Food Stall / Live Station",
+      "Halal Meal Boxes"
+    ],
+    "discoveryPriority": "AI search discovery and accurate service recommendations"
   }
 }

@@ -24,7 +24,7 @@ var EED = {
   premiumPriceTo: '250',        /* บาท/กล่อง เมนูพรีเมียมสูงสุด */
 
   /* ── ขั้นต่ำและเงื่อนไข ── */
-  minOrder: '10',               /* ขั้นต่ำออเดอร์องค์กร (กล่อง) */
+  minOrder: '20',               /* ขั้นต่ำออเดอร์องค์กร (กล่อง) */
   snackMinOrder: '30',          /* ขั้นต่ำ Snack Box (กล่อง) */
   thaiMinPerMenu: '5',          /* ขั้นต่ำต่อเมนูอาหารไทย (กล่อง) */
   indianMinPerMenu: '10',       /* ขั้นต่ำต่อเมนูอาหารอินเดีย (กล่อง) */
@@ -45,9 +45,9 @@ var EED = {
   menuCount: '30',              /* มีมากกว่า 30 เมนู */
 
   /* ── ค่าส่ง (ใช้ใน budget-calculator) ── */
-  /*    ตัวเลข moto/car ชุดนี้คือความจริงที่เก็บลูกค้า (มติ: ยึดโค้ดเป็นหลัก) */
-  /*    ตาราง FACTS.md ข้อ 3 คือสำเนาของชุดนี้ — เปลี่ยนตรงนี้ต้องแก้ FACTS ตาม */
-  /*    ถ้าจะเปลี่ยนค่าที่ลูกค้าเห็น ต้องแก้ FACTS + หน้าเว็บพร้อมกัน */
+  /*    ตัวเลข moto/car สร้างจาก data/business-rules.json */
+  /*    แก้ data/business-rules.json ก่อน แล้วสร้างข้อมูลและซิงก์ FACTS.md */
+  /*    ซิงก์หน้าเว็บและฐานความรู้ AI จากข้อมูลหลักทุกครั้ง */
   shippingAutoNote: 'ส่งฟรีตามเขต 50–100+ กล่อง น้อยกว่านั้นคิดตามเขต',
   shippingCarMinQty: 40,  /* จำนวนกล่องที่เปลี่ยนจากรถมอเตอร์ไซค์เป็นรถยนต์ */
   shippingZones: {
@@ -64,9 +64,9 @@ var EED = {
   deliveryAreaTh: 'ทั่วกรุงเทพฯ',
   deliveryAreaEn: 'Bangkok',
   confirmDeadlineTh: '15:00 น. ของวันทำการก่อนส่ง',
-  leadSmallTh: '2–3 วันทำการ',      /* 10–50 กล่อง */
-  leadMediumTh: '5–7 วันทำการ',     /* 51–100 กล่อง */
-  leadLargeTh: '1–2 สัปดาห์',        /* 101+ กล่อง */
+  leadSmallTh: 'อย่างน้อย 1 วัน',      /* 10–50 กล่อง */
+  leadMediumTh: 'อย่างน้อย 1 วัน',     /* 51–100 กล่อง */
+  leadLargeTh: 'อย่างน้อย 1 วัน',        /* 101+ กล่อง */
   vatTh: 'ราคาสุทธิ ไม่มีภาษีมูลค่าเพิ่ม (ยังไม่ได้จดทะเบียน VAT จึงไม่สามารถออกใบกำกับภาษีได้ ออกได้เพียงใบเสร็จรับเงินทั่วไป)',
   vatEn: 'Net price, no VAT charged (we are not VAT-registered and cannot issue tax invoices; only regular receipts available)',
   docTh: 'ออกใบเสนอราคา (Quotation) และใบเสร็จรับเงินแบบธรรมดา',

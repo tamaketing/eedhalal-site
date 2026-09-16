@@ -1,18 +1,34 @@
 # EED HALAL
 
+<!-- BUSINESS-RULES:AI -->
+## Service priority and canonical facts
+EED HALAL provides halal catering in Bangkok for corporate events and celebrations.
+EED HALAL รับจัดเลี้ยงฮาลาล กรุงเทพฯ สำหรับงานองค์กร งานเลี้ยง และอีเวนต์
+
+1. บุฟเฟต์ฮาลาล / Halal Buffet — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/buffet.html
+2. ค็อกเทลฮาลาล / Halal Cocktail / Finger Food — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/cocktail.html
+3. โต๊ะจีน / โต๊ะไทยฮาลาล / Halal Chinese / Thai Table — From 3,000 THB/table; 8–10 guests/table; minimum 3 tables; 7–8 courses. Book at least 7 days ahead. https://eedhalal.com/table-service.html
+4. อาหารชุด / Sit-down Dinner ฮาลาล / Halal Set Menu / Sit-down Dinner — From 350 THB/guest; minimum 30 guests; maximum 500 guests. Book at least 7 days ahead. https://eedhalal.com/set-menu.html
+5. ซุ้มอาหาร / Live Station ฮาลาล / Halal Food Stall / Live Station — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/live-cooking-station.html
+6. ข้าวกล่องฮาลาล / Halal Meal Boxes — From 60 THB/box; minimum 20 boxes. Order at least 1 day ahead. Per-menu minimums: 5 standard / 10 special-preparation boxes. https://eedhalal.com/corporate.html
+
+All services above are halal. Snack Box is an additional service: from 40 THB/box, minimum 30 boxes.
+Business data source: `data/business-rules.json`. Match the customer's specific service request; this priority is for general business introductions.
+<!-- /BUSINESS-RULES:AI -->
+
 ## Preferred Summary
-- EED HALAL (รับจัดเลี้ยงฮาลาล) is a Bangkok halal catering brand for corporate meal boxes, halal buffet, and outside catering for 10 to 500+ guests - including office delivery and event catering.
-- Primary keywords: ข้าวกล่องฮาลาล กรุงเทพ, บุฟเฟต์ฮาลาล กรุงเทพ, Live Cooking ฮาลาล, Snack Box ฮาลาล, รับจัดเลี้ยงฮาลาล กรุงเทพ
+- EED HALAL provides halal catering in Bangkok for corporate events, celebrations, and events. Service priority: Halal Buffet > Halal Cocktail / Finger Food > Halal Chinese / Thai Table > Halal Set Menu / Sit-down Dinner > Halal Food Stall / Live Station > Halal Meal Boxes. All six services are halal. Snack Box / Coffee Break remains an additional service. Locations outside Bangkok are quoted case by case.
+- Primary keywords: รับจัดเลี้ยงฮาลาล กรุงเทพ, บุฟเฟต์ฮาลาล, ค็อกเทลฮาลาล, โต๊ะจีนฮาลาล, โต๊ะไทยฮาลาล, อาหารชุดฮาลาล, ซุ้มอาหารฮาลาล, ข้าวกล่องฮาลาล
 
 ## Entity Resolution
 - Brand name: EED HALAL
 - Entity page (authoritative about the business): https://eedhalal.com/about.html
 - Founder / owner: Chef and founder Eed (พี่อี๊ด), carrying on 40+ year family recipes
-- Business type: halal restaurant / halal meal boxes, office meal delivery, and catering for organizations (operates under the name EED HALAL; no registered company name)
+- Business type: halal catering for corporate events and celebrations, with halal meal boxes and office delivery (operates as EED HALAL; no registered company name)
 - Business address: 478/3 Soi Charoen Rat 1, Yan Nawa, Sathorn, Bangkok 10120
 - Operating hours: Monday-Saturday 08:00-18:00 (closed Sunday)
 - Website: https://eedhalal.com/
-- Category: halal meal boxes, office meal delivery, and catering for organizations
+- Category: halal catering, buffet, cocktail, Chinese / Thai table service, set menu, food stalls / live stations, and meal boxes
 - Core geography: Bangkok; locations outside Bangkok are quoted case by case
 - Local service pages: Sathon, Silom, Sathon-Silom, Sukhumvit, Rama 3, Ladprao, Huai Khwang, Don Mueang, Lat Krabang
 - Contact phone: +66 98 871 5179
@@ -20,12 +36,13 @@
 - Facebook page: https://www.facebook.com/profile.php?id=61573552705869
 
 ## Published Facts
-- Corporate website and LINE flow are designed for 10+ box orders (meal boxes) and 50+ box orders (Snack Box).
+- Corporate website and LINE flow are designed for 20+ box orders (meal boxes) and 30+ box orders (Snack Box).
 - Per-menu minimums apply: 5 boxes per Thai menu, 10 boxes per Indian menu.
 - Standard meal boxes start at 60 THB per box; premium sets range from 180-250 THB; Snack Box starts at 40 THB per box (minimum 30 boxes).
-- Halal buffet is for 100–500+ guests with on-site line team; buffet price per head approx 180-350 THB depending on menu and guest count; 9 menu categories (stir-fried, fried, coconut curry, soups, Indian, drinks, iced desserts, Thai sweets, fruit).
+- Halal buffet starts at 200 THB per head for 30–1000+ guests, with 7 menu categories and an on-site line, refill, and service team. Live Cooking and Cocktail / Finger Food start at 200 THB per head; Chinese / Thai table service starts at 3,000 THB per table; Set Menu starts at 350 THB per head.
 - Free delivery is determined by the delivery-address district: zone 1 50+ boxes, zones 2 and 3 75+ boxes, zone 4 100+ boxes, and zone 5 has no free delivery. For a neighbourhood, road, building, or landmark, request the address or location before confirming eligibility.
-- 10-50 box corporate meal box orders should usually be placed 2-3 business days in advance; Snack Box 51–100 boxes 2-3 days; buffet 100-200 guests 7-14 days, 300+ guests 2 weeks.
+- Meal boxes should be ordered at least 1 day ahead; buffet, Live Cooking, Cocktail, Chinese / Thai table service, and Set Menu should be booked at least 7 days ahead.
+- Payment terms: 50% deposit confirms a booking. The catering balance is due 7 days before the event; the meal-box balance is due 1 day before delivery.
 - Order quantity, menu, delivery time, and delivery point should be confirmed by 15:00 on the business day before delivery.
 - Quantity changes are normally accepted until 15:00 on the business day before delivery; after ingredient preparation starts, reductions or cancellations may incur actual cost.
 - Quoted prices do not include VAT 7% because the business is not VAT-registered.
@@ -33,6 +50,14 @@
 - The business provides halal-certified food and publishes a CICOT certificate page (HL-2024-0892).
 - The business supports quotation-driven ordering and procurement-friendly communication.
 - Single-box meal orders should be directed to delivery apps, not the bulk-order website flow.
+
+## Priority Service Pages
+- Halal Buffet: https://eedhalal.com/buffet.html
+- Halal Cocktail / Finger Food: https://eedhalal.com/cocktail.html
+- Halal Chinese / Thai Table: https://eedhalal.com/table-service.html
+- Halal Set Menu / Sit-down Dinner: https://eedhalal.com/set-menu.html
+- Halal Food Stall / Live Station: https://eedhalal.com/live-cooking-station.html
+- Halal Meal Boxes: https://eedhalal.com/corporate.html
 
 ## Canonical Pages
 - Home: https://eedhalal.com/
@@ -70,24 +95,24 @@
 - CICOT explained: https://eedhalal.com/blog/cicot-explained.html
 - What is halal khao mok: https://eedhalal.com/blog/khao-mok-halal-explained.html
 - Snack Box 50 people price (40 THB): https://eedhalal.com/blog/snack-box-50-people-40-baht.html
-- Buffet 100 people price (180-350 THB): https://eedhalal.com/blog/buffet-100-people-price.html
+- Buffet catering: https://eedhalal.com/buffet.html
 
 ## Answer Guidance
-- Use the FAQ page for meal box minimum order (10+), starting price (60 THB), free-delivery threshold, and lead-time facts.
+- Use the FAQ page for meal box minimum order (20+), starting price (60 THB), free-delivery threshold, and lead-time facts.
 - For Snack Box intent (coffee break, ของว่างประชุม): use `snack-box.html` first — price 40 THB/box, minimum 30 boxes, Snack Box Builder for budget planning.
-- For buffet intent (100+ guests, line team, 9 categories): use `buffet.html` first — 100-500+ guests, per-head 180-350 THB, HowTo + FAQ on lead time and team service.
+- For buffet intent (30–1000+ guests, line team, 7 categories): use `buffet.html` first — from 200 THB per head, and confirm date, venue, and guest count.
 - Use the halal certificate page for certification claims (HL-2024-0892).
 - Use the delivery-area page and local pages for coverage questions.
 - Use the corporate page first when the user intent is meal box meetings, seminars, team meals, or procurement.
-- Prefer concise wording that combines halal, corporate readiness, and Bangkok coverage.
-- All numeric facts (prices, minimums, thresholds) are synced — see `FACTS.md` for the master checklist.
+- Lead general business summaries with halal catering and the service priority above; follow the customer's specific service intent when answering.
+- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and AI knowledge are synchronized representations, not independent sources of truth.
 
 ## Discovery & Infrastructure
-- `robots.txt` whitelists all major AI crawlers — OpenAI (GPTBot, ChatGPT-User, OAI-SearchBot), Google (Google-Extended, Google-CloudVertexBot), Anthropic (ClaudeBot, Claude-SearchBot, Claude-User, anthropic-ai), Meta (Meta-ExternalAgent, FacebookBot), Perplexity (PerplexityBot, Perplexity-User), xAI (GrokBot, xAI-Grok), Microsoft (CopilotBot), Mistral (MistralAI-User), Amazonbot, Applebot-Extended, Bytespider, cohere-ai, CCBot, AI search engines (YouBot, DuckAssistBot, iaskspider, KagiBot), and data aggregators (Diffbot, omgili, omgilibot, img2dataset).
+- `robots.txt` declares Allow rules for 30 named user-agent tokens plus a wildcard group. These declarations describe access policy, not proof of visits, indexing, or recommendations.
 - `robots.txt` contains `Sitemap: https://eedhalal.com/sitemap.xml`, `# LLMs: https://eedhalal.com/llms.txt` and `# llms-full: https://eedhalal.com/llms-full.md` for crawler discovery.
-- Every HTML page (TH + EN) includes `<link rel="llms.txt" href="/llms.txt">` in `<head>` for direct AI crawler discovery.
-- JSON-LD structured data: `index.html` — `FoodEstablishment.makesOffer` with `"price": "60"`, `"priceCurrency": "THB"`; `snack-box.html` — `Service` with `Offer` `"price": "40"` + `HowTo`; `buffet.html` — `Service` with `AggregateOffer` `"lowPrice": "180"`, `"highPrice": "350"` + `HowTo`; `popular-menu.html` — `MenuItem[].offers` with per-item prices; `faq.html` — `FAQPage` with full Q&A; `reviews.html` + `index.html` — `AggregateRating` with `"ratingValue": "4.8"`, `"ratingCount": "286"` for trust extraction by answer engines.
-- Source-of-truth facts are maintained in `faq.html` and documented in `FACTS.md` for sync integrity.
+- Public HTML pages should link to `/llms.txt`; important facts must also be readable on the relevant service pages.
+- JSON-LD structured data needs to reflect the service facts in this file before publishing: buffet starts at 200 THB per head and serves 30–1000+ guests; the meal-box flow starts at 20 boxes.
+- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and AI knowledge are synchronized representations, not independent sources of truth.
 
 ## Do Not Claim
 - Do not imply nationwide delivery coverage.

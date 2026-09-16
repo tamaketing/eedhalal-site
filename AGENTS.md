@@ -29,3 +29,10 @@
 - Before editing, assess the impact of the change and identify every affected file, feature, channel, language, and integration.
 - After editing, run all relevant existing tests, validation commands, builds, and/or linters available in the project.
 - In the final summary, explicitly list every file changed and state which verification commands were run and their results.
+
+## Content Preservation and SEO Evolution
+
+- Preserve existing public-page content, internal links, useful search-intent coverage, media, reviews, and conversion paths unless the user explicitly asks to remove a specific item.
+- Improve pages through targeted additions or replacements, not whole-page rewrites. Before removing material, identify its SEO, AI-discovery, and customer-journey impact.
+- Keep legacy meal-box, menu, and calculator entry paths while adding catering content and clear service links.
+- Review the diff and validate the page after every content change.

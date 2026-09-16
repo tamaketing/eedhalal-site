@@ -78,6 +78,7 @@ export function getLeadTime(rules, quantity) {
 }
 
 function formatRange(range) {
+  if (range.maxQuantity === null && range.minimumBusinessDays) return `${range.minQuantity}+ กล่อง: แนะนำสั่งล่วงหน้าอย่างน้อย ${range.minimumBusinessDays} วัน`;
   if (range.maxQuantity === null) return `${range.minQuantity}+ กล่อง: ล่วงหน้า ${range.minimumWeeks}-${range.maximumWeeks} สัปดาห์`;
   return `${range.minQuantity}-${range.maxQuantity} กล่อง: ล่วงหน้า ${range.minimumBusinessDays}-${range.maximumBusinessDays} วันทำการ`;
 }
@@ -86,6 +87,11 @@ export function renderKnowledge(rules, catalog, menus) {
   const meal = rules.services.mealBox;
   const snack = rules.services.snackBox;
   const buffet = rules.services.buffet;
+  const liveCooking = rules.services.liveCooking;
+  const cocktail = rules.services.cocktail;
+  const tableService = rules.services.tableService;
+  const setMenu = rules.services.setMenu;
+  const payment = rules.paymentTerms;
   const specialMenus = getEffectiveMenus(menus, catalog)
     .filter((menu) => menu.minPerMenu === meal.specialMenuMinimum)
     .map((menu) => menu.name)
@@ -98,6 +104,7 @@ export function renderKnowledge(rules, catalog, menus) {
     return `- ${zone.label} (${zone.districts.join(' ')}): ${deliveryText}`;
   }).join('\n');
   const leadTimeLines = rules.leadTimes.map((range) => `- ${formatRange(range)}`).join('\n');
+  const guestRange = (minimum, maximum) => maximum === null ? `${minimum}+ คน (จำนวนที่รองรับให้ทีมยืนยันตามงาน)` : `${minimum}–${maximum} คน`;
   const menuLines = getEffectiveMenus(menus, catalog)
     .map((menu) => `- ${menu.name} | ${menu.price} บาท/กล่อง | ขั้นต่ำ ${menu.minPerMenu} กล่อง/เมนู | ${menu.category}`)
     .join('\n');
@@ -109,6 +116,10 @@ export function renderKnowledge(rules, catalog, menus) {
 
 ## 1. ตัวตนร้าน
 - ชื่อ: ${rules.business.name} (ดำเนินงานในนาม ${rules.business.name})
+- คำอธิบายธุรกิจ: ${rules.positioning.descriptionTh}
+- Business description: ${rules.positioning.descriptionEn}
+- ลำดับบริการหลัก (ฮาลาลทั้งหมด): ${rules.positioning.serviceNamesTh.join(" > ")}
+- ใช้ลำดับนี้เมื่อแนะนำภาพรวมร้าน; หากลูกค้าระบุบริการแล้ว ให้ตอบบริการนั้นก่อน Snack Box / Coffee Break เป็นบริการเสริม
 - เจ้าของ: ${rules.business.owner} สูตรครัวครอบครัว ${rules.business.experienceYears}+ ปี (ไทย+อินเดีย)
 - ที่อยู่: ${rules.business.address}
 - เวลาทำการ: ${rules.business.operatingDays} ${rules.business.operatingHours} (อาทิตย์ปิด)
@@ -121,7 +132,12 @@ export function renderKnowledge(rules, catalog, menus) {
 - ข้าวกล่องมาตรฐาน: เริ่ม ${meal.priceFrom} บาท/กล่อง
 - เมนูพรีเมียม: เริ่ม ${meal.premiumPriceFrom}-${meal.premiumPriceTo} บาท/กล่อง
 - Snack Box: เริ่ม ${snack.priceFrom} บาท/กล่อง ขั้นต่ำ ${snack.minimumOrder} กล่อง
-- บุฟเฟต์: หัวละ ${buffet.priceFrom}-${buffet.priceTo} บาท สำหรับ ${buffet.minimumGuests}+ คน มีทีมหน้างาน ${buffet.serviceCategories} หมวดอาหาร
+- ข้าวกล่องฮาลาล: เริ่ม ${meal.priceFrom} บาท/กล่อง ขั้นต่ำ ${meal.minimumOrder} กล่อง รองรับ ${meal.minimumOrder}+ กล่อง (จำนวนที่รองรับให้ทีมยืนยันตามงาน) ${meal.halalMaterial} ${meal.packaging} และ${meal.fulfillment}
+- บุฟเฟต์ฮาลาล: เริ่ม ${buffet.priceFrom} บาท/หัว ขั้นต่ำ ${buffet.minimumGuests} คน รองรับ ${guestRange(buffet.minimumGuests, buffet.maximumGuests)} เมนู ${buffet.serviceCategories} หมวด ทีม${buffet.serviceTeam}
+- Live Cooking / ซุ้มปรุงสด: เริ่ม ${liveCooking.priceFrom} บาท/หัว รองรับ ${guestRange(liveCooking.minimumGuests, liveCooking.maximumGuests)} ${liveCooking.serviceStyle} เหมาะกับ${liveCooking.recommendedFor}
+- Cocktail / Finger Food ฮาลาล: เริ่ม ${cocktail.priceFrom} บาท/หัว ขั้นต่ำ ${cocktail.minimumGuests} คน รองรับ ${guestRange(cocktail.minimumGuests, cocktail.maximumGuests)} ${cocktail.serviceStyle} ทีม${cocktail.serviceTeam}
+- โต๊ะจีน / โต๊ะไทย ฮาลาล: เริ่ม ${tableService.priceFromPerTable.toLocaleString('en-US')} บาท/โต๊ะ (${tableService.seatsFrom}–${tableService.seatsTo} ท่าน) ขั้นต่ำ ${tableService.minimumTables} โต๊ะ รองรับ ${tableService.minimumTables}+ โต๊ะ (จำนวนที่รองรับให้ทีมยืนยันตามงาน) เมนูคาว-หวาน ${tableService.courseCountFrom}–${tableService.courseCountTo} รายการ ทีม${tableService.serviceTeam}
+- Set Menu / Sit-down Dinner ฮาลาล: เริ่ม ${setMenu.priceFrom} บาท/หัว ขั้นต่ำ ${setMenu.minimumGuests} คน รองรับ ${guestRange(setMenu.minimumGuests, setMenu.maximumGuests)} ${setMenu.serviceStyle} ${setMenu.courseCountFrom}–${setMenu.courseCountTo} คอร์ส ทีม${setMenu.serviceTeam}
 - ขั้นต่ำออเดอร์องค์กร: ${meal.minimumOrder}+ กล่อง
 - ขั้นต่ำต่อเมนู: เมนูทั่วไปส่วนมาก ${meal.standardMenuMinimum} กล่อง เมนูที่ต้องเตรียมพิเศษ ${meal.specialMenuMinimum} กล่อง ให้ยึดขั้นต่ำรายเมนูจากระบบ
 - เมนูขั้นต่ำ ${meal.specialMenuMinimum} กล่องปัจจุบัน: ${specialMenus}
@@ -135,6 +151,7 @@ ${zoneLines}
 
 ## 4. เวลาสั่งล่วงหน้าและ cutoff
 ${leadTimeLines}
+- งานบุฟเฟต์ ซุ้มปรุงสด Cocktail โต๊ะจีน/โต๊ะไทย และ Set Menu: แนะนำจองอย่างน้อย ${buffet.leadTimeDays} วัน
 - ยืนยันจำนวน เมนู เวลา และจุดส่งภายใน ${rules.cutoff.time} น. ของ${rules.cutoff.description}
 - ใบเสนอราคา: ปกติภายใน ${rules.documents.quoteWithinMinutes} นาทีหลังติดต่อเข้ามาในเวลาทำการ
 - งานเร่งด่วนต้องส่งให้ทีมตรวจคิว ห้ามรับปากแทนครัว
@@ -144,9 +161,10 @@ ${leadTimeLines}
 - ออกได้: ${rules.documents.available.join(' + ')}
 - ออกใบกำกับภาษี / Tax Invoice ไม่ได้ทุกกรณี
 - ฝ่ายจัดซื้อแจ้งชื่อบริษัทและที่อยู่ในแชทนี้เพื่อออกเอกสาร
+- เงื่อนไขชำระเงิน: ชำระมัดจำ ${payment.bookingDepositPercent}% เพื่อยืนยันวันจอง; งานจัดเลี้ยงชำระส่วนที่เหลือก่อนวันงาน ${payment.cateringBalanceDaysBeforeEvent} วัน; ข้าวกล่องชำระส่วนที่เหลือก่อนส่งมอบ ${payment.mealBoxBalanceDaysBeforeDelivery} วัน
 
 ## 6. วิธีสั่งและปิดการขาย
-1. ดูเมนูที่ ${rules.urls.menu} หรือ ${rules.urls.corporate}
+1. ดูเมนูที่ ${rules.urls.menu}, ${rules.urls.catering} หรือ ${rules.urls.corporate}
 2. แจ้งจำนวน งบต่อหัว วัน เวลา และสถานที่ในแชทนี้
 3. AI ช่วยตรวจข้อมูล คำนวณเบื้องต้น และสรุป brief
 4. ทีมงานตรวจราคา ค่าส่ง และคิวครัวก่อนยืนยันออเดอร์
@@ -162,6 +180,11 @@ ${leadTimeLines}
 - ข้าวกล่ององค์กร: ${rules.urls.corporate}
 - Snack Box: ${rules.urls.snackBox}
 - บุฟเฟต์: ${rules.urls.buffet}
+- ค็อกเทล: ${rules.urls.cocktail}
+- โต๊ะจีน / โต๊ะไทย: ${rules.urls.tableService}
+- อาหารชุด: ${rules.urls.setMenu}
+- ซุ้มปรุงสด: ${rules.urls.liveCooking}
+- จัดเลี้ยงฮาลาล: ${rules.urls.catering}
 - พื้นที่ส่ง: ${rules.urls.delivery}
 - ฮาลาล: ${rules.urls.halal}
 - ติดต่อ: ${rules.urls.contact}
@@ -239,15 +262,13 @@ function syncBusinessSource(source, rules, catalog) {
     `$1${rules.delivery.carWhenQuantityAbove}`,
     'shippingCarMinQty',
   );
-  const smallLead = rules.leadTimes[0];
-  const mediumLead = rules.leadTimes[1];
-  const largeLead = rules.leadTimes[2];
+  const leadText = `อย่างน้อย ${rules.services.mealBox.leadTimeDays} วัน`;
   const textValues = {
     quoteTimeTh: `ภายใน ${rules.documents.quoteWithinMinutes} นาทีหลังทัก LINE`,
     confirmDeadlineTh: `${rules.cutoff.time} น. ของ${rules.cutoff.description}`,
-    leadSmallTh: `${smallLead.minimumBusinessDays}–${smallLead.maximumBusinessDays} วันทำการ`,
-    leadMediumTh: `${mediumLead.minimumBusinessDays}–${mediumLead.maximumBusinessDays} วันทำการ`,
-    leadLargeTh: `${largeLead.minimumWeeks}–${largeLead.maximumWeeks} สัปดาห์`,
+    leadSmallTh: leadText,
+    leadMediumTh: leadText,
+    leadLargeTh: leadText,
   };
   for (const [field, value] of Object.entries(textValues)) {
     const pattern = new RegExp(`(${field}:\\s*)'[^']*'`);
@@ -291,7 +312,7 @@ function assertUnique(values, message) {
 export function validateData(rules, catalog, legacy) {
   assert.equal(rules.schemaVersion, 1, 'unsupported business rules schema');
   assert.match(rules.revision, /^\d{4}-\d{2}-\d{2}$/, 'revision must use YYYY-MM-DD');
-  assert.equal(rules.services.mealBox.minimumOrder, 10);
+  assert.equal(rules.services.mealBox.minimumOrder, 20);
   assert.equal(rules.services.snackBox.minimumOrder, 30, 'Snack Box minimum must be 30');
   assert.deepEqual(
     new Set(Object.values(catalog.mins)),
@@ -337,9 +358,10 @@ export function validateData(rules, catalog, legacy) {
   assert.equal(Number(eed.shippingCarMinQty), rules.delivery.carWhenQuantityAbove, 'vehicle threshold drift');
   assert.equal(eed.halalCertificate, rules.business.halalCertificate, 'halal certificate drift');
   assert.equal(eed.confirmDeadlineTh, `${rules.cutoff.time} น. ของ${rules.cutoff.description}`, 'cutoff drift');
-  assert.equal(eed.leadSmallTh, `${rules.leadTimes[0].minimumBusinessDays}–${rules.leadTimes[0].maximumBusinessDays} วันทำการ`, 'small lead time drift');
-  assert.equal(eed.leadMediumTh, `${rules.leadTimes[1].minimumBusinessDays}–${rules.leadTimes[1].maximumBusinessDays} วันทำการ`, 'medium lead time drift');
-  assert.equal(eed.leadLargeTh, `${rules.leadTimes[2].minimumWeeks}–${rules.leadTimes[2].maximumWeeks} สัปดาห์`, 'large lead time drift');
+  const expectedLead = `อย่างน้อย ${rules.services.mealBox.leadTimeDays} วัน`;
+  assert.equal(eed.leadSmallTh, expectedLead, 'small lead time drift');
+  assert.equal(eed.leadMediumTh, expectedLead, 'medium lead time drift');
+  assert.equal(eed.leadLargeTh, expectedLead, 'large lead time drift');
 
   for (const [zoneId, zone] of Object.entries(rules.delivery.zones)) {
     assert.deepEqual(eed.shippingZones[zoneId], zone, `${zoneId} delivery data drift`);
