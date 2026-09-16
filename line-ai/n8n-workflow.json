@@ -32,16 +32,47 @@
     },
     {
       "parameters": {
-        "operation": "displayLoading",
-        "userId": "={{ $json.body.events[0].source.userId }}",
-        "credential": "LINE_MESSAGING_CREDENTIAL"
+        "jsCode": "const menus = [{\"name\":\"ข้าวราดกะเพรา\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดกะเพรา\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ผัดไทยกุ้งสด\",\"price\":85,\"minPerMenu\":5},{\"name\":\"ผัดซีอิ๊ว\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัด\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดกระเทียมทอด\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดเนื้อเค็ม\",\"price\":70,\"minPerMenu\":5},{\"name\":\"ข้าวราดผัดขิง\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดผัดพริกแกง\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดปลาเค็ม\",\"price\":70,\"minPerMenu\":5},{\"name\":\"มาม่าผัดกะเพรา\",\"price\":60,\"minPerMenu\":5},{\"name\":\"สปาเกตตีผัดกะเพรา\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวไก่เทอริยากิ\",\"price\":75,\"minPerMenu\":5},{\"name\":\"ข้าวคลุกกะปิ\",\"price\":75,\"minPerMenu\":5},{\"name\":\"ข้าวหมกไก่สะโพก\",\"price\":100,\"minPerMenu\":10},{\"name\":\"ข้าวราดคั่วกลิ้งไก่สับ\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดปู\",\"price\":100,\"minPerMenu\":5},{\"name\":\"ข้าวหมกน่องไก่\",\"price\":75,\"minPerMenu\":10},{\"name\":\"ข้าวหมกเนื้อน่อง\",\"price\":150,\"minPerMenu\":10},{\"name\":\"ข้าวราด ผัดพริกไทยดำ\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดซอสกระเทียม\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ไก่ทอดเครื่อง + ข้าวเหลือง\",\"price\":90,\"minPerMenu\":10},{\"name\":\"ข้าวราดเขียวหวานแห้ง\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดผัดเปรี้ยวหวาน\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดผัดผักรวม\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดแกงโทโพปลาเค็ม\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดปลาทู\",\"price\":75,\"minPerMenu\":5},{\"name\":\"ข้าวผัดแหนมเนื้อ\",\"price\":70,\"minPerMenu\":5},{\"name\":\"ข้าวผัดต้มยำ\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดรถไฟ\",\"price\":65,\"minPerMenu\":5},{\"name\":\"ข้าวราดผัดหน่อไม้ไก่\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ราดหน้าเส้นใหญ่\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ผัดหมี่สั่ว\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ผัดมักกะโรนี\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวหมกแพะ\",\"price\":200,\"minPerMenu\":10},{\"name\":\"ข้าวหมกปลาอินทรี\",\"price\":180,\"minPerMenu\":10},{\"name\":\"เซ็ตพรีเมียม ข้าวผัดกะเพราเนื้อ ไข่ดาว + แกงจืด + ผลไม้สด\",\"price\":180,\"minPerMenu\":10}];\nconst input = $input.first().json;\nconst event = input?.body?.events?.[0];\nif (!event || event.type !== 'message') return [];\nif (event.message?.type !== 'text' || !String(event.message.text || '').trim()) {\n  return [{ json: { ...input, hasSafeAnswer: true, output: 'ตอนนี้ผมอ่านได้เฉพาะข้อความครับ รบกวนพิมพ์รายละเอียดที่ต้องการให้ช่วยในแชทนี้ครับ' } }];\n}\nconst text = String(event.message.text).replace(/,/g, '');\nconst budgetMatch = text.match(/(?:งบ\\s*)?(?:กล่องละ|ต่อกล่อง|งบต่อหัว|ต่อหัว|หัวละ)\\s*(\\d+(?:\\.\\d+)?)/);\nconst budget = budgetMatch ? Number(budgetMatch[1]) : null;\nconst candidates = budget === null ? [] : menus.filter(menu => menu.price <= budget);\nconst budgetContext = budget === null ? '' : '\\nระบบกรองเมนูตามเพดานงบ ' + budget + ' บาท/กล่องแล้ว เลือกได้เฉพาะรายการนี้ ห้ามเสนอรายการเกินงบ: ' + JSON.stringify(candidates);\nreturn [{ json: { ...input, hasSafeAnswer: false, budgetContext, responseSource: 'conversation-ai' } }];"
       },
-      "id": "line-loading",
-      "name": "Show Loading",
-      "type": "n8n-nodes-base.lineMessaging",
-      "typeVersion": 1,
+      "id": "deterministic-faq",
+      "name": "Deterministic FAQ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        420,
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "eed-has-safe-answer",
+              "leftValue": "={{ $json.hasSafeAnswer ? 'yes' : 'no' }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "yes"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has-safe-answer",
+      "name": "Has Safe Answer?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        800,
         300
       ]
     },
@@ -113,20 +144,12 @@
     },
     {
       "parameters": {
-        "operation": "reply",
-        "replyToken": "={{ $('LINE Webhook').item.json.body.events[0].replyToken }}",
-        "messages": [
-          {
-            "type": "text",
-            "text": "={{ $json.output }}"
-          }
-        ],
-        "credential": "LINE_MESSAGING_CREDENTIAL"
+        "jsCode": "// EED HALAL human-approval foundation — this node NEVER sends to LINE.\n// It converts AI/deterministic output into a Draft (WAITING_FOR_HUMAN).\nconst RULE_REVISION = \"2026-09-16\";\nfunction readNode(name) {\n  try { return $(name).first().json; } catch (error) { return null; }\n}\nconst webhook = readNode('LINE Webhook') || {};\nconst incoming = $input.first().json || {};\nconst event = webhook.body?.events?.[0] || incoming.body?.events?.[0] || {};\nconst source = event.source || {};\nconst message = event.message || {};\nconst customerId = source.userId || '';\nconst channel = source.groupId ? 'line-group' : source.roomId ? 'line-room' : 'line';\nconst incomingMessage = message.type === 'text'\n  ? String(message.text || '')\n  : (message.type ? '[non-text message: ' + message.type + ']' : '');\nconst aiText = String(incoming.output ?? incoming.text ?? '');\nconst isFallback = incoming.responseSource !== 'conversation-ai';\nconst stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');\nconst rand = Math.random().toString(36).slice(2, 8).toUpperCase();\nconst now = new Date().toISOString();\nconst draft = {\n  draftId: 'LD-' + stamp + '-' + rand,\n  customerId,\n  channel,\n  incomingMessage,\n  draftResponse: aiText,\n  status: 'WAITING_FOR_HUMAN',\n  createdAt: now,\n  updatedAt: now,\n  approvedAt: null,\n  sentAt: null,\n  source: isFallback ? 'deterministic-fallback' : 'conversation-ai',\n  aiModel: 'models/gemini-2.5-flash',\n  ruleRevision: RULE_REVISION,\n  metadata: { replyToken: event.replyToken || null, budgetContext: incoming.budgetContext || null },\n  history: [{ at: now, from: null, to: 'WAITING_FOR_HUMAN', actor: 'system' }],\n};\ntry {\n  const store = $getWorkflowStaticData('global');\n  store['eedDraft:' + draft.draftId] = draft;\n} catch (error) {}\nreturn [{ json: { draft } }];"
       },
-      "id": "line-reply",
-      "name": "Reply to LINE",
-      "type": "n8n-nodes-base.lineMessaging",
-      "typeVersion": 1,
+      "id": "build-draft",
+      "name": "Build Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         1060,
         300
@@ -149,18 +172,47 @@
       "main": [
         [
           {
-            "node": "Show Loading",
+            "node": "Deterministic FAQ",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Show Loading": {
+    "Deterministic FAQ": {
       "main": [
         [
           {
+            "node": "Has Safe Answer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Safe Answer?": {
+      "main": [
+        [
+          {
+            "node": "Build Draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Build Draft",
             "type": "main",
             "index": 0
           }
@@ -199,19 +251,8 @@
           }
         ]
       ]
-    },
-    "AI Agent": {
-      "main": [
-        [
-          {
-            "node": "Reply to LINE",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "settings": {},
-  "notes": "Use line-ai/webhook-gateway.mjs as the public LINE webhook endpoint. The gateway verifies X-Line-Signature and forwards requests with EED_WEBHOOK_FORWARD_SECRET; this workflow rejects any request without that shared secret. Import through n8n UI or line-ai/publish-workflow.mjs. Configure credentials in n8n, never in this file."
+  "notes": "HUMAN-APPROVAL FOUNDATION: LINE -> webhook-gateway.mjs (X-Line-Signature + forward secret) -> Verify Webhook Gateway -> Deterministic FAQ -> Has Safe Answer? -> AI Agent -> Build Draft (status WAITING_FOR_HUMAN, workflow ends). No node in this workflow may reply/push to LINE customers or push to the kitchen group. Owner reviews drafts out-of-band until the approval sender exists. Import through n8n UI or line-ai/publish-workflow.mjs. Credentials stay in n8n, never in this file."
 }

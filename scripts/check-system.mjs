@@ -369,6 +369,46 @@ export function validateData(rules, catalog, legacy) {
   }
 }
 
+function parseRouterMenus(jsCode) {
+  const match = String(jsCode || '').match(/const menus = (\[.*?\]);/s);
+  assert.ok(match, 'Deterministic FAQ node must embed generated menus');
+  return JSON.parse(match[1]);
+}
+
+function parseDraftRevision(jsCode) {
+  const match = String(jsCode || '').match(/const RULE_REVISION = ("(?:[^"\\]|\\.)*");/);
+  assert.ok(match, 'Build Draft node must embed RULE_REVISION');
+  return JSON.parse(match[1]);
+}
+
+export async function checkWorkflowFoundation(workflow, rules, catalog, legacy) {
+  // Dynamic import: conversation-update.mjs imports this module, so a static
+  // import here would create a module cycle.
+  const { buildConversationRouter, buildDraftNodeCode, findCustomerSenders, findKitchenAutoPush } =
+    await import('../line-ai/conversation-update.mjs');
+  const byId = new Map(workflow.nodes.map((node) => [node.id, node]));
+  const router = byId.get('deterministic-faq');
+  const draft = byId.get('build-draft');
+  assert.ok(router && draft, 'workflow must contain Deterministic FAQ and Build Draft nodes');
+  const effective = getEffectiveMenus(legacy.menus, catalog)
+    .map(({ name, price, minPerMenu }) => ({ name, price, minPerMenu }));
+  assert.deepEqual(parseRouterMenus(router.parameters.jsCode), effective, 'Deterministic FAQ menus are stale; run with --write');
+  assert.equal(
+    router.parameters.jsCode,
+    buildConversationRouter(getEffectiveMenus(legacy.menus, catalog)),
+    'Deterministic FAQ code is stale; run with --write',
+  );
+  assert.equal(parseDraftRevision(draft.parameters.jsCode), rules.revision, 'Build Draft RULE_REVISION is stale; run with --write');
+  assert.equal(
+    draft.parameters.jsCode,
+    buildDraftNodeCode(rules.revision),
+    'Build Draft code is stale; run with --write',
+  );
+  assert.deepEqual(findCustomerSenders(workflow), [], 'workflow must not contain customer auto-send nodes');
+  assert.deepEqual(findKitchenAutoPush(workflow), [], 'workflow must not contain kitchen auto-push nodes');
+  assert.equal(workflow.connections['AI Agent']?.main?.[0]?.[0]?.node, 'Build Draft', 'AI output must end at Build Draft');
+}
+
 export async function checkSystem(root = ROOT) {
   const data = await loadSystemData(root);
   validateData(data.rules, data.catalog, data.legacy);
@@ -382,6 +422,7 @@ export async function checkSystem(root = ROOT) {
   const workflow = await readJson(root, 'line-ai/n8n-workflow.json');
   assert.equal(workflow.nodes.find((node) => node.id === 'ai-agent')?.parameters.options.systemMessage, expectedNodeMessage,
     'workflow system message is stale; run with --write');
+  await checkWorkflowFoundation(workflow, data.rules, data.catalog, data.legacy);
   return data;
 }
 
@@ -400,8 +441,12 @@ async function writeGeneratedFiles(root = ROOT) {
   await writeFile(path.join(root, 'line-ai/knowledge-pack.md'), knowledge, 'utf8');
   const prompt = getPromptBody(await readFile(path.join(root, 'line-ai/system-prompt.md'), 'utf8'));
   await writeFile(path.join(root, 'line-ai/system-message-node.txt'), `${knowledge.trim()}\n\n${prompt}\n`, 'utf8');
+  const { buildConversationRouter, buildDraftNodeCode } = await import('../line-ai/conversation-update.mjs');
   const workflow = await readJson(root, 'line-ai/n8n-workflow.json');
   workflow.nodes.find((node) => node.id === 'ai-agent').parameters.options.systemMessage = `${knowledge.trim()}\n\n${prompt}\n`;
+  workflow.nodes.find((node) => node.id === 'deterministic-faq').parameters.jsCode =
+    buildConversationRouter(getEffectiveMenus(legacy.menus, catalog));
+  workflow.nodes.find((node) => node.id === 'build-draft').parameters.jsCode = buildDraftNodeCode(rules.revision);
   await writeFile(path.join(root, 'line-ai/n8n-workflow.json'), `${JSON.stringify(workflow, null, 2)}\n`, 'utf8');
 }
 

@@ -1,5 +1,33 @@
 # LINE AI Operations
 
+## Human-approval foundation (current)
+
+```
+LINE customer
+  -> webhook-gateway.mjs (verifies X-Line-Signature, forwards with EED_WEBHOOK_FORWARD_SECRET)
+  -> n8n: LINE Webhook -> Verify Webhook Gateway -> Deterministic FAQ
+  -> Has Safe Answer? -> AI Agent (or deterministic fallback)
+  -> Build Draft (status WAITING_FOR_HUMAN, workflow ENDS here)
+```
+
+- No node in `n8n-workflow.json` may reply/push to a LINE customer or push
+  to the kitchen group. `node scripts/check-system.mjs` (and
+  `test/line-human-approval.test.mjs`) fails the build if a sender exists.
+- AI output is a draft only. The owner reviews each draft out-of-band
+  (n8n execution record -> draft JSON) and replies manually in LINE OA:
+  approve/send as-is, edit first, ask the customer for missing info
+  (regenerate next turn), or reject. Only a future owner-triggered sender
+  node may deliver messages, never the AI path.
+- Kitchen auto-push stays disabled until the approval sender exists.
+  Do not re-add the old `Push to Kitchen Group` / `Upsert CRM Lead` nodes.
+- Drafts are staged in n8n workflow static data (`eedDraft:<id>`, purged
+  with the 24-hour briefs). The schema in `line-ai/draft-schema.mjs` is the
+  single definition so a later PostgreSQL move only swaps the store adapter.
+- Business data always derives from `data/business-rules.json` +
+  `data/planner-overrides.json` via `node scripts/check-system.mjs --write`
+  (knowledge pack, system message, router menus, draft revision).
+  Never edit the prompt or prices directly in the n8n UI.
+
 ## Required environment
 Copy `.env.example` to the service environment and set every LINE, n8n, retention, and monitoring value there. Secrets belong in the host secret manager or n8n credentials, never in workflow JSON, JavaScript, GitHub Actions logs, or URLs.
 
@@ -17,7 +45,13 @@ On the first launch, the launcher asks once for the LINE Channel Secret and crea
 The Desktop launchers call `D:\eedhalal\START-EED-BOT.cmd`, which runs `line-ai/start-bot.ps1`. If a Desktop launcher is missing, run the project copy directly. Run `START-EED-BOT.cmd -CheckOnly` to check installed dependencies without starting services or prompting for secrets. Startup failures remain visible in the console; service logs are saved to ignored `line-ai/*.log` files. Keep the launcher window open while the bot is running; Ctrl+C stops its child services. The existing Desktop `STOP-EED-BOT.cmd` can also stop the launcher and its process tree.
 
 ## Workflow changes
-- Run `node scripts/check-system.mjs --write` after changing the prompt or menu source; this synchronizes the knowledge pack, combined system message, and template agent prompt.
+- Run `node scripts/check-system.mjs --write` after changing the prompt or menu source; this synchronizes the knowledge pack, combined system message, template agent prompt, deterministic router menus, and draft revision.
+- After pulling this foundation, re-import `n8n-workflow.json` in n8n and
+  ACTIVATE it so the old auto-reply/auto-push production workflow is
+  replaced. Verify in n8n that no `Reply to LINE`, `Show Loading`, HTTP
+  `push`, or kitchen nodes remain, then send one test message and confirm
+  the execution ends at `Build Draft` with `status: WAITING_FOR_HUMAN`
+  and nothing arrives in LINE.
 - Import workflow templates through the n8n UI. For the existing conversation workflow, `node line-ai/publish-workflow.mjs` updates only the conversation nodes while preserving its model credentials and LINE/CRM integrations; set `N8N_BASE_URL`, `N8N_API_KEY`, and `N8N_LINE_WORKFLOW_ID` first, then publish the saved draft in n8n.
 - The `Deterministic FAQ` node in the existing workflow now prepares conversation input: text must set `hasSafeAnswer=false` so it reaches AI Agent and memory. Only unsupported message types receive a fixed fallback. Explicit per-box budgets are filtered against current menu prices before the AI call.
 - Without an API key, use supported n8n export/import commands. `prepare-conversation-update.mjs` reads the ignored `live-workflow-export-before.json` backup, selects `N8N_LINE_WORKFLOW_ID`, and generates a candidate plus a manual-only evaluation workflow. CLI import deactivates a workflow; publish it again and restart n8n to load the new version. Never execute a production workflow as a test: it can send LINE messages and update CRM records.

@@ -51,15 +51,16 @@ test('conversation update preserves model credentials and business integrations'
     { name: 'Deterministic FAQ', parameters: {} },
     { name: 'Gemini Chat Model', parameters: { modelName: 'existing-model' }, credentials: { gemini: { id: 'existing' } } },
     { name: 'Simple Memory', parameters: { contextWindowLength: 10 } },
-    { name: 'HTTP Request', parameters: { url: 'existing-destination' } },
+    { name: 'Build Draft', parameters: {} },
     { name: 'Has Safe Answer?', parameters: {} },
-  ], connections: { 'Has Safe Answer?': { main: [[{ node: 'HTTP Request' }], [{ node: 'AI Agent' }]] } } };
+  ], connections: { 'Has Safe Answer?': { main: [[{ node: 'Build Draft' }], [{ node: 'AI Agent' }]] }, 'AI Agent': { main: [[{ node: 'Build Draft' }]] } } };
   const original = structuredClone(workflow);
-  const updated = updateConversation(workflow, 'new prompt');
+  const updated = updateConversation(workflow, 'new prompt', [], '2026-09-16');
   assert.deepEqual(workflow, original);
   assert.deepEqual(updated.nodes[2], original.nodes[2]);
-  assert.deepEqual(updated.nodes[4], original.nodes[4]);
   assert.deepEqual(updated.connections, original.connections);
   assert.equal(updated.nodes[0].parameters.options.maxIterations, 4);
   assert.equal(updated.nodes[0].parameters.options.systemMessage, 'new prompt');
+  assert.match(updated.nodes[4].parameters.jsCode, /WAITING_FOR_HUMAN/);
+  assert.match(updated.nodes[4].parameters.jsCode, /2026-09-16/);
 });

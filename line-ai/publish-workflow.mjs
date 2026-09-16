@@ -9,8 +9,8 @@ if (!workflowId) throw new Error('N8N_LINE_WORKFLOW_ID is required.');
 
 const current = await n8nApi(`/workflows/${encodeURIComponent(workflowId)}`);
 const prompt = await readFile(new URL('./system-message-node.txt', import.meta.url), 'utf8');
-const { legacy, catalog } = await loadSystemData();
-const workflow = updateConversation(current, prompt, getEffectiveMenus(legacy.menus, catalog));
+const { legacy, catalog, rules } = await loadSystemData();
+const workflow = updateConversation(current, prompt, getEffectiveMenus(legacy.menus, catalog), rules.revision);
 
 const published = await n8nApi(`/workflows/${encodeURIComponent(workflowId)}`, {
   method: 'PUT',
