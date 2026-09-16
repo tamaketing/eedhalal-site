@@ -58,11 +58,14 @@ export function newDraftId(now = new Date()) {
 
 // Central Draft shape. Extra columns must be added here first so a future
 // PostgreSQL migration (drafts table) maps 1:1 without logic changes.
+// leadId is nullable: a draft may exist before (or without) any lead — never
+// invent a fake lead just because the customer said hello.
 export function createDraft(input = {}, now = new Date()) {
   const iso = now.toISOString();
   return {
     draftId: input.draftId || newDraftId(now),
     customerId: String(input.customerId || ''),
+    leadId: input.leadId ? String(input.leadId) : null,
     channel: String(input.channel || 'line'),
     incomingMessage: String(input.incomingMessage || ''),
     draftResponse: String(input.draftResponse || ''),

@@ -39,12 +39,18 @@ export function findKitchenAutoPush(workflow) {
 
 // Code for the terminal "Build Draft" node. It NEVER calls LINE: it turns
 // the AI (or deterministic fallback) text into a Draft with status
-// WAITING_FOR_HUMAN, stashes it in workflow static data (temporary store
-// until PostgreSQL exists), and ends the workflow for owner review.
+// WAITING_FOR_HUMAN, stages it in workflow static data as an INGRESS FALLBACK
+// queue, and ends the workflow for owner review.
+// Source of truth is the persistent repository (services/drafts.mjs ->
+// DraftRepository, see docs/database.md), NOT this static staging. Until the
+// internal API exists (Phase 4), n8n cannot write the repository directly, so
+// this fallback stays explicitly marked and holds no business logic.
 export function buildDraftNodeCode(ruleRevision = '') {
   const revision = JSON.stringify(String(ruleRevision || ''));
   return `// EED HALAL human-approval foundation — this node NEVER sends to LINE.
 // It converts AI/deterministic output into a Draft (WAITING_FOR_HUMAN).
+// Static-data staging below is an INGRESS FALLBACK queue only; the source of
+// truth is the persistent repository (services/drafts.mjs). See docs/database.md.
 const RULE_REVISION = ${revision};
 function readNode(name) {
   try { return $(name).first().json; } catch (error) { return null; }
@@ -67,6 +73,7 @@ const now = new Date().toISOString();
 const draft = {
   draftId: 'LD-' + stamp + '-' + rand,
   customerId,
+  leadId: null,
   channel,
   incomingMessage,
   draftResponse: aiText,

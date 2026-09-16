@@ -23,6 +23,10 @@ LINE customer
 - Drafts are staged in n8n workflow static data (`eedDraft:<id>`, purged
   with the 24-hour briefs). The schema in `line-ai/draft-schema.mjs` is the
   single definition so a later PostgreSQL move only swaps the store adapter.
+- Central database: see `docs/database.md`. `DB_ADAPTER` (memory/file/
+  postgres), `DB_DIR`, `DATABASE_URL` live in the host environment, never in
+  the repo. Static-data staging in n8n is an explicitly marked ingress
+  fallback; the persistent repository is the source of truth.
 - Business data always derives from `data/business-rules.json` +
   `data/planner-overrides.json` via `node scripts/check-system.mjs --write`
   (knowledge pack, system message, router menus, draft revision).
