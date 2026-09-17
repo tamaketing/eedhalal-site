@@ -163,7 +163,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"lineUserId\": \"{{ $json.lineUserId }}\",\n  \"displayName\": \"{{ $json.displayName }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({ lineUserId: $json.lineUserId, displayName: $json.displayName }) }}",
         "options": {
           "timeout": 10000
         }
@@ -191,7 +191,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"customerId\": \"{{ $(\"Resolve Customer\").item.json.customer.id }}\",\n  \"message\": \"{{ $(\"Normalize Event\").item.json.incomingMessage }}\",\n  \"sourceEventId\": \"{{ $(\"Normalize Event\").item.json.sourceEventId }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({ customerId: $('Resolve Customer').item.json.customer.id, message: $('Normalize Event').item.json.incomingMessage, sourceEventId: $('Normalize Event').item.json.sourceEventId }) }}",
         "options": {
           "timeout": 10000
         }
@@ -219,7 +219,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"customerId\": \"{{ $(\"Resolve Customer\").item.json.customer.id }}\",\n  \"leadId\": \"{{ $(\"Evaluate Lead\").item.json.lead?.id || null }}\",\n  \"channel\": \"{{ $(\"Normalize Event\").item.json.channel }}\",\n  \"incomingMessage\": \"{{ $(\"Normalize Event\").item.json.incomingMessage }}\",\n  \"draftResponse\": \"{{ $(\"Normalize Event\").item.json.draftResponse }}\",\n  \"source\": \"{{ $(\"Normalize Event\").item.json.source }}\",\n  \"aiModel\": \"{{ $(\"Normalize Event\").item.json.aiModel }}\",\n  \"ruleRevision\": \"{{ $(\"Normalize Event\").item.json.ruleRevision }}\",\n  \"sourceEventId\": \"{{ $(\"Normalize Event\").item.json.sourceEventId }}\",\n  \"metadata\": {{ JSON.stringify({ replyToken: $(\"Normalize Event\").item.json.replyToken, budgetContext: $(\"Normalize Event\").item.json.budgetContext }) }}\n}",
+        "jsonBody": "={{ JSON.stringify({ customerId: $('Resolve Customer').item.json.customer.id, leadId: $('Evaluate Lead').item.json.lead?.id || null, channel: $('Normalize Event').item.json.channel, incomingMessage: $('Normalize Event').item.json.incomingMessage, draftResponse: $('Normalize Event').item.json.draftResponse, source: $('Normalize Event').item.json.source, aiModel: $('Normalize Event').item.json.aiModel, ruleRevision: $('Normalize Event').item.json.ruleRevision, sourceEventId: $('Normalize Event').item.json.sourceEventId, metadata: { replyToken: $('Normalize Event').item.json.replyToken, budgetContext: $('Normalize Event').item.json.budgetContext } }) }}",
         "options": {
           "timeout": 10000
         }

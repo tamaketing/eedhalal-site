@@ -63,3 +63,55 @@ test('production smoke checks run after Pages deploy and on a schedule', () => {
   assert.match(pagesWorkflow, /! -name 'budget-planner\.html'/);
   assert.match(pagesWorkflow, /! -name 'kitchen-order\.html'/);
 });
+
+test('internal API HTTP request bodies use JSON.stringify for safe serialization', () => {
+  const parsed = JSON.parse(workflow);
+  const httpNodes = parsed.nodes.filter((node) => node.type === 'n8n-nodes-base.httpRequest');
+
+  for (const node of httpNodes) {
+    const jsonBody = node.parameters.jsonBody;
+    assert.ok(jsonBody, `${node.name} has jsonBody`);
+    assert.ok(
+      jsonBody.includes('JSON.stringify'),
+      `${node.name} must use JSON.stringify instead of raw string interpolation`
+    );
+    assert.ok(
+      !jsonBody.includes('\\"{{'),
+      `${node.name} must not contain raw {{ interpolation in JSON string context`
+    );
+  }
+});
+
+test('workflow request bodies survive special characters without breaking JSON', () => {
+  const parsed = JSON.parse(workflow);
+  const httpNodes = parsed.nodes.filter((node) => node.type === 'n8n-nodes-base.httpRequest');
+
+  const specialValues = {
+    multiline: 'line1\nline2\nline3',
+    quotes: 'ลูกค้าบอกว่า "ขอใบเสนอราคา"',
+    backslash: 'A\\B',
+    tab: 'col1\tcol2',
+    thaiEmoji: 'ข้าวกล่องฮาลาล 😊',
+    longAi: 'สวัสดีค่ะ\n\nรับทราบค่ะ\nคุณลูกค้าต้องการ "50 กล่อง"\nจัดส่งสาทร',
+  };
+
+  for (const node of httpNodes) {
+    const body = node.parameters.jsonBody;
+    assert.ok(body.includes('JSON.stringify'), `${node.name} uses JSON.stringify`);
+
+    for (const [label, value] of Object.entries(specialValues)) {
+      const obj = { test: value };
+      const serialized = JSON.stringify(obj);
+      const parsed2 = JSON.parse(serialized);
+      assert.equal(parsed2.test, value, `${node.name} round-trips "${label}" correctly`);
+    }
+  }
+});
+
+test('no LINE sender or push nodes exist in workflow', () => {
+  const parsed = JSON.parse(workflow);
+  const nodeNames = parsed.nodes.map((n) => n.name.toLowerCase());
+  assert.ok(!nodeNames.some((n) => n.includes('sender') || n.includes('reply')), 'no sender/reply node');
+  assert.ok(!nodeNames.some((n) => n.includes('push') && n.includes('kitchen')), 'no kitchen push node');
+  assert.ok(!nodeNames.some((n) => n.includes('line-reply') || n.includes('line-push')), 'no LINE API node');
+});
