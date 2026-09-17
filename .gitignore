@@ -23,6 +23,9 @@ line-ai/*.db
 line-ai/*.db-*
 line-ai/*.log
 
+# Project-owned Node dependencies (package.json/lock are committed, modules are not).
+node_modules/
+
 # Phase 1 — local-only image archive (272 unused files, ~271 MB).
 # img/ = deploy (90 used files, ~50 MB). img_archive_local/ stays on machine only.
 img_archive_local/

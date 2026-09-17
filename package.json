@@ -1,0 +1,19 @@
+{
+  "name": "eedhalal",
+  "version": "0.4.0",
+  "private": true,
+  "description": "EED HALAL AI-operated business: static site, LINE bot, internal business API, and central PostgreSQL database.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "db:migrate": "node db/migrate.mjs up",
+    "db:status": "node db/migrate.mjs status",
+    "api:start": "node server/internal-api.mjs"
+  },
+  "dependencies": {
+    "pg": "8.21.0"
+  }
+}

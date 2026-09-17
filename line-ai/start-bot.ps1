@@ -66,7 +66,7 @@ try {
     if ($env:N8N_INTERNAL_WEBHOOK_URL -ne 'http://127.0.0.1:5678/webhook/line-webhook') {
         throw 'This local launcher requires N8N_INTERNAL_WEBHOOK_URL=http://127.0.0.1:5678/webhook/line-webhook.'
     }
-    foreach ($port in @(5678, 8787)) {
+    foreach ($port in @(5678, 8787, 8788)) {
         if (Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue) {
             throw "Port $port is already in use. Stop the existing bot before starting another copy."
         }
@@ -77,6 +77,21 @@ try {
     if ([string]::IsNullOrWhiteSpace($env:INTERNAL_API_BASE_URL)) { $env:INTERNAL_API_BASE_URL = 'http://127.0.0.1:8788' }
     $env:LINE_GATEWAY_HOST = '127.0.0.1'
     $env:LINE_GATEWAY_PORT = '8787'
+    # Internal Business API (production persistence). Secrets live in
+    # D:\eedhalal-runtime\eedhalal-api.env (admin-only file, never echoed).
+    $apiEnvPath = 'D:\eedhalal-runtime\eedhalal-api.env'
+    if (-not (Test-Path -LiteralPath $apiEnvPath)) { throw "Missing Internal API env file: $apiEnvPath. See docs/database.md." }
+    foreach ($line in [IO.File]::ReadAllLines($apiEnvPath)) {
+        if ($line -match '^\s*(?:#|$)') { continue }
+        if ($line -notmatch '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$') { throw 'Invalid Internal API env line. Use NAME=value format.' }
+        [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2].Trim(), 'Process')
+    }
+    foreach ($name in @('DB_ADAPTER', 'DATABASE_URL', 'EED_INTERNAL_API_SECRET')) {
+        if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { throw "Missing $name for Internal API." }
+    }
+    Write-Host 'Starting Internal Business API...'
+    $internalApi = Start-BotProcess 'internal-api' $node @('"' + "$root\server\internal-api.mjs" + '"')
+    Wait-BotHealth 'internal-api' 'http://127.0.0.1:8788/readiness' $internalApi
     Write-Host 'Starting n8n...'
     $n8n = Start-BotProcess 'n8n' $node @('"' + $n8nEntry + '"', 'start')
     Wait-BotHealth 'n8n' 'http://127.0.0.1:5678/healthz' $n8n
