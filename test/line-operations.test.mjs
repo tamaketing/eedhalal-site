@@ -29,6 +29,12 @@ test('n8n workflow rejects requests that bypass the verified gateway', () => {
   assert.match(workflow, /EED_WEBHOOK_FORWARD_SECRET/);
 });
 
+test('n8n acknowledges LINE events without requiring a missing response node', () => {
+  const parsed = JSON.parse(workflow);
+  const webhook = parsed.nodes.find((node) => node.id === 'line-webhook');
+  assert.equal(webhook.parameters.responseMode, 'onReceived');
+});
+
 test('planner no longer claims a browser PIN is authentication', () => {
   assert.doesNotMatch(planner, /var PIN\s*=/);
   assert.doesNotMatch(plannerPage, /PIN\s*2024|\?key=2024/);

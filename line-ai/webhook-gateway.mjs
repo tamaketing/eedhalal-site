@@ -50,6 +50,20 @@ const server = createServer(async (request, response) => {
     if (!signaturesMatch(request.headers['x-line-signature'], signatureFor(payload))) {
       return respond(response, 401, { error: 'invalid_signature' });
     }
+    let webhook;
+    try {
+      webhook = JSON.parse(payload.toString('utf8'));
+    } catch {
+      return respond(response, 400, { error: 'invalid_payload' });
+    }
+    if (!webhook || !Array.isArray(webhook.events)) {
+      return respond(response, 400, { error: 'invalid_payload' });
+    }
+    // LINE's Verify button sends no events. Acknowledge only after signature
+    // verification; do not run AI or create customer drafts for this probe.
+    if (webhook.events.length === 0) {
+      return respond(response, 200, { status: 'accepted' });
+    }
     try {
       const upstream = await fetch(process.env.N8N_INTERNAL_WEBHOOK_URL, {
         method: 'POST',
@@ -67,4 +81,4 @@ const server = createServer(async (request, response) => {
   });
 });
 
-server.listen(port, host, () => console.log(`LINE webhook gateway listening on http://${host}:${port}`));
+server.listen(port, host, () => console.log(`LINE webhook gateway listening on http://${host}:${server.address().port}`));

@@ -1,4 +1,4 @@
-param([switch]$CheckOnly)
+param([switch]$CheckOnly, [switch]$TunnelOnly)
 
 $ErrorActionPreference = 'Stop'
 try { $Host.UI.RawUI.WindowTitle = 'EED-HALAL-N8N' } catch {}
@@ -17,7 +17,7 @@ function Start-BotProcess($Name, $Executable, $Arguments) {
 function Wait-BotHealth($Name, $Url, $Process) {
     $deadline = [DateTime]::UtcNow.AddSeconds(90)
     do {
-        if ($Process.HasExited) { throw "$Name exited. See line-ai\$Name.stderr.log and $Name.stdout.log." }
+        if ($Process -and $Process.HasExited) { throw "$Name exited. See line-ai\$Name.stderr.log and $Name.stdout.log." }
         try {
             $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 2
             if ($response.StatusCode -eq 200) { return }
@@ -25,6 +25,27 @@ function Wait-BotHealth($Name, $Url, $Process) {
         Start-Sleep -Milliseconds 500
     } while ([DateTime]::UtcNow -lt $deadline)
     throw "$Name did not become ready. See its logs in line-ai."
+}
+
+function Wait-BotWebhook($BaseUrl, $Process, $TimeoutSeconds = 90) {
+    $payload = '{"events":[]}'
+    $hmac = [Security.Cryptography.HMACSHA256]::new([Text.Encoding]::UTF8.GetBytes($env:LINE_CHANNEL_SECRET))
+    try { $signature = [Convert]::ToBase64String($hmac.ComputeHash([Text.Encoding]::UTF8.GetBytes($payload))) }
+    finally { $hmac.Dispose() }
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+    $failure = 'No response'
+    do {
+        if ($Process -and $Process.HasExited) { throw 'Tunnel stopped before webhook verification completed.' }
+        try {
+            $health = Invoke-RestMethod -Uri "$BaseUrl/healthz" -TimeoutSec 5
+            if ($health.status -ne 'ok') { throw 'Unexpected gateway health response.' }
+            $response = Invoke-WebRequest -Uri "$BaseUrl/line-webhook" -Method Post -ContentType 'application/json' -Headers @{ 'x-line-signature' = $signature } -Body $payload -UseBasicParsing -TimeoutSec 5
+            if ($response.StatusCode -eq 200 -and ($response.Content | ConvertFrom-Json).status -eq 'accepted') { return }
+            $failure = 'Unexpected webhook response'
+        } catch { $failure = $_.Exception.Message }
+        Start-Sleep -Seconds 1
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw "Webhook verification failed: $failure. Check the gateway and tunnel logs; no URL was copied."
 }
 
 try {
@@ -66,38 +87,46 @@ try {
     if ($env:N8N_INTERNAL_WEBHOOK_URL -ne 'http://127.0.0.1:5678/webhook/line-webhook') {
         throw 'This local launcher requires N8N_INTERNAL_WEBHOOK_URL=http://127.0.0.1:5678/webhook/line-webhook.'
     }
-    foreach ($port in @(5678, 8787, 8788)) {
-        if (Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue) {
-            throw "Port $port is already in use. Stop the existing bot before starting another copy."
+    if ($TunnelOnly) {
+        Write-Host 'Checking existing services before starting a replacement tunnel...'
+        Wait-BotHealth 'internal-api' 'http://127.0.0.1:8788/readiness' $null
+        Wait-BotHealth 'n8n' 'http://127.0.0.1:5678/healthz' $null
+        Wait-BotHealth 'gateway' 'http://127.0.0.1:8787/healthz' $null
+    } else {
+        foreach ($port in @(5678, 8787, 8788)) {
+            if (Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue) {
+                throw "Port $port is already in use. If the services are healthy and only the tunnel stopped, run START-EED-BOT.cmd -TunnelOnly. Otherwise stop the existing bot first."
+            }
         }
+        $env:N8N_LISTEN_ADDRESS = '127.0.0.1'
+        $env:N8N_PORT = '5678'
+        $env:N8N_BLOCK_ENV_ACCESS_IN_NODE = 'false'
+        if ([string]::IsNullOrWhiteSpace($env:INTERNAL_API_BASE_URL)) { $env:INTERNAL_API_BASE_URL = 'http://127.0.0.1:8788' }
+        $env:LINE_GATEWAY_HOST = '127.0.0.1'
+        $env:LINE_GATEWAY_PORT = '8787'
+        # Internal Business API (production persistence). Secrets live in
+        # D:\eedhalal-runtime\eedhalal-api.env (admin-only file, never echoed).
+        $apiEnvPath = 'D:\eedhalal-runtime\eedhalal-api.env'
+        if (-not (Test-Path -LiteralPath $apiEnvPath)) { throw "Missing Internal API env file: $apiEnvPath. See docs/database.md." }
+        foreach ($line in [IO.File]::ReadAllLines($apiEnvPath)) {
+            if ($line -match '^\s*(?:#|$)') { continue }
+            if ($line -notmatch '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$') { throw 'Invalid Internal API env line. Use NAME=value format.' }
+            [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2].Trim(), 'Process')
+        }
+        foreach ($name in @('DB_ADAPTER', 'DATABASE_URL', 'EED_INTERNAL_API_SECRET')) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { throw "Missing $name for Internal API." }
+        }
+        Write-Host 'Starting Internal Business API...'
+        $internalApi = Start-BotProcess 'internal-api' $node @('"' + "$root\server\internal-api.mjs" + '"')
+        Wait-BotHealth 'internal-api' 'http://127.0.0.1:8788/readiness' $internalApi
+        Write-Host 'Starting n8n...'
+        $n8n = Start-BotProcess 'n8n' $node @('"' + $n8nEntry + '"', 'start')
+        Wait-BotHealth 'n8n' 'http://127.0.0.1:5678/healthz' $n8n
+        Write-Host 'Starting LINE signature gateway...'
+        $gateway = Start-BotProcess 'gateway' $node @('"' + "$PSScriptRoot\webhook-gateway.mjs" + '"')
+        Wait-BotHealth 'gateway' 'http://127.0.0.1:8787/healthz' $gateway
     }
-    $env:N8N_LISTEN_ADDRESS = '127.0.0.1'
-    $env:N8N_PORT = '5678'
-    $env:N8N_BLOCK_ENV_ACCESS_IN_NODE = 'false'
-    if ([string]::IsNullOrWhiteSpace($env:INTERNAL_API_BASE_URL)) { $env:INTERNAL_API_BASE_URL = 'http://127.0.0.1:8788' }
-    $env:LINE_GATEWAY_HOST = '127.0.0.1'
-    $env:LINE_GATEWAY_PORT = '8787'
-    # Internal Business API (production persistence). Secrets live in
-    # D:\eedhalal-runtime\eedhalal-api.env (admin-only file, never echoed).
-    $apiEnvPath = 'D:\eedhalal-runtime\eedhalal-api.env'
-    if (-not (Test-Path -LiteralPath $apiEnvPath)) { throw "Missing Internal API env file: $apiEnvPath. See docs/database.md." }
-    foreach ($line in [IO.File]::ReadAllLines($apiEnvPath)) {
-        if ($line -match '^\s*(?:#|$)') { continue }
-        if ($line -notmatch '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$') { throw 'Invalid Internal API env line. Use NAME=value format.' }
-        [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2].Trim(), 'Process')
-    }
-    foreach ($name in @('DB_ADAPTER', 'DATABASE_URL', 'EED_INTERNAL_API_SECRET')) {
-        if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { throw "Missing $name for Internal API." }
-    }
-    Write-Host 'Starting Internal Business API...'
-    $internalApi = Start-BotProcess 'internal-api' $node @('"' + "$root\server\internal-api.mjs" + '"')
-    Wait-BotHealth 'internal-api' 'http://127.0.0.1:8788/readiness' $internalApi
-    Write-Host 'Starting n8n...'
-    $n8n = Start-BotProcess 'n8n' $node @('"' + $n8nEntry + '"', 'start')
-    Wait-BotHealth 'n8n' 'http://127.0.0.1:5678/healthz' $n8n
-    Write-Host 'Starting LINE signature gateway...'
-    $gateway = Start-BotProcess 'gateway' $node @('"' + "$PSScriptRoot\webhook-gateway.mjs" + '"')
-    Wait-BotHealth 'gateway' 'http://127.0.0.1:8787/healthz' $gateway
+    Wait-BotWebhook 'http://127.0.0.1:8787' $null 10
     $env:SITE_URL = 'https://eedhalal.com'
     $env:BOT_MONITORING_ENABLED = 'true'
     $env:BOT_HEALTH_URL = 'http://127.0.0.1:8787/healthz'
@@ -107,18 +136,29 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Startup health check failed.' }
 
     Write-Host 'Starting temporary webhook tunnel...'
+    if (Get-Process cloudflared -ErrorAction SilentlyContinue) {
+        throw 'A cloudflared tunnel is already running. Keep its current URL or stop that tunnel before requesting a replacement.'
+    }
     $tunnel = Start-BotProcess 'cloudflared' $cloudflared @('tunnel', '--url', 'http://127.0.0.1:8787', '--no-autoupdate')
     $deadline = [DateTime]::UtcNow.AddSeconds(60)
     $webhook = $null
     do {
         if ($tunnel.HasExited) { throw 'Tunnel exited. See line-ai\cloudflared.stderr.log.' }
         $log = Get-Content -LiteralPath "$PSScriptRoot\cloudflared.stderr.log" -Raw -ErrorAction SilentlyContinue
-        if ($log -match 'https://[a-z0-9-]+\.trycloudflare\.com') { $webhook = $Matches[0] + '/line-webhook'; break }
+        if ($log -match 'https://[a-z0-9-]+\.trycloudflare\.com' -and $log -match 'Registered tunnel connection') {
+            $tunnelUrl = [regex]::Match($log, 'https://[a-z0-9-]+\.trycloudflare\.com').Value
+            $webhook = $tunnelUrl + '/line-webhook'
+            break
+        }
         Start-Sleep -Milliseconds 500
     } while ([DateTime]::UtcNow -lt $deadline)
     if (-not $webhook) { throw 'No tunnel URL received. See line-ai\cloudflared.stderr.log.' }
+    Write-Host 'Checking public webhook reachability and signed LINE verification...'
+    Wait-BotWebhook $tunnelUrl $tunnel
     Write-Host "`nServices started. n8n editor: http://127.0.0.1:5678" -ForegroundColor Green
     Write-Host "LINE webhook URL: $webhook" -ForegroundColor Cyan
+    Write-Host 'Verified: public gateway and signed empty-event POST both returned HTTP 200.' -ForegroundColor Green
+    Write-Host 'Use this URL in LINE Developers > Messaging API > Webhook URL. Browser GET is not a webhook test.'
     try { Set-Clipboard -Value $webhook; Write-Host 'Webhook URL copied. Paste into LINE Developers and verify.' } catch { Write-Host 'Copy the webhook URL above manually.' }
     Write-Host 'Keep this window open. Press Ctrl+C to stop. The tunnel URL changes on restart.'
     while ($true) {

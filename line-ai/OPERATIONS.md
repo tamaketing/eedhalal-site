@@ -46,12 +46,16 @@ Copy `.env.example` to the service environment and set every LINE, n8n, retentio
 
 ## Secure webhook path
 1. On this Windows machine, run `START-EED-BOT-SECURE.cmd` from the Desktop. It starts n8n, the gateway, a temporary cloudflared tunnel to port `8787`, and a local health smoke check.
-2. Set the LINE Developers webhook URL to `https://bot.example.com/line-webhook`.
+2. Paste the exact `LINE webhook URL` copied by the launcher into LINE Developers > Messaging API > Webhook URL, then click Verify. The launcher waits for a registered tunnel and successful public health and signed empty-event checks before copying the URL. The public path is `/line-webhook`; `/webhook/line-webhook` is the private n8n path only.
 3. Keep n8n reachable only from the gateway/private network.
 4. Set `EED_WEBHOOK_FORWARD_SECRET` in both the gateway service and n8n environment.
 5. Import `n8n-workflow.json`, configure n8n credentials in its UI, publish it, and verify the `Verify Webhook Gateway` node remains first after the webhook.
 
 The gateway validates LINE's raw-body `X-Line-Signature` with `LINE_CHANNEL_SECRET` using a timing-safe comparison. n8n rejects requests without the internal forwarding secret.
+
+LINE verification requests with an empty `events` array return HTTP 200 from the gateway after signature validation, without running the customer workflow. Actual events are forwarded to n8n, whose webhook acknowledges receipt immediately (`onReceived`) before processing the draft. This acknowledgement is not confirmation that draft processing completed. Opening the webhook link in a browser sends GET and returns 404; use LINE's Verify button instead.
+
+If the temporary URL returns Cloudflare 530 and the tunnel has stopped while the local services are still healthy, run `START-EED-BOT.cmd -TunnelOnly` to create and verify a replacement tunnel without restarting n8n or the Internal API. Paste the newly copied URL into LINE Developers. This mode owns only its new tunnel; closing it leaves the existing services running. Temporary URLs change on restart and old URLs must be replaced.
 
 On the first launch, the launcher asks once for the LINE Channel Secret and creates the ignored `D:\eedhalal\.env`; it generates the internal forwarding secret automatically. `START-EED-BOT.cmd` delegates to the secure launcher and tunnels only to the verified gateway.
 
