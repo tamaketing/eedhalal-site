@@ -126,22 +126,7 @@
         500
       ]
     },
-    {
-      "parameters": {
-        "toolName": "KnowledgeBase",
-        "description": "ค้นข้อมูล EED HALAL จาก knowledge-pack.md (ราคา ขั้นต่ำ ส่งฟรี lead time VAT ฮาลาล) ต้องเรียกก่อนตอบเสมอ",
-        "fileSearchStore": "fileSearchStores/PUT_YOUR_STORE_ID_HERE",
-        "credential": "GEMINI_API_KEY"
-      },
-      "id": "kb-tool",
-      "name": "KnowledgeBase",
-      "type": "@n8n/n8n-nodes-langchain.toolGoogleGeminiFileSearch",
-      "typeVersion": 1,
-      "position": [
-        840,
-        300
-      ]
-    },
+
     {
       "parameters": {
         "jsCode": "// EED HALAL persistence chain — normalization only. No LINE calls,\n// no static writes. PostgreSQL (via Internal API) is the Draft store.\nconst RULE_REVISION = \"2026-09-16\";\nfunction readNode(name) {\n  try { return $(name).first().json; } catch (error) { return null; }\n}\nconst webhook = readNode('LINE Webhook') || {};\nconst incoming = $input.first().json || {};\nconst event = webhook.body?.events?.[0] || incoming.body?.events?.[0] || {};\nconst source = event.source || {};\nconst message = event.message || {};\nconst delivery = event.deliveryContext || {};\nconst sourceEventId = message.id || event.webhookEventId || delivery.webhookEventId || null;\nconst channel = source.groupId ? 'line-group' : source.roomId ? 'line-room' : 'line';\nconst incomingMessage = message.type === 'text'\n  ? String(message.text || '')\n  : (message.type ? '[non-text message: ' + message.type + ']' : '');\nconst aiText = String(incoming.output ?? incoming.text ?? '');\nconst isFallback = incoming.responseSource !== 'conversation-ai';\nreturn [{ json: {\n  lineUserId: source.userId || '',\n  displayName: '',\n  channel,\n  incomingMessage,\n  draftResponse: aiText,\n  source: isFallback ? 'deterministic-fallback' : 'conversation-ai',\n  aiModel: 'models/gemini-2.5-flash',\n  ruleRevision: RULE_REVISION,\n  sourceEventId,\n  replyToken: event.replyToken || null,\n  budgetContext: incoming.budgetContext || null,\n} }];"
@@ -338,17 +323,7 @@
         ]
       ]
     },
-    "KnowledgeBase": {
-      "ai_tool": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
+
     "Normalize Event": {
       "main": [
         [
