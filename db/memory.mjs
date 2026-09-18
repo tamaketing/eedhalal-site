@@ -2,6 +2,9 @@
 // Implements the repository contract documented in db/index.mjs.
 // No I/O, no dependencies. Do not use for production persistence.
 
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { inboundDefaults, inboundPatch, validateInboundRow } from './inbound-contract.mjs';
+
 function clone(value) {
   return value === undefined ? value : structuredClone(value);
 }
@@ -19,6 +22,7 @@ export function createMemoryAdapter() {
     leads: new Map(),
     drafts: new Map(),
     auditLogs: new Map(),
+    inboundMessages: new Map(),
   };
   const customers = {
     kind: 'customers',
@@ -147,6 +151,33 @@ export function createMemoryAdapter() {
     },
   };
 
+  const inboundMessages = {
+    kind: 'inboundMessages',
+    async create(input, now = new Date().toISOString()) {
+      const row = inboundDefaults(input);
+      if (tables.inboundMessages.has(row.id) || (row.sourceEventId != null &&
+          [...tables.inboundMessages.values()].some((r) => r.sourceEventId === row.sourceEventId))) {
+        throw conflict('inbound already exists');
+      }
+      validateInboundRow(row, (table, id) => tables[table].has(id));
+      const saved = withTimestamps(row, true, now);
+      tables.inboundMessages.set(row.id, saved);
+      return clone(saved);
+    },
+    async findById(id) { return clone(tables.inboundMessages.get(id) || null); },
+    async findBySourceEventId(eventId) {
+      return eventId == null ? null : clone([...tables.inboundMessages.values()].find((r) => r.sourceEventId === eventId) || null);
+    },
+    async updateIfCurrent(id, patch, expected, now = new Date().toISOString()) {
+      const row = tables.inboundMessages.get(id);
+      if (!row || row.status !== expected.status || row.revision !== expected.revision) return null;
+      const saved = withTimestamps({ ...row, ...inboundPatch(patch) }, false, now);
+      validateInboundRow(saved, (table, key) => tables[table].has(key));
+      tables.inboundMessages.set(id, saved);
+      return clone(saved);
+    },
+  };
+
   // Append-only by construction: no update/delete methods exist.
   const auditLogs = {
     kind: 'auditLogs',
@@ -168,14 +199,30 @@ export function createMemoryAdapter() {
     },
   };
 
+  // Async callbacks can interleave even on one JS thread. Serialize repository
+  // access and restore the snapshot if a transaction (including audit) fails.
+  const context = new AsyncLocalStorage();
+  let queue = Promise.resolve();
+  function exclusive(task) {
+    if (context.getStore()) return task();
+    const run = queue.then(() => context.run(true, task));
+    queue = run.catch(() => {});
+    return run;
+  }
+  const repos = { customers, leads, drafts, auditLogs, inboundMessages };
+  for (const repo of Object.values(repos)) {
+    for (const [key, fn] of Object.entries(repo)) {
+      if (typeof fn === 'function') repo[key] = (...args) => exclusive(() => fn(...args));
+    }
+  }
   return {
-    customers,
-    leads,
-    drafts,
-    auditLogs,
-    // Single-threaded: the callback already runs atomically.
+    ...repos,
     async transaction(fn) {
-      return fn({ customers, leads, drafts, auditLogs });
+      return exclusive(async () => {
+        const snapshot = structuredClone(tables);
+        try { return await fn(repos); }
+        catch (error) { Object.assign(tables, snapshot); throw error; }
+      });
     },
     async ping() {
       return { ok: true, adapter: 'memory' };

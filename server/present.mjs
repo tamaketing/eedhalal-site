@@ -5,6 +5,17 @@
 
 import { sanitizeMetadata } from '../services/sanitize.mjs';
 
+export function presentInboundMessage(row) {
+  if (!row) return null;
+  return {
+    id: row.id, customerId: row.customerId, lineUserId: row.lineUserId,
+    channel: row.channel, messageType: row.messageType, incomingMessage: row.incomingMessage,
+    sourceEventId: row.sourceEventId, status: row.status, aiErrorCode: row.aiErrorCode,
+    aiErrorDetail: row.aiErrorDetail, retryCount: row.retryCount, revision: row.revision,
+    leadId: row.leadId, draftId: row.draftId, createdAt: row.createdAt, updatedAt: row.updatedAt,
+  };
+}
+
 function publicMetadata(metadata) {
   const cleaned = sanitizeMetadata(metadata || {});
   delete cleaned.replyToken;

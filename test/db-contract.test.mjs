@@ -8,6 +8,7 @@ import { createMemoryAdapter } from '../db/memory.mjs';
 import { migrateStatus, migrateUp } from '../db/migrate.mjs';
 import { createPostgresAdapter } from '../db/postgres.mjs';
 import { createFakePg } from '../test-helpers/fake-pg.mjs';
+import { randomUUID } from 'node:crypto';
 
 // Contract additions from Phase 4B-1, proven on every adapter:
 // updateIfCurrent (atomic compare-and-swap), transaction, ping.
@@ -68,6 +69,22 @@ test('ping reports adapter readiness without secrets', async () => {
     const pong = await repos.ping();
     assert.equal(pong.ok, true, label);
     assert.ok(!JSON.stringify(pong).match(/password|secret|:\/\/[^/]*@/i), label);
+  });
+});
+
+test('inbound repository preserves transport fields and uses revision CAS', async () => {
+  await eachAdapter('inbound', async (label, repos) => {
+    const eventId = randomUUID();
+    const row = await repos.inboundMessages.create({ id: randomUUID(), incomingMessage: 'hi\n😊', sourceEventId: eventId });
+    assert.equal((await repos.inboundMessages.findBySourceEventId(eventId)).id, row.id, label);
+    const moved = await repos.inboundMessages.updateIfCurrent(row.id,
+      { status: 'PROCESSING', revision: 1, sourceEventId: 'replace', incomingMessage: 'replace' },
+      { status: 'RECEIVED', revision: 0 });
+    assert.equal(moved.sourceEventId, eventId, label);
+    assert.equal(moved.incomingMessage, 'hi\n😊', label);
+    assert.equal(moved.revision, 1, label);
+    assert.equal(await repos.inboundMessages.updateIfCurrent(row.id, { status: 'AI_FAILED' },
+      { status: 'PROCESSING', revision: 0 }), null, label);
   });
 });
 

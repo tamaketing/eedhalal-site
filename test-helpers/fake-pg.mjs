@@ -9,7 +9,7 @@
 const JSON_COLS = new Set(['metadata', 'history', 'before_data', 'after_data']);
 
 export function createFakePg() {
-  const tables = { customers: new Map(), leads: new Map(), drafts: new Map(), audit_logs: new Map() };
+  const tables = { customers: new Map(), leads: new Map(), drafts: new Map(), audit_logs: new Map(), inbound_messages: new Map() };
   const uniques = { customers: ['line_user_id'], drafts: ['draft_id'] };
   const duplicate = () => Object.assign(new Error('duplicate key value'), { code: '23505' });
   const decode = (col, value) => (JSON_COLS.has(col) && typeof value === 'string' ? JSON.parse(value) : value);
@@ -50,6 +50,7 @@ export function createFakePg() {
         [...store.values()].some((r) => r.customer_id === row.customer_id && r.source_event_id === row.source_event_id)) {
         throw duplicate();
       }
+      if (table === 'inbound_messages') validateInbound(row);
       store.set(row.id, row);
       return { rows: [{ ...row }] };
     }
@@ -66,7 +67,7 @@ export function createFakePg() {
       const assignments = match[2].split(',').map((s) => s.trim());
       const candidates = applyConditions([...store.values()], match[3], params);
       if (!candidates.length) return { rows: [] };
-      const row = candidates[0];
+      const row = { ...candidates[0] };
       for (const part of assignments) {
         if (part === 'updated_at = now()') {
           row.updated_at = new Date().toISOString();
@@ -75,6 +76,8 @@ export function createFakePg() {
         const parts = part.match(/^(\w+) = \$(\d+)$/);
         row[parts[1]] = decode(parts[1], params[Number(parts[2]) - 1]);
       }
+      if (table === 'inbound_messages') validateInbound(row);
+      store.set(row.id, row);
       return { rows: [{ ...row }] };
     }
     if (/^SELECT 1 AS ok$/i.test(clean)) return { rows: [{ ok: 1 }] };
@@ -85,11 +88,23 @@ export function createFakePg() {
       return { rows: [...(tables.schema_migrations || new Map()).values()] };
     }
     // Full migration files (multi-statement DDL): accept without simulating.
-    if (/CREATE TABLE IF NOT EXISTS (customers|leads|drafts|audit_logs)/.test(clean)) return { rows: [] };
+    if (/CREATE TABLE IF NOT EXISTS (customers|leads|drafts|audit_logs|inbound_messages)/.test(clean)) return { rows: [] };
     if (/ALTER TABLE drafts ADD COLUMN IF NOT EXISTS/.test(clean)) return { rows: [] };
     if (/ALTER TABLE leads ADD COLUMN IF NOT EXISTS/.test(clean)) return { rows: [] };
     if (/CREATE UNIQUE INDEX IF NOT EXISTS/.test(clean)) return { rows: [] };
     throw new Error(`fake pg: unsupported query ${clean.slice(0, 80)}`);
+  }
+
+  function validateInbound(row) {
+    if (row.source_event_id != null && [...tables.inbound_messages.values()].some(
+      (r) => r.id !== row.id && r.source_event_id === row.source_event_id)) throw duplicate();
+    if (!['RECEIVED', 'PROCESSING', 'AI_FAILED', 'DRAFT_CREATED'].includes(row.status) ||
+        !Number.isInteger(row.retry_count) || row.retry_count < 0 || !Number.isInteger(row.revision) || row.revision < 0) {
+      throw Object.assign(new Error('invalid inbound state'), { code: '23514' });
+    }
+    for (const [col, table] of [['customer_id', 'customers'], ['lead_id', 'leads'], ['draft_id', 'drafts']]) {
+      if (row[col] != null && !tables[table].has(row[col])) throw Object.assign(new Error('missing reference'), { code: '23503' });
+    }
   }
 
   function applyConditions(rows, where, params) {

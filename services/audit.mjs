@@ -8,6 +8,10 @@ import { randomUUID } from 'node:crypto';
 import { sanitizeAuditData } from './sanitize.mjs';
 
 export const AUDIT_ACTIONS = Object.freeze([
+  'INBOUND_RECEIVED',
+  'INBOUND_FAILED',
+  'INBOUND_COMPLETED',
+  'INBOUND_RETRIED',
   'CUSTOMER_CREATED',
   'LEAD_CREATED',
   'LEAD_STATUS_CHANGED',

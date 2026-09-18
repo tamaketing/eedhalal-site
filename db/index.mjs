@@ -16,9 +16,13 @@
 //                      -> null on conflict (caller maps to 409)
 //   repos.auditLogs: append(row) | listByEntity(entityType, entityId) | list()
 //                    (append-only: update/delete MUST NOT exist)
+//   repos.inboundMessages: create(row) | findById(id) | findBySourceEventId(id)
+//                    | updateIfCurrent(id, patch, {status, revision})
+//                      -> null on conflict; immutable transport fields
 //   repos.transaction(fn) — runs fn(txRepos) so state change + audit commit
 //                    together (real transaction on PostgreSQL, serialized
-//                    section on file, direct call on memory).
+//                    rollback-capable serialized section on file/memory;
+//                    file multi-table writes are not crash-atomic).
 //   repos.ping()     — { ok, adapter } connectivity check (no secrets).
 //   repos.close()    — releases pooled resources (postgres only matters).
 //

@@ -19,6 +19,13 @@ const CUSTOMER_COLUMNS = ['id', 'line_user_id', 'display_name', 'phone', 'email'
 const LEAD_COLUMNS = ['id', 'customer_id', 'source', 'service_type', 'event_date', 'quantity', 'location', 'budget_per_person', 'status', 'summary', 'source_event_id', 'created_at', 'updated_at'];
 const DRAFT_COLUMNS = ['id', 'draft_id', 'customer_id', 'lead_id', 'channel', 'incoming_message', 'draft_response', 'owner_final_response', 'final_action', 'status', 'source', 'ai_model', 'rule_revision', 'metadata', 'history', 'source_event_id', 'created_at', 'updated_at', 'approved_at', 'sent_at'];
 const AUDIT_COLUMNS = ['id', 'entity_type', 'entity_id', 'action', 'actor_type', 'actor_id', 'before_data', 'after_data', 'created_at'];
+const INBOUND_FIELDS = {
+  id: 'id', customerId: 'customer_id', lineUserId: 'line_user_id', channel: 'channel',
+  messageType: 'message_type', incomingMessage: 'incoming_message', sourceEventId: 'source_event_id',
+  status: 'status', aiErrorCode: 'ai_error_code', aiErrorDetail: 'ai_error_detail', retryCount: 'retry_count',
+  revision: 'revision', leadId: 'lead_id', draftId: 'draft_id', metadata: 'metadata',
+};
+import { inboundDefaults, inboundPatch } from './inbound-contract.mjs';
 
 function toCamel(row) {
   if (!row) return row;
@@ -168,7 +175,31 @@ function buildRepos(run) {
     },
   };
 
-  return { customers, leads, drafts, auditLogs };
+  const inboundMessages = {
+    kind: 'inboundMessages',
+    async create(input) {
+      const row = inboundDefaults(input);
+      const values = Object.keys(INBOUND_FIELDS).map((key) => key === 'metadata' ? JSON.stringify(row[key]) : row[key]);
+      return mapOne(await run(
+        `INSERT INTO inbound_messages (${Object.values(INBOUND_FIELDS).join(', ')}) VALUES (${placeholders(values.length)}) RETURNING *`, values,
+      ));
+    },
+    async findById(id) { return mapOne(await run('SELECT * FROM inbound_messages WHERE id = $1', [id])); },
+    async findBySourceEventId(eventId) {
+      if (eventId == null) return null;
+      return mapOne(await run('SELECT * FROM inbound_messages WHERE source_event_id = $1', [eventId]));
+    },
+    async updateIfCurrent(id, patch, expected) {
+      const fields = Object.entries(inboundPatch(patch));
+      const values = [id, ...fields.map(([, value]) => value), expected.status, expected.revision];
+      const sets = fields.map(([key], i) => `${INBOUND_FIELDS[key]} = $${i + 2}`);
+      sets.push('updated_at = now()');
+      return mapOne(await run(
+        `UPDATE inbound_messages SET ${sets.join(', ')} WHERE id = $1 AND status = $${values.length - 1} AND revision = $${values.length} RETURNING *`, values,
+      ));
+    },
+  };
+  return { customers, leads, drafts, auditLogs, inboundMessages };
 }
 
 async function applyDraftUpdate(run, id, patch, expected) {

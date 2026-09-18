@@ -24,7 +24,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createAdapter } from '../db/index.mjs';
 import { requireInternalAuth } from './auth.mjs';
-import { presentCustomer, presentDraft, presentLead } from './present.mjs';
+import { presentCustomer, presentDraft, presentLead, presentInboundMessage } from './present.mjs';
+import { receiveInboundMessage, attachCustomer, markProcessing, markFailed, completeInbound, retryInbound,
+  getInboundMessage, requireInboundObject } from '../services/inboundMessages.mjs';
 import { ConflictError, NotFoundError, UnauthorizedError, ValidationError } from '../services/errors.mjs';
 import { maybeCreateLead } from '../services/leads.mjs';
 import { resolveCustomer } from '../services/customers.mjs';
@@ -136,6 +138,28 @@ export function createInternalApi({ repos, env = process.env } = {}) {
         const contentType = String(request.headers['content-type'] || '');
         if (!contentType.includes('application/json')) {
           send(response, 415, { error: 'json_required' });
+          return;
+        }
+      }
+
+      // B2.5 foundation: no worker dispatch, list/search, AI calls or sends.
+      if (request.method === 'POST' && pathname === '/api/v1/inbound-messages') {
+        const result = await receiveInboundMessage(store, await readJsonBody(request));
+        send(response, result.deduped ? 200 : 201, { inbound: presentInboundMessage(result.inbound), deduped: result.deduped });
+        return;
+      }
+      const inboundMatch = pathname.match(/^\/api\/v1\/inbound-messages\/([^/]+)(?:\/(processing|fail|complete|retry))?$/);
+      if (inboundMatch) {
+        const [, id, action] = inboundMatch;
+        if (request.method === 'GET' && !action) {
+          send(response, 200, { inbound: presentInboundMessage(await getInboundMessage(store, id)) });
+          return;
+        }
+        if ((request.method === 'PATCH' && !action) || (request.method === 'POST' && action)) {
+          const body = await readJsonBody(request);
+          requireInboundObject(body);
+          const handler = action ? { processing: markProcessing, fail: markFailed, complete: completeInbound, retry: retryInbound }[action] : attachCustomer;
+          send(response, 200, { inbound: presentInboundMessage(await handler(store, id, body)) });
           return;
         }
       }

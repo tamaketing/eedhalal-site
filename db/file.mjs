@@ -2,30 +2,32 @@
 // One JSON document per table under DB_DIR. Writes are atomic (tmp + rename)
 // and serialized through an in-process queue so concurrent async callers in
 // this process cannot interleave read-modify-write cycles.
-// Cross-process races (two bot processes) are resolved by the service layer
-// via find-then-create + unique-retry; PostgreSQL remains the production
-// target where the UNIQUE constraint enforces this at the database level.
+// Single-process only: multiple adapter instances/processes do not share a
+// lock or cache. PostgreSQL is the production target for durable transactions
+// and cross-process UNIQUE/CAS enforcement.
 
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { isUniqueViolation } from './memory.mjs';
+import { inboundDefaults, inboundPatch, validateInboundRow } from './inbound-contract.mjs';
 
 function clone(value) {
   return value === undefined ? value : structuredClone(value);
 }
 
-const TABLES = ['customers', 'leads', 'drafts', 'auditLogs'];
+const TABLES = ['customers', 'leads', 'drafts', 'auditLogs', 'inboundMessages'];
 
 export function createFileAdapter(dir) {
   if (!dir) throw new Error('DB_DIR is required for the file adapter.');
   let queue = Promise.resolve();
-  let depth = 0;
+  const transactionContext = new AsyncLocalStorage();
   const state = { loaded: false, tables: null };
 
-  // Serialize all mutations/reads that depend on file contents. Re-entrant:
-  // code already inside a transaction runs directly instead of re-queueing.
+  // Serialize all mutations/reads that depend on file contents. Re-entrant
+  // only for callers in this transaction's own async context.
   function exclusive(task) {
-    if (depth > 0) return task();
+    if (transactionContext.getStore()) return task();
     const run = queue.then(task, task);
     queue = run.catch(() => {});
     return run;
@@ -48,6 +50,7 @@ export function createFileAdapter(dir) {
   }
 
   async function persist() {
+    if (transactionContext.getStore()) return;
     for (const name of TABLES) {
       const tmp = path.join(dir, `${name}.json.tmp`);
       await writeFile(tmp, JSON.stringify(state.tables[name], null, 2));
@@ -213,6 +216,41 @@ export function createFileAdapter(dir) {
     },
   };
 
+  const inboundMessages = {
+    kind: 'inboundMessages',
+    async create(input, now = new Date().toISOString()) {
+      return exclusive(async () => {
+        const tables = await load();
+        const row = inboundDefaults(input);
+        if (tables.inboundMessages[row.id] || (row.sourceEventId != null &&
+            Object.values(tables.inboundMessages).some((r) => r.sourceEventId === row.sourceEventId))) {
+          throw conflict('inbound already exists');
+        }
+        validateInboundRow(row, (table, id) => !!tables[table][id]);
+        tables.inboundMessages[row.id] = stamp(row, true, now);
+        await persist();
+        return clone(tables.inboundMessages[row.id]);
+      });
+    },
+    async findById(id) { return exclusive(async () => clone((await load()).inboundMessages[id] || null)); },
+    async findBySourceEventId(eventId) {
+      return exclusive(async () => eventId == null ? null : clone(
+        Object.values((await load()).inboundMessages).find((r) => r.sourceEventId === eventId) || null));
+    },
+    async updateIfCurrent(id, patch, expected, now = new Date().toISOString()) {
+      return exclusive(async () => {
+        const tables = await load();
+        const row = tables.inboundMessages[id];
+        if (!row || row.status !== expected.status || row.revision !== expected.revision) return null;
+        const saved = stamp({ ...row, ...inboundPatch(patch) }, false, now);
+        validateInboundRow(saved, (table, key) => !!tables[table][key]);
+        tables.inboundMessages[id] = saved;
+        await persist();
+        return clone(saved);
+      });
+    },
+  };
+
   const auditLogs = {
     kind: 'auditLogs',
     async append(row, now = new Date().toISOString()) {
@@ -242,16 +280,21 @@ export function createFileAdapter(dir) {
     leads,
     drafts,
     auditLogs,
+    inboundMessages,
     // Groups several repository calls into one exclusive section so no other
     // task in this process can interleave between them. Repos passed to fn
-    // are the same objects (re-entrant via the depth counter above).
+    // are re-entrant only in this async context, not in unrelated callers.
+    // Multi-file commits are not crash-atomic; production uses PostgreSQL.
     async transaction(fn) {
       return exclusive(async () => {
-        depth += 1;
+        const snapshot = clone(await load());
         try {
-          return await fn({ customers, leads, drafts, auditLogs });
-        } finally {
-          depth -= 1;
+          const result = await transactionContext.run(true, () => fn({ customers, leads, drafts, auditLogs, inboundMessages }));
+          await persist();
+          return result;
+        } catch (error) {
+          state.tables = snapshot;
+          throw error;
         }
       });
     },
