@@ -32,7 +32,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// B2.5 persist-first: transport normalization BEFORE FAQ/AI.\n// Extracts only fields needed for persistence + downstream logic.\n// No replyToken, no raw webhook, no secrets. No LINE calls.\nconst webhook = $('LINE Webhook').first().json || {};\nconst event = (webhook.body && webhook.body.events && webhook.body.events[0]) || {};\nconst source = event.source || {};\nconst message = event.message || {};\nconst delivery = event.deliveryContext || {};\nconst sourceEventId = message.id || event.webhookEventId || delivery.webhookEventId || null;\nconst channel = source.groupId ? 'line-group' : source.roomId ? 'line-room' : 'line';\nconst knownTypes = ['text', 'image', 'video', 'audio', 'file', 'location', 'sticker'];\nconst messageType = knownTypes.includes(message.type) ? message.type : 'unknown';\nconst incomingMessage = message.type === 'text'\n  ? String(message.text || '')\n  : (message.type ? '[non-text message: ' + message.type + ']' : '');\nreturn [{ json: {\n  lineUserId: source.userId || null,\n  channel,\n  messageType,\n  incomingMessage,\n  sourceEventId,\n} }];"
+        "jsCode": "// B2.5 persist-first: transport normalization BEFORE FAQ/AI.\n// Extracts only fields needed for persistence + downstream logic.\n// No replyToken, no raw webhook, no secrets. No LINE calls.\nconst webhook = $('LINE Webhook').first().json || {};\nconst event = (webhook.body && webhook.body.events && webhook.body.events[0]) || {};\nconst source = event.source || {};\nconst message = event.message || {};\nconst delivery = event.deliveryContext || {};\nconst sourceEventId = message.id || event.webhookEventId || delivery.webhookEventId || null;\nconst channel = source.groupId ? 'line-group' : source.roomId ? 'line-room' : 'line';\nconst knownTypes = ['text', 'image', 'video', 'audio', 'file', 'location', 'sticker'];\nconst messageType = knownTypes.includes(message.type) ? message.type : 'unknown';\nconst incomingMessage = message.type === 'text'\n  ? String(message.text || '')\n  : (message.type ? '[non-text message: ' + message.type + ']' : '');\nreturn [{ json: {\n  lineUserId: source.userId || null,\n  displayName: '',\n  channel,\n  messageType,\n  incomingMessage,\n  sourceEventId,\n} }];"
       },
       "id": "normalize-inbound",
       "name": "Normalize Inbound",
@@ -112,7 +112,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ lineUserId: $json.lineUserId, displayName: $json.displayName }) }}",
+        "jsonBody": "={{ JSON.stringify({ lineUserId: $('Normalize Inbound').item.json.lineUserId, displayName: $('Normalize Inbound').item.json.displayName }) }}",
         "options": {
           "timeout": 10000
         }
@@ -459,7 +459,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// EED HALAL persistence chain — terminal guard. Asserts PostgreSQL holds\n// a WAITING_FOR_HUMAN draft, then STOPS. Never sends, never stores.\nconst out = $input.first().json || {};\nconst draft = out.draft || {};\nif (draft.status !== 'WAITING_FOR_HUMAN') {\n  throw new Error('Draft persistence did not return WAITING_FOR_HUMAN; stopping without LINE send.');\n}\nreturn [{ json: { draftId: draft.draftId || null, status: draft.status, deduped: !!out.deduped } }];"
+        "jsCode": "// B2.5 terminal guard: verifies the completed persist-first chain.\n// Reads the draft from Persist Draft and the completion record from the\n// direct input (Complete Inbound). Asserts a WAITING_FOR_HUMAN draft and\n// a DRAFT_CREATED inbound, then STOPS. Never sends, never stores.\nconst completed = $input.first().json || {};\nconst persisted = $('Persist Draft').first().json || {};\nconst draft = persisted.draft || {};\nif (draft.status !== 'WAITING_FOR_HUMAN') {\n  throw new Error('Draft persistence did not return WAITING_FOR_HUMAN; stopping without LINE send.');\n}\nconst inbound = completed.inbound || {};\nif (inbound.status !== 'DRAFT_CREATED') {\n  throw new Error('Inbound completion did not return DRAFT_CREATED; stopping without LINE send.');\n}\nreturn [{ json: { draftId: draft.draftId || null, status: draft.status,\n  inboundId: inbound.id || null, deduped: !!persisted.deduped } }];"
       },
       "id": "verify-draft",
       "name": "Verify Draft",
@@ -468,6 +468,19 @@
       "position": [
         2260,
         300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// B2.5: re-emits the original LINE webhook item after the persist-first\n// prefix, so FAQ/AI nodes run on byte-identical input as production.\n// No transformation, no persistence. No LINE calls.\nconst items = $('LINE Webhook').all();\nreturn items.map((item) => ({ json: item.json }));"
+      },
+      "id": "restore-webhook",
+      "name": "Restore Webhook Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        460
       ]
     }
   ],
@@ -554,7 +567,7 @@
       "main": [
         [
           {
-            "node": "Deterministic FAQ",
+            "node": "Restore Webhook Input",
             "type": "main",
             "index": 0
           }
@@ -704,6 +717,17 @@
     "Verify Draft": {
       "main": [
         []
+      ]
+    },
+    "Restore Webhook Input": {
+      "main": [
+        [
+          {
+            "node": "Deterministic FAQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },

@@ -37,7 +37,7 @@ test('candidate is a distinct inactive-by-design artifact, not the production pa
   assert.notEqual(webhook.parameters.path, 'line-webhook');
   assert.equal(webhook.parameters.responseMode, 'onReceived');
   assert.match(candidate.name, /B2\.5 Persist First Candidate/);
-  assert.equal(candidate.nodes.length, 21);
+  assert.equal(candidate.nodes.length, 22);
 });
 
 test('Gate B2 production artifact is still the 12-node flow', () => {
@@ -47,12 +47,27 @@ test('Gate B2 production artifact is still the 12-node flow', () => {
   assert.equal(production.nodes.find((n) => n.type === 'n8n-nodes-base.webhook').parameters.path, 'line-webhook');
 });
 
+test('Restore Webhook Input replays byte-identical webhook items to FAQ/AI', () => {
+  // Live Step 4A finding: the copied FAQ node reads webhook-shaped input
+  // ($input.body.events). After the persist-first prefix its direct input is
+  // API-shaped, so this node replays the original webhook items unchanged.
+  const code = nodes.get('Restore Webhook Input').parameters.jsCode;
+  const hookItem = { json: { headers: { h: 'v' }, body: { events: [{ a: 1 }] } }, binary: { b: 1 } };
+  const out = vm.runInNewContext(`(function () { ${code} })()`, {
+    $: () => ({ all: () => [hookItem] }),
+  });
+  assert.equal(JSON.stringify(out), JSON.stringify([{ json: hookItem.json }]));
+  assert.ok(!/replyToken|secret|persist|draft|lead|customer/i.test(code.replace(/\/\/[^\n]*/g, '')), 'pure replay, no side effects');
+});
+
 test('Persist Inbound precedes all AI/lead/draft work', () => {
   // NOTE: Gemini Chat Model / Simple Memory attach via ai_* sub-outputs, not the
   // main chain; their execution is gated by AI Agent, which IS ordered below.
   for (const later of ['Deterministic FAQ', 'Has Safe Answer?', 'AI Agent', 'Evaluate Lead', 'Persist Draft', 'Complete Inbound']) {
     orderBefore('Persist Inbound', later, 'persist-first');
   }
+  orderBefore('Mark Processing', 'Restore Webhook Input', 'restore-after-mark');
+  orderBefore('Restore Webhook Input', 'Deterministic FAQ', 'restore-before-faq');
   orderBefore('Mark Processing', 'AI Agent', 'processing-gate');
   orderBefore('Mark Processing', 'Deterministic FAQ', 'processing-gate');
   orderBefore('Persist Draft', 'Complete Inbound', 'completion-last');
@@ -86,6 +101,15 @@ test('Route AI Result sends genuine errors AND missing/invalid output to the cla
   assert.equal(route({ text: 'UND policy text' }), 'ok');
   assert.equal(route({ draftResponse: 'x' }), 'ok');
   assert.equal(route({ error: null, output: 'x' }), 'ok');
+});
+
+test('Resolve Customer reads identity from Normalize Inbound, not its IF predecessor', () => {
+  // Regression guard (live Step 4A finding): Resolve Customer's input is the
+  // Inspect IF output, so bare $json.lineUserId is undefined there.
+  const body = nodes.get('Resolve Customer').parameters.jsonBody;
+  assert.ok(body.includes("$('Normalize Inbound').item.json.lineUserId"), 'lineUserId source');
+  assert.ok(body.includes("$('Normalize Inbound').item.json.displayName"), 'displayName source');
+  assert.ok(!/\$json\.lineUserId/.test(body), 'no bare predecessor reference');
 });
 
 test('non-RECEIVED inbound stops before customer resolution', () => {
@@ -158,6 +182,8 @@ test('AI error classifier maps only to the approved catalog', () => {
   assert.equal(run({ error: { message: 'socket hang up' } }).errorCode, 'AI_PROVIDER_ERROR');
   assert.equal(run({ error: { message: 'empty response, no text field' } }).errorCode, 'AI_INVALID_RESPONSE');
   assert.equal(run({ error: { message: 'socket hang up' } }).expectedRevision, 7);
+  // Live Step 4A proof: a real sub-node failure arrives as a bare string.
+  assert.equal(run({ error: 'Error in sub-node Gemini Chat Model' }).errorCode, 'AI_PROVIDER_ERROR');
 });
 
 test('Normalize Inbound extracts transport only and preserves exact text', () => {
@@ -169,6 +195,7 @@ test('Normalize Inbound extracts transport only and preserves exact text', () =>
   const text = 'บรรทัดแรก\n\n"quoted"\tA\\B 😊';
   const out = run({ source: { userId: 'U9' }, message: { id: 'm9', type: 'text', text } });
   assert.equal(out.lineUserId, 'U9');
+  assert.equal(out.displayName, '');
   assert.equal(out.incomingMessage, text);
   assert.equal(out.sourceEventId, 'm9');
   assert.equal(out.channel, 'line');
@@ -182,9 +209,33 @@ test('Normalize Inbound extracts transport only and preserves exact text', () =>
 
 test('copied AI/FAQ/gateway/verify logic is byte-identical to production', () => {
   const prodByName = new Map(production.nodes.map((n) => [n.name, n]));
-  for (const name of ['Verify Webhook Gateway', 'Deterministic FAQ', 'AI Agent', 'Gemini Chat Model', 'Simple Memory', 'Verify Draft', 'Has Safe Answer?']) {
+  for (const name of ['Verify Webhook Gateway', 'Deterministic FAQ', 'AI Agent', 'Gemini Chat Model', 'Simple Memory', 'Has Safe Answer?']) {
     const p = prodByName.get(name);
     const c = nodes.get(name);
     assert.equal(JSON.stringify(c.parameters), JSON.stringify(p.parameters), `${name} parameters identical`);
   }
+});
+
+test('Verify Draft guards both the draft state and the inbound completion', () => {
+  // Live Step 4A finding: Verify Draft's direct input is Complete Inbound
+  // ({inbound}), not Persist Draft ({draft}), so it must read both records.
+  const code = nodes.get('Verify Draft').parameters.jsCode;
+  const run = (persisted, completed) => vm.runInNewContext(`(function () { ${code} })()`, {
+    $input: { first: () => ({ json: completed }) },
+    $: () => ({ first: () => ({ json: persisted }) }),
+  })[0].json;
+  const ok = run(
+    { draft: { draftId: 'LD-1', status: 'WAITING_FOR_HUMAN' }, deduped: false },
+    { inbound: { id: 'i1', status: 'DRAFT_CREATED' } },
+  );
+  assert.equal(ok.status, 'WAITING_FOR_HUMAN');
+  assert.equal(ok.inboundId, 'i1');
+  assert.throws(() => run(
+    { draft: { draftId: 'LD-1', status: 'WAITING_FOR_HUMAN' } },
+    { inbound: { id: 'i1', status: 'PROCESSING' } },
+  ), /DRAFT_CREATED/);
+  assert.throws(() => run(
+    { draft: { draftId: 'LD-1', status: 'APPROVED' } },
+    { inbound: { id: 'i1', status: 'DRAFT_CREATED' } },
+  ), /WAITING_FOR_HUMAN/);
 });
