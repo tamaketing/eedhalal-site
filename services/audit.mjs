@@ -1,7 +1,8 @@
 // EED HALAL — audit service (append-only).
 // Allowed actions in this phase (do not invent PAYMENT/QUOTATION/JOB events):
 //   CUSTOMER_CREATED, LEAD_CREATED, LEAD_STATUS_CHANGED,
-//   DRAFT_CREATED, DRAFT_STATUS_CHANGED, DRAFT_EDITED, DRAFT_REGENERATED, DRAFT_REJECTED
+//   DRAFT_CREATED, DRAFT_STATUS_CHANGED, DRAFT_EDITED, DRAFT_REGENERATED, DRAFT_REJECTED,
+//   DRAFT_SENT, LINE_SEND_FAILED, LINE_SEND_RETRYABLE
 // actorType must be AI, OWNER, or SYSTEM.
 
 import { randomUUID } from 'node:crypto';
@@ -21,6 +22,9 @@ export const AUDIT_ACTIONS = Object.freeze([
   'DRAFT_EDITED',
   'DRAFT_REGENERATED',
   'DRAFT_REJECTED',
+  'DRAFT_SENT',
+  'LINE_SEND_FAILED',
+  'LINE_SEND_RETRYABLE',
 ]);
 
 export const ACTOR_TYPES = Object.freeze(['AI', 'OWNER', 'SYSTEM']);

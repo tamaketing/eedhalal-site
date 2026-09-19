@@ -183,6 +183,9 @@ test('P: responses expose no secret or replyToken', async () => {
 
 test('Q+R: no LINE sender or kitchen push anywhere in server/domain/db code', async () => {
   const roots = ['server', 'services', 'db'];
+  // Phase 4B-3A explicitly approves exactly one reviewed sender: the
+  // owner-invoked Push provider. Everything else stays forbidden.
+  const approvedSenders = new Set(['services/linePush.mjs']);
   const offenders = [];
   async function walk(relative) {
     for (const entry of await readdir(relative, { withFileTypes: true })) {
@@ -194,7 +197,12 @@ test('Q+R: no LINE sender or kitchen push anywhere in server/domain/db code', as
         // replyToken *storage* is allowed by design (stripped from responses);
         // only actual sending mechanisms are forbidden here.
         if (/lineMessaging|api(-data)?\.line\.me|Push to Kitchen|kitchen.?group|oaMessage/i.test(content)) {
-          offenders.push(full);
+          if (!approvedSenders.has(full)) offenders.push(full);
+        }
+        // Even the approved provider must never use reply/multicast/broadcast
+        // endpoints or invoke itself on a schedule.
+        if (/\/v2\/bot\/message\/(reply|multicast|broadcast)|setInterval|cron/i.test(content)) {
+          offenders.push(`${full} (forbidden endpoint/scheduler)`);
         }
       }
     }

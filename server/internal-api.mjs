@@ -10,11 +10,16 @@
 //   POST /api/v1/drafts            { customerId, leadId?, channel?, incomingMessage,
 //                                    draftResponse, source?, aiModel?, ruleRevision?,
 //                                    sourceEventId?, metadata? } -> 201 (200 + deduped on retry)
-//   GET  /api/v1/drafts?status=&limit=
-//   GET  /api/v1/drafts/:id        (UUID id or human draftId)
+//   GET  /api/v1/drafts?status=&limit=&order= (order asc|desc, default asc;
+//          list items embed sanitized customer context)
+//   GET  /api/v1/drafts/:id        (UUID id or human draftId; embeds customer
+//          plus linked lead summary for Owner Console review)
 //   POST /api/v1/drafts/:id/approve { ownerId?, expectedUpdatedAt?, expectedStatus? }
 //   POST /api/v1/drafts/:id/edit    { finalText, ownerId?, ...concurrency }
 //   POST /api/v1/drafts/:id/reject  { ownerId?, ...concurrency }
+//   POST /api/v1/drafts/:id/send    { ownerId?, expectedUpdatedAt?, expectedStatus? }
+//          (owner-only LINE Push; text/recipient always re-derived server-side;
+//          needs LINE_CHANNEL_ACCESS_TOKEN in server env)
 //
 // NOT IMPLEMENTED here: LINE sender, regenerate-with-AI, kitchen push,
 // quotation/order/job/payment/accounting.
@@ -30,7 +35,7 @@ import { receiveInboundMessage, attachCustomer, markProcessing, markFailed, comp
 import { ConflictError, NotFoundError, UnauthorizedError, ValidationError } from '../services/errors.mjs';
 import { maybeCreateLead } from '../services/leads.mjs';
 import { resolveCustomer } from '../services/customers.mjs';
-import { approveDraft, editDraft, persistDraftOnce, rejectDraft } from '../services/drafts.mjs';
+import { approveDraft, editDraft, persistDraftOnce, rejectDraft, sendDraft } from '../services/drafts.mjs';
 
 const MAX_BODY_BYTES = 256 * 1024;
 const DEFAULT_LIMIT = 20;
@@ -217,23 +222,37 @@ export function createInternalApi({ repos, env = process.env } = {}) {
         return;
       }
 
-      // GET /api/v1/drafts?status=&limit=
+      // GET /api/v1/drafts?status=&limit=&order= (order defaults to asc for
+      // backward compatibility; the Owner Console requests order=desc).
       if (request.method === 'GET' && pathname === '/api/v1/drafts') {
         const status = url.searchParams.get('status') || 'WAITING_FOR_HUMAN';
         const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || DEFAULT_LIMIT, 1), MAX_LIMIT);
+        const order = url.searchParams.get('order') || 'asc';
+        if (order !== 'asc' && order !== 'desc') throw new ValidationError('order must be asc or desc');
         const rows = await store.drafts.listByStatus(status);
-        send(response, 200, { drafts: rows.slice(0, limit).map(presentDraft), total: rows.length, limit });
+        const ordered = order === 'desc' ? [...rows].reverse() : rows;
+        const page = ordered.slice(0, limit);
+        const drafts = [];
+        for (const row of page) {
+          const presented = presentDraft(row);
+          presented.customer = presentCustomer(row.customerId ? await store.customers.findById(row.customerId) : null);
+          drafts.push(presented);
+        }
+        send(response, 200, { drafts, total: rows.length, limit, order });
         return;
       }
 
-      const draftMatch = pathname.match(/^\/api\/v1\/drafts\/([^/]+)(\/(approve|edit|reject))?$/);
+      const draftMatch = pathname.match(/^\/api\/v1\/drafts\/([^/]+)(\/(approve|edit|reject|send))?$/);
       if (draftMatch) {
         const record = await findDraft(decodeURIComponent(draftMatch[1]));
         if (!record) throw new NotFoundError('draft not found');
         const action = draftMatch[3];
 
         if (request.method === 'GET' && !action) {
-          send(response, 200, { draft: presentDraft(record) });
+          const draft = presentDraft(record);
+          draft.customer = presentCustomer(record.customerId ? await store.customers.findById(record.customerId) : null);
+          draft.lead = record.leadId ? presentLead(await store.leads.findById(record.leadId)) : null;
+          send(response, 200, { draft });
           return;
         }
 
@@ -244,6 +263,14 @@ export function createInternalApi({ repos, env = process.env } = {}) {
             expectedUpdatedAt: body.expectedUpdatedAt,
             expectedStatus: body.expectedStatus,
           };
+          if (action === 'send') {
+            // Owner-only send: the message text and recipient are ALWAYS
+            // re-derived server-side from the frozen draft + linked customer.
+            // Body fields beyond owner/concurrency expectations are ignored.
+            const result = await sendDraft(store, record.id, options, { token: env.LINE_CHANNEL_ACCESS_TOKEN });
+            send(response, 200, { draft: presentDraft(result.draft), send: result.send });
+            return;
+          }
           let next;
           if (action === 'approve') next = await approveDraft(store, record.id, options);
           else if (action === 'reject') next = await rejectDraft(store, record.id, options);

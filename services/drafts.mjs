@@ -8,6 +8,8 @@
 // must not conjure a fake lead.
 
 import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
+import { sendPushMessage } from './linePush.mjs';
 import {
   createDraft,
   DRAFT_STATUSES,
@@ -249,6 +251,139 @@ export function rejectDraft(repos, id, { ownerId = '', expectedUpdatedAt, expect
     auditActions: ['DRAFT_STATUS_CHANGED', 'DRAFT_REJECTED'],
     options: { expectedUpdatedAt, expectedStatus },
   });
+}
+
+// Owner-approved LINE send (Phase 4B-3A). The owner console is the ONLY
+// caller: no n8n sender, no scheduler, no auto-send exists anywhere.
+// Flow: CAS-claim APPROVED with a frozen attempt (one DB tx) -> LINE Push
+// OUTSIDE any transaction -> settle to SENT / FAILED / stay APPROVED.
+// The retry key is generated ONCE at freeze and reused for every retry of
+// the same attempt, so the provider deduplicates replays. Retries never
+// change text or recipient: both are re-derived and fingerprinted.
+function fingerprintSendAttempt(recipient, text) {
+  return createHash('sha256').update(`${recipient}\n${text}`).digest('hex').slice(0, 32);
+}
+
+function readSendAttempt(metadata) {
+  const attempt = metadata && typeof metadata === 'object' ? metadata.sendAttempt : null;
+  if (!attempt || typeof attempt !== 'object') return null;
+  if (typeof attempt.key !== 'string' || typeof attempt.fingerprint !== 'string' || typeof attempt.recipient !== 'string') return null;
+  return attempt;
+}
+
+function validSendAttempt(attempt, recipient, text) {
+  return !!attempt && attempt.recipient === recipient && attempt.fingerprint === fingerprintSendAttempt(recipient, text);
+}
+
+function sendAudit(tx, id, action, ownerId, before, after) {
+  return recordAudit(tx, {
+    entityType: 'draft', entityId: id, action,
+    actorType: 'OWNER', actorId: ownerId,
+    beforeData: before, afterData: after,
+  });
+}
+
+export async function sendDraft(repos, id, { ownerId = '', expectedUpdatedAt, expectedStatus } = {}, deps = {}) {
+  const push = deps.push || sendPushMessage;
+  const token = deps.token;
+  const owner = ownerId || 'owner';
+  return withDraftLock(id, async () => {
+    // Phase 1: validate everything, then CAS-claim APPROVED + frozen attempt.
+    const frozen = await repos.transaction(async (tx) => {
+      const current = await tx.drafts.findById(id);
+      if (!current) throw new NotFoundError(`draft not found: ${id}`);
+      checkConcurrency(current, { expectedUpdatedAt, expectedStatus });
+      if (current.status === 'SENT' || current.status === 'REJECTED') {
+        throw new ConflictError(`draft is ${current.status}; send is not allowed`);
+      }
+      if (current.status === 'FAILED') {
+        throw new ConflictError('draft failed; recover through WAITING_FOR_HUMAN first');
+      }
+      if (!['WAITING_FOR_HUMAN', 'EDITED', 'APPROVED'].includes(current.status)) {
+        throw new ConflictError(`draft is ${current.status}; send is not allowed`);
+      }
+      const finalText = current.ownerFinalResponse || current.draftResponse;
+      if (!finalText || !finalText.trim()) throw new ValidationError('draft has no sendable text');
+      const customer = current.customerId ? await tx.customers.findById(current.customerId) : null;
+      const recipient = customer && customer.lineUserId;
+      if (!recipient) throw new ValidationError('draft customer has no LINE user identity');
+      if (!token) throw new Error('line send not configured');
+      const fingerprint = fingerprintSendAttempt(recipient, finalText);
+      const existing = readSendAttempt(current.metadata);
+      // A retry reuses the stored attempt only when it still matches the
+      // frozen text/recipient. Anything else freezes a fresh attempt — never
+      // silently, always under the same compare-and-swap guard.
+      const attempt = (current.status === 'APPROVED' && existing && validSendAttempt(existing, recipient, finalText))
+        ? existing
+        : { key: randomUUID(), fingerprint, recipient, createdAt: new Date().toISOString() };
+      const metadata = { ...sanitizeMetadata(current.metadata), sendAttempt: attempt };
+      let patch;
+      let auditActions;
+      if (current.status === 'APPROVED') {
+        patch = { metadata };
+        auditActions = ['DRAFT_APPROVED'];
+      } else {
+        const next = transitionDraft(fromDraftRow(current), 'APPROVED', owner);
+        patch = {
+          ...toDraftRow({ ...next, dbId: current.id }),
+          ownerFinalResponse: current.ownerFinalResponse || current.draftResponse,
+          finalAction: 'APPROVED',
+          metadata,
+        };
+        auditActions = ['DRAFT_STATUS_CHANGED', 'DRAFT_APPROVED'];
+      }
+      const saved = await tx.drafts.updateIfCurrent(current.id, patch, { status: current.status, updatedAt: current.updatedAt });
+      if (!saved) throw new ConflictError('stale draft: changed concurrently, refresh and retry');
+      for (const action of auditActions) {
+        await sendAudit(tx, current.id, action, ownerId, { status: current.status }, { status: saved.status });
+      }
+      return { row: fromDraftRow(saved), attempt, finalText, recipient };
+    }).catch((error) => { throw toServiceError(error, id); });
+
+    // Phase 2: provider call outside any DB transaction.
+    const result = await push({
+      token, userId: frozen.recipient, text: frozen.finalText, retryKey: frozen.attempt.key,
+    });
+
+    // Phase 3: settle under a fresh CAS guard.
+    return repos.transaction(async (tx) => {
+      const current = await tx.drafts.findById(id);
+      if (!current) throw new NotFoundError(`draft not found: ${id}`);
+      if (current.status !== 'APPROVED') {
+        throw new ConflictError(`draft is ${current.status}; send outcome cannot be recorded`);
+      }
+      if (result.outcome === 'ACCEPTED' || result.outcome === 'ALREADY_ACCEPTED') {
+        const next = transitionDraft(fromDraftRow(current), 'SENT', owner);
+        const saved = await tx.drafts.updateIfCurrent(
+          current.id, toDraftRow({ ...next, dbId: current.id }),
+          { status: current.status, updatedAt: current.updatedAt },
+        );
+        if (!saved) throw new ConflictError('stale draft: changed concurrently during send');
+        for (const action of ['DRAFT_STATUS_CHANGED', 'DRAFT_SENT']) {
+          await sendAudit(tx, current.id, action, ownerId, { status: current.status }, { status: 'SENT', providerCode: result.code });
+        }
+        return { draft: fromDraftRow(saved), send: { outcome: result.outcome, code: result.code, httpStatus: result.httpStatus ?? null } };
+      }
+      if (result.outcome === 'NON_RETRYABLE_FAILURE') {
+        const next = transitionDraft(fromDraftRow(current), 'FAILED', owner);
+        const saved = await tx.drafts.updateIfCurrent(
+          current.id, toDraftRow({ ...next, dbId: current.id }),
+          { status: current.status, updatedAt: current.updatedAt },
+        );
+        if (!saved) throw new ConflictError('stale draft: changed concurrently during send');
+        for (const action of ['DRAFT_STATUS_CHANGED', 'LINE_SEND_FAILED']) {
+          await sendAudit(tx, current.id, action, ownerId, { status: current.status }, { status: 'FAILED', providerCode: result.code });
+        }
+        return { draft: fromDraftRow(saved), send: { outcome: result.outcome, code: result.code, httpStatus: result.httpStatus ?? null } };
+      }
+      // RETRYABLE_FAILURE: delivery outcome unknown. Stay APPROVED with the
+      // SAME frozen attempt so an explicit owner retry reuses the same key.
+      // No silent resend, no new key, no SENT.
+      await sendAudit(tx, current.id, 'LINE_SEND_RETRYABLE', ownerId,
+        { status: current.status }, { status: current.status, providerCode: result.code });
+      return { draft: fromDraftRow(current), send: { outcome: result.outcome, code: result.code, httpStatus: result.httpStatus ?? null } };
+    }).catch((error) => { throw toServiceError(error, id); });
+  }).catch((error) => { throw toServiceError(error, id); });
 }
 
 function sanitizedPatch(patch) {
