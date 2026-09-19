@@ -4,7 +4,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "line-webhook-b25-candidate",
+        "path": "line-webhook",
         "responseMode": "onReceived",
         "options": {}
       },

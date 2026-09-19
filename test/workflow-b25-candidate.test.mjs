@@ -31,10 +31,9 @@ function orderBefore(a, b, label) {
   assert.ok(reachableMain(a).has(b), `${label}: ${a} must precede ${b}`);
 }
 
-test('candidate is a distinct inactive-by-design artifact, not the production path', () => {
+test('candidate uses the production webhook path after cutover reconciliation', () => {
   const webhook = nodes.get('LINE Webhook');
-  assert.equal(webhook.parameters.path, 'line-webhook-b25-candidate');
-  assert.notEqual(webhook.parameters.path, 'line-webhook');
+  assert.equal(webhook.parameters.path, 'line-webhook');
   assert.equal(webhook.parameters.responseMode, 'onReceived');
   assert.match(candidate.name, /B2\.5 Persist First Candidate/);
   assert.equal(candidate.nodes.length, 22);
