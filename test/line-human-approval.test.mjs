@@ -144,6 +144,13 @@ test('E: tracked source contains no hardcoded LINE token or direct LINE API call
   const { stdout } = await execFileAsync('git', ['ls-files', '-z']);
   const tokenLiteral = new RegExp(`${'Bear'}er\\s+[A-Za-z0-9\\-_~+/=]{20,}`);
   const lineApi = new RegExp(`api(-data)?\\.line\\.me`);
+  // Phase 4B-3A explicitly approves exactly one reviewed sender (Push only)
+  // plus its tests, which use synthetic fixtures asserted as dropped.
+  const approvedSenders = new Set([
+    'services/linePush.mjs',
+    'test/draft-send.test.mjs',
+    'test/line-push-provider.test.mjs',
+  ]);
   const offenders = [];
   const snapshotTokenLeaks = [];
   for (const file of stdout.split('\0').filter(Boolean)) {
@@ -156,6 +163,7 @@ test('E: tracked source contains no hardcoded LINE token or direct LINE API call
       if (tokenLiteral.test(content)) snapshotTokenLeaks.push(file);
       continue;
     }
+    if (approvedSenders.has(file)) continue;
     if (tokenLiteral.test(content) || lineApi.test(content)) offenders.push(file);
   }
   assert.deepEqual(snapshotTokenLeaks, []);

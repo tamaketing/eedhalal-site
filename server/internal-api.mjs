@@ -25,6 +25,7 @@
 // quotation/order/job/payment/accounting.
 
 import { createServer } from 'node:http';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createAdapter } from '../db/index.mjs';
@@ -40,6 +41,17 @@ import { approveDraft, editDraft, persistDraftOnce, rejectDraft, sendDraft } fro
 const MAX_BODY_BYTES = 256 * 1024;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
+
+// Owner Console static assets (Phase 4B-3B). Exact-path allowlist only —
+// no directory traversal is possible because the request path is never used
+// to build a filesystem path. These files contain no secrets and no data;
+// every business-data API stays behind Bearer auth on loopback only.
+const OWNER_ASSETS = {
+  '/owner/': { file: 'index.html', type: 'text/html; charset=utf-8' },
+  '/owner/app.js': { file: 'app.js', type: 'text/javascript; charset=utf-8' },
+  '/owner/styles.css': { file: 'styles.css', type: 'text/css; charset=utf-8' },
+};
+const OWNER_CSP = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
 function send(response, status, body) {
   const payload = JSON.stringify(body);
@@ -133,6 +145,20 @@ export function createInternalApi({ repos, env = process.env } = {}) {
       }
 
       if (!pathname.startsWith('/api/v1/')) {
+        // Owner Console assets: static files only, no auth (no data/secrets).
+        if (request.method === 'GET' && Object.hasOwn(OWNER_ASSETS, pathname)) {
+          const asset = OWNER_ASSETS[pathname];
+          const body = await readFile(new URL(`../owner-console/${asset.file}`, import.meta.url), 'utf8');
+          response.writeHead(200, {
+            'content-type': asset.type,
+            'content-security-policy': OWNER_CSP,
+            'x-content-type-options': 'nosniff',
+            'referrer-policy': 'no-referrer',
+            'cache-control': 'no-store',
+          });
+          response.end(body);
+          return;
+        }
         send(response, 404, { error: 'not_found' });
         return;
       }
@@ -267,8 +293,16 @@ export function createInternalApi({ repos, env = process.env } = {}) {
             // Owner-only send: the message text and recipient are ALWAYS
             // re-derived server-side from the frozen draft + linked customer.
             // Body fields beyond owner/concurrency expectations are ignored.
-            const result = await sendDraft(store, record.id, options, { token: env.LINE_CHANNEL_ACCESS_TOKEN });
-            send(response, 200, { draft: presentDraft(result.draft), send: result.send });
+            try {
+              const result = await sendDraft(store, record.id, options, { token: env.LINE_CHANNEL_ACCESS_TOKEN });
+              send(response, 200, { draft: presentDraft(result.draft), send: result.send });
+            } catch (error) {
+              if (error && error.message === 'line send not configured') {
+                send(response, 503, { error: 'send_not_configured' });
+                return;
+              }
+              throw error;
+            }
             return;
           }
           let next;

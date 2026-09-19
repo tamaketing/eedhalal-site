@@ -334,7 +334,8 @@ test('send without server token fails closed and preserves WAITING', async () =>
     const resolved = await post('/api/v1/customers/resolve', { lineUserId: userId() });
     const created = await post('/api/v1/drafts', { customerId: resolved.json.customer.id, incomingMessage: 'hi', draftResponse: 'hello' });
     const sent = await post(`/api/v1/drafts/${created.json.draft.id}/send`, {});
-    assert.equal(sent.status, 500);
+    assert.equal(sent.status, 503);
+    assert.equal(sent.json.error, 'send_not_configured');
     const read = await (await fetch(`${base}/api/v1/drafts/${created.json.draft.id}`, { headers: { authorization: `Bearer ${SECRET}` } })).json();
     assert.equal(read.draft.status, 'WAITING_FOR_HUMAN');
   } finally {

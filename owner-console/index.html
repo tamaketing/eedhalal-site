@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>EED HALAL — Owner Console (local only)</title>
+<link rel="stylesheet" href="/owner/styles.css">
+</head>
+<body>
+<header>
+  <h1>EED HALAL — Owner Console</h1>
+  <p class="subtitle">Local only · Human approval gate · No automatic sending</p>
+  <div class="topbar">
+    <button id="nav-queue" type="button" hidden>Queue</button>
+    <button id="nav-refresh" type="button" hidden>Refresh</button>
+    <button id="nav-lock" type="button" hidden>Lock</button>
+  </div>
+</header>
+<main>
+  <section id="view-unlock" aria-label="Unlock">
+    <h2>Unlock</h2>
+    <p>Enter the Internal API secret. It stays in page memory only and is cleared on lock or refresh.</p>
+    <form id="unlock-form">
+      <label for="secret-input">API secret</label>
+      <input id="secret-input" type="password" autocomplete="off" required>
+      <button type="submit">Unlock</button>
+    </form>
+    <p id="unlock-error" class="error" role="alert"></p>
+  </section>
+
+  <section id="view-queue" aria-label="Waiting queue" hidden>
+    <h2>Waiting for human <span id="queue-count"></span></h2>
+    <p id="queue-status" role="status"></p>
+    <div id="queue-list"></div>
+  </section>
+
+  <section id="view-review" aria-label="Review draft" hidden>
+    <button id="back-queue" type="button">← Back to Queue</button>
+    <h2>Review draft <span id="review-draft-id"></span></h2>
+    <p id="review-status" role="status"></p>
+    <div id="review-attention" class="notice" hidden></div>
+
+    <h3>Customer</h3>
+    <dl id="review-customer"></dl>
+
+    <h3>Incoming message</h3>
+    <div id="review-incoming" class="prewrap"></div>
+
+    <h3>AI original draft (read-only)</h3>
+    <div id="review-ai" class="prewrap"></div>
+
+    <h3>Final response</h3>
+    <textarea id="review-final" rows="8" cols="60"></textarea>
+
+    <h3>Details</h3>
+    <dl id="review-meta"></dl>
+
+    <div id="review-lead-wrap" hidden>
+      <h3>Linked lead</h3>
+      <dl id="review-lead"></dl>
+    </div>
+
+    <div class="actions">
+      <button id="btn-save" type="button">Save Edit</button>
+      <button id="btn-send" type="button" class="send">Send to LINE</button>
+      <button id="btn-reject" type="button" class="danger">Reject</button>
+    </div>
+
+    <div id="send-confirm" hidden>
+      <h3>Confirm send to LINE</h3>
+      <p>Customer: <strong id="send-confirm-name"></strong></p>
+      <p>Message to send:</p>
+      <div id="send-confirm-preview" class="prewrap"></div>
+      <button id="btn-send-confirm" type="button" class="send">Confirm Send</button>
+      <button id="btn-send-cancel" type="button">Cancel</button>
+    </div>
+  </section>
+</main>
+<script src="/owner/app.js"></script>
+</body>
+</html>
