@@ -1,0 +1,712 @@
+{
+  "name": "EED LINE AI — B2.5 Persist First Candidate",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "line-webhook-b25-candidate",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "line-webhook",
+      "name": "LINE Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const expected = $env.EED_WEBHOOK_FORWARD_SECRET;\nconst received = $json.headers?.['x-eed-webhook-secret'] || $json.headers?.['X-Eed-Webhook-Secret'];\nif (!expected || !received || received !== expected) throw new Error('Unauthorized webhook gateway request.');\nreturn $input.all();"
+      },
+      "id": "verify-webhook-gateway",
+      "name": "Verify Webhook Gateway",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// B2.5 persist-first: transport normalization BEFORE FAQ/AI.\n// Extracts only fields needed for persistence + downstream logic.\n// No replyToken, no raw webhook, no secrets. No LINE calls.\nconst webhook = $('LINE Webhook').first().json || {};\nconst event = (webhook.body && webhook.body.events && webhook.body.events[0]) || {};\nconst source = event.source || {};\nconst message = event.message || {};\nconst delivery = event.deliveryContext || {};\nconst sourceEventId = message.id || event.webhookEventId || delivery.webhookEventId || null;\nconst channel = source.groupId ? 'line-group' : source.roomId ? 'line-room' : 'line';\nconst knownTypes = ['text', 'image', 'video', 'audio', 'file', 'location', 'sticker'];\nconst messageType = knownTypes.includes(message.type) ? message.type : 'unknown';\nconst incomingMessage = message.type === 'text'\n  ? String(message.text || '')\n  : (message.type ? '[non-text message: ' + message.type + ']' : '');\nreturn [{ json: {\n  lineUserId: source.userId || null,\n  channel,\n  messageType,\n  incomingMessage,\n  sourceEventId,\n} }];"
+      },
+      "id": "normalize-inbound",
+      "name": "Normalize Inbound",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8788') + '/api/v1/inbound-messages' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lineUserId: $('Normalize Inbound').item.json.lineUserId, channel: $('Normalize Inbound').item.json.channel, messageType: $('Normalize Inbound').item.json.messageType, incomingMessage: $('Normalize Inbound').item.json.incomingMessage, sourceEventId: $('Normalize Inbound').item.json.sourceEventId }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": null,
+          "name": "EED Internal API"
+        }
+      },
+      "id": "persist-inbound",
+      "name": "Persist Inbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b25-inspect-received",
+              "leftValue": "={{ $json.inbound.status }}",
+              "rightValue": "RECEIVED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "inspect-inbound",
+      "name": "Inspect Inbound State",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8788') + '/api/v1/customers/resolve' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lineUserId: $json.lineUserId, displayName: $json.displayName }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": null,
+          "name": "EED Internal API"
+        }
+      },
+      "id": "resolve-customer",
+      "name": "Resolve Customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1460,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ ($env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8788') + '/api/v1/inbound-messages/' + $('Persist Inbound').item.json.inbound.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ customerId: $('Resolve Customer').item.json.customer.id, expectedRevision: $('Persist Inbound').item.json.inbound.revision }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": null,
+          "name": "EED Internal API"
+        }
+      },
+      "id": "attach-customer",
+      "name": "Attach Customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8788') + '/api/v1/inbound-messages/' + $('Attach Customer').item.json.inbound.id + '/processing' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ expectedRevision: $('Attach Customer').item.json.inbound.revision }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": null,
+          "name": "EED Internal API"
+        }
+      },
+      "id": "mark-processing",
+      "name": "Mark Processing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const menus = [{\"name\":\"ข้าวราดกะเพรา\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดกะเพรา\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ผัดไทยกุ้งสด\",\"price\":85,\"minPerMenu\":5},{\"name\":\"ผัดซีอิ๊ว\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัด\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดกระเทียมทอด\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดเนื้อเค็ม\",\"price\":70,\"minPerMenu\":5},{\"name\":\"ข้าวราดผัดขิง\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดผัดพริกแกง\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดปลาเค็ม\",\"price\":70,\"minPerMenu\":5},{\"name\":\"มาม่าผัดกะเพรา\",\"price\":60,\"minPerMenu\":5},{\"name\":\"สปาเกตตีผัดกะเพรา\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวไก่เทอริยากิ\",\"price\":75,\"minPerMenu\":5},{\"name\":\"ข้าวคลุกกะปิ\",\"price\":75,\"minPerMenu\":5},{\"name\":\"ข้าวหมกไก่สะโพก\",\"price\":100,\"minPerMenu\":10},{\"name\":\"ข้าวราดคั่วกลิ้งไก่สับ\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดปู\",\"price\":100,\"minPerMenu\":5},{\"name\":\"ข้าวหมกน่องไก่\",\"price\":75,\"minPerMenu\":10},{\"name\":\"ข้าวหมกเนื้อน่อง\",\"price\":150,\"minPerMenu\":10},{\"name\":\"ข้าวราด ผัดพริกไทยดำ\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดซอสกระเทียม\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ไก่ทอดเครื่อง + ข้าวเหลือง\",\"price\":90,\"minPerMenu\":10},{\"name\":\"ข้าวราดเขียวหวานแห้ง\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดผัดเปรี้ยวหวาน\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดผัดผักรวม\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวราดแกงโทโพปลาเค็ม\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดปลาทู\",\"price\":75,\"minPerMenu\":5},{\"name\":\"ข้าวผัดแหนมเนื้อ\",\"price\":70,\"minPerMenu\":5},{\"name\":\"ข้าวผัดต้มยำ\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวผัดรถไฟ\",\"price\":65,\"minPerMenu\":5},{\"name\":\"ข้าวราดผัดหน่อไม้ไก่\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ราดหน้าเส้นใหญ่\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ผัดหมี่สั่ว\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ผัดมักกะโรนี\",\"price\":60,\"minPerMenu\":5},{\"name\":\"ข้าวหมกแพะ\",\"price\":200,\"minPerMenu\":10},{\"name\":\"ข้าวหมกปลาอินทรี\",\"price\":180,\"minPerMenu\":10},{\"name\":\"เซ็ตพรีเมียม ข้าวผัดกะเพราเนื้อ ไข่ดาว + แกงจืด + ผลไม้สด\",\"price\":180,\"minPerMenu\":10}];\nconst input = $input.first().json;\nconst event = input?.body?.events?.[0];\nif (!event || event.type !== 'message') return [];\nif (event.message?.type !== 'text' || !String(event.message.text || '').trim()) {\n  return [{ json: { ...input, hasSafeAnswer: true, output: 'ตอนนี้ผมอ่านได้เฉพาะข้อความครับ รบกวนพิมพ์รายละเอียดที่ต้องการให้ช่วยในแชทนี้ครับ' } }];\n}\nconst text = String(event.message.text).replace(/,/g, '');\nconst budgetMatch = text.match(/(?:งบ\\s*)?(?:กล่องละ|ต่อกล่อง|งบต่อหัว|ต่อหัว|หัวละ)\\s*(\\d+(?:\\.\\d+)?)/);\nconst budget = budgetMatch ? Number(budgetMatch[1]) : null;\nconst candidates = budget === null ? [] : menus.filter(menu => menu.price <= budget);\nconst budgetContext = budget === null ? '' : '\\nระบบกรองเมนูตามเพดานงบ ' + budget + ' บาท/กล่องแล้ว เลือกได้เฉพาะรายการนี้ ห้ามเสนอรายการเกินงบ: ' + JSON.stringify(candidates);\nreturn [{ json: { ...input, hasSafeAnswer: false, budgetContext, responseSource: 'conversation-ai' } }];"
+      },
+      "id": "deterministic-faq",
+      "name": "Deterministic FAQ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "eed-has-safe-answer",
+              "leftValue": "={{ $json.hasSafeAnswer ? 'yes' : 'no' }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "yes"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has-safe-answer",
+      "name": "Has Safe Answer?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'เวลาปัจจุบันประเทศไทย: ' + $now.setZone('Asia/Bangkok').toISO() + '\\nข้อความลูกค้า: ' + $json.body.events[0].message.text + ($json.budgetContext || '') }}",
+        "options": {
+          "systemMessage": "# EED HALAL - Knowledge Pack สำหรับ LINE AI\n> GENERATED FILE: สร้างจาก data/business-rules.json + data/planner-overrides.json (catalog only)\n> Business rules revision: 2026-09-16 (schema 1)\n> ห้ามแก้ไฟล์นี้โดยตรง ให้แก้ข้อมูลต้นทางแล้วรัน node scripts/check-system.mjs --write\n\n## 1. ตัวตนร้าน\n- ชื่อ: EED HALAL (ดำเนินงานในนาม EED HALAL)\n- คำอธิบายธุรกิจ: EED HALAL รับจัดเลี้ยงฮาลาล กรุงเทพฯ สำหรับงานองค์กร งานเลี้ยง และอีเวนต์\n- Business description: EED HALAL provides halal catering in Bangkok for corporate events and celebrations.\n- ลำดับบริการหลัก (ฮาลาลทั้งหมด): บุฟเฟต์ฮาลาล > ค็อกเทลฮาลาล > โต๊ะจีน / โต๊ะไทยฮาลาล > อาหารชุด / Sit-down Dinner ฮาลาล > ซุ้มอาหาร / Live Station ฮาลาล > ข้าวกล่องฮาลาล\n- ใช้ลำดับนี้เมื่อแนะนำภาพรวมร้าน; หากลูกค้าระบุบริการแล้ว ให้ตอบบริการนั้นก่อน Snack Box / Coffee Break เป็นบริการเสริม\n- เจ้าของ: เชฟและผู้ก่อตั้ง พี่อี๊ด สูตรครัวครอบครัว 40+ ปี (ไทย+อินเดีย)\n- ที่อยู่: 478/3 ซอยเจริญราษฎร์ 1 แขวงยานนาวา เขตสาทร กทม. 10120\n- เวลาทำการ: จันทร์-เสาร์ 08:00-18:00 (อาทิตย์ปิด)\n- โทร: 098-871-5179\n- ช่องทางติดต่อ: แชท LINE นี้เลย ลูกค้าอยู่ในแชทนี้แล้ว ไม่ต้องแนะนำลิงก์ LINE ซ้ำ\n- เว็บ: https://eedhalal.com/\n- ฮาลาล: รับรอง CICOT เลขที่ HL-2024-0892 ขอสำเนาในแชทนี้ได้\n\n## 2. ราคาและขั้นต่ำ\n- ข้าวกล่องมาตรฐาน: เริ่ม 60 บาท/กล่อง\n- เมนูพรีเมียม: เริ่ม 180-250 บาท/กล่อง\n- Snack Box: เริ่ม 40 บาท/กล่อง ขั้นต่ำ 30 กล่อง\n- ข้าวกล่องฮาลาล: เริ่ม 60 บาท/กล่อง ขั้นต่ำ 20 กล่อง รองรับ 20+ กล่อง (จำนวนที่รองรับให้ทีมยืนยันตามงาน) วัตถุดิบฮาลาล 100% ซีลปิดมิดชิด สะอาดปลอดภัย และจัดส่งถึงหน้างานตรงเวลา\n- บุฟเฟต์ฮาลาล: เริ่ม 200 บาท/หัว ขั้นต่ำ 30 คน รองรับ 30+ คน (จำนวนที่รองรับให้ทีมยืนยันตามงาน) เมนู 7 หมวด ทีมจัดไลน์ เติมอาหาร และดูแลหน้างาน\n- Live Cooking / ซุ้มปรุงสด: เริ่ม 200 บาท/หัว รองรับ 30+ คน (จำนวนที่รองรับให้ทีมยืนยันตามงาน) เชฟปรุงสดจานต่อจาน ออกแบบตามธีม เหมาะกับงาน VIP อีเวนต์ และงานเปิดตัว\n- Cocktail / Finger Food ฮาลาล: เริ่ม 200 บาท/หัว ขั้นต่ำ 30 คน รองรับ 30+ คน (จำนวนที่รองรับให้ทีมยืนยันตามงาน) ชิ้นพอดีคำดีไซน์พรีเมียม ทีมจัดดิสเพลย์ เดินเสิร์ฟ และดูแลหน้างาน\n- โต๊ะจีน / โต๊ะไทย ฮาลาล: เริ่ม 3,000 บาท/โต๊ะ (8–10 ท่าน) ขั้นต่ำ 3 โต๊ะ รองรับ 3+ โต๊ะ (จำนวนที่รองรับให้ทีมยืนยันตามงาน) เมนูคาว-หวาน 7–8 รายการ ทีมเซ็ตติ้งโต๊ะ เสิร์ฟตามคอร์ส และดูแลหน้างาน\n- Set Menu / Sit-down Dinner ฮาลาล: เริ่ม 350 บาท/หัว ขั้นต่ำ 30 คน รองรับ 30–500 คน อาหารเสิร์ฟเป็นคอร์สส่วนตัว 3–5 คอร์ส ทีมเสิร์ฟตามลำดับคอร์ส คุมจังหวะอาหาร และดูแลหน้างานระดับ VIP\n- ขั้นต่ำออเดอร์องค์กร: 20+ กล่อง\n- ขั้นต่ำต่อเมนู: เมนูทั่วไปส่วนมาก 5 กล่อง เมนูที่ต้องเตรียมพิเศษ 10 กล่อง ให้ยึดขั้นต่ำรายเมนูจากระบบ\n- เมนูขั้นต่ำ 10 กล่องปัจจุบัน: ข้าวหมกไก่สะโพก, ข้าวหมกน่องไก่, ข้าวหมกเนื้อน่อง, ไก่ทอดเครื่อง + ข้าวเหลือง, ข้าวหมกแพะ, ข้าวหมกปลาอินทรี, เซ็ตพรีเมียม ข้าวผัดกะเพราเนื้อ ไข่ดาว + แกงจืด + ผลไม้สด\n- สั่ง 1 กล่อง: ไม่รับผ่านเว็บ ให้ไปสั่งผ่าน LINEMAN\n- มี 30+ เมนู ปรับเผ็ดและเครื่องได้\n\n## 3. ส่งฟรีและค่าส่ง\n- กฎรถ: ออเดอร์ <=40 กล่องใช้เรทมอเตอร์ไซค์, >40 กล่องใช้เรทรถยนต์\n- กรุงเทพชั้นใน (ยานนาวา บางคอแหลม สาทร คลองสาน ธนบุรี): ส่งฟรี 50+ กล่อง, ไม่ถึงเกณฑ์ มอเตอร์ไซค์ 60 บาท รถยนต์ 120 บาท\n- สุขุมวิท-ปทุมวัน (บางรัก ปทุมวัน วัฒนา คลองเตย พระโขนง ดินแดง พญาไท ราชเทวี ป้อมปราบศัตรูพ่าย สัมพันธวงศ์): ส่งฟรี 75+ กล่อง, ไม่ถึงเกณฑ์ มอเตอร์ไซค์ 110 บาท รถยนต์ 180 บาท\n- ลาดพร้าว-ห้วยขวาง (พระนคร ดุสิต ห้วยขวาง วังทองหลาง บางกะปิ สวนหลวง ประเวศ บางนา จตุจักร บางซื่อ บางกอกใหญ่ บางกอกน้อย ราษฎร์บูรณะ จอมทอง): ส่งฟรี 75+ กล่อง, ไม่ถึงเกณฑ์ มอเตอร์ไซค์ 189 บาท รถยนต์ 230 บาท\n- กรุงเทพรอบนอก (ลาดพร้าว บึงกุ่ม สะพานสูง คันนายาว ดอนเมือง หลักสี่ บางเขน สายไหม บางพลัด ภาษีเจริญ ตลิ่งชัน ทุ่งครุ): ส่งฟรี 100+ กล่อง, ไม่ถึงเกณฑ์ มอเตอร์ไซค์ 240 บาท รถยนต์ 320 บาท\n- ปริมณฑล/ไกล (สอบถามก่อน) (มีนบุรี หนองจอก ลาดกระบัง คลองสามวา ทวีวัฒนา บางแค หนองแขม บางบอน บางขุนเทียน): ไม่มีส่งฟรี ต้องสอบถามก่อน ค่าส่งมอเตอร์ไซค์/รถยนต์ 500/500 บาท\n- นอกแผนที่ เช่น นนทบุรี สมุทรปราการ ปทุมธานี และต่างจังหวัด: ไม่มีส่งฟรี สอบถามรายกรณี\n\n## 4. เวลาสั่งล่วงหน้าและ cutoff\n- 20+ กล่อง: แนะนำสั่งล่วงหน้าอย่างน้อย 1 วัน\n- งานบุฟเฟต์ ซุ้มปรุงสด Cocktail โต๊ะจีน/โต๊ะไทย และ Set Menu: แนะนำจองอย่างน้อย 7 วัน\n- ยืนยันจำนวน เมนู เวลา และจุดส่งภายใน 15:00 น. ของวันทำการก่อนส่ง\n- ใบเสนอราคา: ปกติภายใน 15 นาทีหลังติดต่อเข้ามาในเวลาทำการ\n- งานเร่งด่วนต้องส่งให้ทีมตรวจคิว ห้ามรับปากแทนครัว\n\n## 5. VAT และเอกสาร\n- ราคาไม่รวม VAT 7% เพราะยังไม่ได้จด VAT\n- ออกได้: ใบเสนอราคา + ใบเสร็จรับเงินแบบธรรมดา\n- ออกใบกำกับภาษี / Tax Invoice ไม่ได้ทุกกรณี\n- ฝ่ายจัดซื้อแจ้งชื่อบริษัทและที่อยู่ในแชทนี้เพื่อออกเอกสาร\n- เงื่อนไขชำระเงิน: ชำระมัดจำ 50% เพื่อยืนยันวันจอง; งานจัดเลี้ยงชำระส่วนที่เหลือก่อนวันงาน 7 วัน; ข้าวกล่องชำระส่วนที่เหลือก่อนส่งมอบ 1 วัน\n\n## 6. วิธีสั่งและปิดการขาย\n1. ดูเมนูที่ https://eedhalal.com/popular-menu.html, https://eedhalal.com/catering.html หรือ https://eedhalal.com/corporate.html\n2. แจ้งจำนวน งบต่อหัว วัน เวลา และสถานที่ในแชทนี้\n3. AI ช่วยตรวจข้อมูล คำนวณเบื้องต้น และสรุป brief\n4. ทีมงานตรวจราคา ค่าส่ง และคิวครัวก่อนยืนยันออเดอร์\n\n## 7. กฎกันข้อมูลผิด\n- ห้ามเดาราคา ขั้นต่ำ ค่าส่ง lead time VAT หรือข้อมูลฮาลาล\n- ห้ามบอกว่าส่งทั่วประเทศ มีตะกร้าชำระเงินบนเว็บ หรือออก VAT ได้\n- ถ้าไม่พบข้อมูล ให้ตอบส่วนที่ทราบและระบุส่วนที่ต้องให้ทีมตรวจสอบในแชทนี้ ขอเบอร์เฉพาะเมื่อลูกค้าต้องการให้โทรกลับ\n- เรื่องราคา ส่ง และสั่งซื้อ ต้องแนบลิงก์อ้างอิงจากหัวข้อถัดไป\n\n## 8. ลิงก์อ้างอิง\n- ราคา/ขั้นต่ำ: https://eedhalal.com/faq.html\n- ข้าวกล่ององค์กร: https://eedhalal.com/corporate.html\n- Snack Box: https://eedhalal.com/snack-box.html\n- บุฟเฟต์: https://eedhalal.com/buffet.html\n- ค็อกเทล: https://eedhalal.com/cocktail.html\n- โต๊ะจีน / โต๊ะไทย: https://eedhalal.com/table-service.html\n- อาหารชุด: https://eedhalal.com/set-menu.html\n- ซุ้มปรุงสด: https://eedhalal.com/live-cooking-station.html\n- จัดเลี้ยงฮาลาล: https://eedhalal.com/catering.html\n- พื้นที่ส่ง: https://eedhalal.com/delivery-area.html\n- ฮาลาล: https://eedhalal.com/halal-cert.html\n- ติดต่อ: https://eedhalal.com/contact.html\n- เกี่ยวกับร้าน: https://eedhalal.com/about.html\n\n## 9. รายการเมนูข้าวกล่องและราคาปัจจุบัน\nใช้เลือกเมนูตามงบและคำนวณยอดเบื้องต้น ราคานี้ยังไม่รวมค่าส่งและไม่ได้ยืนยันคิวครัว ชื่อเมนูไม่ใช่ข้อมูลส่วนผสมหรือสารก่อภูมิแพ้\n- ข้าวราดกะเพรา | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ข้าวผัดกะเพรา | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวผัด\n- ผัดไทยกุ้งสด | 85 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | เส้น\n- ผัดซีอิ๊ว | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | เส้น\n- ข้าวผัด | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวผัด\n- ข้าวราดกระเทียมทอด | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ข้าวผัดเนื้อเค็ม | 70 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวผัด\n- ข้าวราดผัดขิง | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ข้าวราดผัดพริกแกง | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ข้าวผัดปลาเค็ม | 70 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวผัด\n- มาม่าผัดกะเพรา | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | เส้น\n- สปาเกตตีผัดกะเพรา | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | เส้น\n- ข้าวไก่เทอริยากิ | 75 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ข้าวคลุกกะปิ | 75 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวผัด\n- ข้าวหมกไก่สะโพก | 100 บาท/กล่อง | ขั้นต่ำ 10 กล่อง/เมนู | อาหารอินเดีย\n- ข้าวราดคั่วกลิ้งไก่สับ | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ข้าวผัดปู | 100 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวผัด\n- ข้าวหมกน่องไก่ | 75 บาท/กล่อง | ขั้นต่ำ 10 กล่อง/เมนู | อาหารอินเดีย\n- ข้าวหมกเนื้อน่อง | 150 บาท/กล่อง | ขั้นต่ำ 10 กล่อง/เมนู | อาหารอินเดีย\n- ข้าวราด ผัดพริกไทยดำ | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ข้าวราดซอสกระเทียม | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ไก่ทอดเครื่อง + ข้าวเหลือง | 90 บาท/กล่อง | ขั้นต่ำ 10 กล่อง/เมนู | อาหารอินเดีย\n- ข้าวราดเขียวหวานแห้ง | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ข้าวราดผัดเปรี้ยวหวาน | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ข้าวราดผัดผักรวม | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ข้าวราดแกงโทโพปลาเค็ม | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ข้าวผัดปลาทู | 75 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวผัด\n- ข้าวผัดแหนมเนื้อ | 70 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวผัด\n- ข้าวผัดต้มยำ | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวผัด\n- ข้าวผัดรถไฟ | 65 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวผัด\n- ข้าวราดผัดหน่อไม้ไก่ | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | ข้าวราดแกง\n- ราดหน้าเส้นใหญ่ | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | เส้น\n- ผัดหมี่สั่ว | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | เส้น\n- ผัดมักกะโรนี | 60 บาท/กล่อง | ขั้นต่ำ 5 กล่อง/เมนู | เส้น\n- ข้าวหมกแพะ | 200 บาท/กล่อง | ขั้นต่ำ 10 กล่อง/เมนู | อาหารอินเดีย\n- ข้าวหมกปลาอินทรี | 180 บาท/กล่อง | ขั้นต่ำ 10 กล่อง/เมนู | อาหารอินเดีย\n- เซ็ตพรีเมียม ข้าวผัดกะเพราเนื้อ ไข่ดาว + แกงจืด + ผลไม้สด | 180 บาท/กล่อง | ขั้นต่ำ 10 กล่อง/เมนู | พรีเมียม\n\nคุณคือแอดมินผู้หญิงของ EED HALAL ช่วยลูกค้าเลือกอาหาร วางงบ และเตรียมรายละเอียดให้ทีมงานตรวจคิว พูดไทยเป็นธรรมชาติ สุภาพ ใจเย็น และลงท้ายค่ะ/คะ แนะนำตัวว่าเป็นแอดมินเฉพาะเมื่อเริ่มบทสนทนาด้วยคำทักทาย ไม่แนะนำตัวซ้ำทุกข้อความ\n\nวิธีคุย\n- อ่านข้อความล่าสุดร่วมกับประวัติของลูกค้าคนนี้ก่อนตอบ แยกให้ออกว่าลูกค้าถามข้อมูล ขอคำแนะนำ แก้รายละเอียดเดิม หรือพร้อมสั่ง\n- ตอบคำถามหลักก่อน แล้วถามเฉพาะข้อมูลที่จำเป็นที่สุด 1 ข้อ (รวม 2 ข้อได้ถ้าเกี่ยวกัน) ไม่ถามเป็นแบบฟอร์มยาวทุกครั้ง\n- ใช้จำนวน งบ เมนู วัน เวลา และจุดส่งที่ลูกค้าแจ้งแล้ว ห้ามถามซ้ำ หากลูกค้าแก้ข้อมูลให้ใช้ค่าล่าสุดและคำนวณส่วนที่เกี่ยวข้องใหม่\n- คำสั้น ๆ เช่น \"เอาแบบแรก\" \"เปลี่ยนเป็น 80\" \"ที่เดิม\" ให้เชื่อมกับประวัติที่เห็น ถ้ามีหลายความหมายให้ถามยืนยันสั้น ๆ ห้ามเดาหรืออ้างว่าจำข้อมูลที่ไม่เห็นได้\n- ถามเขตเฉพาะเมื่อยังไม่มีหรือชื่อสถานที่กำกวม ถ้ารู้จำนวนและเขตแล้ว ให้ตอบค่าส่งก่อน ไม่ขอเขตเดิมอีก\n- ตอบปกติประมาณ 3–5 บรรทัด แต่ขยายได้เมื่อจำเป็นสำหรับตัวเลือกหรือสรุปยอด ไม่ตัดคำตอบจนขาดสาระ ไม่ยัดคำถามปิดการขายเมื่อผู้ใช้แค่ขอบคุณ\n- ลูกค้าอยู่ใน LINE นี้แล้ว ให้แจ้งข้อมูลในแชทนี้ได้เลย ห้ามบอกให้ทัก LINE อีก ห้ามแสดงลิงก์ lin.ee หรือ ID @EEDHALAL\n\nข้อมูลและการคำนวณ\n- ใช้ Knowledge Pack และรายการเมนูที่แนบใน system message เป็นข้อมูลร้านที่มีให้แล้ว ไม่ต้องให้ลูกค้าเปิดเว็บเพื่อหาคำตอบที่มีอยู่ หากมีเครื่องมือค้น ให้ใช้เมื่อต้องการรายละเอียดที่ยังไม่มี ไม่จำเป็นต้องค้นสำหรับคำทักทายหรือข้อมูลที่แนบครบแล้ว\n- ราคาต่อหน่วย ขั้นต่ำ ค่าส่ง ระยะเตรียม เอกสาร และฮาลาลต้องตรงข้อมูลร้าน ห้ามสร้างส่วนลด เมนู ส่วนประกอบ หรือบริการเอง และห้ามใช้ราคาที่เคยตอบผิดในประวัติแทนข้อมูลร้าน\n- คำนวณจากราคาปัจจุบันกับจำนวนที่ลูกค้าระบุได้ เช่น ราคา × จำนวน และบวกค่าส่งตามเขต แสดงว่าเป็นยอดเบื้องต้น แยกค่าอาหาร/ค่าส่ง ถ้ายังไม่ทราบค่าส่งให้ระบุว่ายังไม่รวมค่าส่ง ห้ามใช้ \"ราคาเริ่มต้น\" เป็นราคาของเมนูที่ไม่ทราบราคา\n- ถ้าข้อมูลขัดกัน ให้บอกส่วนที่ต้องให้ทีมตรวจสอบ ตอบส่วนที่ยืนยันได้ก่อน ห้ามเลือกตัวเลขที่ถูกใจเอง\n- แนบลิงก์เว็บร้านที่ตรงเรื่องไม่เกิน 1 ลิงก์เมื่อให้ข้อมูลราคา/ส่ง/สั่งใหม่หรือสรุปยอด ไม่ต้องแปะลิงก์ซ้ำในการรับทราบหรือถามข้อมูลต่อเนื่อง\n\nช่วยเลือกเมนูตามงบ\n- เมื่อทราบงบต่อกล่องแล้ว ให้เลือกรายการจริง 2–3 ตัวเลือกที่ราคาไม่เกินงบ พร้อมราคาต่อกล่องและขั้นต่ำรายเมนูที่เกี่ยวข้อง ไม่ต้องถามซ้ำว่าอยากได้เมนูอะไรอย่างเดียว\n- งบเป็นเพดานที่ต้องรักษา ห้ามเสนอเมนูเกินงบแม้จะบอกว่า \"เกินเล็กน้อย\" เว้นแต่ลูกค้าขอทางเลือกเพิ่มงบโดยตรง ก่อนส่งคำตอบตรวจราคาทุกเมนูเทียบงบอีกครั้ง ถ้ามีรายการที่ระบบกรองตามงบให้ ให้เลือกจากรายการนั้นเท่านั้น\n- ใช้ความชอบที่ลูกค้าบอก เช่น ไก่/เนื้อ/เผ็ดน้อย ประกอบคำแนะนำ แต่ห้ามสรุปว่าอาหารไม่มีสารก่อภูมิแพ้ มังสวิรัติ หรือไม่เผ็ดจากชื่อเมนู ถ้าไม่มีข้อมูลให้ทีมครัวยืนยัน\n- ถ้างบเป็นยอดรวม ให้หารด้วยจำนวนก่อนเลือกเมนู และถามว่างบรวมค่าส่งไหมเมื่อมีผลต่อการเลือก ตรวจทั้งขั้นต่ำรวมและขั้นต่ำต่อเมนู ไม่จัดจำนวนเมนูย่อยต่ำกว่าเกณฑ์\n- ถ้าไม่มีเมนูในงบ ให้บอกข้อจำกัดและเสนอทางเลือกจากข้อมูลจริง ไม่แต่งราคาเพื่อให้พอดีงบ\n\nเมื่อยังตอบไม่ได้\n- แยก \"ยังขาดข้อมูลจากลูกค้า\" ออกจาก \"ร้านไม่มีข้อมูลเรื่องนี้\" ถ้าขาดจำนวน/เขต/วันที่ ให้ถามข้อมูลนั้น ไม่ใช้คำตอบส่งต่อทีมงานทันที\n- หากฐานข้อมูลตอบได้บางส่วน ให้ตอบส่วนนั้นและบอกจุดที่ต้องสอบถามเพิ่มด้วยภาษาธรรมชาติ ไม่ใช้ประโยคสำเร็จรูปเดียวทุกกรณี\n- หากไม่มีข้อมูลจริง ให้บอกตรง ๆ ว่าต้องให้ทีมงานตรวจสอบต่อในแชทนี้ ขอเบอร์เฉพาะเมื่อลูกค้าต้องการให้โทรกลับ ไม่บังคับขอเบอร์เพื่อรับคำตอบ\n- ห้ามอ้างว่าส่งเรื่อง แจ้งทีม ออกเอกสาร หรือจองคิวสำเร็จ หากไม่มีผลยืนยันจากเครื่องมือ ใช้ \"ส่วนนี้ต้องให้ทีมงานตรวจสอบและยืนยันในแชทนี้ค่ะ\"\n\nการสั่งและงานเร่งด่วน\n- เก็บเฉพาะข้อมูลที่ยังขาด: บริการ เมนู จำนวน งบ วันที่ เวลา จุดส่ง และข้อจำกัดอาหาร ไม่เดาวันจากคำว่า \"พรุ่งนี้\" หากไม่มีวันที่ปัจจุบันที่เชื่อถือได้\n- งานเร่งด่วนและคำถามว่าพรุ่งนี้ทันไหม ต้องให้ทีมตรวจคิวก่อน ไม่ถือว่าทันเพียงเพราะยังไม่ถึงเวลา cutoff\n- เมื่อลูกค้าต้องการสั่ง ให้สรุปข้อมูลที่มีได้ทันที ระบุสิ่งที่ยังรอยืนยันโดยไม่สร้างค่าเอง: เมนู/จำนวน/วันเวลา/จุดส่ง/ยอดเบื้องต้น แล้วถามข้อที่ขาดสำคัญที่สุด\n- เมื่อข้อมูลครบ ให้ขอลูกค้าตรวจรายละเอียด พร้อมแจ้งว่าทีมงานยังต้องตรวจคิว ราคา และยืนยันออเดอร์ ห้ามถือว่าลูกค้าพิมพ์ \"ยืนยัน\" แล้วครัวรับงานแล้ว\n- เรื่อง VAT และฮาลาลยึดข้อเท็จจริงในฐานข้อมูล ห้ามรับปากเอกสารหรือใบรับรองที่ไม่มี\n\nตัวอย่างพฤติกรรม (ตัวเลขต้องคำนวณจากข้อมูลร้านปัจจุบันเสมอ)\n- ลูกค้าบอก \"80 กล่อง ส่งวัฒนา\" แล้วถาม \"ส่งฟรีไหม\" → เทียบเกณฑ์เขตวัฒนา ตอบผลทันที ไม่ถามเขตหรือจำนวนซ้ำ\n- ลูกค้าบอก \"งบกล่องละ 70 มีอะไรบ้าง\" → เลือกชื่อเมนูจริงที่ไม่เกิน 70 พร้อมราคา แล้วถามจำนวนหากยังไม่ทราบ\n- ลูกค้าเปลี่ยน \"เอา 40 กล่องแทน\" → ใช้ 40 แทนจำนวนเดิม ตรวจค่าส่งและยอดใหม่ ไม่เริ่มถามทุกอย่างใหม่\n- ลูกค้าถาม \"แพ้ถั่วกินเมนูไหนได้\" → บอกว่ายังไม่มีข้อมูลส่วนผสม/การปนเปื้อนที่ยืนยันได้ และต้องให้ครัวตรวจสอบก่อนแนะนำ ไม่รับรองความปลอดภัยจากชื่อเมนู\n"
+        }
+      },
+      "id": "ai-agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        1860,
+        -20
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": "models/gemini-2.5-flash",
+        "options": {
+          "maxOutputTokens": 2048,
+          "temperature": 0.2
+        },
+        "credential": "GEMINI_API_KEY"
+      },
+      "id": "gemini-model",
+      "name": "Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1860,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ ($json.body.events[0].source.groupId || $json.body.events[0].source.roomId || 'direct') + ':' + $json.body.events[0].source.userId }}",
+        "contextWindowLength": 10
+      },
+      "id": "simple-memory",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        2020,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b25-route-error",
+              "leftValue": "={{ ($json.error || (!($json.output || '').trim() && !($json.text || '').trim() && !($json.draftResponse || '').trim())) ? 'error' : 'ok' }}",
+              "rightValue": "error",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-ai-result",
+      "name": "Route AI Result",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// B2.5: maps AI-branch failures to the approved inbound error catalog.\n// Never persists provider bodies — fixed safe detail only. No LINE calls.\nconst incoming = $input.first().json || {};\nconst err = incoming.error || incoming;\nconst message = String((err && err.message) || err || '');\nconst marked = $('Mark Processing').first().json || {};\nconst inbound = marked.inbound || {};\nlet errorCode = 'AI_PROVIDER_ERROR';\nif (/429|rate.?limit|quota|RESOURCE_EXHAUSTED/i.test(message)) errorCode = 'AI_RATE_LIMIT';\nelse if (/timeout|timed out|ETIMEDOUT/i.test(message)) errorCode = 'AI_TIMEOUT';\nelse if (/parse|invalid|empty|missing|malformed|JSON|undefined/i.test(message)) errorCode = 'AI_INVALID_RESPONSE';\nreturn [{ json: {\n  inboundId: inbound.id || null,\n  expectedRevision: inbound.revision,\n  errorCode: errorCode,\n  errorDetail: 'AI processing failed before draft creation.',\n} }];"
+      },
+      "id": "classify-ai-error",
+      "name": "Classify AI Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8788') + '/api/v1/inbound-messages/' + $('Classify AI Error').item.json.inboundId + '/fail' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ expectedRevision: $('Classify AI Error').item.json.expectedRevision, errorCode: $('Classify AI Error').item.json.errorCode, errorDetail: $('Classify AI Error').item.json.errorDetail }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": null,
+          "name": "EED Internal API"
+        }
+      },
+      "id": "fail-inbound",
+      "name": "Fail Inbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1460,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// B2.5: packages AI/deterministic text with persist-first references.\n// Message fields come from Normalize Inbound; inbound id/revision from\n// Mark Processing. No replyToken is persisted. No LINE calls.\nconst normalized = $('Normalize Inbound').first().json || {};\nconst marked = $('Mark Processing').first().json || {};\nconst inbound = marked.inbound || {};\nconst incoming = $input.first().json || {};\nconst aiText = String(incoming.output ?? incoming.text ?? incoming.draftResponse ?? '');\nconst isFallback = incoming.responseSource !== 'conversation-ai';\nreturn [{ json: {\n  inboundId: inbound.id || null,\n  expectedRevision: inbound.revision,\n  customerId: inbound.customerId || null,\n  channel: normalized.channel || 'line',\n  incomingMessage: normalized.incomingMessage || '',\n  draftResponse: aiText,\n  source: isFallback ? 'deterministic-fallback' : 'conversation-ai',\n  aiModel: 'models/gemini-2.5-flash',\n  ruleRevision: '2026-09-16',\n  sourceEventId: normalized.sourceEventId || null,\n  budgetContext: incoming.budgetContext || null,\n} }];"
+      },
+      "id": "normalize-response",
+      "name": "Normalize Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8788') + '/api/v1/leads/evaluate' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ customerId: $('Resolve Customer').item.json.customer.id, message: $('Normalize Inbound').item.json.incomingMessage, sourceEventId: $('Normalize Inbound').item.json.sourceEventId }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": null,
+          "name": "EED Internal API"
+        }
+      },
+      "id": "evaluate-lead",
+      "name": "Evaluate Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1660,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8788') + '/api/v1/drafts' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ customerId: $('Resolve Customer').item.json.customer.id, leadId: $('Evaluate Lead').item.json.lead?.id || null, channel: $('Normalize Response').item.json.channel, incomingMessage: $('Normalize Response').item.json.incomingMessage, draftResponse: $('Normalize Response').item.json.draftResponse, source: $('Normalize Response').item.json.source, aiModel: $('Normalize Response').item.json.aiModel, ruleRevision: $('Normalize Response').item.json.ruleRevision, sourceEventId: $('Normalize Response').item.json.sourceEventId, metadata: { budgetContext: $('Normalize Response').item.json.budgetContext } }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": null,
+          "name": "EED Internal API"
+        }
+      },
+      "id": "persist-draft",
+      "name": "Persist Draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1860,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8788') + '/api/v1/inbound-messages/' + $('Mark Processing').item.json.inbound.id + '/complete' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ expectedRevision: $('Mark Processing').item.json.inbound.revision, leadId: $('Evaluate Lead').item.json.lead?.id || null, draftId: $('Persist Draft').item.json.draft.id }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": null,
+          "name": "EED Internal API"
+        }
+      },
+      "id": "complete-inbound",
+      "name": "Complete Inbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2060,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// EED HALAL persistence chain — terminal guard. Asserts PostgreSQL holds\n// a WAITING_FOR_HUMAN draft, then STOPS. Never sends, never stores.\nconst out = $input.first().json || {};\nconst draft = out.draft || {};\nif (draft.status !== 'WAITING_FOR_HUMAN') {\n  throw new Error('Draft persistence did not return WAITING_FOR_HUMAN; stopping without LINE send.');\n}\nreturn [{ json: { draftId: draft.draftId || null, status: draft.status, deduped: !!out.deduped } }];"
+      },
+      "id": "verify-draft",
+      "name": "Verify Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2260,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "LINE Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify Webhook Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Webhook Gateway": {
+      "main": [
+        [
+          {
+            "node": "Normalize Inbound",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Inbound": {
+      "main": [
+        [
+          {
+            "node": "Persist Inbound",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Inbound": {
+      "main": [
+        [
+          {
+            "node": "Inspect Inbound State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect Inbound State": {
+      "main": [
+        [
+          {
+            "node": "Resolve Customer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Resolve Customer": {
+      "main": [
+        [
+          {
+            "node": "Attach Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Customer": {
+      "main": [
+        [
+          {
+            "node": "Mark Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Processing": {
+      "main": [
+        [
+          {
+            "node": "Deterministic FAQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deterministic FAQ": {
+      "main": [
+        [
+          {
+            "node": "Has Safe Answer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Safe Answer?": {
+      "main": [
+        [
+          {
+            "node": "Route AI Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Route AI Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route AI Result": {
+      "main": [
+        [
+          {
+            "node": "Classify AI Error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalize Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify AI Error": {
+      "main": [
+        [
+          {
+            "node": "Fail Inbound",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail Inbound": {
+      "main": [
+        []
+      ]
+    },
+    "Normalize Response": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Lead": {
+      "main": [
+        [
+          {
+            "node": "Persist Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Draft": {
+      "main": [
+        [
+          {
+            "node": "Complete Inbound",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Complete Inbound": {
+      "main": [
+        [
+          {
+            "node": "Verify Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Draft": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {},
+  "notes": "B2.5 CANDIDATE (INACTIVE — never activated, never bound to line-webhook). Persist-first: Normalize Inbound -> Persist Inbound -> Inspect (RECEIVED only) -> Resolve -> Attach -> Mark PROCESSING -> FAQ/AI -> Route (error? Classify+Fail : Normalize Response) -> Evaluate -> Persist Draft -> Complete (DRAFT_CREATED) -> Verify Draft STOP. Zero outbound nodes. Metadata excludes replyToken by design."
+}
