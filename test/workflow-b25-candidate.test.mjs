@@ -36,7 +36,8 @@ test('candidate uses the production webhook path after cutover reconciliation', 
   assert.equal(webhook.parameters.path, 'line-webhook');
   assert.equal(webhook.parameters.responseMode, 'onReceived');
   assert.match(candidate.name, /B2\.5 Persist First Candidate/);
-  assert.equal(candidate.nodes.length, 22);
+  assert.equal(candidate.nodes.length, 25);
+  assert.equal(candidate.nodes.filter((n) => n.type === 'n8n-nodes-base.webhook').length, 1);
 });
 
 test('Gate B2 production artifact is still the 12-node flow', () => {
@@ -102,6 +103,72 @@ test('Route AI Result sends genuine errors AND missing/invalid output to the cla
   assert.equal(route({ error: null, output: 'x' }), 'ok');
 });
 
+test('menu lookup branch runs after persistence and feeds AI only', () => {
+  for (const later of ['Menu Lookup Needed?', 'Fetch Menu Catalog', 'Build Menu Context']) {
+    orderBefore('Persist Inbound', later, 'persist-first menu branch');
+    orderBefore('Mark Processing', later, 'processing-gate menu branch');
+  }
+  orderBefore('Fetch Menu Catalog', 'Build Menu Context', 'fetch-before-context');
+  orderBefore('Build Menu Context', 'AI Agent', 'context-before-ai');
+  orderBefore('Deterministic FAQ', 'Menu Lookup Needed?', 'faq-before-menu-branch');
+  assert.equal(candidate.connections['Has Safe Answer?'].main[1][0].node, 'Menu Lookup Needed?');
+  assert.equal(candidate.connections['Menu Lookup Needed?'].main[0][0].node, 'Fetch Menu Catalog');
+  assert.equal(candidate.connections['Menu Lookup Needed?'].main[1][0].node, 'Build Menu Context');
+  assert.equal(candidate.connections['Fetch Menu Catalog'].main[0][0].node, 'Build Menu Context');
+  assert.equal(candidate.connections['Build Menu Context'].main[0][0].node, 'AI Agent');
+});
+
+test('menu lookup gate fetches only for deterministic fetch modes', () => {
+  const cond = nodes.get('Menu Lookup Needed?').parameters.conditions.conditions[0];
+  assert.equal(cond.rightValue, 'fetch');
+  const expr = cond.leftValue.replace(/^\s*=\{\{\s*/, '').replace(/\s*\}\}\s*$/, '');
+  const gate = (menuPlan) => vm.runInNewContext(expr, { $json: { menuPlan } });
+  for (const mode of ['exact-price', 'max-price', 'name-lookup', 'category-price', 'category-max']) {
+    assert.equal(gate({ mode }), 'fetch', mode);
+  }
+  for (const mode of ['clarify', 'none', undefined]) {
+    assert.equal(gate(mode === undefined ? {} : { mode }), 'skip', String(mode));
+  }
+});
+
+test('menu fetch node reuses the Internal API credential without secrets', async () => {
+  const { findMenuLookupMisconfigurations } = await import('../line-ai/conversation-update.mjs');
+  assert.deepEqual(findMenuLookupMisconfigurations(candidate), []);
+  const fetch = nodes.get('Fetch Menu Catalog');
+  assert.equal(fetch.credentials.httpHeaderAuth.name, 'EED Internal API');
+  assert.equal(fetch.parameters.options.timeout, 10000);
+  assert.equal(fetch.onError, 'continueRegularOutput');
+});
+
+test('context builder turns API payloads into factual MENU_CONTEXT', async () => {
+  const { buildMenuContextNodeCode } = await import('../line-ai/conversation-update.mjs');
+  const code = nodes.get('Build Menu Context').parameters.jsCode;
+  assert.equal(code, buildMenuContextNodeCode());
+  const faqJson = {
+    body: { events: [{ message: { text: 'งบ 75 บาท' } }] },
+    menuPlan: { menuLookupNeeded: true, mode: 'exact-price', price: 75, maxPrice: null, category: null, query: null },
+  };
+  const run = (inputJson) => vm.runInNewContext(`(function () { ${code} })()`, {
+    $input: { first: () => ({ json: inputJson }) },
+    $: () => ({ first: () => ({ json: faqJson }) }),
+  })[0].json;
+  const ok = run({ menus: [{ id: '14', name: 'ข้าวไก่เทอริยากิ', price: 75, minPerMenu: 5, category: 'ข้าวราดแกง' }] });
+  assert.ok(ok.menuContext.includes('ข้าวไก่เทอริยากิ | 75 บาท/กล่อง'));
+  assert.equal(ok.body.events[0].message.text, 'งบ 75 บาท');
+  const empty = run({ menus: [] });
+  assert.ok(empty.menuContext.includes('result: empty'));
+  assert.ok(!/\d+\s*บาท/.test(empty.menuContext));
+  const failed = run({ error: { message: 'timeout' } });
+  assert.ok(failed.menuContext.includes('lookup_failed'));
+  assert.ok(!/\d+\s*บาท/.test(failed.menuContext));
+});
+
+test('candidate carries no baked menu prices and no retired candidate list', () => {
+  const text = JSON.stringify(candidate);
+  assert.ok(!text.includes('budgetContext'), 'no retired candidate list');
+  assert.ok(!text.includes('const menus ='), 'no embedded catalog');
+});
+
 test('Resolve Customer reads identity from Normalize Inbound, not its IF predecessor', () => {
   // Regression guard (live Step 4A finding): Resolve Customer's input is the
   // Inspect IF output, so bare $json.lineUserId is undefined there.
@@ -144,11 +211,17 @@ test('all node cross-references resolve to real nodes', () => {
 
 test('every Internal API body is JSON.stringify serialized with no secrets', () => {
   const http = candidate.nodes.filter((n) => n.type === 'n8n-nodes-base.httpRequest');
-  assert.equal(http.length, 8);
+  assert.equal(http.length, 9);
   for (const n of http) {
     assert.match(n.parameters.url, /INTERNAL_API_BASE_URL/, `${n.name} uses env base URL`);
-    assert.ok(n.parameters.jsonBody.includes('JSON.stringify'), `${n.name} serializes safely`);
-    assert.ok(!n.parameters.jsonBody.includes('replyToken'), `${n.name} persists no replyToken`);
+    if (n.name === 'Fetch Menu Catalog') {
+      assert.equal(n.parameters.method, 'GET', 'menu lookup fetches with GET');
+      assert.ok(!n.parameters.sendBody, 'menu lookup sends no body');
+      assert.match(n.parameters.url, /\/api\/v1\/menus\/mealbox/, 'menu lookup targets the catalog path');
+    } else {
+      assert.ok(n.parameters.jsonBody.includes('JSON.stringify'), `${n.name} serializes safely`);
+    }
+    assert.ok(!(n.parameters.jsonBody || '').includes('replyToken'), `${n.name} persists no replyToken`);
   }
   const text = JSON.stringify(candidate);
   const codeOnly = text.replace(/\/\/[^\n]*/g, '');

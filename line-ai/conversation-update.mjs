@@ -1,4 +1,18 @@
 import assert from 'node:assert/strict';
+import {
+  MENU_CATEGORIES,
+  MENU_CONTEXT_LIMIT,
+  MENU_FETCH_MODES,
+  MENU_NAME_KEYWORDS,
+  MENU_SCAFFOLDING,
+  buildMenuContext,
+  buildMenuQueryString,
+  formatMenuLine,
+  isValidMenuEntry,
+  normalizeMenuText,
+  parseMenuIntent,
+  stripMenuScaffolding,
+} from './menu-intent.mjs';
 
 // Human-approval foundation: nodes that contact a customer directly.
 // AI output must flow into the persistence chain (ending at Verify Draft),
@@ -125,8 +139,21 @@ return [{ json: {
   ruleRevision: RULE_REVISION,
   sourceEventId,
   replyToken: event.replyToken || null,
-  budgetContext: incoming.budgetContext || null,
+  menuContext: incoming.menuContext || null,
 } }];`;
+}
+
+// Single source for the Persist Draft request body. The only workflow
+// differences are which normalize node feeds it (main: Normalize Event,
+// B2.5 candidate: Normalize Response) and whether the owner reply token is
+// persisted (main: yes; B2.5 candidate: never, by design), so the generator
+// owns both variants explicitly.
+export function buildPersistDraftJsonBody(normalizeName = 'Normalize Event', options = {}) {
+  const { includeReplyToken = true } = options;
+  const metadata = includeReplyToken
+    ? `metadata: { replyToken: $("${normalizeName}").item.json.replyToken, menuContext: $("${normalizeName}").item.json.menuContext }`
+    : `metadata: { menuContext: $("${normalizeName}").item.json.menuContext }`;
+  return `={{ JSON.stringify({ customerId: $("Resolve Customer").item.json.customer.id, leadId: $("Evaluate Lead").item.json.lead?.id || null, channel: $("${normalizeName}").item.json.channel, incomingMessage: $("${normalizeName}").item.json.incomingMessage, draftResponse: $("${normalizeName}").item.json.draftResponse, source: $("${normalizeName}").item.json.source, aiModel: $("${normalizeName}").item.json.aiModel, ruleRevision: $("${normalizeName}").item.json.ruleRevision, sourceEventId: $("${normalizeName}").item.json.sourceEventId, ${metadata} }) }}`;
 }
 
 // Declarative Internal API call. Auth comes from the n8n credential store
@@ -172,7 +199,7 @@ export function buildPersistenceNodes() {
       id: 'persist-draft',
       name: 'Persist Draft',
       apiPath: 'drafts',
-      jsonBody: '={\n  "customerId": "{{ $("Resolve Customer").item.json.customer.id }}",\n  "leadId": "{{ $("Evaluate Lead").item.json.lead?.id || null }}",\n  "channel": "{{ $("Normalize Event").item.json.channel }}",\n  "incomingMessage": "{{ $("Normalize Event").item.json.incomingMessage }}",\n  "draftResponse": "{{ $("Normalize Event").item.json.draftResponse }}",\n  "source": "{{ $("Normalize Event").item.json.source }}",\n  "aiModel": "{{ $("Normalize Event").item.json.aiModel }}",\n  "ruleRevision": "{{ $("Normalize Event").item.json.ruleRevision }}",\n  "sourceEventId": "{{ $("Normalize Event").item.json.sourceEventId }}",\n  "metadata": {{ JSON.stringify({ replyToken: $("Normalize Event").item.json.replyToken, budgetContext: $("Normalize Event").item.json.budgetContext }) }}\n}',
+      jsonBody: '={\n  "customerId": "{{ $("Resolve Customer").item.json.customer.id }}",\n  "leadId": "{{ $("Evaluate Lead").item.json.lead?.id || null }}",\n  "channel": "{{ $("Normalize Event").item.json.channel }}",\n  "incomingMessage": "{{ $("Normalize Event").item.json.incomingMessage }}",\n  "draftResponse": "{{ $("Normalize Event").item.json.draftResponse }}",\n  "source": "{{ $("Normalize Event").item.json.source }}",\n  "aiModel": "{{ $("Normalize Event").item.json.aiModel }}",\n  "ruleRevision": "{{ $("Normalize Event").item.json.ruleRevision }}",\n  "sourceEventId": "{{ $("Normalize Event").item.json.sourceEventId }}",\n  "metadata": {{ JSON.stringify({ replyToken: $("Normalize Event").item.json.replyToken, menuContext: $("Normalize Event").item.json.menuContext }) }}\n}',
       position: [1660, 300],
     }),
   ];
@@ -191,24 +218,186 @@ if (draft.status !== 'WAITING_FOR_HUMAN') {
 }
 return [{ json: { draftId: draft.draftId || null, status: draft.status, deduped: !!out.deduped } }];`;
 }
-export function buildConversationRouter(menus = []) {
-return `const menus = ${JSON.stringify(menus.map(({ name, price, minPerMenu }) => ({ name, price, minPerMenu })))};
-const input = $input.first().json;
-const event = input?.body?.events?.[0];
-if (!event || event.type !== 'message') return [];
-if (event.message?.type !== 'text' || !String(event.message.text || '').trim()) {
-  return [{ json: { ...input, hasSafeAnswer: true, output: 'ตอนนี้ผมอ่านได้เฉพาะข้อความครับ รบกวนพิมพ์รายละเอียดที่ต้องการให้ช่วยในแชทนี้ครับ' } }];
-}
-const text = String(event.message.text).replace(/,/g, '');
-const budgetMatch = text.match(/(?:งบ\\s*)?(?:กล่องละ|ต่อกล่อง|งบต่อหัว|ต่อหัว|หัวละ)\\s*(\\d+(?:\\.\\d+)?)/);
-const budget = budgetMatch ? Number(budgetMatch[1]) : null;
-const candidates = budget === null ? [] : menus.filter(menu => menu.price <= budget);
-const budgetContext = budget === null ? '' : '\\nระบบกรองเมนูตามเพดานงบ ' + budget + ' บาท/กล่องแล้ว เลือกได้เฉพาะรายการนี้ ห้ามเสนอรายการเกินงบ: ' + JSON.stringify(candidates);
-return [{ json: { ...input, hasSafeAnswer: false, budgetContext, responseSource: 'conversation-ai' } }];`;
+// Deterministic router: menu-intent parsing only. This node embeds NO
+// menu catalog and NO prices: numeric/name filters become a menuPlan for
+// the live Internal Menu API lookup downstream. n8n Code nodes cannot
+// import modules, so the dependency-free parser source is embedded here
+// (generated from line-ai/menu-intent.mjs — never hand-edited).
+const MENU_INTENT_PRELUDE = [
+  `const MENU_CATEGORIES = ${JSON.stringify(MENU_CATEGORIES)};`,
+  `const MENU_FETCH_MODES = ${JSON.stringify(MENU_FETCH_MODES)};`,
+  `const MENU_CONTEXT_LIMIT = ${MENU_CONTEXT_LIMIT};`,
+  `const MENU_NAME_KEYWORDS = ${JSON.stringify(MENU_NAME_KEYWORDS)};`,
+  `const MENU_SCAFFOLDING = ${JSON.stringify(MENU_SCAFFOLDING)};`,
+  normalizeMenuText.toString(),
+  stripMenuScaffolding.toString(),
+  parseMenuIntent.toString(),
+  buildMenuQueryString.toString(),
+  isValidMenuEntry.toString(),
+  formatMenuLine.toString(),
+  buildMenuContext.toString(),
+].join('\n');
+
+const ROUTER_RUNNER = [
+  'const input = $input.first().json;',
+  'const event = (input && input.body && input.body.events && input.body.events[0]) || null;',
+  "if (!event || event.type !== 'message') return [];",
+  "if (!event.message || event.message.type !== 'text' || !String(event.message.text || '').trim()) {",
+  "  return [{ json: { ...input, hasSafeAnswer: true, output: 'ตอนนี้ผมอ่านได้เฉพาะข้อความครับ รบกวนพิมพ์รายละเอียดที่ต้องการให้ช่วยในแชทนี้ครับ' } }];",
+  '}',
+  'const menuPlan = parseMenuIntent(String(event.message.text));',
+  'const menuQueryString = buildMenuQueryString(menuPlan);',
+  "return [{ json: { ...input, hasSafeAnswer: false, menuPlan, menuQueryString, responseSource: 'conversation-ai' } }];",
+].join('\n');
+
+export function buildConversationRouter() {
+  return `${MENU_INTENT_PRELUDE}\n${ROUTER_RUNNER}`;
 }
 export const conversationRouter = buildConversationRouter();
 
-export function updateConversation(workflow, systemMessage, menus = [], ruleRevision = '') {
+export function buildAiAgentText() {
+  return "={{ 'เวลาปัจจุบันประเทศไทย: ' + $now.setZone('Asia/Bangkok').toISO() + '\\nข้อความลูกค้า: ' + $json.body.events[0].message.text + ($json.menuContext || '') }}";
+}
+
+const MENU_CONTEXT_RUNNER = [
+  "const faqOut = (($('Deterministic FAQ').first().json) || {});",
+  'const incoming = $input.first().json || {};',
+  'const plan = faqOut.menuPlan || null;',
+  'let apiResult = null;',
+  'if (incoming && Array.isArray(incoming.menus)) apiResult = { ok: true, menus: incoming.menus };',
+  'else if (incoming && incoming.error) apiResult = { ok: false };',
+  'else if (plan && plan.menuLookupNeeded) apiResult = { ok: false };',
+  'const menuContext = buildMenuContext(plan, apiResult);',
+  'return [{ json: { ...faqOut, menuContext } }];',
+].join('\n');
+
+export function buildMenuContextNodeCode() {
+  return `${MENU_INTENT_PRELUDE}\n${MENU_CONTEXT_RUNNER}`;
+}
+
+export function buildMenuLookupIfNode(position = [2060, 140]) {
+  return {
+    parameters: {
+      conditions: {
+        options: { caseSensitive: true, leftValue: '', typeValidation: 'strict', version: 2 },
+        conditions: [{
+          id: 'eed-menu-lookup-needed',
+          leftValue: `={{ [${MENU_FETCH_MODES.map((mode) => `'${mode}'`).join(',')}].includes((($json.menuPlan || {}).mode || '')) ? 'fetch' : 'skip' }}`,
+          operator: { type: 'string', operation: 'equals' },
+          rightValue: 'fetch',
+        }],
+        combinator: 'and',
+      },
+      options: {},
+    },
+    id: 'menu-lookup-needed',
+    name: 'Menu Lookup Needed?',
+    type: 'n8n-nodes-base.if',
+    typeVersion: 2,
+    position,
+  };
+}
+
+export function buildFetchMenuCatalogNode(position = [2260, 140]) {
+  return {
+    parameters: {
+      method: 'GET',
+      url: `={{ ($env.INTERNAL_API_BASE_URL || 'http://127.0.0.1:8788') + '/api/v1/menus/mealbox?' + ($json.menuQueryString || 'limit=${MENU_CONTEXT_LIMIT}') }}`,
+      authentication: 'genericCredentialType',
+      genericAuthType: 'httpHeaderAuth',
+      sendBody: false,
+      options: { timeout: 10000 },
+    },
+    credentials: { httpHeaderAuth: { id: null, name: INTERNAL_API_CREDENTIAL_NAME } },
+    id: 'fetch-menu-catalog',
+    name: 'Fetch Menu Catalog',
+    type: 'n8n-nodes-base.httpRequest',
+    typeVersion: 4.2,
+    position,
+    onError: 'continueRegularOutput',
+  };
+}
+
+export function buildMenuContextNode(position = [2460, 140]) {
+  return {
+    parameters: { jsCode: buildMenuContextNodeCode() },
+    id: 'build-menu-context',
+    name: 'Build Menu Context',
+    type: 'n8n-nodes-base.code',
+    typeVersion: 2,
+    position,
+    onError: 'continueRegularOutput',
+  };
+}
+
+// Guards for the menu-lookup HTTP node: same credential-by-name,
+// env-based URL, and timeout rules as the persistence chain, plus a fixed
+// internal menu path and no request body (GET) and no literal secrets.
+export function findMenuLookupMisconfigurations(workflow) {
+  const problems = [];
+  for (const name of ['Menu Lookup Needed?', 'Fetch Menu Catalog', 'Build Menu Context']) {
+    if (!(workflow?.nodes || []).some((node) => node.name === name)) problems.push(`${name}: missing`);
+  }
+  const node = (workflow?.nodes || []).find((n) => n.name === 'Fetch Menu Catalog');
+  if (!node) return problems;
+  const params = node.parameters || {};
+  if (node.type !== 'n8n-nodes-base.httpRequest') problems.push('Fetch Menu Catalog: must be an HTTP Request node');
+  if (params.method !== 'GET') problems.push('Fetch Menu Catalog: must use GET');
+  if (typeof params.url !== 'string' || !params.url.includes('$env.INTERNAL_API_BASE_URL')) {
+    problems.push('Fetch Menu Catalog: URL must derive from $env.INTERNAL_API_BASE_URL');
+  }
+  if (typeof params.url !== 'string' || !params.url.includes('/api/v1/menus/mealbox')) {
+    problems.push('Fetch Menu Catalog: URL must target the internal menu catalog path');
+  }
+  if (params.sendBody) problems.push('Fetch Menu Catalog: must not send a body');
+  if (params.authentication !== 'genericCredentialType' || params.genericAuthType !== 'httpHeaderAuth') {
+    problems.push('Fetch Menu Catalog: must use HTTP Header Auth credential');
+  }
+  if (node.credentials?.httpHeaderAuth?.name !== INTERNAL_API_CREDENTIAL_NAME) {
+    problems.push(`Fetch Menu Catalog: must reference the '${INTERNAL_API_CREDENTIAL_NAME}' credential by name`);
+  }
+  if (!params.options?.timeout) problems.push('Fetch Menu Catalog: must set a request timeout');
+  if (JSON.stringify(params).match(/Bearer\s+[A-Za-z0-9\-_~+/=]{20,}/)) {
+    problems.push('Fetch Menu Catalog: must not embed a bearer secret');
+  }
+  if (/DATABASE_URL|postgres:\/\//i.test(JSON.stringify(params))) {
+    problems.push('Fetch Menu Catalog: n8n must never touch the database directly');
+  }
+  return problems;
+}
+
+// Idempotent candidate-only topology patch: inserts the deterministic menu
+// branch (Menu Lookup Needed? -> Fetch Menu Catalog -> Build Menu Context)
+// between "Has Safe Answer?" (AI branch) and "AI Agent", refreshes the
+// generated FAQ/AI strings, and leaves every other node/edge untouched.
+export function ensureCandidateMenuLookup(candidate) {
+  const updated = structuredClone(candidate);
+  const byName = (name) => updated.nodes.find((node) => node.name === name);
+  for (const build of [buildMenuLookupIfNode, buildFetchMenuCatalogNode, buildMenuContextNode]) {
+    const fresh = build();
+    const existing = byName(fresh.name);
+    if (existing) {
+      existing.parameters = fresh.parameters;
+      existing.type = fresh.type;
+      existing.typeVersion = fresh.typeVersion;
+      if (fresh.onError) existing.onError = fresh.onError;
+      if (fresh.credentials) existing.credentials = fresh.credentials;
+    } else {
+      updated.nodes.push(fresh);
+    }
+  }
+  const edge = (name) => ({ node: name, type: 'main', index: 0 });
+  updated.connections['Has Safe Answer?'].main[1] = [edge('Menu Lookup Needed?')];
+  updated.connections['Menu Lookup Needed?'] = { main: [[edge('Fetch Menu Catalog')], [edge('Build Menu Context')]] };
+  updated.connections['Fetch Menu Catalog'] = { main: [[edge('Build Menu Context')]] };
+  updated.connections['Build Menu Context'] = { main: [[edge('AI Agent')]] };
+  byName('Deterministic FAQ').parameters.jsCode = buildConversationRouter();
+  byName('AI Agent').parameters.text = buildAiAgentText();
+  byName('Persist Draft').parameters.jsonBody = buildPersistDraftJsonBody('Normalize Response', { includeReplyToken: false });
+  return updated;
+}
+
+export function updateConversation(workflow, systemMessage, ruleRevision = '') {
   const updated = structuredClone(workflow);
   const byName = (name) => updated.nodes.find((node) => node.name === name);
   const agent = byName('AI Agent');
@@ -244,8 +433,9 @@ export function updateConversation(workflow, systemMessage, menus = [], ruleRevi
   const misconfigurations = findPersistenceMisconfigurations(updated);
   assert.deepEqual(misconfigurations, [], `Persistence nodes misconfigured:\n${misconfigurations.join('\n')}`);
   agent.parameters.options = { ...agent.parameters.options, systemMessage };
-  agent.parameters.text = "={{ 'เวลาปัจจุบันประเทศไทย: ' + $now.setZone('Asia/Bangkok').toISO() + '\\nข้อความลูกค้า: ' + $json.body.events[0].message.text + ($json.budgetContext || '') }}";
-  router.parameters.jsCode = buildConversationRouter(menus);
+  agent.parameters.text = buildAiAgentText();
+  router.parameters.jsCode = buildConversationRouter();
+  persist.parameters.jsonBody = buildPersistDraftJsonBody('Normalize Event');
   normalize.parameters.jsCode = buildNormalizeNodeCode(ruleRevision);
   verify.parameters.jsCode = buildVerifyDraftNodeCode();
   // Do not mix different customers' conversation history in a shared group.

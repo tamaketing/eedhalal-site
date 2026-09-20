@@ -13,7 +13,7 @@ import {
   validateDraft,
 } from '../line-ai/draft-schema.mjs';
 import { findCustomerSenders, findKitchenAutoPush } from '../line-ai/conversation-update.mjs';
-import { getEffectiveMenus, loadSystemData } from '../scripts/check-system.mjs';
+import { loadSystemData } from '../scripts/check-system.mjs';
 
 const execFileAsync = promisify(execFileCb);
 
@@ -84,7 +84,7 @@ test('B: AI path normalizes into an Internal API payload', () => {
   const payload = runNormalize({
     body: { events: [event] },
     hasSafeAnswer: false,
-    budgetContext: '',
+    menuContext: '',
     responseSource: 'conversation-ai',
     output: 'สวัสดีค่ะ 80 กล่องส่งวัฒนาได้ค่ะ',
   }, event);
@@ -122,21 +122,23 @@ test('C: no automatic kitchen push exists in the workflow', () => {
   assert.ok(!JSON.stringify(workflow).match(/C376276c7dc07168bfce17ada607e1200/));
 });
 
-// D. Bot business data derives from business-rules.json.
-test('D: router menus and draft revision match the source of truth', async () => {
-  const { rules, catalog, legacy } = await loadSystemData();
+// D. Bot business data derives from business-rules.json; meal-box prices
+// arrive only via runtime MENU_CONTEXT, never baked into the workflow.
+test('D: router carries no price catalog and draft revision matches the source of truth', async () => {
+  const { rules } = await loadSystemData();
   const routerCode = byId.get('deterministic-faq').parameters.jsCode;
-  const embedded = JSON.parse(routerCode.match(/const menus = (\[.*?\]);/s)[1]);
-  assert.deepEqual(
-    embedded,
-    getEffectiveMenus(legacy.menus, catalog).map(({ name, price, minPerMenu }) => ({ name, price, minPerMenu })),
-  );
+  assert.ok(!routerCode.includes('const menus ='), 'no embedded catalog');
+  assert.ok(!routerCode.includes('budgetContext'), 'no retired candidate list');
+  assert.ok(!/"price"\s*:\s*\d+/.test(routerCode), 'no embedded prices');
+  assert.ok(routerCode.includes('menuPlan'), 'router emits a menu plan');
   assert.ok(byId.get('normalize-event').parameters.jsCode.includes(JSON.stringify(rules.revision)));
   const agentMessage = byId.get('ai-agent').parameters.options.systemMessage;
   const knowledge = await readFile(new URL('../line-ai/knowledge-pack.md', import.meta.url), 'utf8');
   assert.ok(agentMessage.startsWith(knowledge.trim().split('\n')[0]));
   assert.ok(agentMessage.includes(rules.business.halalCertificate));
   assert.ok(agentMessage.includes(`เริ่ม ${rules.services.mealBox.priceFrom} บาท/กล่อง`));
+  assert.ok(agentMessage.includes('MENU_CONTEXT'), 'price authority rule present');
+  assert.ok(!/^.+ \| \d+ บาท\/กล่อง/m.test(agentMessage), 'no baked menu price lines');
 });
 
 // E. No hardcoded LINE token in tracked source.

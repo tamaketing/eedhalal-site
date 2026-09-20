@@ -128,7 +128,7 @@ test('O: presented drafts never expose replyToken', () => {
   const shown = presentDraft({
     id: 'd', draftId: 'LD-1', customerId: 'c', leadId: null, channel: 'line',
     incomingMessage: 'hi', draftResponse: 'hello', status: 'WAITING_FOR_HUMAN',
-    metadata: { replyToken: 'tok', budgetContext: 'x' }, history: [],
+    metadata: { replyToken: 'tok', menuContext: 'x' }, history: [],
   });
   assert.ok(!('replyToken' in shown.metadata));
 });

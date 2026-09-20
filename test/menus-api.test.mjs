@@ -157,15 +157,18 @@ test('public LINE gateway exposes no menu route', () => {
   assert.ok(gateway.includes('/line-webhook'));
 });
 
-test('AI and n8n wiring is untouched by this step', () => {
+test('menu endpoint wiring lives only where the 2B design puts it', () => {
+  // Builders own the fetch URL; the candidate carries the generated node.
+  // Prompts, knowledge, and the legacy main workflow must not reference it.
+  const builder = readFileSync(path.resolve('line-ai', 'conversation-update.mjs'), 'utf8');
+  assert.ok(builder.includes('/api/v1/menus/mealbox'), 'fetch builder targets the catalog path');
   for (const file of [
-    path.resolve('line-ai', 'conversation-update.mjs'),
     path.resolve('line-ai', 'system-prompt.md'),
     path.resolve('line-ai', 'knowledge-pack.md'),
     path.resolve('line-ai', 'system-message-node.txt'),
     path.resolve('line-ai', 'n8n-workflow.json'),
   ]) {
     const source = readFileSync(file, 'utf8');
-    assert.ok(!source.includes('menus/mealbox'), `${path.basename(file)} must not reference the new endpoint yet`);
+    assert.ok(!source.includes('menus/mealbox'), `${path.basename(file)} must not reference the menu endpoint`);
   }
 });

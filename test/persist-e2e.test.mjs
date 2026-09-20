@@ -73,7 +73,7 @@ if (!TEST_URL || !pgAvailable || !targetOk()) {
   function normalize(event, aiText) {
     const webhook = { body: { events: [event] } };
     const [result] = vm.runInNewContext(`(function() { ${normalizeCode} })()`, {
-      $input: { first: () => ({ json: { output: aiText, responseSource: 'conversation-ai', budgetContext: '' } }) },
+      $input: { first: () => ({ json: { output: aiText, responseSource: 'conversation-ai', menuContext: '' } }) },
       $: () => ({ first: () => ({ json: webhook }) }),
     });
     return result.json;
@@ -106,7 +106,7 @@ if (!TEST_URL || !pgAvailable || !targetOk()) {
       aiModel: n.aiModel,
       ruleRevision: n.ruleRevision,
       sourceEventId: n.sourceEventId,
-      metadata: { replyToken: n.replyToken, budgetContext: n.budgetContext },
+      metadata: { replyToken: n.replyToken, menuContext: n.menuContext },
     });
     assert.ok([200, 201].includes(persisted.status));
     const [verified] = vm.runInNewContext(`(function() { ${verifyCode} })()`, {

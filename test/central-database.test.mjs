@@ -137,7 +137,7 @@ test('H: metadata sanitizer drops secrets, headers, and token-like values', () =
   const bearer = `${'Bear'}er ${'x'.repeat(40)}`;
   const cleaned = sanitizeMetadata({
     replyToken: 'tok',
-    budgetContext: 'งบ 70',
+    menuContext: 'MENU_CONTEXT source: planner-overrides',
     headers: { authorization: bearer },
     rawBody: '...',
     lineSecret: 'shhh',
@@ -147,7 +147,7 @@ test('H: metadata sanitizer drops secrets, headers, and token-like values', () =
     note: 'สวัสดีครับ สนใจสั่งข้าวกล่อง '.repeat(200),
   });
   assert.equal(cleaned.replyToken, 'tok');
-  assert.equal(cleaned.budgetContext, 'งบ 70');
+  assert.equal(cleaned.menuContext, 'MENU_CONTEXT source: planner-overrides');
   assert.ok(!('headers' in cleaned));
   assert.ok(!('rawBody' in cleaned));
   assert.ok(!('lineSecret' in cleaned));

@@ -105,9 +105,10 @@ export function renderKnowledge(rules, catalog, menus) {
   }).join('\n');
   const leadTimeLines = rules.leadTimes.map((range) => `- ${formatRange(range)}`).join('\n');
   const guestRange = (minimum, maximum) => maximum === null ? `${minimum}+ คน (จำนวนที่รองรับให้ทีมยืนยันตามงาน)` : `${minimum}–${maximum} คน`;
-  const menuLines = getEffectiveMenus(menus, catalog)
-    .map((menu) => `- ${menu.name} | ${menu.price} บาท/กล่อง | ขั้นต่ำ ${menu.minPerMenu} กล่อง/เมนู | ${menu.category}`)
-    .join('\n');
+
+  // Meal-box prices are NEVER baked into the prompt: the live Internal Menu
+  // API (planner-backed) supplies MENU_CONTEXT per request. This section is
+  // a strict runtime rule, not a catalog.
 
   return `# EED HALAL - Knowledge Pack สำหรับ LINE AI
 > GENERATED FILE: สร้างจาก data/business-rules.json + data/planner-overrides.json (catalog only)
@@ -197,9 +198,12 @@ ${rules.documents.vatCharge
 - ติดต่อ: ${rules.urls.contact}
 - เกี่ยวกับร้าน: ${rules.urls.about}
 
-## 9. รายการเมนูข้าวกล่องและราคาปัจจุบัน
-ใช้เลือกเมนูตามงบและคำนวณยอดเบื้องต้น ราคานี้ยังไม่รวมค่าส่งและไม่ได้ยืนยันคิวครัว ชื่อเมนูไม่ใช่ข้อมูลส่วนผสมหรือสารก่อภูมิแพ้
-${menuLines}
+## 9. ข้อเท็จจริงเมนูข้าวกล่อง (ใช้ MENU_CONTEXT รอบนั้นเท่านั้น)
+ราคาและชื่อเมนูข้าวกล่องรายเมนูไม่ได้อยู่ใน system message นี้ ราคาขายปัจจุบันมาจาก Internal Menu API (planner-backed) ผ่าน MENU_CONTEXT ที่แนบมากับข้อความลูกค้าเท่านั้น
+- เมื่อมี MENU_CONTEXT: ใช้เฉพาะชื่อ ราคา และขั้นต่ำรายเมนูที่ระบุในนั้น ห้ามเปลี่ยนราคา ห้ามเพิ่มเมนูที่ไม่มีในนั้น ห้ามใช้ราคาที่จำได้จากประวัติหรือเว็บ
+- กฎความถูกต้องราคา: ทุกคู่ชื่อเมนู+ราคาที่ระบุในร่างคำตอบ ต้องมีอยู่ตรงกันใน MENU_CONTEXT ปัจจุบัน ถ้าไม่มีคู่ใดในนั้น ห้ามระบุราคาเมนูนั้น
+- เมื่อลูกค้าถามราคาเมนูแต่ไม่มี MENU_CONTEXT ที่ใช้ได้: ห้ามเดา ให้แจ้งว่าขอเช็กราคากับทางทีมก่อน ห้ามใช้ "ราคาเริ่มต้น" แทนราคาเมนูที่ไม่ทราบ
+- นโยบายธุรกิจ (ขั้นต่ำรวม จัดส่ง มัดจำ VAT ระยะเวลา) มาจากกฎธุรกิจข้างต้น ไม่ใช่จาก MENU_CONTEXT ชื่อเมนูไม่ใช่ข้อมูลส่วนผสมหรือสารก่อภูมิแพ้
 `;
 }
 
@@ -376,10 +380,12 @@ export function validateData(rules, catalog, legacy) {
   }
 }
 
-function parseRouterMenus(jsCode) {
-  const match = String(jsCode || '').match(/const menus = (\[.*?\]);/s);
-  assert.ok(match, 'Deterministic FAQ node must embed generated menus');
-  return JSON.parse(match[1]);
+function assertNoBakedMenuCatalog(jsCode, owner) {
+  const code = String(jsCode || '');
+  assert.ok(!code.includes('const menus ='), `${owner} must not embed a menu catalog`);
+  assert.ok(!code.includes('budgetContext'), `${owner} must not carry the retired budget candidate list`);
+  assert.ok(!/"price"\s*:\s*\d+/.test(code), `${owner} must not embed menu prices`);
+  assert.ok(!/\|\s*\d+\s*บาท\/กล่อง/.test(code), `${owner} must not embed menu price lines`);
 }
 
 function parseRevision(jsCode, nodeName) {
@@ -392,8 +398,10 @@ export async function checkWorkflowFoundation(workflow, rules, catalog, legacy) 
   // Dynamic import: conversation-update.mjs imports this module, so a static
   // import here would create a module cycle.
   const {
+    buildAiAgentText,
     buildConversationRouter,
     buildNormalizeNodeCode,
+    buildPersistDraftJsonBody,
     buildVerifyDraftNodeCode,
     findCustomerSenders,
     findKitchenAutoPush,
@@ -404,15 +412,33 @@ export async function checkWorkflowFoundation(workflow, rules, catalog, legacy) 
   const router = byId.get('deterministic-faq');
   const normalize = byId.get('normalize-event');
   const verify = byId.get('verify-draft');
-  assert.ok(router && normalize && verify, 'workflow must contain the persistence chain (Deterministic FAQ, Normalize Event, Verify Draft)');
+  const agent = byId.get('ai-agent');
+  const persist = byId.get('persist-draft');
+  assert.ok(router && normalize && verify && agent && persist, 'workflow must contain the persistence chain (Deterministic FAQ, Normalize Event, Verify Draft, AI Agent, Persist Draft)');
   assert.ok(!byId.get('build-draft'), 'legacy Build Draft node must be removed (PostgreSQL is the Draft store)');
-  const effective = getEffectiveMenus(legacy.menus, catalog)
-    .map(({ name, price, minPerMenu }) => ({ name, price, minPerMenu }));
-  assert.deepEqual(parseRouterMenus(router.parameters.jsCode), effective, 'Deterministic FAQ menus are stale; run with --write');
+  assertNoBakedMenuCatalog(router.parameters.jsCode, 'Deterministic FAQ');
   assert.equal(
     router.parameters.jsCode,
-    buildConversationRouter(getEffectiveMenus(legacy.menus, catalog)),
+    buildConversationRouter(),
     'Deterministic FAQ code is stale; run with --write',
+  );
+  assert.equal(
+    agent.parameters.text,
+    buildAiAgentText(),
+    'AI Agent input is stale; run with --write',
+  );
+  assert.ok(
+    normalize.parameters.jsCode.includes('menuContext'),
+    'Normalize Event must pass MENU_CONTEXT; run with --write',
+  );
+  assert.ok(
+    !normalize.parameters.jsCode.includes('budgetContext'),
+    'Normalize Event must not carry the retired budget candidate list',
+  );
+  assert.equal(
+    persist.parameters.jsonBody,
+    buildPersistDraftJsonBody('Normalize Event'),
+    'Persist Draft body is stale; run with --write',
   );
   assert.equal(parseRevision(normalize.parameters.jsCode, 'Normalize Event'), rules.revision, 'Normalize Event RULE_REVISION is stale; run with --write');
   assert.equal(
@@ -441,6 +467,68 @@ export async function checkWorkflowFoundation(workflow, rules, catalog, legacy) 
   );
 }
 
+export async function checkCandidateMenuLookup(candidate, rules) {
+  const {
+    buildAiAgentText,
+    buildConversationRouter,
+    buildMenuContextNodeCode,
+    buildPersistDraftJsonBody,
+    findMenuLookupMisconfigurations,
+  } = await import('../line-ai/conversation-update.mjs');
+  const byId = new Map(candidate.nodes.map((node) => [node.id, node]));
+  for (const id of ['deterministic-faq', 'menu-lookup-needed', 'fetch-menu-catalog', 'build-menu-context', 'ai-agent']) {
+    assert.ok(byId.get(id), `candidate must contain the menu branch node: ${id}`);
+  }
+  assert.equal(candidate.nodes.length, 25, 'candidate topology is stale; run with --write');
+  assertNoBakedMenuCatalog(byId.get('deterministic-faq').parameters.jsCode, 'candidate Deterministic FAQ');
+  assert.equal(
+    byId.get('deterministic-faq').parameters.jsCode,
+    buildConversationRouter(),
+    'candidate Deterministic FAQ code is stale; run with --write',
+  );
+  assert.equal(
+    byId.get('ai-agent').parameters.text,
+    buildAiAgentText(),
+    'candidate AI Agent input is stale; run with --write',
+  );
+  assert.equal(
+    byId.get('build-menu-context').parameters.jsCode,
+    buildMenuContextNodeCode(),
+    'candidate Build Menu Context code is stale; run with --write',
+  );
+  assertNoBakedMenuCatalog(JSON.stringify(candidate), 'candidate workflow');
+  assert.ok(!JSON.stringify(candidate).includes('budgetContext'), 'candidate must not carry the retired budget candidate list');
+  assert.equal(
+    byId.get('persist-draft').parameters.jsonBody,
+    buildPersistDraftJsonBody('Normalize Response', { includeReplyToken: false }),
+    'candidate Persist Draft body is stale; run with --write',
+  );
+  const chain = candidate.connections;
+  const edge = (node) => chain[node]?.main;
+  assert.equal(edge('Has Safe Answer?')?.[1]?.[0]?.node, 'Menu Lookup Needed?', 'menu branch must start at the AI fallback');
+  assert.equal(edge('Menu Lookup Needed?')?.[0]?.[0]?.node, 'Fetch Menu Catalog', 'fetch branch wiring is stale');
+  assert.equal(edge('Menu Lookup Needed?')?.[1]?.[0]?.node, 'Build Menu Context', 'skip branch wiring is stale');
+  assert.equal(edge('Fetch Menu Catalog')?.[0]?.[0]?.node, 'Build Menu Context', 'fetch must feed context builder');
+  assert.equal(edge('Build Menu Context')?.[0]?.[0]?.node, 'AI Agent', 'context must feed the AI agent');
+  // Persist-first: the whole menu branch runs after inbound persistence.
+  const seen = new Set();
+  const queue = ['Persist Inbound'];
+  while (queue.length) {
+    const name = queue.shift();
+    if (seen.has(name)) continue;
+    seen.add(name);
+    for (const group of chain[name]?.main || []) for (const e of group || []) queue.push(e.node);
+  }
+  for (const name of ['Menu Lookup Needed?', 'Fetch Menu Catalog', 'Build Menu Context', 'AI Agent']) {
+    assert.ok(seen.has(name), `persist-first violated: ${name} unreachable after Persist Inbound`);
+  }
+  assert.deepEqual(
+    findMenuLookupMisconfigurations(candidate),
+    [],
+    `menu lookup nodes misconfigured:\n${findMenuLookupMisconfigurations(candidate).join('\n')}`,
+  );
+}
+
 export async function checkSystem(root = ROOT) {
   const data = await loadSystemData(root);
   validateData(data.rules, data.catalog, data.legacy);
@@ -458,6 +546,7 @@ export async function checkSystem(root = ROOT) {
   assert.equal(candidate.nodes.find((node) => node.id === 'ai-agent')?.parameters.options.systemMessage, expectedNodeMessage,
     'candidate workflow system message is stale; run with --write');
   await checkWorkflowFoundation(workflow, data.rules, data.catalog, data.legacy);
+  await checkCandidateMenuLookup(candidate, data.rules);
   return data;
 }
 
@@ -476,21 +565,30 @@ async function writeGeneratedFiles(root = ROOT) {
   await writeFile(path.join(root, 'line-ai/knowledge-pack.md'), knowledge, 'utf8');
   const prompt = getPromptBody(await readFile(path.join(root, 'line-ai/system-prompt.md'), 'utf8'));
   await writeFile(path.join(root, 'line-ai/system-message-node.txt'), `${knowledge.trim()}\n\n${prompt}\n`, 'utf8');
-  const { buildConversationRouter, buildNormalizeNodeCode, buildVerifyDraftNodeCode } = await import('../line-ai/conversation-update.mjs');
+  const { buildAiAgentText, buildConversationRouter, buildNormalizeNodeCode, buildPersistDraftJsonBody, buildVerifyDraftNodeCode, ensureCandidateMenuLookup } = await import('../line-ai/conversation-update.mjs');
   const workflow = await readJson(root, 'line-ai/n8n-workflow.json');
   workflow.nodes.find((node) => node.id === 'ai-agent').parameters.options.systemMessage = `${knowledge.trim()}\n\n${prompt}\n`;
+  workflow.nodes.find((node) => node.id === 'ai-agent').parameters.text = buildAiAgentText();
   workflow.nodes.find((node) => node.id === 'deterministic-faq').parameters.jsCode =
-    buildConversationRouter(getEffectiveMenus(legacy.menus, catalog));
+    buildConversationRouter();
+  workflow.nodes.find((node) => node.id === 'persist-draft').parameters.jsonBody =
+    buildPersistDraftJsonBody('Normalize Event');
+  workflow.nodes.find((node) => node.id === 'deterministic-faq').parameters.jsCode =
+    buildConversationRouter();
   workflow.nodes.find((node) => node.id === 'normalize-event').parameters.jsCode =
     buildNormalizeNodeCode(rules.revision);
   workflow.nodes.find((node) => node.id === 'verify-draft').parameters.jsCode = buildVerifyDraftNodeCode();
   await writeFile(path.join(root, 'line-ai/n8n-workflow.json'), `${JSON.stringify(workflow, null, 2)}\n`, 'utf8');
   // The B2.5 persist-first candidate carries the same generated system prompt
-  // (topology, FAQ copy, and B2.5-specific nodes stay untouched here).
-  const candidate = await readJson(root, 'line-ai/n8n-workflow-b25-persist-first.json');
+  // plus the generator-owned deterministic menu branch, AI input, and
+  // Persist Draft body (parameterized by normalize node name). B2.5-specific
+  // node logic (Normalize Inbound/Response, lead/inbound handling) stays
+  // hand-maintained and is guarded by tests, never rewritten here.
+  let candidate = await readJson(root, 'line-ai/n8n-workflow-b25-persist-first.json');
   candidate.nodes.find((node) => node.id === 'ai-agent').parameters.options.systemMessage = `${knowledge.trim()}\n\n${prompt}\n`;
   candidate.nodes.find((node) => node.id === 'deterministic-faq').parameters.jsCode =
-    buildConversationRouter(getEffectiveMenus(legacy.menus, catalog));
+    buildConversationRouter();
+  candidate = ensureCandidateMenuLookup(candidate);
   await writeFile(path.join(root, 'line-ai/n8n-workflow-b25-persist-first.json'), `${JSON.stringify(candidate, null, 2)}\n`, 'utf8');
 }
 

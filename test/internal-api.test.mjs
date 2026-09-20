@@ -171,10 +171,10 @@ test('O: concurrent double approve does not silently overwrite', async () => {
 });
 
 test('P: responses expose no secret or replyToken', async () => {
-  const draft = await seedDraft({ metadata: { replyToken: 'tok123', budgetContext: 'x' } });
+  const draft = await seedDraft({ metadata: { replyToken: 'tok123', menuContext: 'x' } });
   const fetched = await call(`/api/v1/drafts/${draft.id}`);
   assert.ok(!('replyToken' in fetched.json.draft.metadata));
-  assert.equal(fetched.json.draft.metadata.budgetContext, 'x');
+  assert.equal(fetched.json.draft.metadata.menuContext, 'x');
   const listed = await call('/api/v1/drafts?status=WAITING_FOR_HUMAN&limit=100');
   const dump = JSON.stringify(listed.json);
   assert.ok(!dump.includes('tok123'));
