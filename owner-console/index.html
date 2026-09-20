@@ -13,7 +13,9 @@
   <h1>EED HALAL — Owner Console</h1>
   <p class="subtitle">Local only · Human approval gate · No automatic sending</p>
   <div class="topbar">
-    <button id="nav-queue" type="button" hidden>Queue</button>
+    <button id="nav-queue" type="button" hidden>Waiting</button>
+    <button id="nav-sent" type="button" hidden>Sent</button>
+    <button id="nav-examples" type="button" hidden>Learning Examples</button>
     <button id="nav-refresh" type="button" hidden>Refresh</button>
     <button id="nav-lock" type="button" hidden>Lock</button>
   </div>
@@ -30,10 +32,17 @@
     <p id="unlock-error" class="error" role="alert"></p>
   </section>
 
-  <section id="view-queue" aria-label="Waiting queue" hidden>
-    <h2>Waiting for human <span id="queue-count"></span></h2>
+  <section id="view-queue" aria-label="Draft queue" hidden>
+    <h2 id="queue-title">Waiting for human <span id="queue-count"></span></h2>
     <p id="queue-status" role="status"></p>
     <div id="queue-list"></div>
+  </section>
+
+  <section id="view-examples" aria-label="Learning examples" hidden>
+    <h2>Learning Examples</h2>
+    <p>ตัวอย่างการตอบที่ AI ใช้เป็นแนวทาง — AI ยึดข้อมูลราคาและกฎธุรกิจปัจจุบันของ EED HALAL เสมอ ไม่ได้เรียนรู้ราคาใหม่จากตัวอย่าง</p>
+    <p id="examples-status" role="status"></p>
+    <div id="examples-list"></div>
   </section>
 
   <section id="view-review" aria-label="Review draft" hidden>
@@ -60,6 +69,14 @@
     <div id="review-lead-wrap" hidden>
       <h3>Linked lead</h3>
       <dl id="review-lead"></dl>
+    </div>
+
+    <div id="review-learn" hidden>
+      <h3>Learning example</h3>
+      <p>AI จะใช้เป็นตัวอย่างรูปแบบการตอบ แต่ข้อมูลราคาและกฎธุรกิจยังอ้างอิงจากข้อมูลปัจจุบันของ EED HALAL</p>
+      <button id="btn-learn" type="button">ใช้คำตอบนี้เป็นตัวอย่างในอนาคต</button>
+      <p id="learn-status" role="status"></p>
+      <div id="learn-detail"></div>
     </div>
 
     <div class="actions">

@@ -75,3 +75,13 @@ test('list/get/patch manage examples without touching source texts', async () =>
   assert.equal((await call(`/api/v1/response-examples/${id}`, { method: 'PATCH', body: { intent: 'bogus' } })).status, 400);
   assert.equal((await call(`/api/v1/response-examples/${randomUUID()}`, { method: 'PATCH', body: { reusable: true } })).status, 404);
 });
+
+test('example responses carry a staleness flag against current rules', async () => {
+  const sent = await seedSent('ค่าส่งคิดอย่างไร', 'ค่าส่งตามระยะทางค่ะ');
+  const created = await call(`/api/v1/response-examples/from-draft/${sent.id}`, { method: 'POST', body: {} });
+  assert.equal(typeof created.json.example.staleRules, 'boolean');
+  const listed = await call('/api/v1/response-examples');
+  for (const example of listed.json.examples) {
+    assert.equal(typeof example.staleRules, 'boolean');
+  }
+});

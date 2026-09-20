@@ -60,11 +60,11 @@ async function api(path, method, body) {
 }
 
 function showView(name) {
-  for (const view of ['unlock', 'queue', 'review']) {
+  for (const view of ['unlock', 'queue', 'review', 'examples']) {
     $(`view-${view}`).hidden = view !== name;
   }
   const loggedIn = name !== 'unlock';
-  for (const id of ['nav-queue', 'nav-refresh', 'nav-lock']) {
+  for (const id of ['nav-queue', 'nav-sent', 'nav-examples', 'nav-refresh', 'nav-lock']) {
     $(id).hidden = !loggedIn;
   }
 }
@@ -94,26 +94,32 @@ function addRow(list, term, value) {
   list.insertBefore(dt, dd);
 }
 
-async function loadQueue() {
-  const status = $('queue-status');
+let currentTab = 'WAITING_FOR_HUMAN';
+
+async function loadQueue(status) {
+  const want = status || currentTab;
+  currentTab = want;
+  const isSent = want === 'SENT';
+  $('queue-title').childNodes[0].textContent = isSent ? 'Sent ' : 'Waiting for human ';
+  const statusEl = $('queue-status');
   const list = $('queue-list');
-  status.textContent = 'Loading…';
+  statusEl.textContent = 'Loading…';
   list.textContent = '';
   let data;
   try {
-    data = await api('/api/v1/drafts?status=WAITING_FOR_HUMAN&limit=100&order=desc');
+    data = await api(`/api/v1/drafts?status=${want}&limit=100&order=desc`);
   } catch (error) {
     if (error.locked) return;
-    status.textContent = 'Could not load the queue. Check the server and retry.';
+    statusEl.textContent = 'Could not load the queue. Check the server and retry.';
     return;
   }
   const drafts = data.drafts || [];
   $('queue-count').textContent = `(${data.total || drafts.length})`;
   if (!drafts.length) {
-    status.textContent = 'No drafts waiting';
+    statusEl.textContent = isSent ? 'No sent drafts' : 'No drafts waiting';
     return;
   }
-  status.textContent = '';
+  statusEl.textContent = '';
   for (const draft of drafts) {
     const card = document.createElement('div');
     card.className = 'card';
@@ -198,6 +204,78 @@ function renderReview(draft, customer, lead) {
   }
   $('send-confirm').hidden = true;
   setMutationButtons(draft);
+  renderLearnSection(draft);
+}
+
+function renderLearnSection(draft) {
+  const wrap = $('review-learn');
+  const btn = $('btn-learn');
+  const statusEl = $('learn-status');
+  const detail = $('learn-detail');
+  detail.textContent = '';
+  if (draft.status === 'SENT') {
+    wrap.hidden = false;
+    btn.disabled = pending;
+    btn.textContent = 'ใช้คำตอบนี้เป็นตัวอย่างในอนาคต';
+    if (!statusEl.dataset.touched) statusEl.textContent = '';
+  } else {
+    wrap.hidden = true;
+    btn.disabled = true;
+  }
+}
+
+function learnDetailRow(term, value) {
+  const dl = $('learn-detail');
+  let list = dl.querySelector('dl');
+  if (!list) {
+    list = document.createElement('dl');
+    dl.appendChild(list);
+  }
+  addRow(list, term, value);
+}
+
+async function learnExample() {
+  if (!currentDraft || pending) return;
+  const draft = currentDraft.draft;
+  if (draft.status !== 'SENT') return;
+  if (!window.confirm('ใช้คำตอบนี้เป็นตัวอย่างสำหรับการตอบครั้งต่อไปหรือไม่?\n\nระบบจะนำรูปแบบการตอบไปใช้เป็นตัวอย่าง แต่จะไม่ใช้คำตอบนี้แทนข้อมูลราคา/กฎธุรกิจปัจจุบัน')) return;
+  pending = true;
+  $('btn-learn').disabled = true;
+  const statusEl = $('learn-status');
+  statusEl.dataset.touched = '1';
+  statusEl.textContent = 'Saving…';
+  $('learn-detail').textContent = '';
+  try {
+    const data = await api(`/api/v1/response-examples/from-draft/${encodeURIComponent(draft.id)}`, 'POST', {});
+    const example = data.example || {};
+    if (data.deduped) {
+      statusEl.textContent = 'คำตอบนี้เป็นตัวอย่างอยู่แล้ว';
+    } else {
+      statusEl.textContent = 'บันทึกเป็นตัวอย่างแล้ว';
+    }
+    learnDetailRow('Intent', example.intent);
+    learnDetailRow('Service', example.serviceType);
+    learnDetailRow('Reusable', String(example.reusable));
+    learnDetailRow('Rules revision', example.businessRulesRevision);
+    if (example.staleRules) {
+      learnDetailRow('Warning', 'ตัวอย่างนี้สร้างจากกฎธุรกิจเวอร์ชันเก่า');
+    }
+  } catch (error) {
+    if (error.locked) return;
+    if (error.message && /example_requires_review/i.test(error.message)) {
+      statusEl.textContent = 'คำตอบนี้มีข้อมูลเฉพาะลูกค้า/ราคา/เงื่อนไขที่ไม่ควรนำไปใช้เป็นตัวอย่างอัตโนมัติ';
+      $('btn-learn').disabled = false;
+    } else if (error.status === 409) {
+      statusEl.textContent = 'This draft changed. Reload before continuing.';
+      stale = true;
+      setButtonsDisabled(true);
+    } else {
+      statusEl.textContent = `Could not save example: ${error.message}`;
+      $('btn-learn').disabled = false;
+    }
+  } finally {
+    pending = false;
+  }
 }
 
 async function openDraft(id) {
@@ -325,13 +403,84 @@ async function unlock(event) {
     return;
   }
   showView('queue');
-  await loadQueue();
+  await loadQueue('WAITING_FOR_HUMAN');
+}
+
+async function loadExamples() {
+  const statusEl = $('examples-status');
+  const list = $('examples-list');
+  statusEl.textContent = 'Loading…';
+  list.textContent = '';
+  let data;
+  try {
+    data = await api('/api/v1/response-examples?limit=100');
+  } catch (error) {
+    if (error.locked) return;
+    statusEl.textContent = 'Could not load examples. Check the server and retry.';
+    return;
+  }
+  const examples = data.examples || [];
+  if (!examples.length) {
+    statusEl.textContent = 'No learning examples yet. Open a SENT draft to save one.';
+    return;
+  }
+  statusEl.textContent = '';
+  for (const example of examples) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const title = document.createElement('strong');
+    title.textContent = `${example.intent || 'general'}${example.serviceType ? ` · ${example.serviceType}` : ''}`;
+    card.appendChild(title);
+    const state = document.createElement('div');
+    state.textContent = example.reusable ? 'Reusable' : 'Disabled';
+    card.appendChild(state);
+    const incoming = document.createElement('div');
+    incoming.className = 'prewrap';
+    incoming.textContent = example.incomingExample || '';
+    card.appendChild(incoming);
+    const approved = document.createElement('div');
+    approved.className = 'prewrap';
+    approved.textContent = example.approvedResponse || '';
+    card.appendChild(approved);
+    const meta = document.createElement('div');
+    let metaText = `Rules: ${example.businessRulesRevision || 'unknown'} · ${fmtTime(example.createdAt)}`;
+    if (example.staleRules) metaText += ' · ตัวอย่างนี้สร้างจากกฎธุรกิจเวอร์ชันเก่า';
+    meta.textContent = metaText;
+    card.appendChild(meta);
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.textContent = example.reusable ? 'Disable example' : 'Enable example';
+    toggle.addEventListener('click', () => toggleExample(example, toggle));
+    card.appendChild(toggle);
+    list.appendChild(card);
+  }
+}
+
+async function toggleExample(example, button) {
+  if (pending) return;
+  const toReusable = !example.reusable;
+  if (!window.confirm(toReusable ? 'Enable this example for future responses?' : 'Disable this example? It will no longer be used.')) return;
+  pending = true;
+  button.disabled = true;
+  try {
+    await api(`/api/v1/response-examples/${encodeURIComponent(example.id)}`, 'PATCH', { reusable: toReusable });
+    await loadExamples();
+  } catch (error) {
+    if (error.locked) return;
+    $('examples-status').textContent = `Update failed: ${error.message}`;
+    button.disabled = false;
+  } finally {
+    pending = false;
+  }
 }
 
 document.getElementById('unlock-form').addEventListener('submit', unlock);
-document.getElementById('nav-queue').addEventListener('click', () => { showView('queue'); });
+document.getElementById('nav-queue').addEventListener('click', () => { showView('queue'); loadQueue('WAITING_FOR_HUMAN'); });
+document.getElementById('nav-sent').addEventListener('click', () => { showView('queue'); loadQueue('SENT'); });
+document.getElementById('nav-examples').addEventListener('click', () => { showView('examples'); loadExamples(); });
 document.getElementById('nav-refresh').addEventListener('click', () => {
-  if ($('view-review').hidden) loadQueue();
+  if (!$('view-examples').hidden) loadExamples();
+  else if ($('view-review').hidden) loadQueue();
   else if (currentDraft) openDraft(currentDraft.draft.id);
 });
 document.getElementById('nav-lock').addEventListener('click', () => lock(''));
@@ -341,4 +490,5 @@ document.getElementById('btn-reject').addEventListener('click', rejectDraft);
 document.getElementById('btn-send').addEventListener('click', openSendConfirm);
 document.getElementById('btn-send-confirm').addEventListener('click', confirmSend);
 document.getElementById('btn-send-cancel').addEventListener('click', () => { $('send-confirm').hidden = true; });
+document.getElementById('btn-learn').addEventListener('click', learnExample);
 showView('unlock');

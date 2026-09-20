@@ -60,6 +60,27 @@ const OWNER_ASSETS = {
 };
 const OWNER_CSP = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
+// Current business-rules revision for example staleness flags. Read once at
+// startup from the repo source of truth; null when unavailable (staleRules
+// then reports null = unknown). Presentation metadata only — retrieval and
+// business logic never consult it.
+let currentBusinessRulesRevision = null;
+try {
+  const rulesRaw = await readFile(new URL('../data/business-rules.json', import.meta.url), 'utf8');
+  const parsed = JSON.parse(rulesRaw);
+  if (typeof parsed.revision === 'string' && parsed.revision) currentBusinessRulesRevision = parsed.revision;
+} catch {
+  currentBusinessRulesRevision = null;
+}
+
+function withStaleness(example) {
+  if (!example) return example;
+  return {
+    ...example,
+    staleRules: currentBusinessRulesRevision == null ? null : example.businessRulesRevision !== currentBusinessRulesRevision,
+  };
+}
+
 function send(response, status, body) {
   const payload = JSON.stringify(body);
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
@@ -213,7 +234,7 @@ export function createInternalApi({ repos, env = process.env } = {}) {
           ownerId: body.ownerId ? String(body.ownerId) : '',
           styleTags: body.styleTags,
         });
-        send(response, result.deduped ? 200 : 201, { example: presentResponseExample(result.example), deduped: !!result.deduped });
+        send(response, result.deduped ? 200 : 201, { example: withStaleness(presentResponseExample(result.example)), deduped: !!result.deduped });
         return;
       }
       const exampleMatch = pathname.match(/^\/api\/v1\/response-examples(?:\/([^/]+))?$/);
@@ -231,11 +252,11 @@ export function createInternalApi({ repos, env = process.env } = {}) {
           else if (query.reusable === 'false') query.reusable = false;
           else throw new ValidationError('invalid reusable');
           const rows = await listResponseExamples(store, query);
-          send(response, 200, { examples: rows.map(presentResponseExample), total: rows.length, limit: Math.min(Math.max(Number(query.limit) || 20, 1), 100) });
+          send(response, 200, { examples: rows.map((row) => withStaleness(presentResponseExample(row))), total: rows.length, limit: Math.min(Math.max(Number(query.limit) || 20, 1), 100) });
           return;
         }
         if (request.method === 'GET' && id) {
-          send(response, 200, { example: presentResponseExample(await getResponseExample(store, id)) });
+          send(response, 200, { example: withStaleness(presentResponseExample(await getResponseExample(store, id))) });
           return;
         }
         if (request.method === 'PATCH' && id) {
@@ -245,7 +266,7 @@ export function createInternalApi({ repos, env = process.env } = {}) {
           for (const key of ['reusable', 'styleTags', 'intent', 'serviceType']) {
             if (body[key] !== undefined) options[key] = body[key];
           }
-          send(response, 200, { example: presentResponseExample(await setResponseExampleReusable(store, id, options)) });
+          send(response, 200, { example: withStaleness(presentResponseExample(await setResponseExampleReusable(store, id, options))) });
           return;
         }
       }

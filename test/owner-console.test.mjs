@@ -73,7 +73,8 @@ test('secret lives in page memory only', () => {
 });
 
 test('queue uses WAITING + desc and attaches Authorization', () => {
-  assert.ok(appJs.includes('/api/v1/drafts?status=WAITING_FOR_HUMAN&limit=100&order=desc'));
+  assert.ok(appJs.includes('/api/v1/drafts?status=${want}&limit=100&order=desc'));
+  assert.ok(appJs.includes("loadQueue('WAITING_FOR_HUMAN')") && appJs.includes("loadQueue('SENT')"));
   assert.ok(appJs.includes('Authorization'));
   // lineUserId appears only as read-only display fallback, never in a request.
   const sendFn = appJs.slice(appJs.indexOf('async function confirmSend'));
@@ -129,4 +130,56 @@ test('gateway only exposes health and LINE webhook (tunnel isolation)', async ()
   assert.ok(!/proxy|pipe\(|forward\(.*url/i.test(gateway), 'no generic proxy');
   const local = await get('/owner/', null);
   assert.equal(local.status, 200);
+});
+
+test('SENT tab queries SENT desc; WAITING tab stays default', () => {
+  assert.ok(appJs.includes("loadQueue('SENT')"));
+  assert.ok(appJs.includes('No sent drafts'));
+});
+
+test('SENT review is read-only with a separate learning CTA', () => {
+  assert.ok(appJs.includes('review-learn'), 'learning section exists');
+  assert.ok(appJs.includes('btn-learn'), 'CTA button exists');
+  assert.ok(appJs.includes("draft.status === 'SENT'"), 'CTA gated on SENT');
+});
+
+test('opt-in requires confirmation and posts identity only', () => {
+  assert.ok(appJs.includes('เป็นตัวอย่างสำหรับการตอบครั้งต่อไปหรือไม่'), 'deliberate Thai confirmation');
+  const start = appJs.indexOf('async function learnExample');
+  const learnFn = appJs.slice(start, appJs.indexOf('\n}\n', start));
+  assert.ok(learnFn.includes('/api/v1/response-examples/from-draft/'), 'opt-in endpoint');
+  const callStart = learnFn.indexOf('await api(');
+  const postCall = learnFn.slice(callStart, learnFn.indexOf(');', callStart));
+  assert.ok(!/lineUserId|retryKey|X-Line-Retry-Key|incomingMessage|approvedResponse|intent|serviceType/i.test(postCall), 'no content overrides in request');
+});
+
+test('opt-in handles success, dedupe, review-refusal, and 409 safely', () => {
+  assert.ok(appJs.includes('บันทึกเป็นตัวอย่างแล้ว'), 'success message');
+  assert.ok(appJs.includes('เป็นตัวอย่างอยู่แล้ว'), 'deduped message');
+  assert.ok(appJs.includes('example_requires_review'), 'review-refusal branch');
+  assert.ok(appJs.includes('ไม่ควรนำไปใช้เป็น'), 'safe Thai refusal message');
+});
+
+test('learning examples view renders safely with enable/disable', () => {
+  assert.ok(appJs.includes('/api/v1/response-examples?limit=100'), 'examples list request');
+  assert.ok(appJs.includes('No learning examples yet'), 'empty state');
+  assert.ok(appJs.includes('Disable example') && appJs.includes('Enable example'), 'toggle actions');
+  assert.ok(appJs.includes('/response-examples/${encodeURIComponent(example.id)}'), 'id-scoped PATCH path');
+  assert.ok(!/DELETE|deleteExample|removeExample/i.test(appJs), 'no physical delete');
+});
+
+test('stale examples show a rules warning without auto-disable', () => {
+  assert.ok(appJs.includes('staleRules'), 'stale flag consumed');
+  assert.ok(appJs.includes('เวอร์ชันเก่า'), 'Thai stale warning');
+});
+
+test('SEND never auto-creates an example', () => {
+  const start = appJs.indexOf('async function confirmSend');
+  const sendFn = appJs.slice(start, appJs.indexOf('\n}\n', start));
+  assert.ok(!/from-draft|response-examples|learnExample|btn-learn/.test(sendFn), 'send path has no learning calls');
+});
+
+test('examples explain patterns-not-facts boundary', () => {
+  assert.ok(html.includes('AI จะใช้เป็นตัวอย่างรูปแบบการตอบ'), 'facts boundary note');
+  assert.ok(html.includes('กฎธุรกิจปัจจุบัน'), 'current-rules reference');
 });
