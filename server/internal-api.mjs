@@ -25,6 +25,9 @@
 //   GET  /api/v1/response-examples?reusable=&intent=&serviceType=&limit=
 //   GET  /api/v1/response-examples/:id
 //   PATCH /api/v1/response-examples/:id { reusable?, styleTags?, intent?, serviceType?, ownerId? }
+//   GET  /api/v1/menus/mealbox?price=&maxPrice=&category=&q=&limit=
+//          (deterministic meal-box catalog from data/planner-overrides.json;
+//          price authority. Authenticated only, never on the public gateway.)
 //
 // NOT IMPLEMENTED here: LINE sender, regenerate-with-AI, kitchen push,
 // quotation/order/job/payment/accounting.
@@ -44,6 +47,7 @@ import { ConflictError, NotFoundError, UnauthorizedError, ValidationError } from
 import { maybeCreateLead } from '../services/leads.mjs';
 import { resolveCustomer } from '../services/customers.mjs';
 import { approveDraft, editDraft, persistDraftOnce, rejectDraft, sendDraft } from '../services/drafts.mjs';
+import { clampLimit, findMealboxMenus, MEALBOX_SERVICE_TYPE, MEALBOX_SOURCE } from '../services/menus.mjs';
 
 const MAX_BODY_BYTES = 256 * 1024;
 const DEFAULT_LIMIT = 20;
@@ -269,6 +273,48 @@ export function createInternalApi({ repos, env = process.env } = {}) {
           send(response, 200, { example: withStaleness(presentResponseExample(await setResponseExampleReusable(store, id, options))) });
           return;
         }
+      }
+
+      // GET /api/v1/menus/mealbox — deterministic meal-box catalog.
+      // Runtime price authority is data/planner-overrides.json (never
+      // menu-data.js, prompt, or website prices; the service fails closed).
+      // Authenticated Internal API only; the public LINE gateway does not
+      // expose this path. EED_PLANNER_PATH may point at a fixture file in
+      // tests; production uses the repo planner file.
+      if (request.method === 'GET' && pathname === '/api/v1/menus/mealbox') {
+        const parsePriceFilter = (raw, field) => {
+          if (raw === null || raw.trim() === '') return null;
+          if (!/^\d+(\.\d+)?$/.test(raw.trim())) throw new ValidationError(`invalid ${field}`);
+          const value = Number(raw.trim());
+          if (!Number.isFinite(value) || value <= 0) throw new ValidationError(`invalid ${field}`);
+          return value;
+        };
+        const price = parsePriceFilter(url.searchParams.get('price'), 'price');
+        const maxPrice = parsePriceFilter(url.searchParams.get('maxPrice'), 'maxPrice');
+        const rawCategory = url.searchParams.get('category');
+        const category = rawCategory === null || rawCategory.trim() === '' ? null : rawCategory.trim();
+        const rawQuery = url.searchParams.get('q');
+        const normalizedQuery = rawQuery === null ? '' : rawQuery.replace(/\s+/g, ' ').trim();
+        const q = normalizedQuery === '' ? null : normalizedQuery;
+        const limit = clampLimit(url.searchParams.get('limit'));
+        const plannerPath = typeof env.EED_PLANNER_PATH === 'string' && env.EED_PLANNER_PATH.trim()
+          ? env.EED_PLANNER_PATH.trim()
+          : undefined;
+        const menus = await findMealboxMenus({
+          exactPrice: price,
+          maxPrice,
+          category,
+          query: q,
+          limit,
+          plannerPath,
+        });
+        send(response, 200, {
+          serviceType: MEALBOX_SERVICE_TYPE,
+          source: MEALBOX_SOURCE,
+          filters: { price, maxPrice, category, q, limit },
+          menus,
+        });
+        return;
       }
 
       // POST /api/v1/customers/resolve
