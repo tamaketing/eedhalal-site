@@ -471,15 +471,16 @@ export async function checkCandidateMenuLookup(candidate, rules) {
   const {
     buildAiAgentText,
     buildConversationRouter,
+    buildDeterministicMenuDraftNodeCode,
     buildMenuContextNodeCode,
     buildPersistDraftJsonBody,
     findMenuLookupMisconfigurations,
   } = await import('../line-ai/conversation-update.mjs');
   const byId = new Map(candidate.nodes.map((node) => [node.id, node]));
-  for (const id of ['deterministic-faq', 'menu-lookup-needed', 'fetch-menu-catalog', 'build-menu-context', 'ai-agent']) {
+  for (const id of ['deterministic-faq', 'menu-lookup-needed', 'fetch-menu-catalog', 'build-menu-context', 'deterministic-draft-eligible', 'build-deterministic-menu-draft', 'ai-agent']) {
     assert.ok(byId.get(id), `candidate must contain the menu branch node: ${id}`);
   }
-  assert.equal(candidate.nodes.length, 25, 'candidate topology is stale; run with --write');
+  assert.equal(candidate.nodes.length, 27, 'candidate topology is stale; run with --write');
   assertNoBakedMenuCatalog(byId.get('deterministic-faq').parameters.jsCode, 'candidate Deterministic FAQ');
   assert.equal(
     byId.get('deterministic-faq').parameters.jsCode,
@@ -496,8 +497,18 @@ export async function checkCandidateMenuLookup(candidate, rules) {
     buildMenuContextNodeCode(),
     'candidate Build Menu Context code is stale; run with --write',
   );
+  assert.equal(
+    byId.get('build-deterministic-menu-draft').parameters.jsCode,
+    buildDeterministicMenuDraftNodeCode(),
+    'candidate deterministic draft code is stale; run with --write',
+  );
+  assertNoBakedMenuCatalog(byId.get('build-deterministic-menu-draft').parameters.jsCode, 'deterministic draft');
   assertNoBakedMenuCatalog(JSON.stringify(candidate), 'candidate workflow');
   assert.ok(!JSON.stringify(candidate).includes('budgetContext'), 'candidate must not carry the retired budget candidate list');
+  assert.ok(
+    byId.get('normalize-response').parameters.jsCode.includes("incoming.draftSource === 'deterministic-menu' ? null"),
+    'candidate Normalize Response must null the model for deterministic drafts',
+  );
   assert.equal(
     byId.get('persist-draft').parameters.jsonBody,
     buildPersistDraftJsonBody('Normalize Response', { includeReplyToken: false }),
@@ -509,7 +520,10 @@ export async function checkCandidateMenuLookup(candidate, rules) {
   assert.equal(edge('Menu Lookup Needed?')?.[0]?.[0]?.node, 'Fetch Menu Catalog', 'fetch branch wiring is stale');
   assert.equal(edge('Menu Lookup Needed?')?.[1]?.[0]?.node, 'Build Menu Context', 'skip branch wiring is stale');
   assert.equal(edge('Fetch Menu Catalog')?.[0]?.[0]?.node, 'Build Menu Context', 'fetch must feed context builder');
-  assert.equal(edge('Build Menu Context')?.[0]?.[0]?.node, 'AI Agent', 'context must feed the AI agent');
+  assert.equal(edge('Build Menu Context')?.[0]?.[0]?.node, 'Deterministic Draft Eligible?', 'context must feed the eligibility gate');
+  assert.equal(edge('Deterministic Draft Eligible?')?.[0]?.[0]?.node, 'Build Deterministic Menu Draft', 'eligible branch wiring is stale');
+  assert.equal(edge('Deterministic Draft Eligible?')?.[1]?.[0]?.node, 'AI Agent', 'general branch wiring is stale');
+  assert.equal(edge('Build Deterministic Menu Draft')?.[0]?.[0]?.node, 'Normalize Response', 'deterministic draft must feed persistence');
   // Persist-first: the whole menu branch runs after inbound persistence.
   const seen = new Set();
   const queue = ['Persist Inbound'];
@@ -519,7 +533,7 @@ export async function checkCandidateMenuLookup(candidate, rules) {
     seen.add(name);
     for (const group of chain[name]?.main || []) for (const e of group || []) queue.push(e.node);
   }
-  for (const name of ['Menu Lookup Needed?', 'Fetch Menu Catalog', 'Build Menu Context', 'AI Agent']) {
+  for (const name of ['Menu Lookup Needed?', 'Fetch Menu Catalog', 'Build Menu Context', 'Deterministic Draft Eligible?', 'Build Deterministic Menu Draft', 'AI Agent']) {
     assert.ok(seen.has(name), `persist-first violated: ${name} unreachable after Persist Inbound`);
   }
   assert.deepEqual(

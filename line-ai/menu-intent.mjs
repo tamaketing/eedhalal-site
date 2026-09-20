@@ -19,6 +19,15 @@ const MENU_FETCH_MODES = ['exact-price', 'max-price', 'name-lookup', 'category-p
 
 const MENU_CONTEXT_LIMIT = 100;
 
+// Deterministic draft fallback: modes answered without Gemini. Fetchable
+// modes need a live API result; clarify is answered from a static safe
+// template. Display is capped so a 33-item budget result stays readable.
+const DETERMINISTIC_DRAFT_MODES = [...MENU_FETCH_MODES, 'clarify'];
+
+const MENU_DRAFT_DISPLAY_LIMIT = 8;
+
+const DETERMINISTIC_DRAFT_SOURCE = 'deterministic-menu';
+
 // Generic Thai food words used ONLY to decide whether a leftover text
 // fragment looks like a menu-name query. This list classifies nothing:
 // it never labels protein, category, or dish identity.
@@ -173,6 +182,62 @@ function formatMenuLine(menu) {
   return `- ${menu.id} | ${menu.name} | ${menu.price} บาท/กล่อง | ขั้นต่ำ ${min} กล่อง/เมนู | ${category}`;
 }
 
+function formatDraftBullet(menu) {
+  return `• ${menu.name} — ${menu.price} บาท/กล่อง`;
+}
+
+function formatMinPerMenuLine(menu) {
+  const min = Number(menu.minPerMenu);
+  if (!Number.isInteger(min) || min < 1) return null;
+  return `เมนูนี้ขั้นต่ำ ${min} กล่องต่อเมนูค่ะ`;
+}
+
+// Deterministic customer-safe draft for eligible menu modes. Inputs are
+// ONLY the parser plan and the live API payload: every stated name+price
+// pair comes from apiResult.menus, so a remembered price can never leak.
+// apiResult: { ok: true, menus: [...] } | { ok: false } | null.
+// Business policy (overall minimum, delivery, deposit, VAT) is NEVER
+// stated here; only per-menu facts from the API plus safe fallbacks.
+function buildDeterministicMenuDraft(plan, apiResult) {
+  const mode = plan && typeof plan.mode === 'string' ? plan.mode : 'none';
+  if (mode === 'clarify') return 'ขอชื่อเมนูที่ต้องการเช็กราคาหน่อยค่ะ';
+  if (!DETERMINISTIC_DRAFT_MODES.includes(mode)) return '';
+  if (!apiResult || apiResult.ok !== true || !Array.isArray(apiResult.menus)) {
+    return 'ขออนุญาตตรวจสอบรายการเมนูและราคากับทางทีมก่อนนะคะ';
+  }
+  for (const entry of apiResult.menus) {
+    if (!isValidMenuEntry(entry)) {
+      return 'ขออนุญาตตรวจสอบรายการเมนูและราคากับทางทีมก่อนนะคะ';
+    }
+  }
+  if (apiResult.menus.length === 0) {
+    if (mode === 'name-lookup') return 'ขออนุญาตเช็กราคาเมนูนี้กับทางทีมก่อนนะคะ';
+    return 'ตอนนี้ยังไม่พบเมนูในช่วงราคานี้จากรายการปัจจุบันค่ะ';
+  }
+  if (mode === 'name-lookup' && apiResult.menus.length === 1) {
+    const menu = apiResult.menus[0];
+    const lines = [`${menu.name} ราคา ${menu.price} บาท/กล่องค่ะ`];
+    const minLine = formatMinPerMenuLine(menu);
+    if (minLine) lines.push(minLine);
+    return lines.join('\n');
+  }
+  const shown = apiResult.menus.slice(0, MENU_DRAFT_DISPLAY_LIMIT);
+  const rest = apiResult.menus.length - shown.length;
+  const lines = [draftListHeader(plan, apiResult), ...shown.map(formatDraftBullet)];
+  if (rest > 0) lines.push(`ยังมีอีก ${rest} รายการค่ะ`);
+  lines.push('สนใจเมนูไหนบอกได้เลยนะคะ');
+  return lines.join('\n');
+}
+
+function draftListHeader(plan, apiResult) {
+  const mode = plan.mode;
+  if (mode === 'exact-price') return `สำหรับงบ ${plan.price} บาท/กล่อง มีเมนูดังนี้ค่ะ`;
+  if (mode === 'max-price') return `เมนูไม่เกิน ${plan.maxPrice} บาท/กล่อง มีดังนี้ค่ะ`;
+  if (mode === 'category-price') return `เมนู${plan.category} งบ ${plan.price} บาท/กล่อง มีเมนูดังนี้ค่ะ`;
+  if (mode === 'category-max') return `เมนู${plan.category} ไม่เกิน ${plan.maxPrice} บาท/กล่อง มีเมนูดังนี้ค่ะ`;
+  return `เมนูที่ตรงกับ "${plan.query}" มีดังนี้ค่ะ`;
+}
+
 // Builds the factual MENU_CONTEXT string. Inputs are ONLY the parser plan
 // and the live API payload: an "old" price can never leak in because this
 // function accepts no prompt/catalog/history input at all.
@@ -239,11 +304,18 @@ export {
   MENU_CONTEXT_LIMIT,
   MENU_NAME_KEYWORDS,
   MENU_SCAFFOLDING,
+  DETERMINISTIC_DRAFT_MODES,
+  MENU_DRAFT_DISPLAY_LIMIT,
+  DETERMINISTIC_DRAFT_SOURCE,
   normalizeMenuText,
   stripMenuScaffolding,
   parseMenuIntent,
   buildMenuQueryString,
   isValidMenuEntry,
   formatMenuLine,
+  formatDraftBullet,
+  formatMinPerMenuLine,
+  draftListHeader,
   buildMenuContext,
+  buildDeterministicMenuDraft,
 };

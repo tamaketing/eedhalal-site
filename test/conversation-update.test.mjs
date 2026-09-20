@@ -29,11 +29,13 @@ test('non-text messages receive a clear fallback and verification events are ign
   assert.equal(result.length, 0);
 });
 
-test('router emits a deterministic menu plan and never a baked price list', () => {
+test('router embeds no draft machinery and never a baked price list', () => {
   const code = buildConversationRouter();
   assert.ok(!code.includes('const menus ='), 'no embedded catalog');
   assert.ok(!code.includes('budgetContext'), 'no retired candidate list');
   assert.ok(!/"price"\s*:\s*\d+/.test(code), 'no embedded prices');
+  assert.ok(!code.includes('buildDeterministicMenuDraft'), 'no draft templates in router');
+  assert.ok(!code.includes('buildMenuContext'), 'no context builder in router');
   const [result] = routeWith(code, 'งบกล่องละ 70 มีอะไรบ้าง');
   assert.equal(result.json.hasSafeAnswer, false);
   assert.deepEqual(JSON.parse(JSON.stringify(result.json.menuPlan)), {

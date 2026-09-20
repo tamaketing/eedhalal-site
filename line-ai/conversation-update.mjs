@@ -1,13 +1,20 @@
 import assert from 'node:assert/strict';
 import {
+  DETERMINISTIC_DRAFT_MODES,
+  DETERMINISTIC_DRAFT_SOURCE,
   MENU_CATEGORIES,
   MENU_CONTEXT_LIMIT,
+  MENU_DRAFT_DISPLAY_LIMIT,
   MENU_FETCH_MODES,
   MENU_NAME_KEYWORDS,
   MENU_SCAFFOLDING,
+  buildDeterministicMenuDraft,
   buildMenuContext,
   buildMenuQueryString,
+  draftListHeader,
+  formatDraftBullet,
   formatMenuLine,
+  formatMinPerMenuLine,
   isValidMenuEntry,
   normalizeMenuText,
   parseMenuIntent,
@@ -223,7 +230,9 @@ return [{ json: { draftId: draft.draftId || null, status: draft.status, deduped:
 // the live Internal Menu API lookup downstream. n8n Code nodes cannot
 // import modules, so the dependency-free parser source is embedded here
 // (generated from line-ai/menu-intent.mjs — never hand-edited).
-const MENU_INTENT_PRELUDE = [
+// The router embeds only parsing (no catalog, no prices, no draft
+// machinery): it turns customer text into a menuPlan for the live lookup.
+const MENU_INTENT_ROUTER_PRELUDE = [
   `const MENU_CATEGORIES = ${JSON.stringify(MENU_CATEGORIES)};`,
   `const MENU_FETCH_MODES = ${JSON.stringify(MENU_FETCH_MODES)};`,
   `const MENU_CONTEXT_LIMIT = ${MENU_CONTEXT_LIMIT};`,
@@ -233,10 +242,25 @@ const MENU_INTENT_PRELUDE = [
   stripMenuScaffolding.toString(),
   parseMenuIntent.toString(),
   buildMenuQueryString.toString(),
+].join('\n');
+
+// Context/draft nodes additionally embed validation, formatting, and the
+// deterministic draft templates (still no catalog, no prices).
+const MENU_INTENT_FULL_PRELUDE = [
+  MENU_INTENT_ROUTER_PRELUDE,
+  `const DETERMINISTIC_DRAFT_MODES = ${JSON.stringify(DETERMINISTIC_DRAFT_MODES)};`,
+  `const MENU_DRAFT_DISPLAY_LIMIT = ${MENU_DRAFT_DISPLAY_LIMIT};`,
+  `const DETERMINISTIC_DRAFT_SOURCE = ${JSON.stringify(DETERMINISTIC_DRAFT_SOURCE)};`,
   isValidMenuEntry.toString(),
   formatMenuLine.toString(),
+  formatDraftBullet.toString(),
+  formatMinPerMenuLine.toString(),
+  draftListHeader.toString(),
   buildMenuContext.toString(),
+  buildDeterministicMenuDraft.toString(),
 ].join('\n');
+
+const MENU_INTENT_PRELUDE = MENU_INTENT_FULL_PRELUDE;
 
 const ROUTER_RUNNER = [
   'const input = $input.first().json;',
@@ -251,7 +275,7 @@ const ROUTER_RUNNER = [
 ].join('\n');
 
 export function buildConversationRouter() {
-  return `${MENU_INTENT_PRELUDE}\n${ROUTER_RUNNER}`;
+  return `${MENU_INTENT_ROUTER_PRELUDE}\n${ROUTER_RUNNER}`;
 }
 export const conversationRouter = buildConversationRouter();
 
@@ -330,6 +354,63 @@ export function buildMenuContextNode(position = [2460, 140]) {
   };
 }
 
+const DETERMINISTIC_DRAFT_RUNNER = [
+  "const faqOut = (($('Deterministic FAQ').first().json) || {});",
+  'const plan = faqOut.menuPlan || null;',
+  'let builtContext = null;',
+  'try { builtContext = (($(\'Build Menu Context\').first().json) || {}).menuContext || null; } catch (e) { builtContext = null; }',
+  'let apiResult = null;',
+  'try {',
+  "  const fetched = (($('Fetch Menu Catalog').first().json) || {});",
+  '  if (fetched && Array.isArray(fetched.menus)) apiResult = { ok: true, menus: fetched.menus };',
+  '  else if (fetched && fetched.error) apiResult = { ok: false };',
+  '} catch (e) { apiResult = null; }',
+  'if (plan && plan.mode !== \'clarify\' && !apiResult) apiResult = { ok: false };',
+  'let draftResponse = \'ขออนุญาตตรวจสอบรายการเมนูและราคากับทางทีมก่อนนะคะ\';',
+  'try { draftResponse = buildDeterministicMenuDraft(plan, apiResult); } catch (e) { draftResponse = \'ขออนุญาตตรวจสอบรายการเมนูและราคากับทางทีมก่อนนะคะ\'; }',
+  "if (!draftResponse) draftResponse = 'ขออนุญาตตรวจสอบรายการเมนูและราคากับทางทีมก่อนนะคะ';",
+  'return [{ json: { ...faqOut, menuContext: builtContext, draftResponse, draftSource: DETERMINISTIC_DRAFT_SOURCE, responseSource: \'conversation-ai\' } }];',
+].join('\n');
+
+export function buildDeterministicMenuDraftNodeCode() {
+  return `${MENU_INTENT_PRELUDE}\n${DETERMINISTIC_DRAFT_RUNNER}`;
+}
+
+export function buildDeterministicMenuDraftNode(position = [2860, 140]) {
+  return {
+    parameters: { jsCode: buildDeterministicMenuDraftNodeCode() },
+    id: 'build-deterministic-menu-draft',
+    name: 'Build Deterministic Menu Draft',
+    type: 'n8n-nodes-base.code',
+    typeVersion: 2,
+    position,
+    onError: 'continueRegularOutput',
+  };
+}
+
+export function buildDeterministicDraftEligibleNode(position = [2660, 140]) {
+  return {
+    parameters: {
+      conditions: {
+        options: { caseSensitive: true, leftValue: '', typeValidation: 'strict', version: 2 },
+        conditions: [{
+          id: 'eed-deterministic-draft-eligible',
+          leftValue: `={{ [${DETERMINISTIC_DRAFT_MODES.map((mode) => `'${mode}'`).join(',')}].includes((($json.menuPlan || {}).mode || '')) ? 'draft' : 'ai' }}`,
+          operator: { type: 'string', operation: 'equals' },
+          rightValue: 'draft',
+        }],
+        combinator: 'and',
+      },
+      options: {},
+    },
+    id: 'deterministic-draft-eligible',
+    name: 'Deterministic Draft Eligible?',
+    type: 'n8n-nodes-base.if',
+    typeVersion: 2,
+    position,
+  };
+}
+
 // Guards for the menu-lookup HTTP node: same credential-by-name,
 // env-based URL, and timeout rules as the persistence chain, plus a fixed
 // internal menu path and no request body (GET) and no literal secrets.
@@ -367,13 +448,15 @@ export function findMenuLookupMisconfigurations(workflow) {
 }
 
 // Idempotent candidate-only topology patch: inserts the deterministic menu
-// branch (Menu Lookup Needed? -> Fetch Menu Catalog -> Build Menu Context)
-// between "Has Safe Answer?" (AI branch) and "AI Agent", refreshes the
-// generated FAQ/AI strings, and leaves every other node/edge untouched.
+// branch (Menu Lookup Needed? -> Fetch Menu Catalog -> Build Menu Context
+// -> Deterministic Draft Eligible? -> Build Deterministic Menu Draft into
+// Normalize Response; other modes fall through to AI Agent), refreshes the
+// generated FAQ/AI/persist strings, and leaves every other node/edge
+// untouched.
 export function ensureCandidateMenuLookup(candidate) {
   const updated = structuredClone(candidate);
   const byName = (name) => updated.nodes.find((node) => node.name === name);
-  for (const build of [buildMenuLookupIfNode, buildFetchMenuCatalogNode, buildMenuContextNode]) {
+  for (const build of [buildMenuLookupIfNode, buildFetchMenuCatalogNode, buildMenuContextNode, buildDeterministicDraftEligibleNode, buildDeterministicMenuDraftNode]) {
     const fresh = build();
     const existing = byName(fresh.name);
     if (existing) {
@@ -390,7 +473,9 @@ export function ensureCandidateMenuLookup(candidate) {
   updated.connections['Has Safe Answer?'].main[1] = [edge('Menu Lookup Needed?')];
   updated.connections['Menu Lookup Needed?'] = { main: [[edge('Fetch Menu Catalog')], [edge('Build Menu Context')]] };
   updated.connections['Fetch Menu Catalog'] = { main: [[edge('Build Menu Context')]] };
-  updated.connections['Build Menu Context'] = { main: [[edge('AI Agent')]] };
+  updated.connections['Build Menu Context'] = { main: [[edge('Deterministic Draft Eligible?')]] };
+  updated.connections['Deterministic Draft Eligible?'] = { main: [[edge('Build Deterministic Menu Draft')], [edge('AI Agent')]] };
+  updated.connections['Build Deterministic Menu Draft'] = { main: [[edge('Normalize Response')]] };
   byName('Deterministic FAQ').parameters.jsCode = buildConversationRouter();
   byName('AI Agent').parameters.text = buildAiAgentText();
   byName('Persist Draft').parameters.jsonBody = buildPersistDraftJsonBody('Normalize Response', { includeReplyToken: false });

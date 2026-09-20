@@ -36,7 +36,7 @@ test('candidate uses the production webhook path after cutover reconciliation', 
   assert.equal(webhook.parameters.path, 'line-webhook');
   assert.equal(webhook.parameters.responseMode, 'onReceived');
   assert.match(candidate.name, /B2\.5 Persist First Candidate/);
-  assert.equal(candidate.nodes.length, 25);
+  assert.equal(candidate.nodes.length, 27);
   assert.equal(candidate.nodes.filter((n) => n.type === 'n8n-nodes-base.webhook').length, 1);
 });
 
@@ -104,18 +104,23 @@ test('Route AI Result sends genuine errors AND missing/invalid output to the cla
 });
 
 test('menu lookup branch runs after persistence and feeds AI only', () => {
-  for (const later of ['Menu Lookup Needed?', 'Fetch Menu Catalog', 'Build Menu Context']) {
+  for (const later of ['Menu Lookup Needed?', 'Fetch Menu Catalog', 'Build Menu Context', 'Deterministic Draft Eligible?', 'Build Deterministic Menu Draft']) {
     orderBefore('Persist Inbound', later, 'persist-first menu branch');
     orderBefore('Mark Processing', later, 'processing-gate menu branch');
   }
   orderBefore('Fetch Menu Catalog', 'Build Menu Context', 'fetch-before-context');
-  orderBefore('Build Menu Context', 'AI Agent', 'context-before-ai');
+  orderBefore('Build Menu Context', 'Deterministic Draft Eligible?', 'context-before-gate');
+  orderBefore('Deterministic Draft Eligible?', 'Build Deterministic Menu Draft', 'gate-before-draft');
+  orderBefore('Build Deterministic Menu Draft', 'Normalize Response', 'draft-before-persist');
   orderBefore('Deterministic FAQ', 'Menu Lookup Needed?', 'faq-before-menu-branch');
   assert.equal(candidate.connections['Has Safe Answer?'].main[1][0].node, 'Menu Lookup Needed?');
   assert.equal(candidate.connections['Menu Lookup Needed?'].main[0][0].node, 'Fetch Menu Catalog');
   assert.equal(candidate.connections['Menu Lookup Needed?'].main[1][0].node, 'Build Menu Context');
   assert.equal(candidate.connections['Fetch Menu Catalog'].main[0][0].node, 'Build Menu Context');
-  assert.equal(candidate.connections['Build Menu Context'].main[0][0].node, 'AI Agent');
+  assert.equal(candidate.connections['Build Menu Context'].main[0][0].node, 'Deterministic Draft Eligible?');
+  assert.equal(candidate.connections['Deterministic Draft Eligible?'].main[0][0].node, 'Build Deterministic Menu Draft');
+  assert.equal(candidate.connections['Deterministic Draft Eligible?'].main[1][0].node, 'AI Agent');
+  assert.equal(candidate.connections['Build Deterministic Menu Draft'].main[0][0].node, 'Normalize Response');
 });
 
 test('menu lookup gate fetches only for deterministic fetch modes', () => {
@@ -161,6 +166,83 @@ test('context builder turns API payloads into factual MENU_CONTEXT', async () =>
   const failed = run({ error: { message: 'timeout' } });
   assert.ok(failed.menuContext.includes('lookup_failed'));
   assert.ok(!/\d+\s*บาท/.test(failed.menuContext));
+});
+
+test('deterministic draft gate sends menu modes past Gemini', () => {
+  const cond = nodes.get('Deterministic Draft Eligible?').parameters.conditions.conditions[0];
+  assert.equal(cond.rightValue, 'draft');
+  const expr = cond.leftValue.replace(/^\s*=\{\{\s*/, '').replace(/\s*\}\}\s*$/, '');
+  const gate = (menuPlan) => vm.runInNewContext(expr, { $json: { menuPlan } });
+  for (const mode of ['exact-price', 'max-price', 'name-lookup', 'category-price', 'category-max', 'clarify']) {
+    assert.equal(gate({ mode }), 'draft', mode);
+  }
+  assert.equal(gate({ mode: 'none' }), 'ai');
+  assert.equal(gate(null), 'ai');
+});
+
+test('deterministic draft node renders facts without Gemini', async () => {
+  const { buildDeterministicMenuDraftNodeCode } = await import('../line-ai/conversation-update.mjs');
+  const code = nodes.get('Build Deterministic Menu Draft').parameters.jsCode;
+  assert.equal(code, buildDeterministicMenuDraftNodeCode());
+  assert.ok(!code.includes('const menus ='), 'no embedded catalog');
+  const faqJson = {
+    body: { events: [{ message: { text: 'งบ 75 บาท' } }] },
+    menuPlan: { menuLookupNeeded: true, mode: 'exact-price', price: 75, maxPrice: null, category: null, query: null },
+  };
+  const fetched = { menus: [{ id: '14', name: 'ข้าวไก่เทอริยากิ', price: 75, minPerMenu: 5, category: 'ข้าวราดแกง' }] };
+  const run = (fetchJson) => vm.runInNewContext(`(function () { ${code} })()`, {
+    $input: { first: () => ({ json: { menuContext: 'CTX' } }) },
+    $: (name) => {
+      if (name === 'Deterministic FAQ') return { first: () => ({ json: faqJson }) };
+      if (name === 'Build Menu Context') return { first: () => ({ json: { menuContext: 'CTX' } }) };
+      if (name === 'Fetch Menu Catalog') return { first: () => ({ json: fetchJson }) };
+      throw new Error('unexpected node reference: ' + name);
+    },
+  })[0].json;
+  const ok = run(fetched);
+  assert.ok(ok.draftResponse.includes('ข้าวไก่เทอริยากิ — 75 บาท/กล่อง'));
+  assert.equal(ok.draftSource, 'deterministic-menu');
+  assert.equal(ok.menuContext, 'CTX');
+  assert.equal(ok.body.events[0].message.text, 'งบ 75 บาท');
+  const failed = run({ error: { message: 'timeout' } });
+  assert.equal(failed.draftResponse, 'ขออนุญาตตรวจสอบรายการเมนูและราคากับทางทีมก่อนนะคะ');
+  assert.equal(failed.draftSource, 'deterministic-menu');
+});
+
+test('normalize response labels deterministic drafts without Gemini', () => {
+  const code = nodes.get('Normalize Response').parameters.jsCode;
+  const run = (incoming) => vm.runInNewContext(`(function () { ${code} })()`, {
+    $input: { first: () => ({ json: incoming }) },
+    $: () => ({ first: () => ({ json: {} }) }),
+  })[0].json;
+  const webhook = { body: { events: [{ source: { userId: 'U1' }, message: { id: 'm1', type: 'text', text: 'งบ 75 บาท' } }] } };
+  const runWith = (incoming) => vm.runInNewContext(`(function () { ${code} })()`, {
+    $input: { first: () => ({ json: incoming }) },
+    $: (name) => {
+      if (name === 'LINE Webhook') return { first: () => ({ json: webhook }) };
+      return { first: () => ({ json: {} }) };
+    },
+  })[0].json;
+  assert.equal(
+    runWith({ draftResponse: 'x', draftSource: 'deterministic-menu', responseSource: 'conversation-ai' }).source,
+    'deterministic-menu',
+  );
+  assert.equal(
+    runWith({ draftResponse: 'x', draftSource: 'deterministic-menu', responseSource: 'conversation-ai' }).aiModel,
+    null,
+    'deterministic drafts must not claim a Gemini model',
+  );
+  assert.equal(
+    runWith({ output: 'สวัสดีค่ะ', responseSource: 'conversation-ai' }).source,
+    'conversation-ai',
+  );
+  assert.equal(
+    runWith({ output: 'สวัสดีค่ะ', responseSource: 'conversation-ai' }).aiModel,
+    'models/gemini-2.5-flash',
+    'Gemini drafts keep the actual model value',
+  );
+  assert.equal(run({ output: 'hi', responseSource: 'other' }).source, 'deterministic-fallback');
+  assert.equal(run({ output: 'hi', responseSource: 'other' }).aiModel, 'models/gemini-2.5-flash');
 });
 
 test('candidate carries no baked menu prices and no retired candidate list', () => {
