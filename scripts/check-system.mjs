@@ -157,7 +157,13 @@ ${leadTimeLines}
 - งานเร่งด่วนต้องส่งให้ทีมตรวจคิว ห้ามรับปากแทนครัว
 
 ## 5. VAT และเอกสาร
-- ราคาไม่รวม VAT ${rules.documents.vatRate}% เพราะยังไม่ได้จด VAT
+${rules.documents.vatCharge
+  ? '- ราคาที่แจ้งเป็นไปตามเงื่อนไข VAT ในกฎธุรกิจปัจจุบัน ให้ยึดกฎธุรกิจเป็นหลักเท่านั้น'
+  : `- ราคาที่แจ้งเป็นราคาสุทธิสุดท้าย ไม่บวก VAT เพิ่ม เพราะ EED ไม่ได้จดทะเบียน VAT และไม่เรียกเก็บ VAT จากลูกค้า
+- ห้ามพูดว่า "ไม่รวม VAT" / "ยังไม่รวม VAT" / "excluding VAT" / "VAT excluded" / "บวก VAT เพิ่ม" — ประโยคเหล่านี้ทำให้ลูกค้าเข้าใจผิดว่าจะมี VAT เพิ่มภายหลัง
+- ถ้าลูกค้าถามเรื่อง VAT โดยตรง: ตอบว่า EED ไม่ได้จดทะเบียน VAT ราคาที่แจ้งจึงไม่มี VAT เพิ่ม ออกได้แค่ใบเสนอราคา + ใบเสร็จรับเงินแบบธรรมดา และออกใบกำกับภาษี / Tax Invoice ไม่ได้ทุกกรณี
+- VAT กับภาษีหัก ณ ที่จ่ายเป็นคนละเรื่องกัน ห้ามอนุมานเรื่องหัก ณ ที่จ่ายจากสถานะ VAT
+- ถ้าลูกค้าถามเรื่องหัก ณ ที่จ่าย: ห้ามเดา ห้ามระบุอัตรา ห้ามบอกว่ามีหรือไม่มี ให้ตอบว่า "ขออนุญาตตรวจสอบเรื่องหัก ณ ที่จ่ายกับทางทีมก่อนนะคะ" แล้วส่งต่อให้ทีม`}
 - ออกได้: ${rules.documents.available.join(' + ')}
 - ออกใบกำกับภาษี / Tax Invoice ไม่ได้ทุกกรณี
 - ฝ่ายจัดซื้อแจ้งชื่อบริษัทและที่อยู่ในแชทนี้เพื่อออกเอกสาร
@@ -172,6 +178,7 @@ ${leadTimeLines}
 ## 7. กฎกันข้อมูลผิด
 - ห้ามเดาราคา ขั้นต่ำ ค่าส่ง lead time VAT หรือข้อมูลฮาลาล
 - ห้ามบอกว่าส่งทั่วประเทศ มีตะกร้าชำระเงินบนเว็บ หรือออก VAT ได้
+- ถ้าข้อมูลธุรกิจ (เช่น ระยะเวลายืนราคา ค่าบริการเพิ่มเติม วิธีชำระเงินที่นอกเหนือจากที่ระบุ หรือภาษีหัก ณ ที่จ่าย) ไม่มีในกฎธุรกิจปัจจุบัน ห้ามเดาหรือสร้างนโยบายขึ้นเอง ให้ขอให้ทีมยืนยัน
 - ถ้าไม่พบข้อมูล ให้ตอบส่วนที่ทราบและระบุส่วนที่ต้องให้ทีมตรวจสอบในแชทนี้ ขอเบอร์เฉพาะเมื่อลูกค้าต้องการให้โทรกลับ
 - เรื่องราคา ส่ง และสั่งซื้อ ต้องแนบลิงก์อ้างอิงจากหัวข้อถัดไป
 
@@ -447,6 +454,9 @@ export async function checkSystem(root = ROOT) {
   const workflow = await readJson(root, 'line-ai/n8n-workflow.json');
   assert.equal(workflow.nodes.find((node) => node.id === 'ai-agent')?.parameters.options.systemMessage, expectedNodeMessage,
     'workflow system message is stale; run with --write');
+  const candidate = await readJson(root, 'line-ai/n8n-workflow-b25-persist-first.json');
+  assert.equal(candidate.nodes.find((node) => node.id === 'ai-agent')?.parameters.options.systemMessage, expectedNodeMessage,
+    'candidate workflow system message is stale; run with --write');
   await checkWorkflowFoundation(workflow, data.rules, data.catalog, data.legacy);
   return data;
 }
@@ -475,6 +485,13 @@ async function writeGeneratedFiles(root = ROOT) {
     buildNormalizeNodeCode(rules.revision);
   workflow.nodes.find((node) => node.id === 'verify-draft').parameters.jsCode = buildVerifyDraftNodeCode();
   await writeFile(path.join(root, 'line-ai/n8n-workflow.json'), `${JSON.stringify(workflow, null, 2)}\n`, 'utf8');
+  // The B2.5 persist-first candidate carries the same generated system prompt
+  // (topology, FAQ copy, and B2.5-specific nodes stay untouched here).
+  const candidate = await readJson(root, 'line-ai/n8n-workflow-b25-persist-first.json');
+  candidate.nodes.find((node) => node.id === 'ai-agent').parameters.options.systemMessage = `${knowledge.trim()}\n\n${prompt}\n`;
+  candidate.nodes.find((node) => node.id === 'deterministic-faq').parameters.jsCode =
+    buildConversationRouter(getEffectiveMenus(legacy.menus, catalog));
+  await writeFile(path.join(root, 'line-ai/n8n-workflow-b25-persist-first.json'), `${JSON.stringify(candidate, null, 2)}\n`, 'utf8');
 }
 
 const isCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

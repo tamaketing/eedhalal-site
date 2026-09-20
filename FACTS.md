@@ -95,7 +95,7 @@
 
 ## 4. VAT / ภาษี
 
-| ค่า | ไม่รวม VAT 7% (ไม่ได้จด VAT) |
+| ค่า | ราคาสุทธิสุดท้าย ไม่บวก VAT เพิ่ม (ไม่ได้จด VAT, ไม่เรียกเก็บ VAT) |
 |-----|-----------------------------|
 | FAQ (synchronized public copy) | `faq.html` — Q5 (JSON-LD + visible) |
 | llms.txt | `llms.txt:24` |
