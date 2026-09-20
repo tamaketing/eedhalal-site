@@ -29,7 +29,7 @@ test('inbound real PostgreSQL migration, contracts, races and least privilege', 
   const runtime = new pg.Client({ connectionString: runtimeUrl, connectionTimeoutMillis: 5000 });
   let repos;
   let migrated = false;
-  const cleanup = () => admin.query('TRUNCATE inbound_messages, audit_logs, drafts, leads, customers');
+  const cleanup = () => admin.query('TRUNCATE response_examples, inbound_messages, audit_logs, drafts, leads, customers');
   t.after(async () => {
     try { if (migrated) await cleanup(); }
     finally { await repos?.close(); await runtime.end(); await admin.end(); }

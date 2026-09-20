@@ -6,10 +6,10 @@
 // JS values so contract tests stay deterministic (integration tests cover
 // the real driver behavior).
 
-const JSON_COLS = new Set(['metadata', 'history', 'before_data', 'after_data']);
+const JSON_COLS = new Set(['metadata', 'history', 'before_data', 'after_data', 'style_tags']);
 
 export function createFakePg() {
-  const tables = { customers: new Map(), leads: new Map(), drafts: new Map(), audit_logs: new Map(), inbound_messages: new Map() };
+  const tables = { customers: new Map(), leads: new Map(), drafts: new Map(), audit_logs: new Map(), inbound_messages: new Map(), response_examples: new Map() };
   const uniques = { customers: ['line_user_id'], drafts: ['draft_id'] };
   const duplicate = () => Object.assign(new Error('duplicate key value'), { code: '23505' });
   const decode = (col, value) => (JSON_COLS.has(col) && typeof value === 'string' ? JSON.parse(value) : value);
@@ -51,14 +51,20 @@ export function createFakePg() {
         throw duplicate();
       }
       if (table === 'inbound_messages') validateInbound(row);
+      if (table === 'response_examples') validateExample(row);
       store.set(row.id, row);
       return { rows: [{ ...row }] };
     }
-    if ((match = clean.match(/^SELECT \* FROM (\w+)(?: WHERE (.+?))?(?: ORDER BY created_at ASC)?$/i))) {
+    if ((match = clean.match(/^SELECT \* FROM (\w+)(?: WHERE (.+?))?(?: ORDER BY created_at (ASC|DESC))?(?: LIMIT (\d+))?$/i))) {
       const table = match[1];
       let rows = [...(tables[table] || new Map()).values()];
       rows = applyConditions(rows, match[2], params);
-      rows = rows.slice().sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+      const desc = (match[3] || 'ASC').toUpperCase() === 'DESC';
+      rows = rows.slice().sort((a, b) => {
+        if (a.created_at === b.created_at) return 0;
+        return (a.created_at < b.created_at) !== desc ? -1 : 1;
+      });
+      if (match[4]) rows = rows.slice(0, Number(match[4]));
       return { rows: rows.map((r) => ({ ...r })) };
     }
     if ((match = clean.match(/^UPDATE (\w+) SET (.+) WHERE (.+) RETURNING \*$/i))) {
@@ -77,6 +83,7 @@ export function createFakePg() {
         row[parts[1]] = decode(parts[1], params[Number(parts[2]) - 1]);
       }
       if (table === 'inbound_messages') validateInbound(row);
+      if (table === 'response_examples') validateExample(row);
       store.set(row.id, row);
       return { rows: [{ ...row }] };
     }
@@ -88,7 +95,7 @@ export function createFakePg() {
       return { rows: [...(tables.schema_migrations || new Map()).values()] };
     }
     // Full migration files (multi-statement DDL): accept without simulating.
-    if (/CREATE TABLE IF NOT EXISTS (customers|leads|drafts|audit_logs|inbound_messages)/.test(clean)) return { rows: [] };
+    if (/CREATE TABLE IF NOT EXISTS (customers|leads|drafts|audit_logs|inbound_messages|response_examples)/.test(clean)) return { rows: [] };
     if (/ALTER TABLE drafts ADD COLUMN IF NOT EXISTS/.test(clean)) return { rows: [] };
     if (/ALTER TABLE leads ADD COLUMN IF NOT EXISTS/.test(clean)) return { rows: [] };
     if (/CREATE UNIQUE INDEX IF NOT EXISTS/.test(clean)) return { rows: [] };
@@ -104,6 +111,22 @@ export function createFakePg() {
     }
     for (const [col, table] of [['customer_id', 'customers'], ['lead_id', 'leads'], ['draft_id', 'drafts']]) {
       if (row[col] != null && !tables[table].has(row[col])) throw Object.assign(new Error('missing reference'), { code: '23503' });
+    }
+  }
+
+  function validateExample(row) {
+    if (row.source_draft_id != null && [...tables.response_examples.values()].some(
+      (r) => r.id !== row.id && r.source_draft_id === row.source_draft_id)) throw duplicate();
+    if (row.fingerprint != null && [...tables.response_examples.values()].some(
+      (r) => r.id !== row.id && r.fingerprint === row.fingerprint)) throw duplicate();
+    let tags = row.style_tags;
+    try { tags = typeof tags === 'string' ? JSON.parse(tags) : tags; } catch { tags = null; }
+    if (!row.intent || !row.incoming_example || !row.approved_response || !row.fingerprint ||
+        !row.business_rules_revision || !Array.isArray(tags) || typeof row.reusable !== 'boolean') {
+      throw Object.assign(new Error('invalid response example'), { code: '23514' });
+    }
+    if (row.source_draft_id != null && !tables.drafts.has(row.source_draft_id)) {
+      throw Object.assign(new Error('missing reference'), { code: '23503' });
     }
   }
 

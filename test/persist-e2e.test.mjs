@@ -128,7 +128,7 @@ if (!TEST_URL || !pgAvailable || !targetOk()) {
     const { default: pg } = await import('pg');
     const pool = new pg.Pool({ connectionString: TEST_URL });
     try {
-      for (const table of ['inbound_messages', 'audit_logs', 'drafts', 'leads', 'customers']) {
+      for (const table of ['response_examples', 'inbound_messages', 'audit_logs', 'drafts', 'leads', 'customers']) {
         await pool.query(`TRUNCATE ${table} RESTART IDENTITY CASCADE`);
       }
     } finally {

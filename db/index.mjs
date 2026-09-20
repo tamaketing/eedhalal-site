@@ -19,6 +19,11 @@
 //   repos.inboundMessages: create(row) | findById(id) | findBySourceEventId(id)
 //                    | updateIfCurrent(id, patch, {status, revision})
 //                      -> null on conflict; immutable transport fields
+//   repos.responseExamples: create(row) | findById(id)
+//                    | findBySourceDraftId(sourceDraftId) | findByFingerprint(fp)
+//                    | list({reusable?, intent?, serviceType?, limit?}) (newest first)
+//                    | update(id, patch) (service restricts to intent/
+//                    serviceType/styleTags/reusable)
 //   repos.transaction(fn) — runs fn(txRepos) so state change + audit commit
 //                    together (real transaction on PostgreSQL, serialized
 //                    rollback-capable serialized section on file/memory;

@@ -88,6 +88,23 @@ test('inbound repository preserves transport fields and uses revision CAS', asyn
   });
 });
 
+test('response examples preserve reusable fields and dedupe keys', async () => {
+  await eachAdapter('examples', async (label, repos) => {
+    const row = await repos.responseExamples.create({
+      id: randomUUID(), sourceDraftId: null, intent: 'greeting',
+      incomingExample: 'สวัสดี', approvedResponse: 'สวัสดีค่ะ',
+      fingerprint: `fp-${label}`, businessRulesRevision: '2026-09-16',
+    });
+    assert.equal((await repos.responseExamples.findByFingerprint(`fp-${label}`)).id, row.id, label);
+    assert.equal((await repos.responseExamples.list({ reusable: true })).length, 1, label);
+    assert.equal((await repos.responseExamples.list({ intent: 'quotation' })).length, 0, label);
+    const off = await repos.responseExamples.update(row.id, { reusable: false });
+    assert.equal(off.reusable, false, label);
+    assert.equal((await repos.responseExamples.list({ reusable: true })).length, 0, label);
+    assert.equal(await repos.responseExamples.update('missing', { reusable: true }), null, label);
+  });
+});
+
 test('migrations apply in order and rerun safely', async () => {
   const fake = createFakePg();
   const env = { DB_ADAPTER: 'postgres' };

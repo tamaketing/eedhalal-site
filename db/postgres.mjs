@@ -19,6 +19,11 @@ const CUSTOMER_COLUMNS = ['id', 'line_user_id', 'display_name', 'phone', 'email'
 const LEAD_COLUMNS = ['id', 'customer_id', 'source', 'service_type', 'event_date', 'quantity', 'location', 'budget_per_person', 'status', 'summary', 'source_event_id', 'created_at', 'updated_at'];
 const DRAFT_COLUMNS = ['id', 'draft_id', 'customer_id', 'lead_id', 'channel', 'incoming_message', 'draft_response', 'owner_final_response', 'final_action', 'status', 'source', 'ai_model', 'rule_revision', 'metadata', 'history', 'source_event_id', 'created_at', 'updated_at', 'approved_at', 'sent_at'];
 const AUDIT_COLUMNS = ['id', 'entity_type', 'entity_id', 'action', 'actor_type', 'actor_id', 'before_data', 'after_data', 'created_at'];
+const EXAMPLE_COLUMNS = ['id', 'source_draft_id', 'intent', 'service_type', 'incoming_example', 'approved_response', 'style_tags', 'reusable', 'business_rules_revision', 'fingerprint', 'created_at', 'updated_at'];
+const EXAMPLE_FIELDS = {
+  intent: 'intent', serviceType: 'service_type', styleTags: 'style_tags', reusable: 'reusable',
+};
+import { exampleDefaults, examplePatch } from './examples-contract.mjs';
 const INBOUND_FIELDS = {
   id: 'id', customerId: 'customer_id', lineUserId: 'line_user_id', channel: 'channel',
   messageType: 'message_type', incomingMessage: 'incoming_message', sourceEventId: 'source_event_id',
@@ -199,7 +204,49 @@ function buildRepos(run) {
       ));
     },
   };
-  return { customers, leads, drafts, auditLogs, inboundMessages };
+  const responseExamples = {
+    kind: 'responseExamples',
+    async create(input) {
+      const row = exampleDefaults(input);
+      const values = [row.id, row.sourceDraftId, row.intent, row.serviceType ?? null,
+        row.incomingExample, row.approvedResponse, JSON.stringify(row.styleTags ?? []),
+        row.reusable ?? true, row.businessRulesRevision, row.fingerprint];
+      return mapOne(await run(
+        `INSERT INTO response_examples (${EXAMPLE_COLUMNS.slice(0, 10).join(', ')}) VALUES (${placeholders(10)}) RETURNING *`, values,
+      ));
+    },
+    async findById(id) { return mapOne(await run('SELECT * FROM response_examples WHERE id = $1', [id])); },
+    async findBySourceDraftId(sourceDraftId) {
+      if (sourceDraftId == null) return null;
+      return mapOne(await run('SELECT * FROM response_examples WHERE source_draft_id = $1', [sourceDraftId]));
+    },
+    async findByFingerprint(fingerprint) {
+      if (fingerprint == null) return null;
+      return mapOne(await run('SELECT * FROM response_examples WHERE fingerprint = $1', [fingerprint]));
+    },
+    async list({ reusable, intent, serviceType, limit = 20 } = {}) {
+      const conditions = [];
+      const values = [];
+      if (reusable !== undefined) { conditions.push(`reusable = $${values.length + 1}`); values.push(reusable); }
+      if (intent !== undefined) { conditions.push(`intent = $${values.length + 1}`); values.push(intent); }
+      if (serviceType !== undefined) { conditions.push(`service_type = $${values.length + 1}`); values.push(serviceType); }
+      const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+      const capped = Math.min(Math.max(Number(limit) || 20, 1), 100);
+      return mapAll(await run(
+        `SELECT * FROM response_examples ${where} ORDER BY created_at DESC LIMIT ${capped}`, values,
+      ));
+    },
+    async update(id, patch) {
+      const fields = Object.entries(examplePatch(patch));
+      const values = [id, ...fields.map(([, value]) => (Array.isArray(value) ? JSON.stringify(value) : value))];
+      const sets = fields.map(([key], i) => `${EXAMPLE_FIELDS[key]} = $${i + 2}`);
+      sets.push('updated_at = now()');
+      return mapOne(await run(
+        `UPDATE response_examples SET ${sets.join(', ')} WHERE id = $1 RETURNING *`, values,
+      ));
+    },
+  };
+  return { customers, leads, drafts, auditLogs, inboundMessages, responseExamples };
 }
 
 async function applyDraftUpdate(run, id, patch, expected) {

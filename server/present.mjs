@@ -22,6 +22,22 @@ function publicMetadata(metadata) {
   return cleaned;
 }
 
+export function presentResponseExample(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    intent: row.intent,
+    serviceType: row.serviceType,
+    incomingExample: row.incomingExample,
+    approvedResponse: row.approvedResponse,
+    styleTags: row.styleTags || [],
+    reusable: row.reusable,
+    businessRulesRevision: row.businessRulesRevision,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
 export function presentCustomer(customer) {
   if (!customer) return null;
   return {

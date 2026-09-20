@@ -73,7 +73,8 @@ if (!TEST_URL || !pgModule) {
     throw new Error(gate.reason);
   });
 } else {
-  const KNOWN_TABLES = ['inbound_messages', 'audit_logs', 'drafts', 'leads', 'customers'];
+  const KNOWN_TABLES = ['response_examples', 'inbound_messages', 'audit_logs', 'drafts', 'leads',
+    'customers'];
   let pool;
   let repos;
 

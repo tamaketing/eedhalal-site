@@ -11,12 +11,13 @@ import path from 'node:path';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { isUniqueViolation } from './memory.mjs';
 import { inboundDefaults, inboundPatch, validateInboundRow } from './inbound-contract.mjs';
+import { exampleDefaults, examplePatch, validateExampleRow } from './examples-contract.mjs';
 
 function clone(value) {
   return value === undefined ? value : structuredClone(value);
 }
 
-const TABLES = ['customers', 'leads', 'drafts', 'auditLogs', 'inboundMessages'];
+const TABLES = ['customers', 'leads', 'drafts', 'auditLogs', 'inboundMessages', 'responseExamples'];
 
 export function createFileAdapter(dir) {
   if (!dir) throw new Error('DB_DIR is required for the file adapter.');
@@ -251,6 +252,59 @@ export function createFileAdapter(dir) {
     },
   };
 
+  const responseExamples = {
+    kind: 'responseExamples',
+    async create(input, now = new Date().toISOString()) {
+      return exclusive(async () => {
+        const tables = await load();
+        const row = exampleDefaults(input);
+        if (tables.responseExamples[row.id] || (row.sourceDraftId != null &&
+            Object.values(tables.responseExamples).some((r) => r.sourceDraftId === row.sourceDraftId)) ||
+            (row.fingerprint != null &&
+            Object.values(tables.responseExamples).some((r) => r.fingerprint === row.fingerprint))) {
+          throw conflict('response example already exists');
+        }
+        validateExampleRow(row, (table, id) => !!tables[table][id]);
+        tables.responseExamples[row.id] = stamp(row, true, now);
+        await persist();
+        return clone(tables.responseExamples[row.id]);
+      });
+    },
+    async findById(id) { return exclusive(async () => clone((await load()).responseExamples[id] || null)); },
+    async findBySourceDraftId(sourceDraftId) {
+      return exclusive(async () => sourceDraftId == null ? null : clone(
+        Object.values((await load()).responseExamples).find((r) => r.sourceDraftId === sourceDraftId) || null));
+    },
+    async findByFingerprint(fingerprint) {
+      return exclusive(async () => fingerprint == null ? null : clone(
+        Object.values((await load()).responseExamples).find((r) => r.fingerprint === fingerprint) || null));
+    },
+    async list({ reusable, intent, serviceType, limit = 20 } = {}) {
+      return exclusive(async () => {
+        const capped = Math.min(Math.max(Number(limit) || 20, 1), 100);
+        return Object.values((await load()).responseExamples)
+          .filter((r) => (reusable === undefined || r.reusable === reusable) &&
+            (intent === undefined || r.intent === intent) &&
+            (serviceType === undefined || r.serviceType === serviceType))
+          .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+          .slice(0, capped)
+          .map(clone);
+      });
+    },
+    async update(id, patch, now = new Date().toISOString()) {
+      return exclusive(async () => {
+        const tables = await load();
+        const current = tables.responseExamples[id];
+        if (!current) return null;
+        const next = stamp({ ...current, ...examplePatch(patch), id }, false, now);
+        validateExampleRow(next, (table, key) => !!tables[table][key]);
+        tables.responseExamples[id] = next;
+        await persist();
+        return clone(next);
+      });
+    },
+  };
+
   const auditLogs = {
     kind: 'auditLogs',
     async append(row, now = new Date().toISOString()) {
@@ -281,6 +335,7 @@ export function createFileAdapter(dir) {
     drafts,
     auditLogs,
     inboundMessages,
+    responseExamples,
     // Groups several repository calls into one exclusive section so no other
     // task in this process can interleave between them. Repos passed to fn
     // are re-entrant only in this async context, not in unrelated callers.
@@ -289,7 +344,7 @@ export function createFileAdapter(dir) {
       return exclusive(async () => {
         const snapshot = clone(await load());
         try {
-          const result = await transactionContext.run(true, () => fn({ customers, leads, drafts, auditLogs, inboundMessages }));
+          const result = await transactionContext.run(true, () => fn({ customers, leads, drafts, auditLogs, inboundMessages, responseExamples }));
           await persist();
           return result;
         } catch (error) {

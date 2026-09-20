@@ -4,6 +4,7 @@
 
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { inboundDefaults, inboundPatch, validateInboundRow } from './inbound-contract.mjs';
+import { exampleDefaults, examplePatch, validateExampleRow } from './examples-contract.mjs';
 
 function clone(value) {
   return value === undefined ? value : structuredClone(value);
@@ -23,6 +24,7 @@ export function createMemoryAdapter() {
     drafts: new Map(),
     auditLogs: new Map(),
     inboundMessages: new Map(),
+    responseExamples: new Map(),
   };
   const customers = {
     kind: 'customers',
@@ -178,6 +180,49 @@ export function createMemoryAdapter() {
     },
   };
 
+  const responseExamples = {
+    kind: 'responseExamples',
+    async create(input, now = new Date().toISOString()) {
+      const row = exampleDefaults(input);
+      if (tables.responseExamples.has(row.id) || [...tables.responseExamples.values()].some(
+        (r) => (row.sourceDraftId != null && r.sourceDraftId === row.sourceDraftId) ||
+          (row.fingerprint != null && r.fingerprint === row.fingerprint))) {
+        throw conflict('response example already exists');
+      }
+      validateExampleRow(row, (table, id) => tables[table].has(id));
+      const saved = withTimestamps(row, true, now);
+      tables.responseExamples.set(row.id, saved);
+      return clone(saved);
+    },
+    async findById(id) { return clone(tables.responseExamples.get(id) || null); },
+    async findBySourceDraftId(sourceDraftId) {
+      if (sourceDraftId == null) return null;
+      return clone([...tables.responseExamples.values()].find((r) => r.sourceDraftId === sourceDraftId) || null);
+    },
+    async findByFingerprint(fingerprint) {
+      if (fingerprint == null) return null;
+      return clone([...tables.responseExamples.values()].find((r) => r.fingerprint === fingerprint) || null);
+    },
+    async list({ reusable, intent, serviceType, limit = 20 } = {}) {
+      const capped = Math.min(Math.max(Number(limit) || 20, 1), 100);
+      return [...tables.responseExamples.values()]
+        .filter((r) => (reusable === undefined || r.reusable === reusable) &&
+          (intent === undefined || r.intent === intent) &&
+          (serviceType === undefined || r.serviceType === serviceType))
+        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+        .slice(0, capped)
+        .map(clone);
+    },
+    async update(id, patch, now = new Date().toISOString()) {
+      const current = tables.responseExamples.get(id);
+      if (!current) return null;
+      const next = withTimestamps({ ...current, ...examplePatch(patch), id }, false, now);
+      validateExampleRow(next, (table, key) => tables[table].has(key));
+      tables.responseExamples.set(id, next);
+      return clone(next);
+    },
+  };
+
   // Append-only by construction: no update/delete methods exist.
   const auditLogs = {
     kind: 'auditLogs',
@@ -209,7 +254,7 @@ export function createMemoryAdapter() {
     queue = run.catch(() => {});
     return run;
   }
-  const repos = { customers, leads, drafts, auditLogs, inboundMessages };
+  const repos = { customers, leads, drafts, auditLogs, inboundMessages, responseExamples };
   for (const repo of Object.values(repos)) {
     for (const [key, fn] of Object.entries(repo)) {
       if (typeof fn === 'function') repo[key] = (...args) => exclusive(() => fn(...args));

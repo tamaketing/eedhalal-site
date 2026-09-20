@@ -20,6 +20,11 @@
 //   POST /api/v1/drafts/:id/send    { ownerId?, expectedUpdatedAt?, expectedStatus? }
 //          (owner-only LINE Push; text/recipient always re-derived server-side;
 //          needs LINE_CHANNEL_ACCESS_TOKEN in server env)
+//   POST /api/v1/response-examples/from-draft/:draftId { ownerId?, styleTags? }
+//          (explicit owner opt-in only; 201 new, 200 + deduped on re-opt-in)
+//   GET  /api/v1/response-examples?reusable=&intent=&serviceType=&limit=
+//   GET  /api/v1/response-examples/:id
+//   PATCH /api/v1/response-examples/:id { reusable?, styleTags?, intent?, serviceType?, ownerId? }
 //
 // NOT IMPLEMENTED here: LINE sender, regenerate-with-AI, kitchen push,
 // quotation/order/job/payment/accounting.
@@ -30,9 +35,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createAdapter } from '../db/index.mjs';
 import { requireInternalAuth } from './auth.mjs';
-import { presentCustomer, presentDraft, presentLead, presentInboundMessage } from './present.mjs';
+import { presentCustomer, presentDraft, presentLead, presentInboundMessage, presentResponseExample } from './present.mjs';
 import { receiveInboundMessage, attachCustomer, markProcessing, markFailed, completeInbound, retryInbound,
   getInboundMessage, requireInboundObject } from '../services/inboundMessages.mjs';
+import { createResponseExampleFromDraft, getResponseExample, listResponseExamples,
+  setResponseExampleReusable } from '../services/responseExamples.mjs';
 import { ConflictError, NotFoundError, UnauthorizedError, ValidationError } from '../services/errors.mjs';
 import { maybeCreateLead } from '../services/leads.mjs';
 import { resolveCustomer } from '../services/customers.mjs';
@@ -191,6 +198,54 @@ export function createInternalApi({ repos, env = process.env } = {}) {
           requireInboundObject(body);
           const handler = action ? { processing: markProcessing, fail: markFailed, complete: completeInbound, retry: retryInbound }[action] : attachCustomer;
           send(response, 200, { inbound: presentInboundMessage(await handler(store, id, body)) });
+          return;
+        }
+      }
+
+      // B2.5/4B-4 Step 1: owner-managed reusable response examples.
+      // Opt-in only (POST from-draft on a SENT draft); retrieval stays
+      // service-internal for future prompt use — no retrieval HTTP route yet.
+      if (request.method === 'POST' && pathname.startsWith('/api/v1/response-examples/from-draft/')) {
+        const draftId = decodeURIComponent(pathname.slice('/api/v1/response-examples/from-draft/'.length));
+        const body = await readJsonBody(request);
+        requireInboundObject(body);
+        const result = await createResponseExampleFromDraft(store, draftId, {
+          ownerId: body.ownerId ? String(body.ownerId) : '',
+          styleTags: body.styleTags,
+        });
+        send(response, result.deduped ? 200 : 201, { example: presentResponseExample(result.example), deduped: !!result.deduped });
+        return;
+      }
+      const exampleMatch = pathname.match(/^\/api\/v1\/response-examples(?:\/([^/]+))?$/);
+      if (exampleMatch) {
+        const id = exampleMatch[1] ? decodeURIComponent(exampleMatch[1]) : null;
+        if (request.method === 'GET' && !id) {
+          const query = {
+            limit: url.searchParams.get('limit') ?? undefined,
+            reusable: url.searchParams.get('reusable'),
+            intent: url.searchParams.get('intent') ?? undefined,
+            serviceType: url.searchParams.get('serviceType') ?? undefined,
+          };
+          if (query.reusable === null) delete query.reusable;
+          else if (query.reusable === 'true') query.reusable = true;
+          else if (query.reusable === 'false') query.reusable = false;
+          else throw new ValidationError('invalid reusable');
+          const rows = await listResponseExamples(store, query);
+          send(response, 200, { examples: rows.map(presentResponseExample), total: rows.length, limit: Math.min(Math.max(Number(query.limit) || 20, 1), 100) });
+          return;
+        }
+        if (request.method === 'GET' && id) {
+          send(response, 200, { example: presentResponseExample(await getResponseExample(store, id)) });
+          return;
+        }
+        if (request.method === 'PATCH' && id) {
+          const body = await readJsonBody(request);
+          requireInboundObject(body);
+          const options = { ownerId: body.ownerId ? String(body.ownerId) : '' };
+          for (const key of ['reusable', 'styleTags', 'intent', 'serviceType']) {
+            if (body[key] !== undefined) options[key] = body[key];
+          }
+          send(response, 200, { example: presentResponseExample(await setResponseExampleReusable(store, id, options)) });
           return;
         }
       }
