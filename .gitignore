@@ -31,3 +31,7 @@ node_modules/
 img_archive_local/
 # Empty legacy staging dir (all content moved to img/ root or img_archive_local/).
 img/picmenu/
+
+# Local-only owner review demos (noindex pages for design approval).
+# Kept on this machine for preview; never committed or deployed.
+demo/
