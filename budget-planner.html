@@ -43,16 +43,12 @@
     <section class="planner-hero">
       <div class="planner-hero-inner">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-          <div class="planner-hero-badge">Local-only pricing tool</div>
-          <div style="display:flex;gap:.5rem">
-            <a href="budget-calculator.html" class="btn btn-outline" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff">ดูหน้าลูกค้า</a>
-          </div>
+          <div class="planner-hero-badge">Local-only pricing tool · staff only, not for customers</div>
         </div>
         <h1 style="font-size:2rem;font-weight:900;line-height:1.15;margin-top:1rem">ตั้งราคาขาย — แก้ตรงนี้ ที่เดียวจบ</h1>
         <p style="margin-top:.6rem;max-width:48rem;opacity:.85;line-height:1.7;font-size:.92rem">เครื่องมือนี้ไม่มีระบบยืนยันตัวตนและไม่เก็บข้อมูลร่วมกัน จึงต้องใช้เฉพาะเครื่องงานที่ควบคุมสิทธิ์แล้วเท่านั้น หากต้องการเปลี่ยนราคาบนเว็บ ให้ใช้ไฟล์ <code>menu-data.js</code> ที่ดาวน์โหลดมาแทนไฟล์ในโฟลเดอร์ <code>js/</code> แล้ว commit</p>
         <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
           <button id="copyPlannerLink" class="btn" style="background:var(--accent);color:#fff;font-weight:800">คัดลอกลิงก์เครื่องมือ</button>
-          <a id="openCalculator" href="budget-calculator.html" target="_blank" class="btn btn-outline" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff">เปิดหน้าลูกค้าเพื่อทดสอบ →</a>
           <span id="saveStatus" style="display:none;align-items:center;gap:.4rem;font-size:.82rem;font-weight:700;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);padding:.4rem .7rem;border-radius:999px"><span class="save-dot"></span> บันทึกแล้ว</span>
         </div>
       </div>
@@ -97,7 +93,7 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem .75rem">
               <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">ชื่อเมนู *</label><input id="newMenuName" type="text" placeholder="ข้าวราด..." required style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"></div>
               <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">หมวด</label><select id="newMenuCat" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"><option>ข้าวราดแกง</option><option>ข้าวผัด</option><option>เส้น</option><option>อาหารอินเดีย</option><option>พรีเมียม</option></select></div>
-              <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">ราคา (บาท)</label><input id="newMenuPrice" type="number" value="60" min="10" max="500" step="5" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;font-weight:900;color:var(--primary);margin-top:.25rem"></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">ราคา (บาท)</label><input id="newMenuPrice" type="number" value="65" min="10" max="500" step="5" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;font-weight:900;color:var(--primary);margin-top:.25rem"></div>
               <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">ขั้นต่ำ (กล่อง)</label><input id="newMenuMin" type="number" value="5" min="1" max="50" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;font-weight:900;color:var(--primary);margin-top:.25rem"></div>
               <div style="grid-column:1/-1"><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">รูป (path ใน img/)</label><input id="newMenuImg" type="text" placeholder="img/logo.jpg" value="img/logo.jpg" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"></div>
               <div style="grid-column:1/-1"><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">คำอธิบาย</label><input id="newMenuDesc" type="text" placeholder="..." style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"></div>
@@ -112,7 +108,7 @@
             <div style="font-weight:900;font-size:.92rem;color:#7F1D1D;margin-bottom:.45rem">เมนูที่ซ่อนอยู่</div>
             <div id="deletedItems" style="font-size:.82rem;color:#7F1D1D"></div>
           </div>
-           <div style="margin-top:.5rem;font-size:.72rem;color:var(--text-muted);line-height:1.6">กด <b>ดาวน์โหลดไฟล์ Deploy</b> แล้วนำเฉพาะ <code>menu-data.js</code> ไปแทนไฟล์ในโฟลเดอร์ <code>js/</code> จากนั้น Commit/Push ขึ้น GitHub (ดูวิธีใน <code>DEPLOY.md</code>)<br><span style="color:var(--primary);font-weight:700">✓ popular-menu.html จะอัปเดตอัตโนมัติสำหรับคนดู (JS) ส่วน Google/AI ยังเห็น HTML เดิม — ไม่เสีย SEO</span> · <a href="popular-menu.html" target="_blank" style="color:var(--primary);font-weight:800;text-decoration:underline">ดู popular-menu</a></div>
+           <div style="margin-top:.5rem;font-size:.72rem;color:var(--text-muted);line-height:1.6">กด <b>ดาวน์โหลดไฟล์ Deploy</b> แล้วนำเฉพาะ <code>menu-data.js</code> ไปแทนไฟล์ในโฟลเดอร์ <code>js/</code> จากนั้น Commit/Push ขึ้น GitHub (ดูวิธีใน <code>DEPLOY.md</code>)<br><span style="color:var(--primary);font-weight:700">✓ หน้าเมนูลูกค้าจะอัปเดตอัตโนมัติสำหรับคนดู (JS) ส่วน Google/AI ยังเห็น HTML เดิม — ไม่เสีย SEO</span></div>
         </div>
       </div>
     </section>
@@ -179,7 +175,7 @@
             <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0">🍪 Snack Box — เมนูเบเกอรี่</h2>
             <span style="font-size:.75rem;color:var(--text-muted)">ขั้นต่ำ 30 กล่อง · ราคา/ชื่อแก้ได้</span>
           </div>
-          <div style="margin-top:.5rem;font-size:.75rem;color:var(--text-muted);line-height:1.6">ข้อมูลจาก <code>js/snack-data.js</code> · หน้า <a href="snack-box.html" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline">snack-box.html</a> จะอัปเดตจาก overrides อัตโนมัติ</div>
+          <div style="margin-top:.5rem;font-size:.75rem;color:var(--text-muted);line-height:1.6">ข้อมูลจาก <code>js/snack-data.js</code> · ส่งออกไฟล์แล้วนำไปแทนที่ในโฟลเดอร์ <code>js/</code> ก่อน commit</div>
           <div class="price-table-wrap" style="margin-top:.85rem">
             <table class="price-table">
               <thead>
@@ -222,16 +218,15 @@
             <tbody id="priceTableBody"></tbody>
           </table>
         </div>
-        <div style="margin-top:.75rem;font-size:.75rem;color:var(--text-muted);line-height:1.6">หน้านี้บันทึกค่าที่แก้ไว้ในเบราว์เซอร์นี้เพื่อช่วยเตรียมข้อมูลเท่านั้น · หน้า <code>budget-calculator.html</code> ใช้ราคาแบบ static จาก <code>js/menu-data.js</code> ทุกคนจึงเห็นราคาเดียวกัน</div>
+        <div style="margin-top:.75rem;font-size:.75rem;color:var(--text-muted);line-height:1.6">หน้านี้บันทึกค่าที่แก้ไว้ในเบราว์เซอร์นี้เพื่อช่วยเตรียมข้อมูลเท่านั้น · หน้า <code>popular-menu.html</code> ใช้ราคาแบบ static จาก <code>js/menu-data.js</code> ทุกคนจึงเห็นราคาเดียวกัน</div>
       </div>
     </section>
 
 
     <section class="section section-dark" style="padding:2rem 0">
       <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem;text-align:center;position:relative;z-index:1">
-        <h2 style="font-size:1.25rem;font-weight:900;color:#fff">แก้ราคาเสร็จแล้ว ทดสอบหน้าลูกค้าทันที</h2>
-        <p style="opacity:.85;margin-top:.4rem;font-size:.9rem">เปิดหน้าลูกค้าในแท็บใหม่ ราคาจะอัปเดตทันที ไม่ต้องรีเฟรชเซิร์ฟเวอร์</p>
-        <a href="budget-calculator.html" target="_blank" class="btn btn-accent" style="margin-top:1rem">เปิด budget-calculator.html →</a>
+        <h2 style="font-size:1.25rem;font-weight:900;color:#fff">แก้ราคาเสร็จแล้ว ส่งออก menu-data.js</h2>
+        <p style="opacity:.85;margin-top:.4rem;font-size:.9rem">ดาวน์โหลดไฟล์แล้วนำไปแทนที่ในโฟลเดอร์ js/ ก่อน commit — เครื่องมือนี้สำหรับพนักงานเท่านั้น ไม่ใช่หน้าลูกค้า</p>
       </div>
     </section>
   </main>

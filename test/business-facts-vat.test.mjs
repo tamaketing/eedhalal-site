@@ -78,7 +78,7 @@ test('both workflow artifacts carry the corrected prompt', async () => {
 });
 
 test('confirmed business facts are unchanged', () => {
-  assert.equal(data.rules.services.mealBox.minimumOrder, 20);
+  assert.equal(data.rules.services.mealBox.minimumOrder, 10);
   assert.equal(data.rules.services.snackBox.minimumOrder, 30);
   assert.equal(data.rules.paymentTerms.bookingDepositPercent, 50);
   assert.ok(knowledge.includes('ส่งฟรี') && knowledge.includes('มอเตอร์ไซค์'));

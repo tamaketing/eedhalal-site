@@ -30,7 +30,7 @@
     initPlanner();
   }
 
-  // --- Selling price + minPerMenu storage (sync with budget-calculator.html) ---
+  // --- Selling price + minPerMenu storage (source: js/menu-data.js) ---
   function loadSelling(){
     try{
       var saved = JSON.parse(localStorage.getItem(LS_SELLING)||'null');

@@ -3,13 +3,11 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const [calculatorHtml, popularHtml, snackHtml, popularSource, snackHydrateSource, snackBuilderSource, plannerSource] = await Promise.all([
-  readFile(new URL('../budget-calculator.html', import.meta.url), 'utf8'),
+const [popularHtml, snackHtml, popularSource, snackHydrateSource, plannerSource] = await Promise.all([
   readFile(new URL('../popular-menu.html', import.meta.url), 'utf8'),
   readFile(new URL('../snack-box.html', import.meta.url), 'utf8'),
   readFile(new URL('../js/popular-menu-hydrate.js', import.meta.url), 'utf8'),
   readFile(new URL('../js/snack-hydrate.js', import.meta.url), 'utf8'),
-  readFile(new URL('../js/snack-builder.js', import.meta.url), 'utf8'),
   readFile(new URL('../js/budget-planner.js', import.meta.url), 'utf8'),
 ]);
 
@@ -63,17 +61,6 @@ function browserContext(ids, values = {}) {
   return { context, elements };
 }
 
-test('calculator page has a complete browser DOM contract and shared draft script', () => {
-  const requiredIds = [
-    'budgetNumber', 'budgetRange', 'qtyNumber', 'qtyRange', 'deliveryDate', 'deliveryTime',
-    'shippingMode', 'shippingFee', 'districtInput', 'shippingZone', 'copySummary',
-    'lineSelected', 'calcResults', 'calcSelectedList', 'sumTotal', 'floatingTotal',
-  ];
-  for (const id of requiredIds) assert.match(calculatorHtml, new RegExp(`id=["']${id}["']`));
-  assert.ok(calculatorHtml.indexOf('js/order-draft.js') < calculatorHtml.indexOf('js/budget-calculator.js'));
-  assert.match(calculatorHtml, /ส่งสรุปให้แอดมินตรวจสอบ/);
-});
-
 test('popular menu hydrates its grid in a browser-like context', () => {
   const { context, elements } = browserContext(['popularMenuGrid'], {
     EED_MENUS: [
@@ -102,30 +89,15 @@ test('snack box hydrates menus and renders delivery-zone choices', () => {
   assert.equal(elements.snackMinOrder.textContent, '30');
 });
 
-test('snack box builder updates summary in a browser-like context', () => {
-  const ids = [
+test('snack-box page has no calculator: product sets with LINE quotation CTAs', () => {
+  for (const id of [
     'sbDeliveryZone', 'sbSweetList', 'sbSavoryList', 'sbJuiceList', 'sbAddonList',
-    'sbSweetCount', 'sbSavoryCount', 'sbJuiceCount', 'sbQtyNumber', 'sbQtyRange',
-    'sbQtyDec', 'sbQtyInc', 'sbSumBudget', 'sbSumQty', 'sbSumQty2', 'sbSumAddon',
-    'sbSumAddonPrice', 'sbSumSweet', 'sbSumSavory', 'sbSumJuice', 'sbSumFood',
-    'sbSumShipLabel', 'sbSumShip', 'sbSumTotal', 'sbSumAvg', 'sbLineBtn', 'sbCopySummary', 'sbCopyToast',
-  ];
-  const { context, elements } = browserContext(ids, {
-    EED: {
-      shippingZones: { zone_1: { label: 'กรุงเทพชั้นใน', moto: 60, car: 120 } },
-      shippingZoneFreeThresholds: { zone_1: 50 },
-      shippingCarMinQty: 40,
-    },
-    EED_SNACK_MENUS: [],
-    EED_SNACK_ADDONS: [{ id: 'water', name: 'น้ำเปล่า', note: '', price: 0 }],
-  });
-  vm.runInNewContext(snackBuilderSource, context);
-
-  assert.match(elements.sbDeliveryZone.innerHTML, /zone_1/);
-  assert.equal(elements.sbSumQty.textContent, '30');
-  assert.match(elements.sbSumShip.textContent, /เลือกเขต/);
-  elements.sbQtyInc.dispatch('click');
-  assert.equal(elements.sbSumQty.textContent, '35');
+    'sbQtyNumber', 'sbQtyRange', 'sbSumBudget', 'sbSumQty', 'sbSumTotal', 'sbLineBtn', 'sbCopySummary',
+  ]) {
+    assert.ok(!new RegExp(`id=["']${id}["']`).test(snackHtml), `retired builder id must be gone: ${id}`);
+  }
+  assert.ok(!/snack-builder\.js/.test(snackHtml), 'retired builder script must not be loaded');
+  assert.ok(/30 กล่องต่อเมนู/.test(snackHtml), 'snack minimum per menu is stated');
 });
 
 test('planner applies local menu overrides without authentication or browser dependencies', () => {
@@ -149,5 +121,4 @@ test('planner applies local menu overrides without authentication or browser dep
 test('public pages load their browser enhancers after shared data scripts', () => {
   assert.ok(popularHtml.indexOf('js/menu-data.js') < popularHtml.indexOf('js/popular-menu-hydrate.js'));
   assert.ok(snackHtml.indexOf('js/snack-data.js') < snackHtml.indexOf('js/snack-hydrate.js'));
-  assert.ok(snackHtml.indexOf('js/snack-hydrate.js') < snackHtml.indexOf('js/snack-builder.js'));
 });

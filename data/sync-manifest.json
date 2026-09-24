@@ -27,7 +27,7 @@
       "source": "services.mealBox.minimumOrder",
       "variants": ["ขั้นต่ำ {{services.mealBox.minimumOrder}} กล่อง", "minimum {{services.mealBox.minimumOrder}} boxes"],
       "files": [
-        "about.html", "budget-calculator.html", "catering.html", "contact.html", "corporate.html",
+        "about.html", "catering.html", "contact.html", "corporate.html",
         "delivery-area.html", "donmueang.html", "faq.html", "huaykwang.html", "index.html",
         "khao-mok.html", "ladprao.html", "latkrabang.html", "popular-menu.html", "rama3.html",
         "sathorn-silom.html", "sathorn.html", "silom.html", "sukhumvit.html",
@@ -46,7 +46,7 @@
       "source": "business.halalCertificate",
       "variants": ["{{business.halalCertificate}}"],
       "files": [
-        "about.html", "budget-calculator.html", "buffet.html", "catering.html", "contact.html",
+        "about.html", "buffet.html", "catering.html", "contact.html",
         "corporate.html", "delivery-area.html", "donmueang.html", "faq.html", "glossary.html",
         "halal-cert.html", "huaykwang.html", "index.html", "khao-mok.html", "ladprao.html",
         "latkrabang.html", "live-cooking-station.html", "popular-menu.html", "rama3.html",
@@ -71,7 +71,7 @@
       "source": "documents.quoteWithinMinutes",
       "variants": ["{{documents.quoteWithinMinutes}} นาที", "{{documents.quoteWithinMinutes}} minutes"],
       "files": [
-        "about.html", "budget-calculator.html", "buffet.html", "catering.html", "contact.html",
+        "about.html", "buffet.html", "catering.html", "contact.html",
         "corporate.html", "donmueang.html", "faq.html", "halal-cert.html", "huaykwang.html",
         "index.html", "khao-mok.html", "ladprao.html", "latkrabang.html", "live-cooking-station.html",
         "popular-menu.html", "rama3.html", "sathorn-silom.html", "sathorn.html", "silom.html",

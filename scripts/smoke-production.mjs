@@ -29,7 +29,7 @@ async function notify(message) {
 try {
   const checks = await Promise.all([
     check('site_home', url('/')),
-    check('site_calculator', url('/budget-calculator.html')),
+    check('site_menu', url('/popular-menu.html')),
     ...(botHealthUrl ? [check('bot_health', botHealthUrl)] : []),
   ]);
   console.log(JSON.stringify({ status: 'ok', checks }));

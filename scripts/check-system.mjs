@@ -323,7 +323,7 @@ function assertUnique(values, message) {
 export function validateData(rules, catalog, legacy) {
   assert.equal(rules.schemaVersion, 1, 'unsupported business rules schema');
   assert.match(rules.revision, /^\d{4}-\d{2}-\d{2}$/, 'revision must use YYYY-MM-DD');
-  assert.equal(rules.services.mealBox.minimumOrder, 20);
+  assert.equal(rules.services.mealBox.minimumOrder, 10);
   assert.equal(rules.services.snackBox.minimumOrder, 30, 'Snack Box minimum must be 30');
   assert.deepEqual(
     new Set(Object.values(catalog.mins)),

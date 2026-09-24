@@ -63,7 +63,7 @@ test('name lookup answers a single menu with per-menu minimum', () => {
   assert.ok(draft.includes('ข้าวไก่เทอริยากิ ราคา 75 บาท/กล่องค่ะ'));
   assert.ok(draft.includes('เมนูนี้ขั้นต่ำ 5 กล่องต่อเมนูค่ะ'));
   assert.ok(!draft.includes('สั่งขั้นต่ำ'), 'must not confuse per-menu minimum with overall minimum');
-  assert.ok(!draft.includes('ขั้นต่ำ 20 กล่อง'), 'must never state the overall minimum as a menu fact');
+  assert.ok(!draft.includes('ขั้นต่ำ 10 กล่อง'), 'must never state the overall minimum as a menu fact');
 });
 
 test('clarify asks for the name with no lookup', () => {

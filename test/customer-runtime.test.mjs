@@ -1,12 +1,20 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import test from 'node:test';
 
-const [popularMenu, snackHydrate, snackBuilder] = await Promise.all([
+const [popularMenu, snackHydrate] = await Promise.all([
   readFile(new URL('../js/popular-menu-hydrate.js', import.meta.url), 'utf8'),
   readFile(new URL('../js/snack-hydrate.js', import.meta.url), 'utf8'),
-  readFile(new URL('../js/snack-builder.js', import.meta.url), 'utf8'),
 ]);
+
+async function missing(url) {
+  try {
+    await stat(new URL(url, import.meta.url));
+    return false;
+  } catch {
+    return true;
+  }
+}
 
 test('popular menu applies the complete catalog override shape', () => {
   for (const field of ['prices', 'mins', 'images', 'names', 'categories', 'deleted', 'newMenus']) {
@@ -15,10 +23,15 @@ test('popular menu applies the complete catalog override shape', () => {
   assert.match(popularMenu, /function applyCatalog/);
 });
 
-test('snack builder recalculates after hydration and uses delivery zones', () => {
+test('snack hydrate renders the product listing and uses delivery zones', () => {
   assert.match(snackHydrate, /snackCatalogHydrated/);
   assert.doesNotMatch(snackHydrate, /var rendered = false/);
-  assert.match(snackBuilder, /function getShipping/);
-  assert.match(snackBuilder, /shippingZoneFreeThresholds/);
-  assert.match(snackBuilder, /sbDeliveryZone/);
+});
+
+// Retired 2026-09-24: calculators are product pages now — no calculator DOM,
+// pricing engine, or builder script may remain in the repo.
+test('retired calculator pages and scripts are gone', async () => {
+  for (const file of ['../budget-calculator.html', '../js/budget-calculator.js', '../js/snack-builder.js']) {
+    assert.equal(await missing(file), true, `${file} must stay deleted`);
+  }
 });

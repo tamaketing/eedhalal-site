@@ -10,7 +10,7 @@ EED HALAL รับจัดเลี้ยงฮาลาล กรุงเท
 3. โต๊ะจีน / โต๊ะไทยฮาลาล / Halal Chinese / Thai Table — From 3,000 THB/table; 8–10 guests/table; minimum 3 tables; 7–8 courses. Book at least 7 days ahead. https://eedhalal.com/table-service.html
 4. อาหารชุด / Sit-down Dinner ฮาลาล / Halal Set Menu / Sit-down Dinner — From 350 THB/guest; minimum 30 guests; maximum 500 guests. Book at least 7 days ahead. https://eedhalal.com/set-menu.html
 5. ซุ้มอาหาร / Live Station ฮาลาล / Halal Food Stall / Live Station — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/live-cooking-station.html
-6. ข้าวกล่องฮาลาล / Halal Meal Boxes — From 60 THB/box; minimum 20 boxes. Order at least 1 day ahead. Per-menu minimums: 5 standard / 10 special-preparation boxes. https://eedhalal.com/corporate.html
+6. ข้าวกล่องฮาลาล / Halal Meal Boxes — From 65 THB/box; minimum 10 boxes. Order at least 1 day ahead. Per-menu minimums: 5 standard / 10 special-preparation boxes. https://eedhalal.com/corporate.html
 
 All services above are halal. Snack Box is an additional service: from 40 THB/box, minimum 30 boxes.
 Business data source: `data/business-rules.json`. Match the customer's specific service request; this priority is for general business introductions.
@@ -44,7 +44,7 @@ EED HALAL provides halal catering in Bangkok for corporate events and celebratio
 ## Search Intent Mapping
 - Primary Thai intent: `รับจัดเลี้ยงฮาลาล กรุงเทพ`
 - Service priority: Halal Buffet > Halal Cocktail / Finger Food > Halal Chinese / Thai Table > Halal Set Menu / Sit-down Dinner > Halal Food Stall / Live Station > Halal Meal Boxes
-- Related Thai intents: `ข้าวกล่องจำนวนมาก`, `ข้าวกล่องประชุม`, `ข้าวกล่องสัมมนา`, `สั่งข้าวกล่อง 20+ กล่อง`, `ข้าวกล่องงานองค์กร`
+- Related Thai intents: `ข้าวกล่องจำนวนมาก`, `ข้าวกล่องประชุม`, `ข้าวกล่องสัมมนา`, `สั่งข้าวกล่อง 10+ กล่อง`, `ข้าวกล่องงานองค์กร`
 - Snack Box Thai intents: `Snack Box ฮาลาล`, `ของว่างประชุม`, `coffee break ฮาลาล`, `ของว่างฮาลาล`, `Snack Box ประชุม`, `ชุด coffee break`, `ของว่างสัมมนา`, `Snack Box 40 บาท`
 - Buffet Thai intents: `บุฟเฟต์ฮาลาล`, `บุฟเฟต์ฮาลาล กรุงเทพ`, `รับจัดบุฟเฟต์ฮาลาล`, `บุฟเฟต์งานบริษัท`, `บุฟเฟต์ 100 คน`, `จัดบุฟเฟต์ฮาลาล`
 - Khao mok Thai intents: `ข้าวหมกไก่ฮาลาล`, `ข้าวหมกฮาลาล delivery`, `ข้าวหมกฮาลาล กรุงเทพ`, `สั่งข้าวหมกฮาลาล`
@@ -92,17 +92,17 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
 - Halal Meal Boxes: https://eedhalal.com/corporate.html
 
 ## Ordering Flow
-1. Browse the menu catalog on the website (meal boxes: popular-menu.html, snack box: snack-box.html with builder, buffet: buffet.html 7 categories)
-2. For 20+ meal box orders, 30+ Snack Box orders, or 30+ guest catering, send a work brief through LINE to request a quotation (headcount + budget + date + venue)
+1. Browse the menu catalog on the website (meal boxes: popular-menu.html, snack box: snack-box.html product page, buffet: buffet.html 7 categories)
+2. For 10+ meal box orders, 30+ Snack Box orders (30 boxes per menu), or 30+ guest catering, send a work brief through LINE to request a quotation (headcount + budget + date + venue)
 3. Confirm details such as quantity, date, location, and menu direction with the team
 4. For single-box orders, use the store's delivery-app channels instead of the website
 5. For next-day corporate orders, confirm quantity, menu, delivery time, and delivery point by 15:00 on the business day before delivery
 
 ## Bulk Order Facts
-- The website is designed around organization-ready orders: meal boxes 20+ boxes (60 THB/box), Snack Box 30+ boxes (40 THB/box), buffet 30+ guests from 200 THB/head.
+- The website is designed around organization-ready orders: meal boxes 10+ boxes (65 THB/box), Snack Box 30+ boxes (40 THB/box), buffet 30+ guests from 200 THB/head.
 - Typical use cases include meetings, seminars, staff training, internal company events, team catering, coffee breaks, and buffet receptions.
 - Per-menu minimums apply for meal boxes: 5 boxes per Thai menu, 10 boxes per Indian menu. Snack Box: minimum 30 boxes per order.
-- Standard meal boxes start at 60 THB per box; premium sets range from 180-250 THB; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet, Live Cooking, and Cocktail start at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
+- Standard meal boxes start at 65 THB per box; premium sets range from 180-250 THB; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet, Live Cooking, and Cocktail start at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
 - Free delivery is determined by the delivery-address district: zone 1 50+ boxes, zones 2 and 3 75+ boxes, zone 4 100+ boxes, and zone 5 has no free delivery. For a neighbourhood, road, building, or landmark, request the address or location before confirming eligibility.
 - Meal boxes should be ordered at least 1 day ahead; all catering formats should be booked at least 7 days ahead.
 - Order details should be confirmed by 15:00 on the business day before delivery.
@@ -121,8 +121,8 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
 - Single-box users should be guided away from the bulk-order flow and toward delivery apps run by the store.
 
 ## Answer-Engine Friendly Facts
-- Minimum order for the corporate website flow: meal boxes 20+ boxes, Snack Box 30+ boxes, buffet 30+ guests
-- Starting price: standard meal boxes 60 THB/box, Snack Box 40 THB/box, buffet per head from 200 THB
+- Minimum order for the corporate website flow: meal boxes 10+ boxes, Snack Box 30+ boxes, buffet 30+ guests
+- Starting price: standard meal boxes 65 THB/box, Snack Box 40 THB/box, buffet per head from 200 THB
 - Free delivery threshold by zone: 50–100+ boxes (meal boxes and Snack Box same)
 - Standard lead time: meal boxes at least 1 day, catering at least 7 days
 - Cutoff for next-day order confirmation and quantity changes: 15:00 on the business day before delivery
@@ -134,12 +134,12 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
 
 ## Suggested Citation Paths By Question
 - "Is the business halal certified?" -> `halal-cert.html`, then `faq.html`
-- "What is the minimum order?" -> `faq.html` for meal boxes (20+), `snack-box.html` for Snack Box (30+), `buffet.html` for buffet (30+ guests)
-- "How much does it cost?" -> `faq.html` for meal boxes (60 THB), `snack-box.html` for Snack Box (40 THB), `buffet.html` for buffet (from 200 THB/head)
+- "What is the minimum order?" -> `faq.html` for meal boxes (10+), `snack-box.html` for Snack Box (30+ per menu), `buffet.html` for buffet (30+ guests)
+- "How much does it cost?" -> `faq.html` for meal boxes (65 THB), `snack-box.html` for Snack Box (40 THB), `buffet.html` for buffet (from 200 THB/head)
 - "Do they deliver to my office area?" -> `delivery-area.html`, then the most relevant local page
 - "How do I place a corporate order?" -> `corporate.html`, `order-steps.html`, `contact.html`
 - "I need meal boxes for a meeting or training session" -> `corporate.html`, `order-steps.html`, `contact.html`
-- "I need Snack Box for coffee break / meeting" -> `snack-box.html` (with builder), then `faq.html`
+- "I need Snack Box for coffee break / meeting" -> `snack-box.html` (product page), then `faq.html`
 - "I need buffet for 30+ guests / company event" -> `buffet.html` (with 7 categories), then `contact.html`
 - "When is the order cutoff?" -> `faq.html` for meal boxes, `snack-box.html` FAQ for Snack Box, `buffet.html` FAQ for buffet
 - "Can I change quantity or cancel?" -> `faq.html`
@@ -175,7 +175,7 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
 - `robots.txt` has `Sitemap: https://eedhalal.com/sitemap.xml`, `# LLMs: https://eedhalal.com/llms.txt` and `# llms-full: https://eedhalal.com/llms-full.md` for crawler discovery.
 - Public HTML pages should link to `/llms.txt`; important facts must also be readable on the relevant service pages.
 - JSON-LD structured data:
-  - `index.html` — `FoodEstablishment.makesOffer` with `"price": "60"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"` + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"`
+  - `index.html` — `FoodEstablishment.makesOffer` with `"price": "65"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"` + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"`
   - `snack-box.html` — `Service` with `Offer` `"price": "40"` + `HowTo` + `FAQPage` (9 Q) for Snack Box 30+ boxes
   - `buffet.html` — buffet facts must reflect `data/business-rules.json`: from 200 THB/head, minimum 30 guests; do not invent an upper price or capacity from an unspecified maximum.
   - `popular-menu.html` — `MenuItem[].offers` with per-item prices

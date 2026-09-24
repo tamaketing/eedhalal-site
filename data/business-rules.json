@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "2026-09-16",
+  "revision": "2026-09-24",
   "business": {
     "name": "EED HALAL",
     "owner": "เชฟและผู้ก่อตั้ง พี่อี๊ด",
@@ -19,10 +19,10 @@
   },
   "services": {
     "mealBox": {
-      "priceFrom": 60,
+      "priceFrom": 65,
       "premiumPriceFrom": 180,
       "premiumPriceTo": 250,
-      "minimumOrder": 20,
+      "minimumOrder": 10,
       "standardMenuMinimum": 5,
       "specialMenuMinimum": 10,
       "menuCountFrom": 30,
@@ -193,7 +193,7 @@
   },
   "leadTimes": [
     {
-      "minQuantity": 20,
+      "minQuantity": 10,
       "maxQuantity": null,
       "minimumBusinessDays": 1,
       "maximumBusinessDays": null

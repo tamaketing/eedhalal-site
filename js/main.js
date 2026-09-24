@@ -43,7 +43,7 @@
   var KHAO_MOK_PATH = fileAware(EN_PREFIX + '/khao-mok.html');
   var GLOSSARY_PATH = fileAware(EN_PREFIX + '/glossary.html');
   var BLOG_INDEX_PATH = fileAware('/blog/index.html');
-  var BUDGET_CALC_PATH = fileAware('/budget-calculator.html');
+  var CATERING_BRIEF_PATH = fileAware('/catering-brief.html');
   var ORDER_STEPS_PATH = fileAware(EN_PREFIX + '/order-steps.html');
   var DELIVERY_AREA_PATH = fileAware(EN_PREFIX + '/delivery-area.html');
   var HALAL_CERT_PATH = fileAware(EN_PREFIX + '/halal-cert.html');
@@ -220,7 +220,6 @@
     if (path === '/faq.html') return 'faq';
     if (path === '/sathorn.html' || path === '/silom.html' || path === '/sathorn-silom.html' || path === '/sukhumvit.html' || path === '/rama3.html' || path === '/ladprao.html' || path === '/huaykwang.html' || path === '/donmueang.html' || path === '/latkrabang.html') return 'location';
     if (path === '/khao-mok.html' || path === '/glossary.html') return 'menu';
-    if (path === '/budget-calculator.html') return 'calculator';
     if (path.indexOf('/blog/') === 0) return 'blog';
     return 'page';
   }
@@ -805,7 +804,7 @@
         <a href="' + HOME_PATH + '">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
         <a href="' + ABOUT_PATH + '">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32</a>\
         <a href="' + STORY_PATH + '">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27\u0e02\u0e2d\u0e07\u0e40\u0e23\u0e32</a>\
-        <a href="' + BUDGET_CALC_PATH + '">คำนวณงบข้าวกล่อง</a>\
+        <a href="' + CATERING_BRIEF_PATH + '">ขอใบเสนอราคา</a>\
         <a href="' + MENU_PATH + '">\u0e40\u0e21\u0e19\u0e39\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21</a>\
         <a href="' + KHAO_MOK_PATH + '">ข้าวหมกไก่</a>\
         <a href="' + SNACK_BOX_PATH + '">\u0e02\u0e2d\u0e07\u0e27\u0e48\u0e32\u0e07 Snack Box</a>\

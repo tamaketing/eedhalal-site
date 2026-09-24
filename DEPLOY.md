@@ -20,14 +20,14 @@
 ## ทดสอบ
 - รัน `node scripts/check-system.mjs`
 - รัน `node --test`
-- เปิดผ่าน GitHub Pages หรือใช้ `start-server.bat` แล้วเปิด `http://localhost:8000/budget-calculator.html`
+- เปิดผ่าน GitHub Pages หรือใช้ `start-server.bat` แล้วเปิด `http://localhost:8000/popular-menu.html`
 
 ## ไฟล์ที่เกี่ยวข้อง
 - `data/business-rules.json` — ต้นทางกฎธุรกิจทั้งหมด รวมพื้นที่ส่ง ค่าส่ง และเกณฑ์ส่งฟรี
 - `data/planner-overrides.json` — ต้นทาง catalog override เช่น เมนู ราคา และขั้นต่ำรายเมนู
 - `js/business-data.js` — generated compatibility data สำหรับกฎธุรกิจบนหน้าเว็บ
 - `js/menu-data.js` — generated compatibility data สำหรับเมนูบนหน้าเว็บ
-- `js/budget-calculator.js` — แสดงข้อมูลจาก `menu-data.js` แบบ static
+- `js/popular-menu-hydrate.js` — แสดงข้อมูลจาก `menu-data.js` แบบ static (หน้า `budget-calculator.html` และ `js/budget-calculator.js` ถูกถอดออกแล้ว)
 - `js/budget-planner.js` — เครื่องมือช่วยแก้/ส่งออกข้อมูลเมนูในเครื่อง
 - `scripts/check-system.mjs` — สร้างไฟล์ AI และตรวจข้อมูลทุกส่วน
 - `test/system-rules.test.mjs` — regression tests ของกฎธุรกิจ
