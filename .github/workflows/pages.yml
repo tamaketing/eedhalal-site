@@ -28,6 +28,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Verify business and AI data
         run: |
           node scripts/check-repository-safety.mjs
