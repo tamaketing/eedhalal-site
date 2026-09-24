@@ -133,7 +133,7 @@ body.home-minimal .hm-figure img {
 body.home-minimal .hm-hero-figure img {
   height: 480px;
   object-fit: cover;
-  object-position: center 48%;
+  object-position: center 75%;
 }
 
 body.home-minimal .hm-figure figcaption {
