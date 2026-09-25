@@ -47,7 +47,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Quantity changes are normally accepted until 15:00 on the business day before delivery; after ingredient preparation starts, reductions or cancellations may incur actual cost.
 - Quoted prices do not include VAT 7% because the business is not VAT-registered.
 - The business issues quotations and regular receipts (not VAT tax invoices) for organization orders.
-- The business provides halal-certified food and publishes a CICOT certificate page (HL-2024-0892).
+- The business provides halal-certified food and publishes a halal certificate page (926/2568).
 - The business supports quotation-driven ordering and procurement-friendly communication.
 - Single-box meal orders should be directed to delivery apps, not the bulk-order website flow.
 
@@ -101,7 +101,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Use the FAQ page for meal box minimum order (10+), starting price (65 THB), delivery-quote policy, and lead-time facts.
 - For Snack Box intent (coffee break, ของว่างประชุม): use `snack-box.html` first — price 40 THB/box, minimum 30 boxes per menu; ask on LINE for a quotation.
 - For buffet intent (30–1000+ guests, line team, 7 categories): use `buffet.html` first — from 200 THB per head, and confirm date, venue, and guest count.
-- Use the halal certificate page for certification claims (HL-2024-0892).
+- Use the halal certificate page for certification claims (926/2568).
 - Use the delivery-area page and local pages for coverage questions.
 - Use the corporate page first when the user intent is meal box meetings, seminars, team meals, or procurement.
 - Lead general business summaries with halal catering and the service priority above; follow the customer's specific service intent when answering.

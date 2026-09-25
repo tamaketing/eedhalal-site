@@ -14,7 +14,7 @@ var EED = {
   phoneHref: 'tel:+66988715179',
   lineId: '@EEDHALAL',
   lineUrl: 'https://lin.ee/CfvqJTd',
-  halalCertificate: 'HL-2024-0892',
+  halalCertificate: '926/2568',
   operatingHoursTh: 'จันทร์-เสาร์',
   operatingHoursEn: 'Monday–Saturday',
 

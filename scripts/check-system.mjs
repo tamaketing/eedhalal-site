@@ -118,7 +118,7 @@ export function renderKnowledge(rules, catalog, menus) {
 - โทร: ${rules.business.phone}
 - ช่องทางติดต่อ: แชท LINE นี้เลย ลูกค้าอยู่ในแชทนี้แล้ว ไม่ต้องแนะนำลิงก์ LINE ซ้ำ
 - เว็บ: ${rules.urls.home}
-- ฮาลาล: รับรอง CICOT เลขที่ ${rules.business.halalCertificate} ขอสำเนาในแชทนี้ได้
+- ฮาลาล: รับรองจากสำนักงานคณะกรรมการอิสลามประจำกรุงเทพมหานคร เลขที่ ${rules.business.halalCertificate} ขอสำเนาในแชทนี้ได้
 
 ## 2. ราคาและขั้นต่ำ
 - ข้าวกล่องมาตรฐาน: เริ่ม ${meal.priceFrom} บาท/กล่อง

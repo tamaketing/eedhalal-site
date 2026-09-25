@@ -540,7 +540,7 @@
       <img src="' + LOGO_PATH + '" alt="EED HALAL" class="logo-img">\
       <div class="logo-text">\
         <div class="logo-title">EED HALAL</div>\
-        <span class="cicot-badge">CICOT \u2713</span>\
+        <span class="cicot-badge">HALAL \u2713</span>\
       </div>\
     </a>\
     <nav class="nav-desktop" aria-label="Primary">\
@@ -627,7 +627,7 @@
       <img src="' + LOGO_PATH + '" alt="EED HALAL" class="logo-img">\
       <div class="logo-text">\
         <div class="logo-title">EED HALAL</div>\
-        <span class="cicot-badge">CICOT \u2713</span>\
+        <span class="cicot-badge">HALAL \u2713</span>\
       </div>\
     </a>\
     <nav class="nav-desktop" aria-label="หลัก">\
@@ -722,7 +722,7 @@
         </div>\
       </a>\
       <a href="' + PHONE_HREF + '" class="footer-phone" style="margin-top:0.75rem" data-track-event="lead_phone_click" data-track-section="footer" data-track-source="site_footer">' + PHONE_DISPLAY + '</a>\
-      <p class="footer-cert-text">CICOT Halal Certified | Regular Receipt Issued</p>\
+      <p class="footer-cert-text">Halal Certified | Regular Receipt Issued</p>\
     </div>\
     <div>\
       <div class="footer-heading">Pages</div>\
@@ -778,9 +778,9 @@
     </div>\
   </div>\
   <div class="footer-bottom">\
-    <p class="footer-copy">&copy; 2024 EED HALAL. CICOT Halal Certified</p>\
+    <p class="footer-copy">&copy; 2024 EED HALAL. Halal Certified</p>\
     <div class="footer-tags">\
-      <span>HL-2024-0892</span>\
+      <span>926/2568</span>\
       <span>Best Seller</span>\
       <span>Grilled</span>\
     </div>\
@@ -799,7 +799,7 @@
         </div>\
       </a>\
       <a href="' + PHONE_HREF + '" class="footer-phone" style="margin-top:0.75rem" data-track-event="lead_phone_click" data-track-section="footer" data-track-source="site_footer">' + PHONE_DISPLAY + '</a>\
-      <p class="footer-cert-text">\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e15 CICOT | \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e40\u0e2a\u0e23\u0e47\u0e08\u0e23\u0e31\u0e1a\u0e40\u0e07\u0e34\u0e19\u0e44\u0e14\u0e49</p>\
+      <p class="footer-cert-text">\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e15 | \u0e2d\u0e2d\u0e01\u0e43\u0e1a\u0e40\u0e2a\u0e23\u0e47\u0e08\u0e23\u0e31\u0e1a\u0e40\u0e07\u0e34\u0e19\u0e44\u0e14\u0e49</p>\
     </div>\
     <div>\
       <div class="footer-heading">\u0e2b\u0e19\u0e49\u0e32\u0e40\u0e27\u0e47\u0e1a</div>\
@@ -857,9 +857,9 @@
     </div>\
   </div>\
   <div class="footer-bottom">\
-    <p class="footer-copy">&copy; 2024 EED HALAL. \u0e2e\u0e32\u0e25\u0e32\u0e25\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e15 CICOT</p>\
+    <p class="footer-copy">&copy; 2024 EED HALAL. \u0e2e\u0e32\u0e25\u0e32\u0e25\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e15</p>\
     <div class="footer-tags">\
-      <span>HL-2024-0892</span>\
+      <span>926/2568</span>\
       <span>\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21</span>\
       <span>Grilled</span>\
     </div>\
@@ -1163,7 +1163,7 @@
               "name": "EED HALAL \u0e23\u0e31\u0e1a\u0e23\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "EED HALAL \u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e23\u0e31\u0e1a\u0e23\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e17\u0e32\u0e07\u0e01\u0e32\u0e23\u0e08\u0e32\u0e01\u0e04\u0e13\u0e30\u0e01\u0e23\u0e23\u0e21\u0e01\u0e32\u0e23\u0e01\u0e25\u0e32\u0e07\u0e2d\u0e34\u0e2a\u0e25\u0e32\u0e21\u0e41\u0e2b\u0e48\u0e07\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e44\u0e17\u0e22 (CICOT) \u0e40\u0e25\u0e02\u0e17\u0e35\u0e48 HL-2024-0892 \u0e04\u0e23\u0e2d\u0e1a\u0e04\u0e25\u0e38\u0e21\u0e15\u0e31\u0e49\u0e07\u0e41\u0e15\u0e48\u0e01\u0e32\u0e23\u0e04\u0e31\u0e14\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e27\u0e31\u0e15\u0e16\u0e38\u0e14\u0e34\u0e1a\u0e15\u0e49\u0e2d\u0e07\u0e44\u0e1b\u0e08\u0e19\u0e16\u0e36\u0e07\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e48\u0e07"
+                "text": "EED HALAL \u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e23\u0e31\u0e1a\u0e23\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e17\u0e32\u0e07\u0e01\u0e32\u0e23\u0e08\u0e32\u0e01\u0e2a\u0e33\u0e19\u0e31\u0e01\u0e07\u0e32\u0e19\u0e04\u0e13\u0e30\u0e01\u0e23\u0e23\u0e21\u0e01\u0e32\u0e23\u0e2d\u0e34\u0e2a\u0e25\u0e32\u0e21\u0e1b\u0e23\u0e30\u0e08\u0e33\u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e\u0e21\u0e2b\u0e32\u0e19\u0e04\u0e23 \u0e40\u0e25\u0e02\u0e17\u0e35\u0e48 926/2568 \u0e23\u0e31\u0e1a\u0e23\u0e2d\u0e07\u0e2d\u0e32\u0e2b\u0e32\u0e23\u0e1b\u0e23\u0e38\u0e07\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e30\u0e17\u0e32\u0e19"
               }
             },
             {
