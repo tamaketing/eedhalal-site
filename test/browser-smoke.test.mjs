@@ -119,6 +119,6 @@ test('planner applies local menu overrides without authentication or browser dep
 });
 
 test('public pages load their browser enhancers after shared data scripts', () => {
-  assert.ok(popularHtml.indexOf('js/menu-data.js') < popularHtml.indexOf('js/popular-menu-hydrate.js'));
+  assert.ok(popularHtml.indexOf('js/menu-data.js') < popularHtml.indexOf('js/popular-menu.js'));
   assert.ok(snackHtml.indexOf('js/snack-data.js') < snackHtml.indexOf('js/snack-hydrate.js'));
 });
