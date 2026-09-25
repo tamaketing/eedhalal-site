@@ -28,6 +28,7 @@
   var isEN = EN_PREFIX === '/en';
 
   var HOME_PATH = fileAware(EN_PREFIX + '/index.html');
+  var LANGUAGE_PATH = fileAware(isEN ? '/index.html' : '/en/index.html');
   var ABOUT_PATH = fileAware(EN_PREFIX + '/about.html');
   var STORY_PATH = fileAware(EN_PREFIX + '/story.html');
   var CORPORATE_PATH = fileAware(EN_PREFIX + '/corporate.html');
@@ -573,7 +574,7 @@
         Message LINE\
       </a>\
     </div>\
-    <button class="mobile-toggle" id="mobileMenuBtn" aria-label="Toggle menu" aria-expanded="false">\
+    <button class="mobile-toggle" id="mobileMenuBtn" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false">\
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\
         <line id="menuOpenIcon" x1="4" y1="7" x2="20" y2="7"></line>\
         <line id="menuOpenIcon2" x1="4" y1="12" x2="20" y2="12"></line>\
@@ -583,12 +584,12 @@
       </svg>\
     </button>\
   </div>\
-  <div class="mobile-menu" id="mobileMenu">\
+  <nav class="mobile-menu" id="mobileMenu" aria-label="Mobile menu" hidden>\
     <div class="mobile-menu-inner">\
       <a href="' + HOME_PATH + '" class="mobile-link">Home</a>\
       <div class="mobile-dropdown">\
-        <button class="mobile-link mobile-dropdown-toggle">Services <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
-        <div class="mobile-dropdown-menu">\
+        <button class="mobile-link mobile-dropdown-toggle" type="button" aria-expanded="false" aria-controls="mobileServicesMenu">Services <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="mobile-dropdown-menu" id="mobileServicesMenu">\
           <a href="' + CATERING_PATH + '" class="mobile-dropdown-item">Catering</a>\
           <a href="' + BUFFET_PATH + '" class="mobile-dropdown-item">Buffet</a>\
           <a href="' + COCKTAIL_PATH + '" class="mobile-dropdown-item">Cocktail / Finger Food</a>\
@@ -602,20 +603,21 @@
         </div>\
       </div>\
       <div class="mobile-dropdown">\
-        <button class="mobile-link mobile-dropdown-toggle">About <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
-        <div class="mobile-dropdown-menu">\
+        <button class="mobile-link mobile-dropdown-toggle" type="button" aria-expanded="false" aria-controls="mobileAboutMenu">About <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="mobile-dropdown-menu" id="mobileAboutMenu">\
           <a href="' + ABOUT_PATH + '" class="mobile-dropdown-item">About EED HALAL</a>\
           <a href="' + STORY_PATH + '" class="mobile-dropdown-item">Our 40-Year Story</a>\
         </div>\
       </div>\
       <a href="' + CONTACT_PATH + '" class="mobile-link">Contact</a>\
+      <div class="mobile-language" aria-label="Language"><span>Language</span><span lang="en" aria-current="true">English</span><a href="' + LANGUAGE_PATH + '" lang="th">ไทย</a></div>\
       <div class="mobile-cta">\
         <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" class="btn btn-gold w-full" style="justify-content:center" data-track-event="lead_line_click" data-track-section="header" data-track-source="mobile_nav">\
           Message LINE\
         </a>\
       </div>\
     </div>\
-  </div>\
+  </nav>\
 </header>';
     }
     return '\
@@ -659,7 +661,7 @@
         \u0e17\u0e31\u0e01 LINE\
       </a>\
     </div>\
-    <button class="mobile-toggle" id="mobileMenuBtn" aria-label="Toggle menu" aria-expanded="false">\
+    <button class="mobile-toggle" id="mobileMenuBtn" aria-label="เปิดเมนู" aria-controls="mobileMenu" aria-expanded="false">\
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\
         <line id="menuOpenIcon" x1="4" y1="7" x2="20" y2="7"></line>\
         <line id="menuOpenIcon2" x1="4" y1="12" x2="20" y2="12"></line>\
@@ -669,12 +671,12 @@
       </svg>\
     </button>\
   </div>\
-  <div class="mobile-menu" id="mobileMenu">\
+  <nav class="mobile-menu" id="mobileMenu" aria-label="เมนูบนมือถือ" hidden>\
     <div class="mobile-menu-inner">\
       <a href="' + HOME_PATH + '" class="mobile-link">\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01</a>\
       <div class="mobile-dropdown">\
-        <button class="mobile-link mobile-dropdown-toggle">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
-        <div class="mobile-dropdown-menu">\
+        <button class="mobile-link mobile-dropdown-toggle" type="button" aria-expanded="false" aria-controls="mobileServicesMenu">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="mobile-dropdown-menu" id="mobileServicesMenu">\
           <a href="' + CATERING_PATH + '" class="mobile-dropdown-item">\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
           <a href="' + BUFFET_PATH + '" class="mobile-dropdown-item">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e48\u0e15\u0e4c</a>\
           <a href="' + COCKTAIL_PATH + '" class="mobile-dropdown-item">ค็อกเทลฮาลาล</a>\
@@ -688,20 +690,21 @@
         </div>\
       </div>\
       <div class="mobile-dropdown">\
-        <button class="mobile-link mobile-dropdown-toggle">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
-        <div class="mobile-dropdown-menu">\
+        <button class="mobile-link mobile-dropdown-toggle" type="button" aria-expanded="false" aria-controls="mobileAboutMenu">\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e32 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>\
+        <div class="mobile-dropdown-menu" id="mobileAboutMenu">\
           <a href="' + ABOUT_PATH + '" class="mobile-dropdown-item">\u0e23\u0e39\u0e49\u0e08\u0e31\u0e01 EED HALAL</a>\
           <a href="' + STORY_PATH + '" class="mobile-dropdown-item">\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27 40 \u0e1b\u0e35</a>\
         </div>\
       </div>\
       <a href="' + CONTACT_PATH + '" class="mobile-link">\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d</a>\
+      <div class="mobile-language" aria-label="ภาษา"><span>ภาษา</span><span lang="th" aria-current="true">ไทย</span><a href="' + LANGUAGE_PATH + '" lang="en">English</a></div>\
       <div class="mobile-cta">\
         <a href="' + QUOTE_LINE_URL + '" target="_blank" rel="noopener noreferrer" class="btn btn-gold w-full" style="justify-content:center" data-track-event="lead_line_click" data-track-section="header" data-track-source="mobile_nav">\
           \u0e17\u0e31\u0e01 LINE\
         </a>\
       </div>\
     </div>\
-  </div>\
+  </nav>\
 </header>';
   }
 
@@ -887,39 +890,90 @@
 
     var menuOpenLines = document.querySelectorAll('#menuOpenIcon, #menuOpenIcon2, #menuOpenIcon3');
     var menuCloseLines = document.querySelectorAll('#menuCloseIcon, #menuCloseIcon2');
+    var toggles = menu.querySelectorAll('.mobile-dropdown-toggle');
 
-    btn.addEventListener('click', function() {
-      var isOpen = menu.classList.toggle('open');
+    function setMenuOpen(isOpen, returnFocus) {
+      menu.classList.toggle('open', isOpen);
+      menu.hidden = !isOpen;
       btn.setAttribute('aria-expanded', String(isOpen));
+      btn.setAttribute('aria-label', isEN ? (isOpen ? 'Close menu' : 'Open menu') : (isOpen ? '\u0e1b\u0e34\u0e14\u0e40\u0e21\u0e19\u0e39' : '\u0e40\u0e1b\u0e34\u0e14\u0e40\u0e21\u0e19\u0e39'));
       menuOpenLines.forEach(function(el) { el.classList.toggle('hidden', isOpen); });
       menuCloseLines.forEach(function(el) { el.classList.toggle('hidden', !isOpen); });
+      if (!isOpen) {
+        menu.querySelectorAll('.mobile-dropdown.open').forEach(function(dropdown) {
+          dropdown.classList.remove('open');
+        });
+        toggles.forEach(function(toggle) { toggle.setAttribute('aria-expanded', 'false'); });
+      }
+      if (returnFocus) btn.focus();
+    }
+
+    function activateOnKeyboard(button) {
+      button.addEventListener('keydown', function(event) {
+        if ((event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') || event.repeat) return;
+        event.preventDefault();
+        this.click();
+      });
+    }
+
+    btn.addEventListener('click', function() {
+      setMenuOpen(menu.hidden, false);
     });
+    activateOnKeyboard(btn);
 
     // Plain links (and submenu items) close the menu.
     // Dropdown toggles are excluded — they expand in place (see handler below).
-    menu.querySelectorAll('.mobile-link:not(.mobile-dropdown-toggle), .mobile-dropdown-item').forEach(function(link) {
+    menu.querySelectorAll('.mobile-link:not(.mobile-dropdown-toggle), .mobile-dropdown-item, .mobile-language a, .mobile-cta a').forEach(function(link) {
       link.addEventListener('click', function() {
-        menu.classList.remove('open');
-        btn.setAttribute('aria-expanded', 'false');
-        menuOpenLines.forEach(function(el) { el.classList.remove('hidden'); });
-        menuCloseLines.forEach(function(el) { el.classList.add('hidden'); });
+        setMenuOpen(false, false);
       });
     });
 
-    menu.querySelectorAll('[data-mdd-btn]').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var content = this.nextElementSibling;
-        var isOpen = content.classList.toggle('open');
-        this.setAttribute('aria-expanded', String(isOpen));
-      });
-    });
-
-    document.querySelectorAll('.mobile-dropdown-toggle').forEach(function(btn) {
-      btn.addEventListener('click', function() {
+    toggles.forEach(function(toggle) {
+      activateOnKeyboard(toggle);
+      toggle.addEventListener('click', function() {
         var dropdown = this.closest('.mobile-dropdown');
         var isOpen = dropdown.classList.toggle('open');
         this.setAttribute('aria-expanded', String(isOpen));
+        if (isOpen) {
+          menu.querySelectorAll('.mobile-dropdown.open').forEach(function(other) {
+            if (other === dropdown) return;
+            other.classList.remove('open');
+            var otherToggle = other.querySelector('.mobile-dropdown-toggle');
+            if (otherToggle) otherToggle.setAttribute('aria-expanded', 'false');
+          });
+        }
       });
+    });
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key !== 'Escape' || menu.hidden) return;
+      event.preventDefault();
+      setMenuOpen(false, true);
+    });
+
+    window.addEventListener('resize', function() {
+      if (window.innerWidth >= 768 && !menu.hidden) setMenuOpen(false, false);
+    });
+
+    menu.hidden = true;
+  }
+
+  function markCurrentMobileLink() {
+    var menu = document.getElementById('mobileMenu');
+    if (!menu) return;
+    var currentPath = window.location.pathname;
+    if (currentPath === '/') currentPath = '/index.html';
+    if (currentPath.endsWith('/')) currentPath += 'index.html';
+    menu.querySelectorAll('a[href]').forEach(function(link) {
+      var target;
+      try { target = new URL(link.getAttribute('href'), window.location.href).pathname; } catch (e) { return; }
+      if (target === currentPath) {
+        link.setAttribute('aria-current', 'page');
+        var dropdown = link.closest('.mobile-dropdown');
+        var toggle = dropdown && dropdown.querySelector('.mobile-dropdown-toggle');
+        if (toggle) toggle.setAttribute('data-current-page', 'true');
+      }
     });
   }
 
@@ -1117,7 +1171,7 @@
               "name": "\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33\u0e01\u0e35\u0e48\u0e01\u0e25\u0e48\u0e2d\u0e07?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33 10 \u0e01\u0e25\u0e48\u0e2d\u0e07\u0e02\u0e36\u0e49\u0e19\u0e44\u0e1b \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e17\u0e35\u0e48 60 \u0e1a\u0e32\u0e17/\u0e01\u0e25\u0e48\u0e2d\u0e07 ส่งฟรีตามเขต zone 1 50+ กล่อง zone 2-3 75+ กล่อง zone 4 100+ กล่อง zone 5 ไม่มีส่งฟรี"
+                "text": "\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33 10 \u0e01\u0e25\u0e48\u0e2d\u0e07\u0e02\u0e36\u0e49\u0e19\u0e44\u0e1b \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e17\u0e35\u0e48 65 \u0e1a\u0e32\u0e17/\u0e01\u0e25\u0e48\u0e2d\u0e07 กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ"
               }
             },
             {
@@ -1222,6 +1276,7 @@
     var footerEl = document.getElementById('footer');
     if (footerEl) footerEl.innerHTML = getFooterHTML();
 
+    markCurrentMobileLink();
     initMobileMenu();
     initDesktopDropdowns();
     initHeaderScroll();
