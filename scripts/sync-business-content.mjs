@@ -4,9 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rules = JSON.parse(await readFile(path.join(ROOT, 'data/business-rules.json'), 'utf8'));
-const zones = rules.delivery.zones;
-export const thaiDelivery = `ส่งฟรีตามเขต: zone 1 ${zones.zone_1.freeFrom}+ กล่อง, zone 2 ${zones.zone_2.freeFrom}+ กล่อง, zone 3 ${zones.zone_3.freeFrom}+ กล่อง, zone 4 ${zones.zone_4.freeFrom}+ กล่อง, zone 5 ไม่มีส่งฟรี`;
-export const englishDelivery = `Free delivery by zone: zone 1 ${zones.zone_1.freeFrom}+ boxes, zone 2 ${zones.zone_2.freeFrom}+ boxes, zone 3 ${zones.zone_3.freeFrom}+ boxes, zone 4 ${zones.zone_4.freeFrom}+ boxes; zone 5 has no free delivery`;
+export const thaiDelivery = rules.delivery.messageTh;
+export const englishDelivery = rules.delivery.messageEn;
 
 // Only explicitly marked generated sections may be rewritten. This prevents a
 // policy sync from modifying unrelated prose, JSON, or structured data.

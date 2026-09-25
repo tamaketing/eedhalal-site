@@ -45,11 +45,11 @@
         district: String(delivery.district || '')
       },
       shipping: {
-        mode: String(shipping.mode || 'zone'),
+        mode: String(shipping.mode || 'pending'),
         fee: number(shipping.fee),
         label: String(shipping.label || 'ค่าส่ง'),
-        text: String(shipping.text || 'รอทีมงานยืนยัน'),
-        requiresConfirmation: !!shipping.requiresConfirmation
+        text: String(shipping.text || 'รอแอดมินยืนยัน'),
+        requiresConfirmation: shipping.requiresConfirmation !== undefined ? !!shipping.requiresConfirmation : true
       },
       items: items.map(function(item){
         return {
@@ -89,7 +89,7 @@
     return save({
       source:'budget_calculator_legacy',
       delivery:{date:window.localStorage.getItem('eed_delivery_date_v1') || '',time:window.localStorage.getItem('eed_delivery_time_v1') || '',district:shipping.district || ''},
-      shipping:{mode:shipping.mode || 'zone',fee:shipping.fee || 0,label:'ค่าจัดส่ง',text:'รอทีมงานยืนยัน',requiresConfirmation:true},
+      shipping:{mode:shipping.mode || 'pending',fee:shipping.fee || 0,label:'ค่าจัดส่ง',text:'รอแอดมินยืนยัน',requiresConfirmation:true},
       totals:{requestedQuantity:legacy.quantity || 0,selectedQuantity:selectedQuantity,food:0,shipping:0,grand:0},
       legacy:{selected:selected,selectedToppings:legacy.selectedToppings || {},selectedMeats:legacy.selectedMeats || {}}
     });

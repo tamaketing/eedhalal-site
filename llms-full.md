@@ -10,7 +10,7 @@ EED HALAL รับจัดเลี้ยงฮาลาล กรุงเท
 3. โต๊ะจีน / โต๊ะไทยฮาลาล / Halal Chinese / Thai Table — From 3,000 THB/table; 8–10 guests/table; minimum 3 tables; 7–8 courses. Book at least 7 days ahead. https://eedhalal.com/table-service.html
 4. อาหารชุด / Sit-down Dinner ฮาลาล / Halal Set Menu / Sit-down Dinner — From 350 THB/guest; minimum 30 guests; maximum 500 guests. Book at least 7 days ahead. https://eedhalal.com/set-menu.html
 5. ซุ้มอาหาร / Live Station ฮาลาล / Halal Food Stall / Live Station — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/live-cooking-station.html
-6. ข้าวกล่องฮาลาล / Halal Meal Boxes — From 65 THB/box; minimum 10 boxes. Order at least 1 day ahead. Per-menu minimums: 5 standard / 10 special-preparation boxes. https://eedhalal.com/corporate.html
+6. ข้าวกล่องฮาลาล / Halal Meal Boxes — From 65 THB/box; minimum 10 boxes. Order at least 1 day ahead. Per-menu minimums: 10 standard / 10 special-preparation boxes. https://eedhalal.com/corporate.html
 
 All services above are halal. Snack Box is an additional service: from 40 THB/box, minimum 30 boxes.
 Business data source: `data/business-rules.json`. Match the customer's specific service request; this priority is for general business introductions.
@@ -24,7 +24,7 @@ EED HALAL provides halal catering in Bangkok for corporate events and celebratio
 - Founder / owner: Chef and founder Eed (พี่อี๊ด), carrying on family recipes of 40+ years
 - Business type: halal catering for corporate events and celebrations, with halal meal boxes and office delivery (operates as EED HALAL; no registered company name)
 - Address: 478/3 Soi Charoen Rat 1, Yan Nawa, Sathorn, Bangkok 10120
-- Service area: Bangkok; Free delivery by zone: zone 1 50+ boxes, zone 2 75+ boxes, zone 3 75+ boxes, zone 4 100+ boxes; zone 5 has no free delivery; locations outside Bangkok are quoted case by case
+- Service area: Bangkok; delivery: Please contact our team for a delivery quote with your delivery location and order quantity (no fixed rate table); locations outside Bangkok are quoted case by case
 - Halal certification: CICOT certificate no. HL-2024-0892
 - Operating hours: Monday-Saturday 08:00-18:00 (closed Sunday)
 - Contact: LINE @EEDHALAL (https://lin.ee/CfvqJTd), phone +66 98 871 5179, Facebook page
@@ -103,7 +103,7 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
 - Typical use cases include meetings, seminars, staff training, internal company events, team catering, coffee breaks, and buffet receptions.
 - Per-menu minimums apply for meal boxes: 5 boxes per Thai menu, 10 boxes per Indian menu. Snack Box: minimum 30 boxes per order.
 - Standard meal boxes start at 65 THB per box; premium sets range from 180-250 THB; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet, Live Cooking, and Cocktail start at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
-- Free delivery is determined by the delivery-address district: zone 1 50+ boxes, zones 2 and 3 75+ boxes, zone 4 100+ boxes, and zone 5 has no free delivery. For a neighbourhood, road, building, or landmark, request the address or location before confirming eligibility.
+- Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; all catering formats should be booked at least 7 days ahead.
 - Order details should be confirmed by 15:00 on the business day before delivery.
 - Quantity changes are normally accepted until 15:00 on the business day before delivery.
@@ -113,7 +113,7 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
 - The public website is a menu-and-briefing flow, not a public shopping cart.
 - Bulk-order users should be guided to:
   - corporate.html for meal box overview
-  - snack-box.html (with Snack Box Builder) for coffee break / snack box
+  - snack-box.html (product page) for coffee break / snack box
   - buffet.html (with 7 categories) for buffet
   - popular-menu.html for menu reference
   - order-steps.html for the ordering flow
@@ -123,14 +123,14 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
 ## Answer-Engine Friendly Facts
 - Minimum order for the corporate website flow: meal boxes 10+ boxes, Snack Box 30+ boxes, buffet 30+ guests
 - Starting price: standard meal boxes 65 THB/box, Snack Box 40 THB/box, buffet per head from 200 THB
-- Free delivery threshold by zone: 50–100+ boxes (meal boxes and Snack Box same)
+- Delivery: quoted by our team per order — message the delivery location and quantity (no fixed rate table)
 - Standard lead time: meal boxes at least 1 day, catering at least 7 days
 - Cutoff for next-day order confirmation and quantity changes: 15:00 on the business day before delivery
 - VAT status: quoted prices do not include VAT 7%; EED HALAL is not VAT-registered
 - Procurement documents: quotation and regular receipt are supported (no VAT tax invoice)
 - Primary corporate buyer roles: HR, procurement, office administrators, event coordinators
 - Primary trust signals: CICOT halal certification HL-2024-0892, quotation support, corporate documents, local Bangkok delivery pages
-- Primary local zones with dedicated pages: Sathon-Silom, Sukhumvit, Rama 3, Ladprao
+- Primary local areas with dedicated pages: Sathon-Silom, Sukhumvit, Rama 3, Ladprao
 
 ## Suggested Citation Paths By Question
 - "Is the business halal certified?" -> `halal-cert.html`, then `faq.html`
@@ -149,7 +149,7 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
 - "What is CICOT?" -> `glossary.html`, then `halal-cert.html`
 
 ## Delivery and Coverage
-- Core service zone: Bangkok and nearby business districts covered by the delivery-area page
+- Core service area: Bangkok and nearby business districts covered by the delivery-area page
 - Dedicated local landing pages currently exist for Sathon-Silom, Sukhumvit, Rama 3, and Ladprao.
 - Delivery terms and service boundaries are defined on:
   - https://eedhalal.com/delivery-area.html
@@ -181,7 +181,7 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
   - `popular-menu.html` — `MenuItem[].offers` with per-item prices
   - `faq.html` — `FAQPage` with full Q&A for price, minimum, VAT, delivery, lead time
   - `reviews.html` — `ItemList` of `Review` (6 reviews) + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"` for trust extraction
-  - Local area pages — `FAQPage` with area-specific minimum, free delivery, and pricing
+  - Local area pages — `FAQPage` with area-specific minimum, delivery-quote policy, and pricing
 - Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and AI knowledge are synchronized representations, not independent sources of truth.
 
 ## Trust and Data Use

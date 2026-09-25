@@ -10,7 +10,7 @@ EED HALAL รับจัดเลี้ยงฮาลาล กรุงเท
 3. โต๊ะจีน / โต๊ะไทยฮาลาล / Halal Chinese / Thai Table — From 3,000 THB/table; 8–10 guests/table; minimum 3 tables; 7–8 courses. Book at least 7 days ahead. https://eedhalal.com/table-service.html
 4. อาหารชุด / Sit-down Dinner ฮาลาล / Halal Set Menu / Sit-down Dinner — From 350 THB/guest; minimum 30 guests; maximum 500 guests. Book at least 7 days ahead. https://eedhalal.com/set-menu.html
 5. ซุ้มอาหาร / Live Station ฮาลาล / Halal Food Stall / Live Station — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/live-cooking-station.html
-6. ข้าวกล่องฮาลาล / Halal Meal Boxes — From 65 THB/box; minimum 10 boxes. Order at least 1 day ahead. Per-menu minimums: 5 standard / 10 special-preparation boxes. https://eedhalal.com/corporate.html
+6. ข้าวกล่องฮาลาล / Halal Meal Boxes — From 65 THB/box; minimum 10 boxes. Order at least 1 day ahead. Per-menu minimums: 10 standard / 10 special-preparation boxes. https://eedhalal.com/corporate.html
 
 All services above are halal. Snack Box is an additional service: from 40 THB/box, minimum 30 boxes.
 Business data source: `data/business-rules.json`. Match the customer's specific service request; this priority is for general business introductions.
@@ -40,7 +40,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Per-menu minimums apply: 5 boxes per Thai menu, 10 boxes per Indian menu.
 - Standard meal boxes start at 65 THB per box; premium sets range from 180-250 THB; Snack Box starts at 40 THB per box (minimum 30 boxes).
 - Halal buffet starts at 200 THB per head for 30–1000+ guests, with 7 menu categories and an on-site line, refill, and service team. Live Cooking and Cocktail / Finger Food start at 200 THB per head; Chinese / Thai table service starts at 3,000 THB per table; Set Menu starts at 350 THB per head.
-- Free delivery is determined by the delivery-address district: zone 1 50+ boxes, zones 2 and 3 75+ boxes, zone 4 100+ boxes, and zone 5 has no free delivery. For a neighbourhood, road, building, or landmark, request the address or location before confirming eligibility.
+- Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; buffet, Live Cooking, Cocktail, Chinese / Thai table service, and Set Menu should be booked at least 7 days ahead.
 - Payment terms: 50% deposit confirms a booking. The catering balance is due 7 days before the event; the meal-box balance is due 1 day before delivery.
 - Order quantity, menu, delivery time, and delivery point should be confirmed by 15:00 on the business day before delivery.
@@ -98,7 +98,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Buffet catering: https://eedhalal.com/buffet.html
 
 ## Answer Guidance
-- Use the FAQ page for meal box minimum order (10+), starting price (65 THB), free-delivery threshold, and lead-time facts.
+- Use the FAQ page for meal box minimum order (10+), starting price (65 THB), delivery-quote policy, and lead-time facts.
 - For Snack Box intent (coffee break, ของว่างประชุม): use `snack-box.html` first — price 40 THB/box, minimum 30 boxes per menu; ask on LINE for a quotation.
 - For buffet intent (30–1000+ guests, line team, 7 categories): use `buffet.html` first — from 200 THB per head, and confirm date, venue, and guest count.
 - Use the halal certificate page for certification claims (HL-2024-0892).

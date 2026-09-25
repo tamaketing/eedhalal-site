@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ORIGIN = 'https://eedhalal.com';
-const thaiAddressPolicy = 'ค่าจัดส่งและเงื่อนไขส่งฟรีขึ้นอยู่กับเขตของสถานที่จัดส่ง กรุณาระบุที่อยู่หรือพิกัดเพื่อเช็กค่าจัดส่ง';
+// Delivery is admin-quoted: the only promise any page may make is the policy
+// message from business-rules.json. Zone rates, vehicle fees, and quantity
+// free-delivery thresholds are retired everywhere.
 
 async function listHtml(directory, relative = '') {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -124,8 +126,8 @@ export async function checkPublicSite(root = ROOT) {
       if (questions.length !== localFaqBaselines[file].length || !questions.every((question, index) => question.name === localFaqBaselines[file][index])) {
         failures.push(`${file}: FAQ JSON-LD does not match the baseline questions`);
       }
-      if (questions.some((question) => question.acceptedAnswer?.text.includes('ส่งฟรี') && question.acceptedAnswer.text !== thaiAddressPolicy)) {
-        failures.push(`${file}: FAQ JSON-LD contains a non-canonical delivery answer`);
+      if (questions.some((question) => /ส่งฟรี|free delivery/i.test(question.acceptedAnswer?.text || ''))) {
+        failures.push(`${file}: FAQ JSON-LD must not promise free delivery`);
       }
       if (jsonLdBodies(html).some((body) => body.includes('priceValidUntil'))) failures.push(`${file}: JSON-LD must not include priceValidUntil`);
     }
@@ -160,28 +162,28 @@ export async function checkPublicSite(root = ROOT) {
   if (!richMenu.includes('เซ็ตพรีเมียม 180-250 บาท')) failures.push('line-ai/rich-menu.json: premium-set reply is stale');
 
   const rules = JSON.parse(await readFile(path.join(ROOT, 'data/business-rules.json'), 'utf8'));
-  const englishAddressPolicy = 'Delivery fees and free-delivery eligibility depend on the district of the delivery address. Please provide the address or location for confirmation.';
-  const thaiDelivery = `zone 1 ${rules.delivery.zones.zone_1.freeFrom}+ กล่อง, zone 2 ${rules.delivery.zones.zone_2.freeFrom}+ กล่อง, zone 3 ${rules.delivery.zones.zone_3.freeFrom}+ กล่อง, zone 4 ${rules.delivery.zones.zone_4.freeFrom}+ กล่อง, zone 5 ไม่มีส่งฟรี`;
-  const englishDelivery = `zone 1 ${rules.delivery.zones.zone_1.freeFrom}+ boxes, zone 2 ${rules.delivery.zones.zone_2.freeFrom}+ boxes, zone 3 ${rules.delivery.zones.zone_3.freeFrom}+ boxes, zone 4 ${rules.delivery.zones.zone_4.freeFrom}+ boxes; zone 5 has no free delivery`;
+  const thaiDeliveryPolicy = rules.delivery.messageTh;
+  const englishDeliveryPolicy = rules.delivery.messageEn;
   const llmsFull = await readFile(path.join(ROOT, 'llms-full.md'), 'utf8');
-  if (!thaiFaq.includes(thaiDelivery) || !englishFaq.includes(englishDelivery)) failures.push('FAQ: Thai and English delivery thresholds must match business rules');
+  if (!thaiFaq.includes(thaiDeliveryPolicy) || !englishFaq.includes(englishDeliveryPolicy)) failures.push('FAQ: Thai and English delivery policy must match business rules');
   if (!thaiFaq.includes('10–50 กล่อง') || !thaiFaq.includes('51–100 กล่อง') || !thaiFaq.includes('101+ กล่อง')) failures.push('FAQ: Thai lead-time ranges must be exclusive');
   if (!englishFaq.includes('10–50 boxes') || !englishFaq.includes('51–100 boxes') || !englishFaq.includes('101+ boxes')) failures.push('FAQ: English lead-time ranges must be exclusive');
   if (!llms.includes(`minimum ${rules.services.snackBox.minimumOrder} boxes`) || !llmsFull.includes(`minimum ${rules.services.snackBox.minimumOrder} boxes`)) failures.push('LLM files: Snack Box minimum is stale');
+  if (!llms.includes(englishDeliveryPolicy) || !llmsFull.includes(englishDeliveryPolicy)) failures.push('LLM files: delivery policy is stale');
   const obsoletePolicy = /(?:50[–-]75\+?\s*(?:กล่อง|boxes)|ขั้นต่ำ\s*50\s*กล่อง|minimum\s*50\s*boxes|ไม่ส่งปริมณฑล)/i;
+  // Retired rate system: no zone tables, vehicle fees, free promises, or
+  // quantity thresholds may appear in any public page.
+  const retiredRates = [/ส่งฟรี/, /free[ -]delivery/i, /ไม่มีส่งฟรี/, /no free delivery/i, /has no free delivery/i,
+    /zone\s+[1-5]\b/, /zone_[1-5]/, /มอเตอร์ไซค์\s*\d+\s*บาท/, /รถยนต์\s*\d+\s*บาท/, /ใช้เรท(มอเตอร์ไซค์|รถยนต์)/];
   for (const [file, html] of contents) {
     if (obsoletePolicy.test(html)) failures.push(`${file}: contains obsolete business-policy text`);
+    for (const pattern of retiredRates) {
+      if (pattern.test(html)) failures.push(`${file}: contains retired delivery-rate text ${pattern}`);
+    }
   }
-  for (const file of ['silom.html', 'sathorn.html', 'sathorn-silom.html', 'sukhumvit.html', 'rama3.html', 'ladprao.html']) {
-    const content = contents.get(file);
-    if (!content.includes(thaiAddressPolicy)) failures.push(`${file}: ambiguous local-area delivery policy is missing`);
-    if (/(?:ส่งฟรี\s*(?:50|75)\+\s*กล่อง|ออเดอร์\s*(?:50|75)\s*กล่องขึ้นไป[^<"]*ส่งฟรี)/.test(content)) failures.push(`${file}: must not guarantee a threshold for an ambiguous local area`);
-  }
-  for (const file of ['en/silom.html', 'en/sathorn.html', 'en/sathorn-silom.html', 'en/sukhumvit.html', 'en/rama3.html', 'en/ladprao.html']) {
-    const content = contents.get(file);
-    if (!content.includes(englishAddressPolicy)) failures.push(`${file}: ambiguous local-area delivery policy is missing`);
-    if (/(?:free delivery\s*(?:50|75)\+\s*boxes|orders of\s*(?:50|75)\+\s*boxes[^<"]*free delivery)/i.test(content)) failures.push(`${file}: must not guarantee a threshold for an ambiguous local area`);
-  }
+  // Policy presence is enforced exactly where it is generated (faq delivery
+  // markers). Everywhere else, the retired-pattern bans above guarantee no old
+  // promise survives; pages without delivery text comply by absence.
 
   assert.deepEqual(failures, [], `Public site validation failed:\n${failures.join('\n')}`);
   console.log(`Public site validation passed for ${publicFiles.length} indexable pages.`);

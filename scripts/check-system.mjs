@@ -49,25 +49,22 @@ export function getEffectiveMenus(menus, catalog) {
     }));
 }
 
-export function calculateShipping(rules, catalog, district, quantity) {
-  assert.ok(Number.isInteger(quantity) && quantity > 0, 'quantity must be a positive integer');
-  const entry = Object.entries(rules.delivery.zones).find(([, zone]) =>
-    zone.districts.some((item) => item.toLocaleLowerCase('th-TH') === district.trim().toLocaleLowerCase('th-TH')),
-  );
-  if (!entry) return { found: false, fee: null, isFree: false, zoneId: null };
-
-  const [zoneId, zone] = entry;
-  const freeFrom = Number(zone.freeFrom) || null;
-  const isFree = freeFrom !== null && quantity >= freeFrom;
-  const vehicle = quantity > rules.delivery.carWhenQuantityAbove ? 'car' : 'moto';
+// Delivery is admin-quoted since 2026-09-24: no zone rates, no vehicle rule,
+// no free-delivery thresholds. Every district gets the same answer — ask the
+// admin with the delivery location and order quantity. There is intentionally
+// no calculateShipping function anymore; automatic shipping calculation is
+// retired (local tools show "รอแอดมินยืนยัน" instead of a computed fee).
+export function deliveryPolicy(rules) {
+  const delivery = rules.delivery || {};
   return {
-    found: true,
-    zoneId,
-    zoneLabel: zone.label,
-    vehicle,
-    freeFrom,
-    isFree,
-    fee: isFree ? 0 : zone[vehicle],
+    policy: delivery.policy,
+    messageTh: delivery.messageTh,
+    messageEn: delivery.messageEn,
+    coverageTh: delivery.coverageTh,
+    coverageEn: delivery.coverageEn,
+    outsideBangkok: delivery.outsideBangkok,
+    pendingTh: delivery.pendingTh,
+    pendingEn: delivery.pendingEn,
   };
 }
 
@@ -96,13 +93,7 @@ export function renderKnowledge(rules, catalog, menus) {
     .filter((menu) => menu.minPerMenu === meal.specialMenuMinimum)
     .map((menu) => menu.name)
     .join(', ');
-  const zoneLines = Object.entries(rules.delivery.zones).map(([zoneId, zone]) => {
-    const freeFrom = Number(zone.freeFrom) || null;
-    const deliveryText = freeFrom
-      ? `ส่งฟรี ${freeFrom}+ กล่อง, ไม่ถึงเกณฑ์ มอเตอร์ไซค์ ${zone.moto} บาท รถยนต์ ${zone.car} บาท`
-      : `ไม่มีส่งฟรี ต้องสอบถามก่อน ค่าส่งมอเตอร์ไซค์/รถยนต์ ${zone.moto}/${zone.car} บาท`;
-    return `- ${zone.label} (${zone.districts.join(' ')}): ${deliveryText}`;
-  }).join('\n');
+  const policy = deliveryPolicy(rules);
   const leadTimeLines = rules.leadTimes.map((range) => `- ${formatRange(range)}`).join('\n');
   const guestRange = (minimum, maximum) => maximum === null ? `${minimum}+ คน (จำนวนที่รองรับให้ทีมยืนยันตามงาน)` : `${minimum}–${maximum} คน`;
 
@@ -145,10 +136,10 @@ export function renderKnowledge(rules, catalog, menus) {
 - สั่ง 1 กล่อง: ไม่รับผ่านเว็บ ให้ไปสั่งผ่าน LINEMAN
 - มี ${meal.menuCountFrom}+ เมนู ปรับเผ็ดและเครื่องได้
 
-## 3. ส่งฟรีและค่าส่ง
-- กฎรถ: ออเดอร์ <=${rules.delivery.carWhenQuantityAbove} กล่องใช้เรทมอเตอร์ไซค์, >${rules.delivery.carWhenQuantityAbove} กล่องใช้เรทรถยนต์
-${zoneLines}
-- นอกแผนที่ เช่น นนทบุรี สมุทรปราการ ปทุมธานี และต่างจังหวัด: ไม่มีส่งฟรี ${rules.delivery.outsideBangkok}
+## 3. ค่าจัดส่ง (ถามแอดมินทุกกรณี ไม่มีเรทตายตัว)
+- ${policy.messageTh}
+- ${policy.coverageTh} นอกกรุงเทพ: ${rules.delivery.outsideBangkok}
+- ${policy.pendingTh}: อย่าเดาค่าส่ง อย่าอ้างตารางเรท/โซน/เงื่อนไขเดิม อย่าใช้ 0 บาทแทนค่าที่ยังไม่ทราบ
 
 ## 4. เวลาสั่งล่วงหน้าและ cutoff
 ${leadTimeLines}
@@ -259,20 +250,16 @@ function syncBusinessSource(source, rules, catalog) {
     thaiMinPerMenu: String(meal.standardMenuMinimum),
     indianMinPerMenu: String(meal.specialMenuMinimum),
     snackMinOrder: String(rules.services.snackBox.minimumOrder),
-    freeDeliveryFrom: String(rules.delivery.freeThresholdDefault),
     menuCount: String(meal.menuCountFrom),
+    shippingPolicyTh: rules.delivery.messageTh,
+    shippingPolicyEn: rules.delivery.messageEn,
+    shippingPendingTh: rules.delivery.pendingTh,
   };
   let synced = source;
   for (const [field, value] of Object.entries(values)) {
     const pattern = new RegExp(`(${field}:\\s*)'[^']*'`);
     synced = replaceValue(synced, pattern, `$1'${value}'`, field);
   }
-  synced = replaceValue(
-    synced,
-    /(shippingCarMinQty:\s*)\d+/,
-    `$1${rules.delivery.carWhenQuantityAbove}`,
-    'shippingCarMinQty',
-  );
   const leadText = `อย่างน้อย ${rules.services.mealBox.leadTimeDays} วัน`;
   const textValues = {
     quoteTimeTh: `ภายใน ${rules.documents.quoteWithinMinutes} นาทีหลังทัก LINE`,
@@ -286,24 +273,6 @@ function syncBusinessSource(source, rules, catalog) {
     synced = replaceValue(synced, pattern, `$1'${value}'`, field);
   }
 
-  const thresholds = Object.entries(rules.delivery.zones)
-    .map(([zoneId, zone]) => `    ${zoneId}: ${zone.freeFrom}`)
-    .join(',\n');
-  synced = replaceValue(
-    synced,
-    /  shippingZoneFreeThresholds: \{[\s\S]*?\n  \},/,
-    `  shippingZoneFreeThresholds: {\n${thresholds}\n  },`,
-    'shippingZoneFreeThresholds',
-  );
-  const zones = Object.entries(rules.delivery.zones)
-    .map(([zoneId, zone]) => `    ${zoneId}: ${JSON.stringify(zone)}`)
-    .join(',\n');
-  synced = replaceValue(
-    synced,
-    /  shippingZones: \{[\s\S]*?\n  \},/,
-    `  shippingZones: {\n${zones}\n  },`,
-    'shippingZones',
-  );
   return `${synced.replace(/\r\n/g, '\n').replace(/\n*$/, '')}\n`;
 }
 
@@ -332,14 +301,13 @@ export function validateData(rules, catalog, legacy) {
   );
 
   assertUnique(legacy.menus.map((menu) => menu.id), 'menu IDs must be unique');
-  assert.ok(Object.keys(rules.delivery.zones).length > 0, 'at least one delivery zone is required');
-  const districts = Object.values(rules.delivery.zones).flatMap((zone) => zone.districts);
-  assertUnique(districts, 'a district cannot belong to multiple delivery zones');
-  for (const [zoneId, zone] of Object.entries(rules.delivery.zones)) {
-    assert.ok(Number.isInteger(zone.moto) && zone.moto >= 0, `${zoneId} motorcycle fee must be valid`);
-    assert.ok(Number.isInteger(zone.car) && zone.car >= 0, `${zoneId} car fee must be valid`);
-    assert.ok(Number.isInteger(zone.freeFrom) && zone.freeFrom >= 0, `${zoneId} free threshold must be valid`);
-    assert.ok(Array.isArray(zone.districts) && zone.districts.length > 0, `${zoneId} must contain districts`);
+  // Delivery is admin-quoted: no zones, rates, vehicle rules, or free thresholds.
+  assert.equal(rules.delivery.policy, 'adminQuote', 'delivery must use the admin-quote policy');
+  for (const field of ['messageTh', 'messageEn', 'coverageTh', 'coverageEn', 'outsideBangkok', 'pendingTh', 'pendingEn']) {
+    assert.ok(typeof rules.delivery[field] === 'string' && rules.delivery[field].trim(), `delivery.${field} is required`);
+  }
+  for (const retired of ['zones', 'carWhenQuantityAbove', 'freeThresholdDefault']) {
+    assert.equal(rules.delivery[retired], undefined, `retired delivery field must stay removed: ${retired}`);
   }
   for (const field of ['shipZones', 'shipCarMinQty', 'shipFree', 'shipZoneFreeThresholds']) {
     assert.equal(catalog[field], undefined, `planner catalog must not define business delivery policy: ${field}`);
@@ -366,7 +334,9 @@ export function validateData(rules, catalog, legacy) {
   assert.equal(Number(eed.indianMinPerMenu), rules.services.mealBox.specialMenuMinimum, 'special menu minimum drift');
   assert.equal(Number(eed.snackMinOrder), rules.services.snackBox.minimumOrder, 'Snack Box minimum drift');
   assert.equal(legacy.snackMinimumOrder, rules.services.snackBox.minimumOrder, 'Snack Box runtime minimum drift');
-  assert.equal(Number(eed.shippingCarMinQty), rules.delivery.carWhenQuantityAbove, 'vehicle threshold drift');
+  assert.equal(eed.shippingPolicyTh, rules.delivery.messageTh, 'delivery policy TH drift');
+  assert.equal(eed.shippingPolicyEn, rules.delivery.messageEn, 'delivery policy EN drift');
+  assert.equal(eed.shippingPendingTh, rules.delivery.pendingTh, 'delivery pending TH drift');
   assert.equal(eed.halalCertificate, rules.business.halalCertificate, 'halal certificate drift');
   assert.equal(eed.confirmDeadlineTh, `${rules.cutoff.time} น. ของ${rules.cutoff.description}`, 'cutoff drift');
   const expectedLead = `อย่างน้อย ${rules.services.mealBox.leadTimeDays} วัน`;
@@ -374,10 +344,11 @@ export function validateData(rules, catalog, legacy) {
   assert.equal(eed.leadMediumTh, expectedLead, 'medium lead time drift');
   assert.equal(eed.leadLargeTh, expectedLead, 'large lead time drift');
 
-  for (const [zoneId, zone] of Object.entries(rules.delivery.zones)) {
-    assert.deepEqual(eed.shippingZones[zoneId], zone, `${zoneId} delivery data drift`);
-    assert.equal(eed.shippingZoneFreeThresholds[zoneId], zone.freeFrom, `${zoneId} free threshold drift`);
-  }
+  assert.equal(eed.shippingZones, undefined, 'retired shippingZones must stay removed');
+  assert.equal(eed.shippingZoneFreeThresholds, undefined, 'retired free thresholds must stay removed');
+  assert.equal(eed.freeDeliveryFrom, undefined, 'retired freeDeliveryFrom must stay removed');
+  assert.equal(eed.shippingCarMinQty, undefined, 'retired shippingCarMinQty must stay removed');
+  assert.equal(eed.shippingAutoNote, undefined, 'retired shippingAutoNote must stay removed');
 }
 
 function assertNoBakedMenuCatalog(jsCode, owner) {

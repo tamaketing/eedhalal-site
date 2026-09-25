@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  calculateShipping,
   checkSystem,
+  deliveryPolicy,
   getEffectiveMenus,
   getLeadTime,
   loadSystemData,
@@ -20,7 +20,7 @@ test('business and menu data satisfy the canonical rules', () => {
   const activeMenus = getEffectiveMenus(data.legacy.menus, data.catalog);
   assert.ok(activeMenus.length >= data.rules.services.mealBox.menuCountFrom);
   assert.equal(Math.min(...activeMenus.map((menu) => menu.price)), data.rules.services.mealBox.priceFrom);
-  assert.ok(activeMenus.some((menu) => menu.minPerMenu === 5));
+  assert.ok(activeMenus.every((menu) => menu.minPerMenu === data.rules.services.mealBox.standardMenuMinimum));
   assert.ok(activeMenus.some((menu) => menu.minPerMenu === 10));
   assert.ok(!activeMenus.some((menu) => menu.minPerMenu === 8));
 });
@@ -47,59 +47,31 @@ test('Snack Box minimum accepts 30 boxes and rejects 29', () => {
   assert.equal(30 >= minimum, true);
 });
 
-test('Sathorn uses motorcycle through 40 boxes and car above 40', () => {
-  assert.deepEqual(
-    calculateShipping(data.rules, data.catalog, 'สาทร', 20),
-    {
-      found: true,
-      zoneId: 'zone_1',
-      zoneLabel: 'กรุงเทพชั้นใน',
-      vehicle: 'moto',
-      freeFrom: 50,
-      isFree: false,
-      fee: 60,
-    },
-  );
-  assert.equal(calculateShipping(data.rules, data.catalog, 'สาทร', 40).fee, 60);
-  assert.equal(calculateShipping(data.rules, data.catalog, 'สาทร', 41).fee, 120);
-  assert.equal(calculateShipping(data.rules, data.catalog, 'สาทร', 50).fee, 0);
+test('delivery is admin-quoted with complete policy messages', () => {
+  const policy = deliveryPolicy(data.rules);
+  assert.equal(policy.policy, 'adminQuote');
+  assert.equal(policy.messageTh, 'กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ');
+  assert.equal(policy.messageEn, 'Please contact our team for a delivery quote with your delivery location and order quantity.');
+  assert.equal(policy.coverageTh, 'จัดส่งทั่วกรุงเทพฯ');
+  assert.equal(policy.coverageEn, 'Delivery across Bangkok');
+  assert.equal(policy.pendingTh, 'รอแอดมินยืนยัน');
 });
 
-test('Sukhumvit zone becomes free at exactly 75 boxes', () => {
-  const beforeThreshold = calculateShipping(data.rules, data.catalog, 'วัฒนา', 74);
-  const atThreshold = calculateShipping(data.rules, data.catalog, 'วัฒนา', 75);
-  assert.equal(beforeThreshold.vehicle, 'car');
-  assert.equal(beforeThreshold.fee, 180);
-  assert.equal(beforeThreshold.isFree, false);
-  assert.equal(atThreshold.fee, 0);
-  assert.equal(atThreshold.isFree, true);
+test('no zone rates, vehicle rules, or free thresholds remain in business data', () => {
+  assert.equal(data.rules.delivery.zones, undefined);
+  assert.equal(data.rules.delivery.carWhenQuantityAbove, undefined);
+  assert.equal(data.rules.delivery.freeThresholdDefault, undefined);
+  const legacy = data.legacy.business;
+  for (const retired of ['shippingZones', 'shippingZoneFreeThresholds', 'freeDeliveryFrom', 'shippingCarMinQty', 'shippingAutoNote']) {
+    assert.equal(legacy[retired], undefined, `${retired} must stay removed`);
+  }
 });
 
-test('zone 5 never becomes free when threshold is zero', () => {
-  const quote = calculateShipping(data.rules, data.catalog, 'ลาดกระบัง', 1000);
-  assert.equal(quote.freeFrom, null);
-  assert.equal(quote.isFree, false);
-  assert.equal(quote.fee, 500);
-});
-
-test('district delivery thresholds use the canonical zone, not a nearby local-page name', () => {
-  const ladphraoAt75 = calculateShipping(data.rules, data.catalog, 'ลาดพร้าว', 75);
-  const bangPhlatAt75 = calculateShipping(data.rules, data.catalog, 'บางพลัด', 75);
-  const bangKhaeAt100 = calculateShipping(data.rules, data.catalog, 'บางแค', 100);
-  assert.equal(ladphraoAt75.zoneId, 'zone_4');
-  assert.equal(ladphraoAt75.isFree, false);
-  assert.equal(calculateShipping(data.rules, data.catalog, 'ลาดพร้าว', 100).isFree, true);
-  assert.equal(bangPhlatAt75.zoneId, 'zone_4');
-  assert.equal(bangPhlatAt75.isFree, false);
-  assert.equal(bangKhaeAt100.zoneId, 'zone_5');
-  assert.equal(bangKhaeAt100.isFree, false);
-});
-
-test('unknown districts require a manual quote', () => {
-  assert.deepEqual(
-    calculateShipping(data.rules, data.catalog, 'นนทบุรี', 100),
-    { found: false, fee: null, isFree: false, zoneId: null },
-  );
+test('every district gets the same admin-quote answer (no lookup)', () => {
+  for (const district of ['สาทร', 'วัฒนา', 'ลาดกระบัง', 'นนทบุรี', 'ลาดพร้าว']) {
+    assert.equal(deliveryPolicy(data.rules).messageTh, data.rules.delivery.messageTh, district);
+  }
+  assert.ok(!/zone|50\+|75\+|100\+|มอเตอร์ไซค์|รถยนต์/.test(deliveryPolicy(data.rules).messageTh), 'policy message carries no rates');
 });
 
 test('meal-box lead time starts at the published 10-box minimum', () => {

@@ -4,7 +4,7 @@ import test from 'node:test';
 import { syncBusinessContent } from '../scripts/sync-business-content.mjs';
 
 const root = new URL('../', import.meta.url);
-const thaiAddressPolicy = 'ค่าจัดส่งและเงื่อนไขส่งฟรีขึ้นอยู่กับเขตของสถานที่จัดส่ง กรุณาระบุที่อยู่หรือพิกัดเพื่อเช็กค่าจัดส่ง';
+const thaiAddressPolicy = 'กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ';
 const localFaqBaselines = {
   'ladprao.html': ['EED HALAL ส่งข้าวกล่องฮาลาลในลาดพร้าวฟรีไหม?', 'สั่งข้าวกล่องฮาลาลในลาดพร้าวขั้นต่ำกี่กล่อง?', 'EED HALAL มีใบรับรองฮาลาลหรือไม่?', 'ต้องสั่งข้าวกล่องฮาลาลล่วงหน้ากี่วัน?'],
   'rama3.html': ['EED HALAL ส่งข้าวกล่องฮาลาลในพระราม 3 ฟรีไหม?', 'สั่งข้าวกล่องฮาลาลในพระราม 3 ขั้นต่ำกี่กล่อง?', 'EED HALAL มีใบรับรองฮาลาลหรือไม่?', 'ต้องสั่งข้าวกล่องฮาลาลล่วงหน้ากี่วัน?'],
@@ -38,10 +38,10 @@ test('local pages preserve complete JSON-LD graphs and FAQ baseline semantics', 
   }
 });
 
-test('ambiguous neighborhood pages do not guarantee a delivery threshold', async () => {
+test('ambiguous neighborhood pages use the admin-quote policy', async () => {
   for (const file of ['en/huaykwang.html', 'en/donmueang.html']) {
     const html = await readFile(new URL(file, root), 'utf8');
-    assert.match(html, /Delivery fees and free-delivery eligibility depend on the district/);
-    assert.doesNotMatch(html, /free delivery across .*?(?:75|100)\+ boxes/i);
+    assert.match(html, /Please contact our team for a delivery quote/);
+    assert.doesNotMatch(html, /free delivery/i);
   }
 });

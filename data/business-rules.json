@@ -23,7 +23,7 @@
       "premiumPriceFrom": 180,
       "premiumPriceTo": 250,
       "minimumOrder": 10,
-      "standardMenuMinimum": 5,
+      "standardMenuMinimum": 10,
       "specialMenuMinimum": 10,
       "menuCountFrom": 30,
       "maximumOrder": null,
@@ -95,101 +95,14 @@
     "quoteWithinMinutes": 15
   },
   "delivery": {
-    "carWhenQuantityAbove": 40,
-    "freeThresholdDefault": 50,
+    "policy": "adminQuote",
+    "messageTh": "กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ",
+    "messageEn": "Please contact our team for a delivery quote with your delivery location and order quantity.",
+    "coverageTh": "จัดส่งทั่วกรุงเทพฯ",
+    "coverageEn": "Delivery across Bangkok",
     "outsideBangkok": "สอบถามรายกรณี",
-    "zones": {
-      "zone_1": {
-        "label": "กรุงเทพชั้นใน",
-        "moto": 60,
-        "car": 120,
-        "freeFrom": 50,
-        "districts": [
-          "ยานนาวา",
-          "บางคอแหลม",
-          "สาทร",
-          "คลองสาน",
-          "ธนบุรี"
-        ]
-      },
-      "zone_2": {
-        "label": "สุขุมวิท-ปทุมวัน",
-        "moto": 110,
-        "car": 180,
-        "freeFrom": 75,
-        "districts": [
-          "บางรัก",
-          "ปทุมวัน",
-          "วัฒนา",
-          "คลองเตย",
-          "พระโขนง",
-          "ดินแดง",
-          "พญาไท",
-          "ราชเทวี",
-          "ป้อมปราบศัตรูพ่าย",
-          "สัมพันธวงศ์"
-        ]
-      },
-      "zone_3": {
-        "label": "ลาดพร้าว-ห้วยขวาง",
-        "moto": 189,
-        "car": 230,
-        "freeFrom": 75,
-        "districts": [
-          "พระนคร",
-          "ดุสิต",
-          "ห้วยขวาง",
-          "วังทองหลาง",
-          "บางกะปิ",
-          "สวนหลวง",
-          "ประเวศ",
-          "บางนา",
-          "จตุจักร",
-          "บางซื่อ",
-          "บางกอกใหญ่",
-          "บางกอกน้อย",
-          "ราษฎร์บูรณะ",
-          "จอมทอง"
-        ]
-      },
-      "zone_4": {
-        "label": "กรุงเทพรอบนอก",
-        "moto": 240,
-        "car": 320,
-        "freeFrom": 100,
-        "districts": [
-          "ลาดพร้าว",
-          "บึงกุ่ม",
-          "สะพานสูง",
-          "คันนายาว",
-          "ดอนเมือง",
-          "หลักสี่",
-          "บางเขน",
-          "สายไหม",
-          "บางพลัด",
-          "ภาษีเจริญ",
-          "ตลิ่งชัน",
-          "ทุ่งครุ"
-        ]
-      },
-      "zone_5": {
-        "label": "ปริมณฑล/ไกล (สอบถามก่อน)",
-        "moto": 500,
-        "car": 500,
-        "freeFrom": 0,
-        "districts": [
-          "มีนบุรี",
-          "หนองจอก",
-          "ลาดกระบัง",
-          "คลองสามวา",
-          "ทวีวัฒนา",
-          "บางแค",
-          "หนองแขม",
-          "บางบอน",
-          "บางขุนเทียน"
-        ]
-      }
-    }
+    "pendingTh": "รอแอดมินยืนยัน",
+    "pendingEn": "To be confirmed by our team"
   },
   "leadTimes": [
     {

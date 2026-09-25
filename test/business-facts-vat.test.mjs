@@ -81,6 +81,7 @@ test('confirmed business facts are unchanged', () => {
   assert.equal(data.rules.services.mealBox.minimumOrder, 10);
   assert.equal(data.rules.services.snackBox.minimumOrder, 30);
   assert.equal(data.rules.paymentTerms.bookingDepositPercent, 50);
-  assert.ok(knowledge.includes('ส่งฟรี') && knowledge.includes('มอเตอร์ไซค์'));
+  assert.ok(knowledge.includes('กรุณาสอบถามค่าจัดส่งกับแอดมิน'));
+  assert.ok(!/ส่งฟรี|มอเตอร์ไซค์|zone_\d/.test(knowledge));
   assert.ok(knowledge.includes('7 วัน') || knowledge.includes('อย่างน้อย 7 วัน'));
 });
