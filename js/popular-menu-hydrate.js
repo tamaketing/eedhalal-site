@@ -18,8 +18,12 @@
   var LS_NEW_MENUS = 'eed_new_menus_v1';
   var LS_TOPPINGS = 'eed_toppings_v1';
 
-  // Popular menu IDs in order — edit here to control what shows on popular-menu.html
+  // Popular menu IDs in order — edit here to control what shows on popular-menu.html.
+  // The menu publish pipeline may override this via data/planner-overrides.json
+  // `popular` (central draft `popular`); the file below stays as the fallback.
   var POPULAR_IDS = [16,1,2,3,4,17,5,24,6,18,31,8,14,19,38,37];
+  var PUBLISHED_POPULAR = null;
+  var PUBLISHED_SORT = null;
 
   // Category config for full menu — order = display order
   var CATS_TH = [
@@ -69,6 +73,14 @@
     });
     if(Array.isArray(data.toppings)) EED_MENUS.forEach(function(menu){ menu.toppings=data.toppings.map(function(t){ return {name:String(t.name),price:parseInt(t.price,10)||0}; }); });
     if(Array.isArray(data.deleted)) EED_MENUS=EED_MENUS.filter(function(menu){ return data.deleted.indexOf(menu.id)===-1 && data.deleted.indexOf(String(menu.id))===-1; });
+    if(Array.isArray(data.popular) && data.popular.length) PUBLISHED_POPULAR = data.popular.map(String);
+    if(data.sortOrder && typeof data.sortOrder==='object'){
+      PUBLISHED_SORT = {};
+      Object.keys(data.sortOrder).forEach(function(id){ PUBLISHED_SORT[String(id)] = data.sortOrder[id]; });
+      EED_MENUS.forEach(function(menu){
+        if(PUBLISHED_SORT[String(menu.id)]!==undefined) menu.sortOrder = PUBLISHED_SORT[String(menu.id)];
+      });
+    }
     if(Array.isArray(data.newMenus)) data.newMenus.forEach(function(menu){
       if(!menu || menu.id===undefined || !menu.name || EED_MENUS.some(function(item){ return String(item.id)===String(menu.id); })) return;
       EED_MENUS.push({id:menu.id,name:String(menu.name),price:parseFloat(menu.price)||0,category:String(menu.category||'ข้าวราดแกง'),image:String(menu.image||''),desc:String(menu.desc||''),badge:String(menu.badge||''),minPerMenu:parseInt(menu.minPerMenu,10)||5,toppings:Array.isArray(data.toppings)?data.toppings.map(function(t){ return {name:String(t.name),price:parseInt(t.price,10)||0}; }):[]});
@@ -115,8 +127,9 @@
     }
     var byId = {};
     EED_MENUS.forEach(function(m){ byId[String(m.id)] = m; });
+    var order = (PUBLISHED_POPULAR && PUBLISHED_POPULAR.length) ? PUBLISHED_POPULAR : POPULAR_IDS.map(String);
     var list = [];
-    POPULAR_IDS.forEach(function(id){
+    order.forEach(function(id){
       if(byId[String(id)]) list.push(byId[String(id)]);
     });
     if(list.length < 12){
@@ -168,6 +181,13 @@
     try{
       var html = cats.map(function(cat){
         var items = EED_MENUS.filter(function(m){ return m.category===cat.key; });
+        if(PUBLISHED_SORT){
+          items = items.slice().sort(function(a,b){
+            var oa = PUBLISHED_SORT[String(a.id)], ob = PUBLISHED_SORT[String(b.id)];
+            if(oa===undefined) oa = 1e9; if(ob===undefined) ob = 1e9;
+            return oa - ob;
+          });
+        }
         if(!items.length) return '';
         var dots = '<span class="menu-item-dots"></span>';
         var itemHtml = items.map(function(m){

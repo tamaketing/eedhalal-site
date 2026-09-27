@@ -22,6 +22,8 @@ async function loadLegacyData(root = ROOT) {
   return {
     business: JSON.parse(JSON.stringify(context.EED)),
     menus: JSON.parse(JSON.stringify(context.EED_MENUS)),
+    meats: JSON.parse(JSON.stringify(context.EED_DEFAULT_MEATS || [])),
+    toppings: JSON.parse(JSON.stringify(context.EED_DEFAULT_TOPPINGS || [])),
     snackMinimumOrder: context.EED_SNACK_MIN_ORDER,
   };
 }
@@ -206,9 +208,44 @@ function getPromptBody(markdown) {
   return lines.slice(firstFence + 1, lastFence).join('\n').trim();
 }
 
+function replaceToppingsSegment(line, toppings) {
+  const marker = ', toppings: ';
+  const start = line.indexOf(marker);
+  if (start === -1) return line;
+  let depth = 0;
+  let end = -1;
+  for (let i = start + marker.length; i < line.length; i += 1) {
+    if (line[i] === '[') depth += 1;
+    else if (line[i] === ']') {
+      depth -= 1;
+      if (depth === 0) { end = i + 1; break; }
+    }
+  }
+  if (end === -1) return line;
+  return `${line.slice(0, start)}${marker}${JSON.stringify(toppings)}${line.slice(end)}`;
+}
+
+// Shared with the menu publish pipeline (scripts/menu-central.mjs builds the
+// same content from the central draft): catalog MAY carry descs/badges/
+// sortOrder/popular/noMeatMenus/meats/toppings. When present they are synced
+// into js/menu-data.js; when absent the legacy 5-field behavior is unchanged.
 function syncMenuSource(source, catalog) {
   const seen = new Set();
-  const synced = source.split(/\r?\n/).map((line) => {
+  let synced = source;
+  // Shared header lists (global for every menu). Publish writes these from the
+  // central draft, so --write must reproduce them from the catalog.
+  if (catalog.meats !== undefined) {
+    assert.match(synced, /var EED_DEFAULT_MEATS = .*?;/, 'cannot find EED_DEFAULT_MEATS in js/menu-data.js');
+    synced = synced.replace(/var EED_DEFAULT_MEATS = .*?;/, `var EED_DEFAULT_MEATS = ${JSON.stringify(catalog.meats)};`);
+  }
+  if (catalog.toppings !== undefined) {
+    assert.match(synced, /var EED_DEFAULT_TOPPINGS = .*?;/, 'cannot find EED_DEFAULT_TOPPINGS in js/menu-data.js');
+    synced = synced.replace(/var EED_DEFAULT_TOPPINGS = .*?;/, `var EED_DEFAULT_TOPPINGS = ${JSON.stringify(catalog.toppings)};`);
+  }
+  const noMeatIds = catalog.noMeatMenus === undefined
+    ? null
+    : new Set(catalog.noMeatMenus.map((id) => String(id)));
+  synced = synced.split(/\r?\n/).map((line) => {
     const idMatch = line.match(/^\s*\{ id: (\d+),/);
     if (!idMatch) return line;
     const id = idMatch[1];
@@ -220,12 +257,27 @@ function syncMenuSource(source, catalog) {
       category: catalog.categories?.[id],
       image: catalog.images?.[id],
       minPerMenu: catalog.mins?.[id],
+      desc: catalog.descs?.[id],
+      badge: catalog.badges?.[id],
+      sortOrder: catalog.sortOrder?.[id],
     };
     if (values.name !== undefined) next = next.replace(/name: "(?:[^"\\]|\\.)*"/, `name: ${JSON.stringify(values.name)}`);
     if (values.price !== undefined) next = next.replace(/price: \d+(?:\.\d+)?/, `price: ${values.price}`);
     if (values.category !== undefined) next = next.replace(/category: "(?:[^"\\]|\\.)*"/, `category: ${JSON.stringify(values.category)}`);
     if (values.image !== undefined) next = next.replace(/image: "(?:[^"\\]|\\.)*"/, `image: ${JSON.stringify(values.image)}`);
     if (values.minPerMenu !== undefined) next = next.replace(/minPerMenu: \d+/, `minPerMenu: ${values.minPerMenu}`);
+    if (values.desc !== undefined) next = next.replace(/desc: "(?:[^"\\]|\\.)*"/, `desc: ${JSON.stringify(values.desc)}`);
+    if (values.badge !== undefined) next = next.replace(/badge: "(?:[^"\\]|\\.)*"/, `badge: ${JSON.stringify(values.badge)}`);
+    if (values.sortOrder !== undefined) {
+      if (/sortOrder: -?\d+/.test(next)) next = next.replace(/sortOrder: -?\d+/, `sortOrder: ${values.sortOrder}`);
+      else next = next.replace(/minPerMenu: \d+/, (m) => `${m}, sortOrder: ${values.sortOrder}`);
+    }
+    if (catalog.toppings !== undefined) next = replaceToppingsSegment(next, catalog.toppings);
+    if (noMeatIds !== null) {
+      const hasFlag = /, noMeat: true/.test(next);
+      if (noMeatIds.has(String(id)) && !hasFlag) next = next.replace(/\s*\}(,?)\s*$/, `, noMeat: true }$1`);
+      if (!noMeatIds.has(String(id)) && hasFlag) next = next.replace(/, noMeat: true/, '');
+    }
     return next;
   }).join('\n');
   for (const id of Object.keys(catalog.prices)) assert.ok(seen.has(String(id)), `menu ${id} is missing from js/menu-data.js`);
@@ -322,6 +374,27 @@ export function validateData(rules, catalog, legacy) {
     assert.equal(menu.minPerMenu, catalog.mins[id], `menu ${id} minimum drift`);
     if (menu.category === 'อาหารอินเดีย') {
       assert.equal(menu.minPerMenu, rules.services.mealBox.specialMenuMinimum, `Indian menu ${id} must use special minimum`);
+    }
+    // Publish-managed maps (written by the menu publish pipeline from the
+    // central draft). Asserted only when present so legacy files still pass.
+    if (catalog.descs !== undefined) assert.equal(menu.desc ?? '', catalog.descs[id] ?? '', `menu ${id} description drift`);
+    if (catalog.badges !== undefined) assert.equal(menu.badge ?? '', catalog.badges[id] ?? '', `menu ${id} badge drift`);
+    if (catalog.sortOrder !== undefined) assert.equal(menu.sortOrder ?? null, catalog.sortOrder[id] ?? null, `menu ${id} display-order drift`);
+    if (catalog.noMeatMenus !== undefined) {
+      assert.equal(menu.noMeat === true, catalog.noMeatMenus.map(String).includes(id), `menu ${id} no-meat flag drift`);
+    }
+  }
+  // Shared topping/meat lists must match the published compat headers.
+  if (catalog.meats !== undefined && legacy.meats !== undefined) {
+    assert.deepEqual(legacy.meats, catalog.meats, 'meats list drift between js/menu-data.js and planner catalog');
+  }
+  if (catalog.toppings !== undefined && legacy.toppings !== undefined) {
+    assert.deepEqual(legacy.toppings, catalog.toppings, 'toppings list drift between js/menu-data.js and planner catalog');
+  }
+  if (catalog.popular !== undefined) {
+    assert.ok(Array.isArray(catalog.popular), 'popular must be an id list');
+    for (const id of catalog.popular) {
+      assert.ok(Object.hasOwn(catalog.prices, String(id)), `popular references unknown menu ${id}`);
     }
   }
 
