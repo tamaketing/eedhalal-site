@@ -19,6 +19,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Check repository safety and generated data
         run: |
           node scripts/check-repository-safety.mjs

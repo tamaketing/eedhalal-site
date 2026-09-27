@@ -1,242 +1,114 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ตั้งราคาขายภายในเครื่อง | EED HALAL</title>
-  <meta name="robots" content="noindex,nofollow">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" type="image/jpeg" href="img/logo.jpg">
-  <style>
-    .planner-hero{padding-top:7.5rem;padding-bottom:1.25rem;background:linear-gradient(180deg, #0f2e1c 0%, var(--primary) 100%);color:#fff}
-    .planner-hero-inner{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 1.25rem}
-    .planner-hero-badge{display:inline-flex;align-items:center;gap:.45rem;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(8px);padding:.35rem .75rem;border-radius:999px;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
-    .planner-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:1.25rem}
-    .planner-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
-    @media(max-width:640px){ .planner-stat-grid{grid-template-columns:1fr} }
-    .planner-stat{background:var(--bg);border:1px solid var(--border-light);border-radius:14px;padding:.85rem .9rem;text-align:center}
-    .planner-stat-label{font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)}
-    .planner-stat-value{font-size:1.35rem;font-weight:900;color:var(--primary);margin-top:.15rem;line-height:1}
-    .planner-stat-sub{font-size:.72rem;color:var(--text-muted);margin-top:.15rem}
-    .gate-overlay{position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 30% 0%, rgba(200,151,58,.12), transparent 60%), linear-gradient(180deg, #0f2e1c, var(--primary));display:flex;align-items:center;justify-content:center;padding:1.5rem}
-    .gate-card{background:var(--white);border-radius:24px;box-shadow:var(--shadow-xl);padding:2rem;max-width:420px;width:100%;text-align:center}
-    .gate-input{width:100%;height:48px;border:1px solid var(--border);border-radius:12px;text-align:center;font-size:1.35rem;letter-spacing:.35em;font-weight:900;color:var(--primary);margin-top:1rem}
-    .price-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:14px;max-height:none}
-    .price-table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:860px}
-    .price-table th{position:sticky;top:0;background:var(--primary);color:#fff;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:.7rem .6rem;text-align:center;white-space:nowrap}
-    .price-table td{padding:.55rem .6rem;border-bottom:1px solid var(--border-light);vertical-align:middle}
-    .price-table tr:hover td{background:rgba(29,107,62,.03)}
-    .chip{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:.38rem .85rem;font-size:.8rem;font-weight:700;cursor:pointer}
-    .chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-    .save-dot{width:8px;height:8px;border-radius:50%;background:#22C55E;display:inline-block;animation:pulse 1.2s infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>จัดการเมนู · EED HALAL (เฉพาะเจ้าของ)</title>
+  <meta name="description" content="เครื่องมือภายในสำหรับเจ้าของร้าน: จัดการเมนูฐานกลางและต้นทุนอาหาร เปิดได้เฉพาะเครื่องเจ้าของผ่านเซิร์ฟเวอร์ local เท่านั้น">
+  <link rel="stylesheet" href="/cost-planner.css">
+  <script type="module" src="/cost-planner.mjs"></script>
+  <script type="module" src="/menu-central-ui.mjs"></script>
 </head>
 <body>
-  <div id="fileWarn" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#FEF2F2;border-bottom:2px solid #FECACA;color:#7F1D1D;padding:.7rem 1rem;text-align:center;font-size:.85rem;font-weight:700">⚠️ เปิดแบบ file:// ภาพอาจไม่ขึ้นและราคาจะไม่ซิงค์ไปหน้าลูกค้า — กรุณาดับเบิลคลิก <code>start-server.bat</code> แล้วเปิด <code>http://localhost:8000/budget-planner.html</code> แทน</div>
-  <a class="skip-link" href="#main-content">ข้ามไปเนื้อหาหลัก</a>
-  <div id="nav"></div>
-  <noscript><nav id="noscript-nav" aria-label="เมนูลัด" style="background:#1d6b3e;padding:.7rem 1rem;text-align:center;line-height:2.1;font-size:.85rem"><a href="https://eedhalal.com/" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">หน้าแรก</a><a href="https://eedhalal.com/corporate.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">ออเดอร์องค์กร</a><a href="https://eedhalal.com/popular-menu.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">เมนู</a><a href="https://eedhalal.com/catering.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">จัดเลี้ยง</a><a href="https://eedhalal.com/delivery-area.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">พื้นที่ส่ง</a><a href="https://eedhalal.com/faq.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">คำถาม</a><a href="https://eedhalal.com/contact.html" style="color:#fff;font-weight:700;margin:0 .55rem;text-decoration:none">ติดต่อ</a></nav></noscript>
-  <script>if(location.protocol==='file:'){var w=document.getElementById('fileWarn'); if(w) w.style.display='block'; document.body.style.paddingTop='42px';}</script>
+  <a class="skip-link" href="#main">ข้ามไปเนื้อหาหลัก</a>
+  <header class="cp-topbar">
+    <div class="cp-wrap cp-topbar-inner">
+      <div class="cp-brand">EED <b>HALAL</b><small>เครื่องมือสำหรับเจ้าของ · LOCAL ONLY</small></div>
+      <span class="cp-badge">จัดการเมนู · บันทึกในเครื่อง</span>
+      <nav class="cp-nav" aria-label="เครื่องมือเจ้าของ"><a href="/">← แนะนำชุดตามงบ</a></nav>
+    </div>
+  </header>
+  <main id="main" class="cp-wrap">
+    <section class="cp-hero" aria-label="จัดการเมนู">
+      <div class="cp-wrap">
+        <h1>จัดการเมนู</h1>
+        <p>ฐานข้อมูลกลางเมนู: เพิ่มและแก้ชื่อ รูป หมวดหมู่ รายละเอียด ราคาขาย และลำดับแสดงผลที่จุดเดียว อ้างอิงด้วย ID เมนูเดิมทุกส่วน</p>
+        <p class="cp-links-note"><strong>บันทึก</strong> = เก็บฐานกลางในเครื่อง เครื่องมือแอดมินใช้ข้อมูลล่าสุดทันที เว็บลูกค้ายังใช้ฉบับเผยแพร่เดิม · <strong>ดูตัวอย่างและเผยแพร่</strong> = เทียบกับฉบับเผยแพร่ออกเว็บก่อนยืนยัน · แก้เฉพาะต้นทุนไม่สร้างรายการรอเผยแพร่เว็บ</p>
+        <p class="cp-links-note">แก้ราคาแล้วกด <strong>บันทึก</strong> กลับไปหน้าแนะนำชุดแล้วกด “แนะนำชุดเมนู” ใหม่ทุกครั้ง — ผลแนะนำเดิมจะถูกยกเลิกเพื่อไม่ให้แสดงกำไรที่ล้าสมัย</p>
+        <details class="cp-details">
+          <summary>ข้อควรทราบก่อนใช้งาน</summary>
+          <div class="cp-hint" id="file-hint">เปิดหน้านี้ผ่าน URL local ที่แสดงในหน้าต่าง launcher หรือเซิร์ฟเวอร์ของเครื่องมือนี้เท่านั้น เปิดด้วยดับเบิลคลิกไฟล์ตรง ๆ จะโหลดข้อมูลไม่ได้ หน้านี้ไม่มีระบบยืนยันตัวตน การป้องกันคือเปิดได้เฉพาะเครื่องเจ้าของผ่านเซิร์ฟเวอร์ local เท่านั้น ห้ามเปิดเผยหรือส่งต่อให้บุคคลภายนอก</div>
+        </details>
+        <div class="cp-hint cp-hint-error" id="load-error" hidden>โหลดข้อมูลต้นทุนภายในไม่สำเร็จ กรุณาตรวจว่าเซิร์ฟเวอร์ local กำลังทำงาน แล้วกด “โหลดข้อมูลใหม่”</div>
+      </div>
+    </section>
 
-  <main id="plannerApp" style="display:none">
-    <section class="planner-hero">
-      <div class="planner-hero-inner">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-          <div class="planner-hero-badge">Local-only pricing tool · staff only, not for customers</div>
-        </div>
-        <h1 style="font-size:2rem;font-weight:900;line-height:1.15;margin-top:1rem">ตั้งราคาขาย — แก้ตรงนี้ ที่เดียวจบ</h1>
-        <p style="margin-top:.6rem;max-width:48rem;opacity:.85;line-height:1.7;font-size:.92rem">เครื่องมือนี้ไม่มีระบบยืนยันตัวตนและไม่เก็บข้อมูลร่วมกัน จึงต้องใช้เฉพาะเครื่องงานที่ควบคุมสิทธิ์แล้วเท่านั้น หากต้องการเปลี่ยนราคาบนเว็บ ให้ใช้ไฟล์ <code>menu-data.js</code> ที่ดาวน์โหลดมาแทนไฟล์ในโฟลเดอร์ <code>js/</code> แล้ว commit</p>
-        <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
-          <button id="copyPlannerLink" class="btn" style="background:var(--accent);color:#fff;font-weight:800">คัดลอกลิงก์เครื่องมือ</button>
-          <span id="saveStatus" style="display:none;align-items:center;gap:.4rem;font-size:.82rem;font-weight:700;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);padding:.4rem .7rem;border-radius:999px"><span class="save-dot"></span> บันทึกแล้ว</span>
+    <section class="cp-card" aria-label="ฐานข้อมูลกลางเมนู">
+      <div class="cp-card-head">
+        <h2>ฐานข้อมูลกลางเมนู</h2>
+        <span id="mc-status" role="status" aria-live="polite"></span>
+      </div>
+      <p class="cp-note">เมนู ชุดอาหาร และรายการภายในแยกกันชัดเจน: ที่นี่คือ<span> </span><strong>เมนูอาหาร</strong> (อ้างอิงด้วย ID เดิม) ส่วนชุดอาหารของแอดมินอ้างอิงเมนูผ่านรหัส ไม่ทำสำเนา · ซ่อนเมนูจากเว็บได้โดยไม่ลบฐานข้อมูล เมนูที่ซ่อนยังอยู่ในชุดและประวัติ</p>
+      <div class="cp-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+        <button type="button" class="cp-btn" id="mc-save" disabled>บันทึก</button>
+        <button type="button" class="cp-btn ghost" id="mc-publish-open" disabled>ดูตัวอย่างและเผยแพร่</button>
+        <button type="button" class="cp-btn ghost" id="mc-reload">โหลดข้อมูลใหม่</button>
+        <button type="button" class="cp-btn ghost" id="mc-refresh-profit">รีเฟรชกำไรจากต้นทุนล่าสุด</button>
+        <span class="cp-form-status" id="mc-dirty-hint" role="status"></span>
+      </div>
+      <div class="cp-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.5rem">
+        <input class="cp-input" type="search" id="mc-search" placeholder="ค้นหาชื่อ/หมวด/ID" aria-label="ค้นหาเมนู" style="max-width:220px">
+        <select class="cp-input" id="mc-vis" aria-label="กรองการแสดงผล" style="max-width:180px">
+          <option value="all">ทั้งหมด</option>
+          <option value="visible">แสดงบนเว็บ</option>
+          <option value="hidden">ซ่อนจากเว็บ</option>
+        </select>
+        <span class="cp-sub" id="mc-count"></span>
+      </div>
+      <div class="cp-form-status" id="mc-form-status" role="status" aria-live="polite"></div>
+      <div id="mc-groups"><p class="cp-sub">กำลังโหลดเมนู…</p></div>
+      <div class="cp-add-row" id="mc-add-row">
+        <label class="cp-field">ชื่อเมนูใหม่<input class="cp-input" type="text" id="mc-new-name" placeholder="เช่น ข้าวราดผัดหน่อไม้"></label>
+        <label class="cp-field">หมวด<select class="cp-input" id="mc-new-cat"><option>ข้าวราดแกง</option><option>ข้าวผัด</option><option>เส้น</option><option>อาหารอินเดีย</option><option>พรีเมียม</option></select></label>
+        <label class="cp-field">ราคาขาย (บาท)<input class="cp-input narrow" type="number" id="mc-new-price" value="65" min="1" step="5"></label>
+        <label class="cp-field">ขั้นต่ำ (กล่อง)<input class="cp-input narrow" type="number" id="mc-new-min" value="5" min="1" step="1"></label>
+        <label class="cp-field">รูป<input class="cp-input" type="text" id="mc-new-img" value="img/logo.jpg" placeholder="img/..."></label>
+        <label class="cp-field">คำอธิบาย<input class="cp-input" type="text" id="mc-new-desc" placeholder="สั้นๆ สำหรับลูกค้า"></label>
+        <button type="button" class="cp-btn ghost sm" id="mc-add">+ เพิ่มเมนู</button>
+        <span class="cp-sub" id="mc-new-msg"></span>
+      </div>
+      <div id="mc-modal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow:auto">
+        <div style="background:#fff;border-radius:16px;max-width:720px;width:100%;padding:1.25rem 1.4rem" role="dialog" aria-modal="true" aria-label="ตัวอย่างก่อนเผยแพร่">
+          <h3 style="margin:0 0 .5rem">ตัวอย่างก่อนเผยแพร่</h3>
+          <div id="mc-modal-body"></div>
+          <div class="cp-editor-actions"><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>
         </div>
       </div>
     </section>
 
-    <!-- Stats -->
-    <section class="section section-white" style="padding-top:1.5rem;padding-bottom:1.25rem">
-      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
-        <div class="planner-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-            <h2 style="font-size:1rem;font-weight:900;color:var(--primary)">ภาพรวมราคา</h2>
-            <span style="font-size:.72rem;color:var(--text-muted)">แก้ราคาแล้วบันทึกอัตโนมัติในเครื่อง</span>
-          </div>
-          <div class="planner-stat-grid" style="margin-top:.85rem">
-            <div class="planner-stat">
-              <div class="planner-stat-label">จำนวนเมนู</div>
-              <div class="planner-stat-value"><span id="statCount">0</span> <span style="font-size:.75rem">เมนู</span></div>
-              <div class="planner-stat-sub"><span id="statCat">-</span></div>
-            </div>
-            <div class="planner-stat">
-              <div class="planner-stat-label">ช่วงราคา</div>
-              <div class="planner-stat-value"><span id="statRange">-</span></div>
-              <div class="planner-stat-sub">ต่ำสุด – สูงสุด</div>
-            </div>
-            <div class="planner-stat" style="background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border-color:#FDE68A">
-              <div class="planner-stat-label" style="color:#92400E">แหล่งราคาหน้าลูกค้า</div>
-              <div class="planner-stat-value" style="color:#92400E;font-size:1rem">js/menu-data.js</div>
-              <div class="planner-stat-sub" id="statLast">ยังไม่เคยบันทึก</div>
-            </div>
-          </div>
-          <div style="margin-top:.85rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-            <button id="addNewMenu" class="btn btn-primary btn-sm" type="button" style="background:var(--accent);color:#fff">+ เพิ่มเมนูใหม่</button>
-            <button id="showDeleted" class="btn btn-outline btn-sm" type="button">ดูเมนูที่ซ่อนอยู่</button>
-            <button id="resetPrices" class="btn btn-outline btn-sm" type="button">รีเซ็ตเป็นราคาเริ่มต้น</button>
-            <button id="exportJson" class="btn btn-outline btn-sm" type="button">คัดลอก JSON ราคา</button>
-            <button id="exportAll" class="btn btn-primary btn-sm" type="button" style="background:var(--primary);color:#fff">⬇ ดาวน์โหลดไฟล์ Deploy (ไม่ต้องมีหลังบ้าน)</button>
-            <button id="copyOverrides" class="btn btn-outline btn-sm" type="button">คัดลอก overrides JSON</button>
-          </div>
-          <!-- Add new menu form -->
-          <div id="newMenuForm" style="display:none;margin-top:.85rem;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:1rem 1.25rem">
-            <div style="font-weight:900;font-size:.92rem;color:var(--primary);margin-bottom:.65rem">เพิ่มเมนูใหม่</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem .75rem">
-              <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">ชื่อเมนู *</label><input id="newMenuName" type="text" placeholder="ข้าวราด..." required style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"></div>
-              <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">หมวด</label><select id="newMenuCat" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"><option>ข้าวราดแกง</option><option>ข้าวผัด</option><option>เส้น</option><option>อาหารอินเดีย</option><option>พรีเมียม</option></select></div>
-              <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">ราคา (บาท)</label><input id="newMenuPrice" type="number" value="65" min="10" max="500" step="5" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;font-weight:900;color:var(--primary);margin-top:.25rem"></div>
-              <div><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">ขั้นต่ำ (กล่อง)</label><input id="newMenuMin" type="number" value="5" min="1" max="50" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;font-weight:900;color:var(--primary);margin-top:.25rem"></div>
-              <div style="grid-column:1/-1"><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">รูป (path ใน img/)</label><input id="newMenuImg" type="text" placeholder="img/logo.jpg" value="img/logo.jpg" style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"></div>
-              <div style="grid-column:1/-1"><label style="font-size:.75rem;font-weight:700;color:var(--text-muted)">คำอธิบาย</label><input id="newMenuDesc" type="text" placeholder="..." style="width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem;margin-top:.25rem"></div>
-            </div>
-            <div style="display:flex;gap:.5rem;margin-top:.75rem">
-              <button id="saveNewMenu" class="btn btn-primary btn-sm" type="button" style="background:var(--primary);color:#fff">+ บันทึกเมนูใหม่</button>
-              <button id="cancelNewMenu" class="btn btn-outline btn-sm" type="button">ยกเลิก</button>
-            </div>
-          </div>
-          <!-- Deleted menus list -->
-          <div id="deletedList" style="display:none;margin-top:.85rem;background:#FEF2F2;border:1px solid #FECACA;border-radius:14px;padding:1rem 1.25rem">
-            <div style="font-weight:900;font-size:.92rem;color:#7F1D1D;margin-bottom:.45rem">เมนูที่ซ่อนอยู่</div>
-            <div id="deletedItems" style="font-size:.82rem;color:#7F1D1D"></div>
-          </div>
-           <div style="margin-top:.5rem;font-size:.72rem;color:var(--text-muted);line-height:1.6">กด <b>ดาวน์โหลดไฟล์ Deploy</b> แล้วนำเฉพาะ <code>menu-data.js</code> ไปแทนไฟล์ในโฟลเดอร์ <code>js/</code> จากนั้น Commit/Push ขึ้น GitHub (ดูวิธีใน <code>DEPLOY.md</code>)<br><span style="color:var(--primary);font-weight:700">✓ หน้าเมนูลูกค้าจะอัปเดตอัตโนมัติสำหรับคนดู (JS) ส่วน Google/AI ยังเห็น HTML เดิม — ไม่เสีย SEO</span></div>
-        </div>
+    <section class="cp-card" aria-label="ขึ้นเว็บจริง">
+      <div class="cp-card-head">
+        <h2>ขึ้นเว็บจริง</h2>
       </div>
+      <p class="cp-note">“เตรียมไฟล์แล้ว” ยังไม่ใช่ “เผยแพร่แล้ว” — หน้านี้แยกให้เห็น 3 ฉบับ: <strong>ฉบับร่าง</strong> (ฐานกลางในเครื่อง) <strong>ฉบับไฟล์</strong> (ไฟล์สาธารณะในเครื่อง) และ<strong>ฉบับบนเว็บ</strong> (ตรวจจากเว็บจริงแล้วเท่านั้น) ถ้าตรวจเว็บจริงไม่ได้จะขึ้น “ยังไม่ยืนยัน”</p>
+      <div id="mc-deploy"><p class="cp-sub">กำลังโหลดสถานะ…</p></div>
     </section>
 
-    <!-- Filter -->
-    <section class="section section-sand" style="padding-top:1.25rem;padding-bottom:1rem">
-      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
-        <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
-          <span style="font-size:.82rem;font-weight:800;color:var(--text-muted)">กรองหมวด:</span>
-          <button class="chip active" data-pcat="all">ทั้งหมด</button>
-          <button class="chip" data-pcat="ข้าวราดแกง">ข้าวราดแกง</button>
-          <button class="chip" data-pcat="ข้าวผัด">ข้าวผัด</button>
-          <button class="chip" data-pcat="เส้น">เส้น</button>
-          <button class="chip" data-pcat="อาหารอินเดีย">อาหารอินเดีย</button>
-
-          <input id="priceSearch" type="search" placeholder="ค้นหาชื่อเมนู..." style="margin-left:auto;min-width:200px;height:38px;border:1px solid var(--border);border-radius:999px;padding:0 1rem;font-size:.85rem">
-        </div>
+    <section class="cp-card" aria-label="ภาพรวมและบันทึก">
+      <div class="cp-card-head">
+        <h2>ภาพรวมต้นทุน</h2>
+        <span class="cp-save" id="save-status" role="status" aria-live="polite"></span>
       </div>
+      <div class="cp-stats" id="stats"></div>
+      <div class="cp-actions">
+        <button type="button" class="cp-btn" id="save-all" disabled>บันทึกการแก้ไขทั้งหมด</button>
+        <button type="button" class="cp-btn ghost" id="reload">โหลดข้อมูลใหม่</button>
+        <span class="cp-form-status" id="form-status" role="status" aria-live="polite"></span>
+      </div>
+      <div class="cp-errors" id="save-errors" hidden></div>
+      <p class="cp-note">แสดง “บันทึกแล้ว” ต่อเมื่อเซิร์ฟเวอร์ตอบรับว่าบันทึกสำเร็จจริงเท่านั้น · รายการที่เว้นราคาไว้จะขึ้น “รอยืนยัน” และไม่ถูกนำไปจัดชุดอัตโนมัติ · การยืนยันราคาเป็นสิทธิ์เจ้าของ ระบบไม่ยืนยันรายการร่างให้เอง</p>
     </section>
 
-    <!-- Meats (เลือกเนื้อสัตว์) -->
-    <section class="section section-sand" style="padding-top:1.25rem;padding-bottom:.75rem">
-      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
-        <div class="planner-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-            <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0">🥩 เนื้อสัตว์ — เลือกได้ 1 อย่าง</h2>
-            <span style="font-size:.75rem;color:var(--text-muted)">ลูกค้าเลือกเนื้อก่อน แล้วค่อยเลือกท็อปปิ้ง</span>
-          </div>
-          <div id="meatsList" style="margin-top:.35rem"></div>
-          <div style="display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;margin-top:.65rem">
-            <input id="meatName" type="text" placeholder="ชื่อเนื้อ เช่น ไก่" style="flex:1;min-width:180px;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem">
-            <input id="meatPrice" type="number" placeholder="ราคาเพิ่ม" min="0" max="500" step="5" style="width:100px;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;text-align:center;font-size:.85rem;font-weight:900;color:var(--primary)">
-            <span style="font-size:.75rem;color:var(--text-muted)">บาท/กล่อง</span>
-            <button id="addMeat" class="btn btn-primary btn-sm" type="button">+ เพิ่มเนื้อสัตว์</button>
-          </div>
-        </div>
-      </div>
-    </section>
+    <div id="groups"></div>
 
-    <!-- Toppings (เลือกท็อปปิ้ง) -->
-    <section class="section section-sand" style="padding-top:.75rem;padding-bottom:1.25rem">
-      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
-        <div class="planner-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-            <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0"> toppings — เลือกได้หลายอย่าง</h2>
-            <span style="font-size:.75rem;color:var(--text-muted)">ไข่ดาว, ไข่เจียว, ผลไม้ ฯลฯ</span>
-          </div>
-          <div id="globalToppingsList" style="margin-top:.35rem"></div>
-          <div style="display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;margin-top:.65rem">
-            <input id="globalToppingName" type="text" placeholder="ชื่อท็อปปิ้ง เช่น ไข่ดาว" style="flex:1;min-width:180px;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .7rem;font-size:.85rem">
-            <input id="globalToppingPrice" type="number" placeholder="ราคาเพิ่ม" min="0" max="500" step="5" style="width:100px;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 .55rem;text-align:center;font-size:.85rem;font-weight:900;color:var(--primary)">
-            <span style="font-size:.75rem;color:var(--text-muted)">บาท/กล่อง</span>
-            <button id="addGlobalTopping" class="btn btn-primary btn-sm" type="button">+ เพิ่มท็อปปิ้ง</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Snack Box menu -->
-    <section class="section section-sand" style="padding-top:1.25rem;padding-bottom:1.25rem">
-      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
-        <div class="planner-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-            <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0">🍪 Snack Box — เมนูเบเกอรี่</h2>
-            <span style="font-size:.75rem;color:var(--text-muted)">ขั้นต่ำ 30 กล่อง · ราคา/ชื่อแก้ได้</span>
-          </div>
-          <div style="margin-top:.5rem;font-size:.75rem;color:var(--text-muted);line-height:1.6">ข้อมูลจาก <code>js/snack-data.js</code> · ส่งออกไฟล์แล้วนำไปแทนที่ในโฟลเดอร์ <code>js/</code> ก่อน commit</div>
-          <div class="price-table-wrap" style="margin-top:.85rem">
-            <table class="price-table">
-              <thead>
-                <tr>
-                <th style="text-align:left;padding-left:.9rem">หมวด <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ได้</span></th>
-                <th style="text-align:left">ชื่อเมนู</th>
-                <th>ราคา (บาท) <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ได้</span></th>
-                <th>ชื่อเมนู(แก้) <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ได้</span></th>
-                </tr>
-              </thead>
-              <tbody id="snackTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Price table -->
-    <section class="section section-white" style="padding-top:1.25rem">
-      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-          <h2 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0">ตารางราคาขาย — แก้ได้ทันที</h2>
-          <span style="font-size:.75rem;color:var(--text-muted)">พิมพ์ราคา/ขั้นต่ำ/รูป/ชื่อใหม่ แล้วดาวน์โหลด <b>menu-data.js</b> ไปแทนไฟล์เดิม</span>
-        </div>
-        <div class="price-table-wrap" style="margin-top:.85rem">
-          <table class="price-table">
-            <thead>
-              <tr>
-                <th style="text-align:left;padding-left:.9rem">เมนู</th>
-                <th>หมวด</th>
-                <th>ราคาขาย (บาท) <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ได้</span></th>
-                <th>ขั้นต่ำ/เมนู <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ได้</span></th>
-                <th>รูปภาพ <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ path ได้</span></th>
-                <th>ชื่อเมนู <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.8">แก้ได้</span></th>
-                <th>ตัวอย่างในงบ 60/90/120</th>
-                <th style="width:110px">ไม่เลือกเนื้อ</th>
-                <th style="width:60px">ลบ</th>
-              </tr>
-            </thead>
-            <tbody id="priceTableBody"></tbody>
-          </table>
-        </div>
-        <div style="margin-top:.75rem;font-size:.75rem;color:var(--text-muted);line-height:1.6">หน้านี้บันทึกค่าที่แก้ไว้ในเบราว์เซอร์นี้เพื่อช่วยเตรียมข้อมูลเท่านั้น · หน้า <code>popular-menu.html</code> ใช้เลือกเมนูโดยไม่แสดงราคา ส่วนเครื่องมือนี้ใช้ราคาใน <code>js/menu-data.js</code> เพื่อช่วยจัดเตรียมงบ</div>
-      </div>
-    </section>
-
-
-    <section class="section section-dark" style="padding:2rem 0">
-      <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem;text-align:center;position:relative;z-index:1">
-        <h2 style="font-size:1.25rem;font-weight:900;color:#fff">แก้ราคาเสร็จแล้ว ส่งออก menu-data.js</h2>
-        <p style="opacity:.85;margin-top:.4rem;font-size:.9rem">ดาวน์โหลดไฟล์แล้วนำไปแทนที่ในโฟลเดอร์ js/ ก่อน commit — เครื่องมือนี้สำหรับพนักงานเท่านั้น ไม่ใช่หน้าลูกค้า</p>
-      </div>
-    </section>
+    <footer class="cp-foot">
+      <p>EED HALAL · เครื่องมือภายในสำหรับเจ้าของเท่านั้น</p>
+      <p>ข้อมูลสาธารณะอ้างอิง (อ่านอย่างเดียว หน้านี้ไม่แก้ราคาขาย): Snack Box ขั้นต่ำ 30 กล่อง · ราคาขายกลางเปลี่ยนผ่านกระบวนการ sync ปกติเท่านั้น</p>
+      <p><a href="/">← แนะนำชุดตามงบ</a></p>
+    </footer>
   </main>
-
-  <div id="footer"></div>
-  <script src="js/business-data.js"></script>
-  <script src="js/menu-data.js"></script>
-  <script src="js/snack-data.js"></script>
-  <script src="js/tracking-config.js"></script>
-  <script src="js/main.js"></script>
-  <script src="js/budget-planner.js"></script>
+  <!-- ฐานกลางเมนู (local): demo/owner-set-builder/menu-central.json ผ่านปุ่ม "บันทึก" · ฉบับเผยแพร่: data/planner-overrides.json + js/menu-data.js ผ่านปุ่ม "ดูตัวอย่างและเผยแพร่" (ต้อง commit + push เอง) · ส่วนต้นทุนแตะเฉพาะ owner-costs.json ในเครื่องเท่านั้น -->
+  <style>#mc-modal[hidden]{display:none}</style>
 </body>
 </html>

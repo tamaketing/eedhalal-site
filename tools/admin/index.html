@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>จัดชุดอาหารตามงบ · EED HALAL (เฉพาะเจ้าของ)</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.mjs"></script>
+</head>
+<body>
+  <header class="topbar"><div class="wrap topbar-inner"><div class="brand"><span class="mark">E</span><span>EED <b>HALAL</b><small>เครื่องมือสำหรับเจ้าของ</small></span></div><span class="local-tag">● LOCAL DEMO</span><a class="topbar-link" href="/budget-planner.html">จัดการเมนู</a></div></header>
+  <main class="wrap">
+    <section class="hero"><div class="eyebrow">เจ้าของร้าน · วางแผนในเครื่องเท่านั้น</div><h1>จัดชุดอาหาร<br><em>ให้พอดีกับงบ</em></h1><p>ใส่งบแล้วให้ระบบแนะนำชุดเมนูอัตโนมัติ หรือวางองค์ประกอบเอง คำนวณต้นทุนที่ทราบ และเตรียมข้อความสำหรับลูกค้า<br>ไม่มีการส่งข้อความออกจากหน้านี้</p></section>
+    <div id="load-error" class="alert" hidden>โหลดข้อมูลภายในไม่สำเร็จ กรุณาตรวจเซิร์ฟเวอร์ local และรีเฟรชหน้า</div>
+    <section class="panel recommender" aria-label="แนะนำชุดเมนูอัตโนมัติ"><span class="step">01 / แนะนำชุดเมนู</span><h2>ใส่งบ แล้วให้ระบบแนะนำชุดให้</h2><p>กรอกเพียงงบขายต่อกล่อง (รวมค่าส่งแล้ว) จำนวนกล่อง และต้นทุนค่าส่งรวมงาน แล้วกด “แนะนำชุดเมนู” ระบบเลือกเฉพาะเมนู/ชุดอาหารที่เจ้าของบันทึก เปิดใช้ และยืนยันต้นทุนครบเท่านั้น ตรงตามรายการที่เจ้าของจัดไว้ ไม่เพิ่มอาหารหรือเปลี่ยนกล่องเอง และไม่ใช้เรทโซนเดิม รายการที่ยังไม่พร้อมจะถูกข้ามและแจ้งใน “รายการที่ถูกข้าม” (บันทึกเมนู/ชุดที่หน้า <a href="/budget-planner.html">จัดการเมนู</a>)</p>
+      <div class="brief-fields">
+        <label>งบขายต่อกล่อง <span>บาท · รวมค่าจัดส่งแล้ว</span><input id="rec-sale" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="เช่น 120"></label>
+        <label>จำนวนกล่องของงาน <span>ขั้นต่ำ 10 กล่องต่อเมนู</span><input id="rec-count" type="number" inputmode="numeric" min="10" step="1" placeholder="เช่น 50"></label>
+        <label>ต้นทุนค่าส่งรวมงาน <span>บาท · เว้นว่าง = ยังไม่ทราบ ไม่แทนด้วย 0</span><input id="rec-shipping" type="number" inputmode="decimal" min="0" step="0.01" placeholder="ยังไม่ทราบ"></label>
+        <label>ค่าใช้จ่ายอื่นของงาน <span>บาท · ไม่บังคับ · เว้นว่าง = 0</span><input id="rec-other" type="number" inputmode="decimal" min="0" step="0.01" placeholder="ไม่มี"></label>
+      </div>
+      <div class="copy-actions"><button type="button" id="rec-run" class="button primary">แนะนำชุดเมนู</button><span id="rec-status" role="status" aria-live="polite"></span></div>
+      <p class="micro">ค่าส่งเว้นว่าง = ยังไม่ทราบ ระบบไม่คำนวณจนกว่าจะระบุค่า (กรอก 0 ได้ถ้าไม่มีค่าส่งจริง) · ค่าใช้จ่ายอื่นไม่บังคับ เว้นว่าง = ไม่นำมาคิด · กำไรแสดงเป็น “กำไรหลังหักต้นทุนที่ระบุ”</p>
+      <div id="rec-used"></div>
+      <div id="rec-out"></div>
+    </section>
+    <section class="panel brief" aria-label="ข้อมูลงาน"><div class="section-top"><span class="step">02 / ข้อมูลงาน</span><h2>เริ่มจากงบลูกค้า</h2><p>งบลูกค้าและราคาขายที่เสนอเป็นคนละค่า ไม่กรอกแทนกันอัตโนมัติ</p></div>
+      <div class="brief-fields">
+        <label>งบอาหารของลูกค้า / คน <span>บาท · ใช้เทียบกับราคาเสนอ</span><input id="budget" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="เช่น 120"></label>
+        <label>จำนวนกล่องรวมของงาน <span>ตรวจเทียบกับผลรวมแต่ละชุด</span><input id="total-count" type="number" inputmode="numeric" min="10" step="1" value="10"></label>
+        <label>ราคาขายที่ต้องการเสนอ / กล่อง <span>เว้นว่างได้ · ใช้ร่วมกันทุกชุด</span><input id="quote" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="เจ้าของระบุเท่านั้น"></label>
+        <label>ค่าจัดส่งที่เจ้าของยืนยัน <span>เว้นว่าง = สอบถามแอดมิน · แยกจากอาหาร</span><input id="shipping" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="สอบถามแอดมิน"></label>
+      </div>
+      <p class="micro">ต้นทุนภายในนี้เป็นข้อมูลสำหรับร่างชุดอาหาร ยังไม่รวมค่าแรง ค่าใช้จ่ายอื่น หรือค่าจัดส่ง</p>
+    </section>
+    <section class="sets" aria-label="ชุดอาหาร"><div class="sets-header"><div><span class="step">03 / ออกแบบชุด</span><h2>เลือกและปรับชุดอาหาร</h2><p class="micro">กด “ส่งเข้าแบบฟอร์มแก้ไข” จากผลแนะนำด้านบน แล้วระบบจะคัดลอกให้เฉพาะชุดที่ส่งมาเท่านั้น ระบบตรวจเกณฑ์กำไรใหม่ทุกครั้งที่แก้</p></div><button type="button" id="add-set" class="button outline">+ เพิ่มชุดอาหาร</button></div><div id="sets"></div></section>
+    <section class="panel summary" aria-label="สรุปสำหรับเจ้าของ"><span class="step">04 / ตัวเลขสำหรับเจ้าของ</span><h2>ตรวจต้นทุนก่อนเสนอ</h2><div id="overview"></div><div id="results" class="results"></div></section>
+    <section class="panel copy-panel" aria-label="ตัวอย่างข้อความลูกค้า"><span class="step">05 / ข้อความสำหรับลูกค้า</span><h2>ตรวจข้อความก่อนคัดลอก</h2><p>ส่วนนี้แสดงชื่อและจำนวนไข่หรือท็อปปิ้งต่อกล่อง พร้อมชื่อชุด อาหาร จำนวน และราคาขายที่ระบุ แต่ไม่แสดงต้นทุน กำไร หรือบันทึกภายใน หากราคาขายของชุดนั้นรวมค่าจัดส่งแล้ว ระบบแสดง “รวมค่าจัดส่งแล้ว” พร้อมยอดรวม และไม่บวกค่าส่งซ้ำ</p><pre id="customer-preview"></pre><div class="copy-actions"><button type="button" id="copy-customer" class="button primary">คัดลอกข้อความสำหรับลูกค้า</button><span id="copy-status" role="status" aria-live="polite"></span></div><p class="micro">คัดลอกอย่างเดียว ไม่ส่ง LINE หรืออีเมลอัตโนมัติ</p></section>
+  </main>
+  <footer class="wrap foot">EED HALAL · เดโมใช้ภายในเท่านั้น · ปิดหน้าแล้วข้อมูลที่กรอกจะไม่ถูกบันทึก</footer>
+</body>
+</html>

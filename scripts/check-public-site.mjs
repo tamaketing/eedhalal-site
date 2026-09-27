@@ -79,6 +79,113 @@ async function exists(relativePath) {
   }
 }
 
+// Menu publish safety: the published static catalog must carry public fields
+// only. Costs, profit, internal notes/flags, secrets, and machine-local paths
+// must never reach files that GitHub Pages serves (even unlinked direct URLs).
+const PUBLISHED_INTERNAL_TOKENS = [
+  'foodcost', 'internalnote', 'includesbox', 'showonwebsite', 'coststatus',
+  'profit', 'marginpct', 'eed_internal_api_secret',
+];
+const PUBLISHED_LOCAL_TOKENS = ['localhost', '127.0.0.1', 'file://', 'owner-costs', 'C:\\', 'C:/'];
+
+export async function checkPublishSafety(root = ROOT) {
+  const failures = [];
+  const overridesRaw = await readFile(path.join(root, 'data', 'planner-overrides.json'), 'utf8');
+  const menuDataJs = await readFile(path.join(root, 'js', 'menu-data.js'), 'utf8');
+  let overrides;
+  try {
+    overrides = JSON.parse(overridesRaw);
+  } catch (error) {
+    failures.push(`data/planner-overrides.json: invalid JSON (${error.message})`);
+  }
+  if (overrides) {
+    const allowed = new Set([
+      'prices', 'mins', 'images', 'names', 'categories',
+      'descs', 'badges', 'sortOrder', 'popular', 'deleted',
+      'newMenus', 'meats', 'toppings', 'noMeatMenus',
+      'snackPrices', 'snackNames', 'snackCats', 'snackAddons',
+      'exportedAt', 'release',
+    ]);
+    for (const key of Object.keys(overrides)) {
+      if (!allowed.has(key)) failures.push(`data/planner-overrides.json: key not in public allowlist: ${key}`);
+    }
+    // Release marker proves the files came from the menu pipeline, so a
+    // live-web check can confirm exactly which central version is served.
+    if (!overrides.release || !Number.isFinite(Number(overrides.release.centralVersion))) {
+      failures.push('data/planner-overrides.json: missing release.centralVersion (rebuild via menu publish)');
+    }
+  }
+  // Internal data and backups must never sit next to deploy files or inside
+  // the Pages artifact: costs/central/backups live under demo/ (gitignored,
+  // undeployed) only.
+  for (const dir of ['data', 'js']) {
+    let entries = [];
+    try {
+      entries = await readdir(path.join(root, dir));
+    } catch { /* missing dir is reported elsewhere */ }
+    for (const name of entries) {
+      if (/owner-costs|menu-central|internalnote/i.test(name)) {
+        failures.push(`internal file must not live in deploy paths: ${dir}/${name}`);
+      }
+      if (/\.(bak|tmp)$|~$/.test(name)) failures.push(`stray backup/temp file in deploy paths: ${dir}/${name}`);
+    }
+  }
+  // Owner-only scripts must stay out of the Pages artifact (see pages.yml).
+  const pagesYml = await readFile(path.join(root, '.github', 'workflows', 'pages.yml'), 'utf8');
+  for (const token of ['demo/', 'tools/', 'owner-costs', 'menu-central']) {
+    if (new RegExp(`cp (-R )?["']?${token}`).test(pagesYml)) {
+      failures.push(`.github/workflows/pages.yml: must not bundle ${token} into the artifact`);
+    }
+  }
+  // Backend runtime holds no data files: data stays in the gitignored data
+  // dir, never beside the code. Lock that shape (names only, not contents).
+  let adminEntries = [];
+  try {
+    adminEntries = await readdir(path.join(root, 'tools', 'admin'));
+  } catch {
+    failures.push('tools/admin is missing (admin backend must be tracked)');
+    adminEntries = [];
+  }
+  for (const name of adminEntries) {
+    if (/owner-costs|menu-central\.json|publish-state|\.bak$|\.tmp$/i.test(name)) {
+      failures.push(`private data must not live beside backend code: tools/admin/${name}`);
+    }
+  }
+  for (const [label, content] of [['data/planner-overrides.json', overridesRaw], ['js/menu-data.js', menuDataJs]]) {
+    const lower = content.toLowerCase();
+    for (const token of PUBLISHED_INTERNAL_TOKENS) {
+      if (lower.includes(token)) failures.push(`${label}: internal data leak (${token})`);
+    }
+    for (const token of PUBLISHED_LOCAL_TOKENS) {
+      if (content.includes(token)) failures.push(`${label}: machine-local reference (${token})`);
+    }
+  }
+  for (const excluded of ['budget-planner.html', 'kitchen-order.html', 'cost-data.js', 'budget-planner.js', 'kitchen-order.js']) {
+    if (!pagesYml.includes(`! -name '${excluded}'`)) failures.push(`.github/workflows/pages.yml: must keep excluding ${excluded}`);
+  }
+  // Every published menu image must resolve to a file in the repo (web-safe).
+  if (overrides) {
+    for (const [id, image] of Object.entries(overrides.images || {})) {
+      const ref = String(image || '');
+      if (/^https?:\/\//i.test(ref)) {
+        if (!/^https:\/\//i.test(ref) || /localhost|127\.0\.0\.1/.test(ref)) {
+          failures.push(`data/planner-overrides.json: image id ${id} is not web-safe: ${ref}`);
+        }
+        continue;
+      }
+      if (ref.includes('\\') || /^[a-zA-Z]:/.test(ref) || ref.startsWith('file:') || ref.includes('..')) {
+        failures.push(`data/planner-overrides.json: image id ${id} is not web-safe: ${ref}`);
+        continue;
+      }
+      if (!await exists(ref.replace(/^\/+/, '').split('#')[0].split('?')[0])) {
+        failures.push(`data/planner-overrides.json: image id ${id} missing from repo: ${ref}`);
+      }
+    }
+  }
+  assert.deepEqual(failures, [], `Publish safety validation failed:\n${failures.join('\n')}`);
+  console.log('Publish safety validation passed (no internal data in public catalog).');
+}
+
 export async function checkPublicSite(root = ROOT) {
   const previousRoot = ROOT;
   if (root !== previousRoot) throw new Error('custom roots are not supported');
@@ -189,4 +296,7 @@ export async function checkPublicSite(root = ROOT) {
   console.log(`Public site validation passed for ${publicFiles.length} indexable pages.`);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await checkPublicSite();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await checkPublishSafety();
+  await checkPublicSite();
+}
