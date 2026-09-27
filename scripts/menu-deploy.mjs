@@ -1,42 +1,40 @@
 // EED HALAL — deploy-to-web orchestrator (tracked, no secrets).
 //
-// Completes the flow from the admin backend: verify -> commit ONLY the
-// published files -> push with the machine's own git credentials -> confirm
-// what GitHub Pages actually serves. No token ever enters the browser; the
-// browser only sends {confirm:true} and polls the phase log.
+// The publish button must work even when the admin checkout is dirty:
+// everything git-related happens in a DEDICATED worktree tracking remote
+// main, never in the working checkout. Only the two built public files enter
+// that worktree, built from the admin's central draft (dataDir) — the dirty
+// workspace is only READ for the central data, never written, never pushed.
 //
 // Safety rules (hard):
-// - Never commit or push unrelated pending work: `git add` uses an explicit
-//   pathspec of exactly DEPLOY_ALLOWLIST, and any OTHER unpushed commits
-//   abort the run (pushing would bundle them).
-// - Never push files that differ from a fresh pipeline build (hand edits in
-//   the published files abort with a reason).
-// - Never push with a dirty draft (central ahead of files aborts).
-// - Push success is NOT deploy success: only verifyLiveRelease reporting
-//   `live` for this file version counts as เผยแพร่แล้ว; otherwise the result
-//   stays "ยังไม่ยืนยัน" (pushed:true, liveConfirmed:false).
+// - `git add` uses an explicit pathspec of exactly DEPLOY_ALLOWLIST.
+// - The worktree starts at the fetched remote sha; if the remote moves
+//   between prepare and push, the run aborts (re-prepare instead). Never
+//   --force (asserted in tests; push args are recorded).
+// - Push success is NOT deploy success: only verifyLive reporting `live`
+//   for this file version counts as published; otherwise "ยังไม่ยืนยัน".
+// - Gates re-run INSIDE the worktree before commit (check-system,
+//   check-public-site, menu pipeline tests).
 //
-// Deps are injected so tests simulate git/network without touching anything:
-//   { runGit: async (args) => stdoutString,
-//     verifyLive: async ({fileVersion, attempt}) => liveResult,
-//     now: () => Date,
-//     pollIntervalMs, pollTimeoutMs, branch, liveBaseUrl }
+// Deps are injected ({ runGit(args, opts), runGate(cmd, args, cwd),
+// verifyLive, now, loadCentral }) so tests drive the REAL git binary against
+// temp repos with only the network faked.
 
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import {
   assertPublishSafe,
   buildMenuDataJs,
   buildPlannerOverrides,
-  diffPublicChanges,
   loadPublished,
-  parseMenuDataJs,
   PUBLISH_FILES,
   readPublishState,
   validateCentral,
-  verifyLiveRelease,
   writePublishState,
 } from './menu-central.mjs';
 
 export const DEPLOY_ALLOWLIST = [...PUBLISH_FILES];
+export const WORKTREE_MARKER = '.eed-publish-worktree';
 
 export function deployCommitMessage(fileVersion) {
   return `chore(menus): publish central v${fileVersion} to web`;
@@ -57,148 +55,188 @@ async function saveState(dataDir, patch) {
   return next;
 }
 
-// Preflight only (no commit/push). Returns {ok, fileVersion?, reasons[]}.
-export async function deployPreflight({ root, dataDir, deps }) {
-  const reasons = [];
-  void dataDir;
-  const central = await deps.loadCentral();
-  const validated = validateCentral(central);
-  if (!validated.ok) return { ok: false, reasons: [`ฐานกลางไม่ผ่านการตรวจ: ${validated.errors.join(' | ')}`] };
-  const published = await loadPublished(root);
-  const menuDataMenus = await parseMenuDataJs(published.menuDataJs);
-  const diff = diffPublicChanges(
-    { ...validated.data, version: central.version ?? 0 },
-    { overrides: published.overrides, menuDataMenus },
-  );
-  if (diff.hasChanges) {
-    reasons.push('ฐานกลางยังใหม่กว่าฉบับไฟล์ — กด “ดูตัวอย่างและเผยแพร่” (สร้างไฟล์) ก่อนขึ้นเว็บ');
-  }
-  // Working-tree files must equal a fresh pipeline build (no hand edits).
-  // Compare semantically (timestamps differ per build): strip volatile keys.
-  const now = deps.now();
-  const strip = (obj) => {
-    const copy = JSON.parse(JSON.stringify(obj));
-    delete copy.exportedAt;
-    if (copy.release) delete copy.release.builtAt;
-    return copy;
-  };
-  const localOverrides = JSON.parse(await deps.readFile('data/planner-overrides.json'));
-  const freshParsed = JSON.parse(JSON.stringify(buildPlannerOverrides(
-    { ...validated.data, version: central.version ?? 0 }, published.overrides, now,
-  )));
-  if (JSON.stringify(strip(localOverrides)) !== JSON.stringify(strip(freshParsed))) {
-    reasons.push('ไฟล์เผยแพร่ในเครื่องถูกแก้ด้วยมือ (ไม่ตรงฉบับที่ pipeline สร้าง) — สร้างไฟล์ใหม่ก่อนขึ้นเว็บ');
-  }
-  const localJs = await deps.readFile('js/menu-data.js');
-  const freshJs = buildMenuDataJs({ ...validated.data, version: central.version ?? 0 }, now);
-  const normJs = (text) => text.replace(/^\/\*.*\*\/\n/, '/*HEADER*/\n');
-  if (normJs(localJs) !== normJs(freshJs)) {
-    reasons.push('js/menu-data.js ในเครื่องไม่ตรงฉบับที่ pipeline สร้าง — สร้างไฟล์ใหม่ก่อนขึ้นเว็บ');
-  }
-  try {
-    assertPublishSafe({ overrides: localOverrides, menuDataJs: await deps.readFile('js/menu-data.js'), root });
-  } catch (error) {
-    reasons.push(`ไฟล์เผยแพร่ไม่ผ่านการตรวจ: ${error.message}`);
-  }
-  // Separation check: other unpushed commits would ride along on push.
-  const branch = (await deps.runGit(['branch', '--show-current'])).trim() || 'main';
-  let unpushed = '';
-  try {
-    unpushed = await deps.runGit(['log', '@{u}..HEAD', '--oneline']);
-  } catch {
-    unpushed = 'UNKNOWN';
-  }
-  if (unpushed === 'UNKNOWN') {
-    reasons.push('ตรวจ unpushed commits ไม่สำเร็จ (ไม่มี upstream หรือ git ขัดข้อง) — หยุดเพื่อความปลอดภัย');
-  } else if (unpushed.trim() !== '') {
-    reasons.push(`มี commit อื่นรอ push อยู่ (${unpushed.trim().split('\n').length} commit) — push จะพ่วงงานอื่นไปด้วย จึงหยุด`);
-  }
-  // Report (not block): unrelated pending work stays out of this commit.
-  let others = '';
-  try {
-    const porcelain = await deps.runGit(['status', '--porcelain', '--', ...DEPLOY_ALLOWLIST]);
-    void porcelain;
-    const full = await deps.runGit(['status', '--porcelain']);
-    others = full.split('\n').map((line) => line.trim()).filter(Boolean)
-      .filter((line) => !DEPLOY_ALLOWLIST.some((file) => line.endsWith(file)))
-      .join('\n');
-  } catch { /* best effort report only */ }
-  const fileVersion = Number(central.version ?? 0);
-  return { ok: reasons.length === 0, fileVersion, branch, unrelatedPending: others, reasons };
+async function abort(dataDir, detail) {
+  await saveState(dataDir, { deploy: phaseRecord(null, 'aborted', detail), error: detail });
+  const error = new Error(detail);
+  error.code = 'EDEPLOYABORTED';
+  throw error;
 }
 
-// Full run: preflight -> commit (allowlist only) -> push -> live confirm.
-// Never throws a false success: failures record phase + reason and rethrow.
+// Remote sha without changing any local state (fetch first separately).
+export async function remoteSha({ remote = 'origin', branch = 'main', repoRoot, runGit }) {
+  const out = await runGit(['ls-remote', remote, `refs/heads/${branch}`], { cwd: repoRoot });
+  const sha = out.trim().split(/\s+/)[0] || '';
+  if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error(`อ่าน remote ${remote}/${branch} ไม่สำเร็จ`);
+  return sha;
+}
+
+// Prepare (or reuse) the dedicated publish worktree at exactly baseSha.
+// Reuse only when the marker matches AND HEAD matches AND the worktree is
+// clean; otherwise rebuild from scratch. Never touches the working checkout.
+export async function ensurePublishWorktree({ repoRoot, dir, remote = 'origin', branch = 'main', runGit }) {
+  await runGit(['fetch', remote, branch], { cwd: repoRoot });
+  const baseSha = await remoteSha({ remote, branch, repoRoot, runGit });
+  let reuse = false;
+  try {
+    const marker = (await readFile(path.join(dir, WORKTREE_MARKER), 'utf8')).trim();
+    const status = await runGit(['status', '--porcelain'], { cwd: dir });
+    const head = (await runGit(['rev-parse', 'HEAD'], { cwd: dir })).trim();
+    reuse = marker === baseSha && head === baseSha && status.trim() === '';
+  } catch {
+    reuse = false;
+  }
+  if (!reuse) {
+    await runGit(['worktree', 'remove', '--force', dir], { cwd: repoRoot }).catch(() => {});
+    await rm(dir, { recursive: true, force: true });
+    await mkdir(path.dirname(dir), { recursive: true });
+    await runGit(['worktree', 'add', '--detach', dir, baseSha], { cwd: repoRoot });
+    await writeFile(path.join(dir, WORKTREE_MARKER), `${baseSha}\n`, 'utf8');
+  }
+  return { dir, baseSha, reused: reuse };
+}
+
+// Build the two public files into the worktree from the admin central draft
+// and verify the exact bytes on disk there (allowlist, leaks, images).
+export async function buildIntoWorktree({ worktreeDir, central, now }) {
+  const validated = validateCentral(central);
+  if (!validated.ok) throw new Error(`ฐานกลางไม่ผ่านการตรวจ: ${validated.errors.join(' | ')}`);
+  const clean = { ...validated.data, version: central.version ?? 0, updatedAt: central.updatedAt ?? null };
+  const current = await loadPublished(worktreeDir);
+  const overrides = buildPlannerOverrides(clean, current.overrides, now);
+  const menuDataJs = buildMenuDataJs(clean, now);
+  assertPublishSafe({ overrides, menuDataJs, root: worktreeDir });
+  await writeFile(path.join(worktreeDir, 'data', 'planner-overrides.json'), `${JSON.stringify(overrides, null, 2)}\n`, 'utf8');
+  await writeFile(path.join(worktreeDir, 'js', 'menu-data.js'), menuDataJs, 'utf8');
+  const diskOverrides = JSON.parse(await readFile(path.join(worktreeDir, 'data', 'planner-overrides.json'), 'utf8'));
+  const diskJs = await readFile(path.join(worktreeDir, 'js', 'menu-data.js'), 'utf8');
+  assertPublishSafe({ overrides: diskOverrides, menuDataJs: diskJs, root: worktreeDir });
+  return { fileVersion: clean.version, overrides, menuDataJs };
+}
+
+// Gates that must pass INSIDE the worktree before anything is committed.
+export const WORKTREE_GATES = [
+  { cmd: 'scripts/check-system.mjs', args: [] },
+  { cmd: 'scripts/check-public-site.mjs', args: [] },
+  { cmd: '--test', args: ['test/menu-central-publish.test.mjs', 'test/menu-deploy.test.mjs', 'test/menu-backups.test.mjs', 'test/admin-logic.test.mjs', 'test/admin-runtime-clean.test.mjs'] },
+];
+
+export async function verifyWorktreeGates({ worktreeDir, runGate }) {
+  for (const gate of WORKTREE_GATES) {
+    try {
+      await runGate(gate.cmd, gate.args, worktreeDir);
+    } catch (error) {
+      throw new Error(`gate ไม่ผ่านใน worktree (${gate.cmd}): ${error.message}`);
+    }
+  }
+}
+
+// Commit ONLY the allowlist. Aborts when the worktree holds anything else
+// uncommitted, or when the remote moved since prepare.
+export async function commitPublishFiles({ worktreeDir, repoRoot, remote, branch, baseSha, message, runGit }) {
+  const full = await runGit(['status', '--porcelain'], { cwd: worktreeDir });
+  const touched = full.split('\n').map((line) => line.trim()).filter(Boolean)
+    .filter((line) => !DEPLOY_ALLOWLIST.some((file) => line.endsWith(file)) && !line.endsWith(WORKTREE_MARKER));
+  if (touched.length) throw new Error(`worktree มีไฟล์อื่นปนนอกเหนือจากไฟล์เผยแพร่: ${touched.join(', ')}`);
+  const now = await remoteSha({ remote, branch, repoRoot, runGit });
+  if (now !== baseSha) {
+    throw new Error(`remote ${branch} เปลี่ยนระหว่างเตรียม (${baseSha.slice(0, 7)} → ${now.slice(0, 7)}) — หยุดแล้วเตรียมใหม่ ห้าม force push`);
+  }
+  await runGit(['add', '--', ...DEPLOY_ALLOWLIST], { cwd: worktreeDir });
+  const commitOut = await runGit(['commit', '-m', message], { cwd: worktreeDir });
+  return commitOut.trim();
+}
+
+// Push the worktree HEAD to the remote branch (fast-forward only — git
+// refuses non-ff without --force, which is never passed anywhere here).
+export async function pushWorktree({ worktreeDir, repoRoot, remote, branch, baseSha, runGit }) {
+  const now = await remoteSha({ remote, branch, repoRoot, runGit });
+  if (now !== baseSha) {
+    throw new Error(`remote ${branch} เปลี่ยนก่อน push (${baseSha.slice(0, 7)} → ${now.slice(0, 7)}) — หยุดแล้วเตรียมใหม่ ห้าม force push`);
+  }
+  await runGit(['push', remote, `HEAD:${branch}`], { cwd: worktreeDir });
+  return remoteSha({ remote, branch, repoRoot, runGit });
+}
+
+// Full run: prepare -> build -> gates -> commit -> push -> live confirm.
 export async function deployMenuRelease({ root, dataDir, deps }) {
-  await saveState(dataDir, { deploy: phaseRecord(null, 'checking', 'ตรวจความพร้อมก่อนขึ้นเว็บ'), error: null });
-  const pre = await deployPreflight({ root, dataDir, deps });
-  if (!pre.ok) {
-    const detail = pre.reasons.join(' | ');
-    await saveState(dataDir, { deploy: phaseRecord(null, 'aborted', detail), error: detail });
-    const error = new Error(detail);
-    error.code = 'EDEPLOYABORTED';
+  const remote = deps.remote || 'origin';
+  const branch = deps.branch || 'main';
+  const worktreeDir = deps.worktreeDir;
+  if (!worktreeDir) throw new Error('ต้องระบุ publish worktree แยกจาก working checkout');
+  await saveState(dataDir, { deploy: phaseRecord(null, 'preparing', `เตรียม worktree เผยแพร่จาก ${remote}/${branch}`), error: null });
+  let baseSha;
+  try {
+    ({ baseSha } = await ensurePublishWorktree({ repoRoot: root, dir: worktreeDir, remote, branch, runGit: deps.runGit }));
+  } catch (error) {
+    await abort(dataDir, error.message);
+  }
+  await saveState(dataDir, { deploy: phaseRecord(null, 'building', 'สร้างไฟล์สาธารณะจากฐานกลางของแอดมิน', { baseSha }) });
+  const central = await deps.loadCentral();
+  const now = deps.now();
+  let fileVersion;
+  try {
+    ({ fileVersion } = await buildIntoWorktree({ worktreeDir, central, now }));
+  } catch (error) {
+    await saveState(dataDir, { deploy: phaseRecord(null, 'failed', error.message, { baseSha }), error: error.message });
     throw error;
   }
-  const { fileVersion, branch } = pre;
-  const message = deployCommitMessage(fileVersion);
-  await saveState(dataDir, { deploy: phaseRecord(null, 'committing', `commit เฉพาะ ${DEPLOY_ALLOWLIST.join(', ')}`) });
-  await deps.runGit(['add', '--', ...DEPLOY_ALLOWLIST]);
-  let commit = '';
+  await saveState(dataDir, { deploy: phaseRecord(null, 'verifying', 'รัน gates ใน worktree ก่อน commit', { baseSha, fileVersion }) });
   try {
-    commit = (await deps.runGit(['commit', '-m', message])).trim();
+    await verifyWorktreeGates({ worktreeDir, runGate: deps.runGate });
   } catch (error) {
-    const detail = `commit ไม่สำเร็จ: ${error.message}`;
-    await saveState(dataDir, { deploy: phaseRecord(null, 'failed', detail), error: detail });
-    throw new Error(detail);
+    await abort(dataDir, `${error.message} (baseSha ${baseSha.slice(0, 7)}, fileVersion ${fileVersion})`);
   }
-  await saveState(dataDir, { deploy: phaseRecord(null, 'pushing', `push ${branch} (commit นี้มีเฉพาะไฟล์เผยแพร่)`, { commit }) });
+  const message = deployCommitMessage(fileVersion);
+  await saveState(dataDir, { deploy: phaseRecord(null, 'committing', `commit เฉพาะ ${DEPLOY_ALLOWLIST.join(', ')}`, { baseSha, fileVersion }) });
+  let commit;
   try {
-    await deps.runGit(['push', 'origin', branch]);
+    commit = await commitPublishFiles({ worktreeDir, repoRoot: root, remote, branch, baseSha, message, runGit: deps.runGit });
+  } catch (error) {
+    const wrapped = new Error(error.message);
+    wrapped.code = error.code || 'EDEPLOYABORTED';
+    await saveState(dataDir, { deploy: phaseRecord(null, 'aborted', error.message, { baseSha, fileVersion }), error: error.message });
+    throw wrapped;
+  }
+  await saveState(dataDir, { deploy: phaseRecord(null, 'pushing', `push ${remote}/${branch} (fast-forward เท่านั้น)`, { baseSha, fileVersion, commit }) });
+  try {
+    await pushWorktree({ worktreeDir, repoRoot: root, remote, branch, baseSha, runGit: deps.runGit });
   } catch (error) {
     const detail = `push ไม่สำเร็จ: ${error.message} — เว็บจริงยังเป็นฉบับเดิม`;
-    await saveState(dataDir, { deploy: phaseRecord(null, 'failed', detail, { commit }), error: detail });
+    await saveState(dataDir, { deploy: phaseRecord(null, 'failed', detail, { baseSha, fileVersion, commit }), error: detail });
     throw new Error(detail);
   }
-  // Push done: now prove the live web serves this release (poll, not assume).
-  await saveState(dataDir, { deploy: phaseRecord(null, 'verifying', 'รอตรวจว่าเว็บจริงให้บริการฉบับนี้แล้ว', { commit, pushed: true }) });
+  await saveState(dataDir, { deploy: phaseRecord(null, 'live-checking', 'รอตรวจว่าเว็บจริงให้บริการฉบับนี้แล้ว', { baseSha, fileVersion, commit, pushed: true }) });
   const deadline = deps.now().getTime() + (deps.pollTimeoutMs ?? 10 * 60 * 1000);
   const interval = deps.pollIntervalMs ?? 15000;
-  let attempt = 0;
   for (;;) {
-    attempt += 1;
-    const live = await deps.verifyLive({ fileVersion, attempt });
+    const live = await deps.verifyLive({ fileVersion });
     if (live?.state === 'live' && Number(live.liveVersion) === Number(fileVersion)) {
-      await saveState(dataDir, {
-        live,
-        deploy: phaseRecord(null, 'live', live.reason, { commit, pushed: true, liveConfirmed: true }),
-        error: null,
-      });
-      return { ok: true, pushed: true, liveConfirmed: true, commit, fileVersion, live };
+      await saveState(dataDir, { live, deploy: phaseRecord(null, 'live', live.reason, { baseSha, fileVersion, commit, pushed: true, liveConfirmed: true }), error: null });
+      return { ok: true, pushed: true, liveConfirmed: true, commit, fileVersion, baseSha, live };
     }
     if (deps.now().getTime() >= deadline) {
-      const detail = `push สำเร็จแต่ยังยืนยันเว็บจริงไม่ได้ในเวลาที่รอ (ตรวจ ${attempt} ครั้ง: ${live?.reason || 'no result'}) — สถานะ “ยังไม่ยืนยัน” ห้ามถือว่าเผยแพร่แล้ว`;
+      const detail = `push สำเร็จแต่ยังยืนยันเว็บจริงไม่ได้ในเวลาที่รอ — สถานะ “ยังไม่ยืนยัน” ห้ามถือว่าเผยแพร่แล้ว`;
       await saveState(dataDir, {
         live: { ...(live || { state: 'unverified' }), checkedAt: deps.now().toISOString() },
-        deploy: phaseRecord(null, 'unverified', detail, { commit, pushed: true, liveConfirmed: false }),
+        deploy: phaseRecord(null, 'unverified', detail, { baseSha, fileVersion, commit, pushed: true, liveConfirmed: false }),
         error: null,
       });
-      return { ok: true, pushed: true, liveConfirmed: false, commit, fileVersion, live, detail };
+      return { ok: true, pushed: true, liveConfirmed: false, commit, fileVersion, baseSha, live, detail };
     }
     await new Promise((resolve) => setTimeout(resolve, interval));
   }
 }
 
 // Production dep wiring lives in the local server (never in the browser).
-export function realDeployDeps({ root, execGit, fetchImpl = fetch, now = () => new Date(), pollIntervalMs, pollTimeoutMs, liveBaseUrl = 'https://eedhalal.com', loadCentral, readFile }) {
+export function realDeployDeps({ root, worktreeDir, remote = 'origin', branch = 'main', execGit, runGate, fetchImpl = fetch, now = () => new Date(), pollIntervalMs, pollTimeoutMs, liveBaseUrl = 'https://eedhalal.com', loadCentral }) {
   return {
-    now, pollIntervalMs, pollTimeoutMs,
+    now, pollIntervalMs, pollTimeoutMs, worktreeDir, remote, branch,
     loadCentral,
-    readFile: (rel) => readFile(`${root}/${rel}`, 'utf8'),
-    runGit: (args) => execGit(args),
-    verifyLive: async () => verifyLiveRelease({
-      root,
-      file: { status: 'staged', fileVersion: (await loadCentral()).version ?? 0 },
-      liveBaseUrl, fetchImpl,
-    }),
+    runGit: (args, opts = {}) => execGit(args, opts),
+    runGate,
+    verifyLive: async ({ fileVersion }) => {
+      const { verifyLiveRelease } = await import('./menu-central.mjs');
+      return verifyLiveRelease({ root: worktreeDir, file: { status: 'staged', fileVersion }, liveBaseUrl, fetchImpl });
+    },
   };
 }

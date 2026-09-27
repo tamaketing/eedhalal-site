@@ -1,155 +1,221 @@
-// EED HALAL — deploy-to-web orchestration tests (fakes only, never git/push).
+// EED HALAL — deploy-via-worktree tests (REAL temp git repos, fake live net).
 //
-// Proves the backend flow refuses unsafe runs and never claims success:
-//   - dirty draft / hand-edited files / foreign unpushed commits -> abort
-//   - commit pathspec contains ONLY the two published files
-//   - push ok + live match -> live confirmed; push ok + live timeout ->
-//     "ยังไม่ยืนยัน" (never "เผยแพร่แล้ว"); push fail -> failed phase.
+// The admin checkout stays dirty throughout: a canary uncommitted change must
+// survive every run byte-identical, and no commit/push ever happens there.
+// Pushes go only to a scratch bare remote, never the real origin.
 
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, mkdir } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
-import { deployMenuRelease, deployPreflight, DEPLOY_ALLOWLIST } from '../scripts/menu-deploy.mjs';
-import { loadPublished, migrateCentral, parseMenuDataJs, parsePopularIds, readPublishState, saveCentral } from '../scripts/menu-central.mjs';
+const execFileAsync = promisify(execFile);
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 
-const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+async function git(cwd, ...args) {
+  const { stdout } = await execFileAsync('git', ['-c', 'user.name=T', '-c', 'user.email=t@t', ...args], { cwd, timeout: 60000 });
+  return stdout;
+}
 
-async function seedTempRoot() {
-  const dir = await mkdtemp(path.join(tmpdir(), 'eed-deploy-test-'));
-  const dataDir = path.join(dir, 'local');
-  await mkdir(path.join(dir, 'data'), { recursive: true });
-  await mkdir(path.join(dir, 'js'), { recursive: true });
+function seedCatalog() {
+  return {
+    prices: { 1: 65, 2: 70 },
+    mins: { 1: 5, 2: 5 },
+    images: { 1: 'img/a.jpg', 2: 'img/b.jpg' },
+    names: { 1: 'เมนู ก', 2: 'เมนู ข' },
+    categories: { 1: 'ข้าว', 2: 'ข้าว' },
+    deleted: [],
+  };
+}
+
+function seedMenuJs() {
+  return [
+    '/* seed */',
+    'var EED_DEFAULT_MEATS = [];',
+    'var EED_DEFAULT_TOPPINGS = [];',
+    'var EED_MENUS = [',
+    '  { id: 1, name: "เมนู ก", price: 65, category: "ข้าว", image: "img/a.jpg", desc: "", badge: "", minPerMenu: 5 },',
+    '  { id: 2, name: "เมนู ข", price: 70, category: "ข้าว", image: "img/b.jpg", desc: "", badge: "", minPerMenu: 5 }',
+    '];',
+    '',
+  ].join('\n');
+}
+
+function seedCentral() {
+  return {
+    version: 9,
+    updatedAt: '2026-09-27T00:00:00.000Z',
+    menus: [
+      { id: 1, name: 'เมนู ก', price: 65, category: 'ข้าว', image: 'img/a.jpg', desc: '', badge: '', minPerMenu: 5, hidden: false, sortOrder: 0, noMeat: false, internalNote: '' },
+      { id: 2, name: 'เมนู ข', price: 70, category: 'ข้าว', image: 'img/b.jpg', desc: '', badge: '', minPerMenu: 5, hidden: false, sortOrder: 1, noMeat: false, internalNote: '' },
+    ],
+    toppings: [],
+    meats: [],
+    popular: [1, 2],
+  };
+}
+
+// Scratch world: bare remote + seeded clone (the "dirty admin checkout").
+async function makeWorld() {
+  const { mkdir } = await import('node:fs/promises');
+  const base = await mkdtemp(path.join(tmpdir(), 'eed-deploy-'));
+  const remote = path.join(base, 'remote.git');
+  const workspace = path.join(base, 'workspace');
+  const dataDir = path.join(base, 'data');
   await mkdir(dataDir, { recursive: true });
-  const overrides = JSON.parse(await readFile(path.join(REPO, 'data', 'planner-overrides.json'), 'utf8'));
-  const menuDataJs = await readFile(path.join(REPO, 'js', 'menu-data.js'), 'utf8');
-  await writeFile(path.join(dir, 'data', 'planner-overrides.json'), JSON.stringify(overrides, null, 2), 'utf8');
-  await writeFile(path.join(dir, 'js', 'menu-data.js'), menuDataJs, 'utf8');
-  for (const image of new Set(Object.values(overrides.images))) {
-    const target = path.join(dir, decodeURIComponent(String(image).replace(/^\/+/, '')));
-    await mkdir(path.dirname(target), { recursive: true });
-    await writeFile(target, '', 'utf8');
-  }
-  const hydrateJs = await readFile(path.join(REPO, 'js', 'popular-menu-hydrate.js'), 'utf8');
-  const central = migrateCentral({ menuDataMenus: await parseMenuDataJs(menuDataJs), planner: overrides, popularIds: parsePopularIds(hydrateJs) });
-  // Publish once so draft == files (deploy requires a clean file build first).
-  const { publishCentral } = await import('../scripts/menu-central.mjs');
-  const saved = await saveCentral(dataDir, central);
-  await publishCentral({ root: dir, dataDir, central: saved.data });
-  const files = {
-    'data/planner-overrides.json': await readFile(path.join(dir, 'data', 'planner-overrides.json'), 'utf8'),
-    'js/menu-data.js': await readFile(path.join(dir, 'js', 'menu-data.js'), 'utf8'),
-  };
-  return { dir, dataDir, files };
+  await execFileAsync('git', ['init', '--bare', remote], { timeout: 30000 });
+  await execFileAsync('git', ['clone', remote, workspace], { timeout: 30000 });
+  await git(workspace, 'checkout', '-b', 'main');
+  await mkdir(path.join(workspace, 'data',), { recursive: true });
+  await mkdir(path.join(workspace, 'js'), { recursive: true });
+  await mkdir(path.join(workspace, 'img'), { recursive: true });
+  await writeFile(path.join(workspace, 'data', 'planner-overrides.json'), JSON.stringify(seedCatalog(), null, 2), 'utf8');
+  await writeFile(path.join(workspace, 'js', 'menu-data.js'), seedMenuJs(), 'utf8');
+  await writeFile(path.join(workspace, 'img', 'a.jpg'), 'a', 'utf8');
+  await writeFile(path.join(workspace, 'img', 'b.jpg'), 'b', 'utf8');
+  await writeFile(path.join(workspace, 'notes.txt'), 'seed\n', 'utf8');
+  await git(workspace, 'add', '-A');
+  await git(workspace, 'commit', '-m', 'seed');
+  await git(workspace, 'push', '-u', 'origin', 'main');
+  await writeFile(path.join(dataDir, 'menu-central.json'), JSON.stringify(seedCentral()), 'utf8');
+  // Dirty canary: uncommitted work that must survive every run untouched.
+  await writeFile(path.join(workspace, 'notes.txt'), 'seed + UNCOMMITTED owner work\n', 'utf8');
+  const canary = await readFile(path.join(workspace, 'notes.txt'), 'utf8');
+  const canaryMtime = (await stat(path.join(workspace, 'notes.txt'))).mtimeMs;
+  const head = (await git(workspace, 'rev-parse', 'HEAD')).trim();
+  return { base, remote, workspace, dataDir, canary, canaryMtime, head };
 }
 
-// Programmable git/network fakes. gitBehavior controls scripted outputs.
-function makeDeps({ dir, dataDir, files, gitBehavior = {}, liveQueue = [] }) {
-  const gitCalls = [];
-  const liveCalls = [];
-  const behavior = { branch: 'main', unpushed: '', statusFull: '', failOn: null, ...gitBehavior };
+async function assertCanaryIntact(world) {
+  assert.equal(await readFile(path.join(world.workspace, 'notes.txt'), 'utf8'), world.canary);
+  assert.equal((await stat(path.join(world.workspace, 'notes.txt'))).mtimeMs, world.canaryMtime);
+  const status = await git(world.workspace, 'status', '--porcelain');
+  assert.ok(status.trim().split('\n').every((line) => line.trim().endsWith('notes.txt')), `workspace gained changes:\n${status}`);
+  assert.equal((await git(world.workspace, 'rev-parse', 'HEAD')).trim(), world.head, 'workspace HEAD must not move');
+}
+
+function makeDeps(world, { liveQueue = [], gateHook = null, gateFail = null } = {}) {
+  const gitLog = [];
   let clock = Date.parse('2026-09-27T00:00:00.000Z');
-  const deps = {
-    now: () => new Date((clock += 50)),
-    pollIntervalMs: 1,
-    pollTimeoutMs: 100,
-    loadCentral: async () => {
-      const { loadCentral } = await import('../scripts/menu-central.mjs');
-      return loadCentral(dataDir);
-    },
-    readFile: async (rel) => files[rel],
-    runGit: async (args) => {
-      gitCalls.push(args);
-      const [cmd] = args;
-      if (behavior.failOn === cmd) throw new Error(`fake git ${cmd} failed`);
-      if (cmd === 'branch') return `${behavior.branch}\n`;
-      if (cmd === 'log') {
-        if (args.includes('@{u}..HEAD')) return behavior.unpushed;
-        return '';
-      }
-      if (cmd === 'status') return behavior.statusFull;
-      if (cmd === 'add' || cmd === 'commit' || cmd === 'push') return `${cmd} ok`;
-      throw new Error(`unexpected git call: ${args.join(' ')}`);
-    },
-    verifyLive: async ({ fileVersion, attempt }) => {
-      liveCalls.push({ fileVersion, attempt });
-      return liveQueue.length ? liveQueue.shift() : { state: 'unverified', liveVersion: null, checkedAt: 't', reason: 'no live yet' };
+  const liveCalls = [];
+  const gateCalls = [];
+  return {
+    gitLog,
+    liveCalls,
+    gateCalls,
+    deps: {
+      remote: world.remote,
+      branch: 'main',
+      worktreeDir: path.join(world.base, 'publish'),
+      now: () => new Date((clock += 100)),
+      pollIntervalMs: 1,
+      pollTimeoutMs: 500,
+      loadCentral: async () => {
+        const { loadCentral } = await import('../scripts/menu-central.mjs');
+        return loadCentral(world.dataDir);
+      },
+      runGit: async (args, opts = {}) => {
+        gitLog.push({ args, cwd: opts.cwd });
+        if (args[0] !== 'worktree') assert.ok(!args.includes('--force'), 'force is never allowed outside worktree cleanup');
+        return git(opts.cwd || world.workspace, ...args);
+      },
+      runGate: async (cmd, args, cwd) => {
+        gateCalls.push({ cmd, args, cwd });
+        if (gateFail === cmd) throw new Error(`fake gate failure: ${cmd}`);
+        if (gateHook) await gateHook({ cmd, args, cwd, world });
+      },
+      verifyLive: async ({ fileVersion }) => {
+        liveCalls.push(fileVersion);
+        return liveQueue.length ? liveQueue.shift() : { state: 'unverified', liveVersion: null, checkedAt: 't', reason: 'no live yet' };
+      },
     },
   };
-  return { deps, gitCalls, liveCalls };
 }
 
-test('preflight aborts when the draft is ahead of the built files', async () => {
-  const { dir, dataDir, files } = await seedTempRoot();
-  const { loadCentral, saveCentral } = await import('../scripts/menu-central.mjs');
-  const draft = await loadCentral(dataDir);
-  const menus = draft.menus.map((m) => (m.id === 1 ? { ...m, name: 'เปลี่ยนชื่อ' } : m));
-  await saveCentral(dataDir, { ...draft, menus });
-  const { deps } = makeDeps({ dir, dataDir, files });
-  const pre = await deployPreflight({ root: dir, dataDir, deps });
-  assert.equal(pre.ok, false);
-  assert.match(pre.reasons.join(' '), /ยังใหม่กว่า/);
-});
-
-test('preflight aborts on hand-edited published files', async () => {
-  const { dir, dataDir, files } = await seedTempRoot();
-  const tampered = { ...files };
-  const parsed = JSON.parse(tampered['data/planner-overrides.json']);
-  parsed.prices['1'] = 9999;
-  tampered['data/planner-overrides.json'] = JSON.stringify(parsed);
-  const { deps } = makeDeps({ dir, dataDir, files: tampered });
-  const pre = await deployPreflight({ root: dir, dataDir, deps });
-  assert.equal(pre.ok, false);
-  assert.match(pre.reasons.join(' '), /แก้ด้วยมือ/);
-});
-
-test('preflight aborts when foreign commits would ride along', async () => {
-  const { dir, dataDir, files } = await seedTempRoot();
-  const { deps } = makeDeps({ dir, dataDir, files, gitBehavior: { unpushed: 'abc1234 previous work\n' } });
-  const pre = await deployPreflight({ root: dir, dataDir, deps });
-  assert.equal(pre.ok, false);
-  assert.match(pre.reasons.join(' '), /commit อื่น/);
-});
-
-test('success: commit contains ONLY the published files, live confirmed', async () => {
-  const { dir, dataDir, files } = await seedTempRoot();
-  const central = await (await import('../scripts/menu-central.mjs')).loadCentral(dataDir);
+test('happy path: dirty workspace untouched, remote gets exactly the 2 files', async () => {
+  const { deployMenuRelease } = await import('../scripts/menu-deploy.mjs');
+  const { readPublishState } = await import('../scripts/menu-central.mjs');
+  const world = await makeWorld();
+  const central = JSON.parse(await readFile(path.join(world.dataDir, 'menu-central.json'), 'utf8'));
   const liveQueue = [{ state: 'live', liveVersion: central.version, checkedAt: 't', reason: 'ok' }];
-  const { deps, gitCalls } = makeDeps({
-    dir, dataDir, files, liveQueue,
-    gitBehavior: { statusFull: ' M about.html\n?? notes.txt\n' },
-  });
-  const result = await deployMenuRelease({ root: dir, dataDir, deps });
+  const { deps, gitLog } = makeDeps(world, { liveQueue });
+  const result = await deployMenuRelease({ root: world.workspace, dataDir: world.dataDir, deps });
   assert.equal(result.ok, true);
   assert.equal(result.pushed, true);
   assert.equal(result.liveConfirmed, true);
-  const add = gitCalls.find(([cmd]) => cmd === 'add');
-  assert.deepEqual(add.slice(1), ['--', ...DEPLOY_ALLOWLIST]);
-  assert.ok(!gitCalls.some((args) => args.join(' ').includes('about.html')), 'unrelated work must not enter git calls');
-  const state = await readPublishState(dataDir);
-  assert.equal(state.live.state, 'live');
+  // Remote main advanced by exactly one commit with only the 2 files.
+  const show = await execFileAsync('git', ['--git-dir', world.remote, 'show', '--name-only', '--format=%s', 'main'], { timeout: 30000 });
+  const names = show.stdout.split('\n').map((l) => l.trim()).filter(Boolean);
+  assert.ok(names[0].includes('chore(menus): publish central v9 to web'), names[0]);
+  assert.deepEqual(names.slice(1).sort(), ['data/planner-overrides.json', 'js/menu-data.js']);
+  // Workspace canary intact; no commit/push happened there.
+  await assertCanaryIntact(world);
+  assert.ok(!gitLog.some((c) => c.args[0] === 'commit' && c.cwd === world.workspace));
+  assert.ok(!gitLog.some((c) => c.args[0] === 'push' && c.cwd === world.workspace));
+  const state = await readPublishState(world.dataDir);
   assert.equal(state.deploy.phase, 'live');
-  assert.match(state.deploy.commit, /ok/);
+  assert.equal(state.live.state, 'live');
 });
 
-test('push ok but live never matches -> ยังไม่ยืนยัน, never เผยแพร่แล้ว', async () => {
-  const { dir, dataDir, files } = await seedTempRoot();
-  const { deps } = makeDeps({ dir, dataDir, files, liveQueue: [] });
-  const result = await deployMenuRelease({ root: dir, dataDir, deps });
+test('remote moves mid-run: abort before commit, their commit stands alone', async () => {
+  const { deployMenuRelease } = await import('../scripts/menu-deploy.mjs');
+  const world = await makeWorld();
+  let moved = false;
+  const gateHook = async () => {
+    if (moved) return;
+    moved = true;
+    // Someone else pushes to remote main while we verify: must abort, no force.
+    const other = path.join(world.base, 'other');
+    await execFileAsync('git', ['clone', world.remote, other], { timeout: 30000 });
+    await git(other, 'checkout', 'main');
+    await writeFile(path.join(other, 'other.txt'), 'theirs\n', 'utf8');
+    await git(other, 'add', '-A');
+    await git(other, 'commit', '-m', 'theirs');
+    await git(other, 'push', 'origin', 'main');
+  };
+  const { deps } = makeDeps(world, { gateHook });
+  await assert.rejects(() => deployMenuRelease({ root: world.workspace, dataDir: world.dataDir, deps }), /เปลี่ยนระหว่างเตรียม|เปลี่ยนก่อน push/);
+  const names = (await execFileAsync('git', ['--git-dir', world.remote, 'log', '--format=%s', 'main'], { timeout: 30000 })).stdout;
+  assert.ok(!names.includes('chore(menus)'), 'our commit must not exist on the remote');
+  assert.ok(names.includes('theirs'));
+  await assertCanaryIntact(world);
+});
+
+test('gate failure aborts before any commit', async () => {
+  const { deployMenuRelease } = await import('../scripts/menu-deploy.mjs');
+  const world = await makeWorld();
+  const { deps } = makeDeps(world, { gateFail: 'scripts/check-system.mjs' });
+  await assert.rejects(() => deployMenuRelease({ root: world.workspace, dataDir: world.dataDir, deps }), /gate ไม่ผ่าน/);
+  const count = (await execFileAsync('git', ['--git-dir', world.remote, 'rev-list', '--count', 'main'], { timeout: 30000 })).stdout.trim();
+  assert.equal(count, '1', 'remote keeps only the seed commit');
+  await assertCanaryIntact(world);
+});
+
+test('push ok but live never matches: ยังไม่ยืนยัน, never published', async () => {
+  const { deployMenuRelease } = await import('../scripts/menu-deploy.mjs');
+  const { readPublishState } = await import('../scripts/menu-central.mjs');
+  const world = await makeWorld();
+  const { deps } = makeDeps(world, { liveQueue: [] });
+  const result = await deployMenuRelease({ root: world.workspace, dataDir: world.dataDir, deps });
   assert.equal(result.pushed, true);
   assert.equal(result.liveConfirmed, false);
-  const state = await readPublishState(dataDir);
+  const state = await readPublishState(world.dataDir);
   assert.equal(state.deploy.phase, 'unverified');
-  assert.equal(state.live.state, 'unverified');
+  await assertCanaryIntact(world);
 });
 
-test('push failure -> failed phase, web stays on the old release', async () => {
-  const { dir, dataDir, files } = await seedTempRoot();
-  const { deps } = makeDeps({ dir, dataDir, files, gitBehavior: { failOn: 'push' } });
-  await assert.rejects(() => deployMenuRelease({ root: dir, dataDir, deps }), /push ไม่สำเร็จ/);
-  const state = await readPublishState(dataDir);
-  assert.equal(state.deploy.phase, 'failed');
+test('stray file in worktree aborts the commit', async () => {
+  const { deployMenuRelease } = await import('../scripts/menu-deploy.mjs');
+  const world = await makeWorld();
+  const gateHook = async ({ cwd }) => {
+    await writeFile(path.join(cwd, 'stray.txt'), 'not ours\n', 'utf8');
+  };
+  const { deps } = makeDeps(world, { gateHook });
+  await assert.rejects(() => deployMenuRelease({ root: world.workspace, dataDir: world.dataDir, deps }), /ไฟล์อื่นปน/);
+  const count = (await execFileAsync('git', ['--git-dir', world.remote, 'rev-list', '--count', 'main'], { timeout: 30000 })).stdout.trim();
+  assert.equal(count, '1');
 });
