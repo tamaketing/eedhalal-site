@@ -14,7 +14,8 @@
 
 ## การทำงาน
 - `data/business-rules.json` เป็นข้อมูลกลางของกฎธุรกิจที่เว็บและ AI ต้องใช้ร่วมกัน
-- ฐานกลางเมนู (`demo/owner-set-builder/menu-central.json`, local only, gitignored) เป็นต้นทางของเมนูทั้งหมด: ชื่อ รูป หมวด คำอธิบาย ราคาขาย ขั้นต่ำ ลำดับแสดงผล และการซ่อน — อ้างอิงด้วย ID เมนูเดิม ส่วนต้นทุนอยู่ `owner-costs.json` (local only) เท่านั้น
+- ฐานกลางเมนู (`menu-central.json` ในโฟลเดอร์ข้อมูลแอดมิน, local only, gitignored) เป็นต้นทางของเมนูทั้งหมด: ชื่อ รูป หมวด คำอธิบาย ราคาขาย ขั้นต่ำ ลำดับแสดงผล และการซ่อน — อ้างอิงด้วย ID เมนูเดิม ส่วนต้นทุนอยู่ `owner-costs.json` (local only) เท่านั้น
+- โค้ดหลังบ้านอยู่ใน `tools/admin/` (version control) ส่วนข้อมูลจริงอยู่ในโฟลเดอร์ข้อมูล (`EED_ADMIN_DATA_DIR`, ค่าเริ่มต้น `demo/owner-set-builder/`, gitignored) — เริ่มระบบด้วย `tools/admin/start-admin.cmd` ดูวิธีติดตั้ง/ย้ายเครื่องที่ `tools/admin/README.md`
 - `data/planner-overrides.json` + `js/menu-data.js` เป็น**ฉบับเผยแพร่** (public, allowlist เฉพาะ ID/ชื่อ/รูป/หมวด/คำอธิบาย/ราคาขาย/ขั้นต่ำ/ลำดับแสดงผล) สร้างจากฐานกลางด้วยปุ่มเผยแพร่เท่านั้น ห้ามมีต้นทุน กำไร หรือหมายเหตุภายใน
 - `js/business-data.js` เป็น compatibility file สำหรับกฎธุรกิจบนหน้าเว็บ และต้องตรงกับข้อมูลกลาง
 - `line-ai/knowledge-pack.md` และ `line-ai/system-message-node.txt` เป็น generated files ห้ามแก้โดยตรง
@@ -28,14 +29,14 @@
 - เปิดผ่าน GitHub Pages หรือใช้ `start-server.bat` แล้วเปิด `http://localhost:8000/popular-menu.html`
 
 ## การสำรองและกู้คืน (ข้อมูลภายใน)
-- ทุกครั้งที่บันทึก `menu-central.json` / `owner-costs.json` ผ่านหลังบ้าน ระบบสำรองฉบับก่อนหน้าไว้ที่ `demo/owner-set-builder/backups/` อัตโนมัติ (เก็บ 20 ฉบับต่อข้อมูล ชื่อมีวันเวลาถึงมิลลิวินาที) ถ้าสำรองไม่สำเร็จจะ**ไม่บันทึก**ต่อ
+- ทุกครั้งที่บันทึก `menu-central.json` / `owner-costs.json` ผ่านหลังบ้าน ระบบสำรองฉบับก่อนหน้าไว้ที่ `<data-dir>/backups/` อัตโนมัติ (เก็บ 20 ฉบับต่อข้อมูล ชื่อมีวันเวลาถึงมิลลิวินาที) ถ้าสำรองไม่สำเร็จจะ**ไม่บันทึก**ต่อ
 - กู้คืนที่การ์ด “ขึ้นเว็บจริง” (รายการสำรอง → กู้คืน) ระบบจะสำรองฉบับปัจจุบันไว้ก่อนกู้เสมอ
-- **ข้อจำกัด:** สำรองในเครื่องเดียวกันกันแก้พลาด/เผยแพร่พลาดเท่านั้น **ไม่กันเครื่องเสียหรือเครื่องหาย** — คัดลอก `demo/owner-set-builder/backups/<วันที่>-*` ออกนอกเครื่องเป็นระยะ (ไดรฟ์ภายนอก/ที่เก็บส่วนตัว)
-- ห้ามนำข้อมูลต้นทุนหรือข้อมูลภายในเข้า public repository หรือไฟล์ deploy: ไฟล์สำรอง/ฐานกลาง/ต้นทุนอยู่ใต้ `demo/` (gitignored, ไม่ขึ้น Pages) เท่านั้น มี CI guard (`checkPublishSafety`) ห้ามไฟล์เหล่านี้โผล่ใน `data/` `js/` หรือ artifact
+- **ข้อจำกัด:** สำรองในเครื่องเดียวกันกันแก้พลาด/เผยแพร่พลาดเท่านั้น **ไม่กันเครื่องเสียหรือเครื่องหาย** — คัดลอก `<data-dir>/backups/<วันที่>-*` ออกนอกเครื่องเป็นระยะ (ไดรฟ์ภายนอก/ที่เก็บส่วนตัว)
+- ห้ามนำข้อมูลต้นทุนหรือข้อมูลภายในเข้า public repository หรือไฟล์ deploy: ไฟล์สำรอง/ฐานกลาง/ต้นทุนอยู่ในโฟลเดอร์ข้อมูล (gitignored, ไม่ขึ้น Pages) เท่านั้น มี CI guard (`checkPublishSafety`) ห้ามไฟล์เหล่านี้โผล่ใน `data/` `js/` `tools/` หรือ artifact
 
 ## ไฟล์ที่เกี่ยวข้อง
 - `data/business-rules.json` — ต้นทางกฎธุรกิจทั้งหมด รวมนโยบายค่าส่งแบบถามแอดมิน
-- `demo/owner-set-builder/menu-central.json` — ฐานกลางเมนู (local only, ไม่ commit) บันทึกจากหน้า “จัดการเมนู”
+- `menu-central.json` (ในโฟลเดอร์ข้อมูลแอดมิน, local only, ไม่ commit) — ฐานกลางเมนู บันทึกจากหน้า “จัดการเมนู”
 - `scripts/menu-central.mjs` — migrate/ตรวจ/diff/เผยแพร่เมนูจากฐานกลาง (ตรรกะเดียวกับปุ่มเผยแพร่; มีเทสที่ `test/menu-central-publish.test.mjs`)
 - `data/planner-overrides.json` — ฉบับเผยแพร่ catalog (public allowlist) สร้างจากฐานกลางเท่านั้น ห้ามแก้ด้วยมือ
 - `js/business-data.js` — generated compatibility data สำหรับกฎธุรกิจบนหน้าเว็บ

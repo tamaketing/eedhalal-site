@@ -132,9 +132,23 @@ export async function checkPublishSafety(root = ROOT) {
   }
   // Owner-only scripts must stay out of the Pages artifact (see pages.yml).
   const pagesYml = await readFile(path.join(root, '.github', 'workflows', 'pages.yml'), 'utf8');
-  for (const token of ['demo/', 'owner-costs', 'menu-central']) {
+  for (const token of ['demo/', 'tools/', 'owner-costs', 'menu-central']) {
     if (new RegExp(`cp (-R )?["']?${token}`).test(pagesYml)) {
       failures.push(`.github/workflows/pages.yml: must not bundle ${token} into the artifact`);
+    }
+  }
+  // Backend runtime holds no data files: data stays in the gitignored data
+  // dir, never beside the code. Lock that shape (names only, not contents).
+  let adminEntries = [];
+  try {
+    adminEntries = await readdir(path.join(root, 'tools', 'admin'));
+  } catch {
+    failures.push('tools/admin is missing (admin backend must be tracked)');
+    adminEntries = [];
+  }
+  for (const name of adminEntries) {
+    if (/owner-costs|menu-central\.json|publish-state|\.bak$|\.tmp$/i.test(name)) {
+      failures.push(`private data must not live beside backend code: tools/admin/${name}`);
     }
   }
   for (const [label, content] of [['data/planner-overrides.json', overridesRaw], ['js/menu-data.js', menuDataJs]]) {
