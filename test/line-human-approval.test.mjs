@@ -134,7 +134,9 @@ test('D: router carries no price catalog and draft revision matches the source o
   assert.ok(byId.get('normalize-event').parameters.jsCode.includes(JSON.stringify(rules.revision)));
   const agentMessage = byId.get('ai-agent').parameters.options.systemMessage;
   const knowledge = await readFile(new URL('../line-ai/knowledge-pack.md', import.meta.url), 'utf8');
-  assert.ok(agentMessage.startsWith(knowledge.trim().split('\n')[0]));
+  // knowledge-pack.md is committed with CRLF; the system message is stored
+  // JSON-escaped with LF, so the \r has to come off before comparing.
+  assert.ok(agentMessage.startsWith(knowledge.trim().split('\n')[0].replace(/\r$/, '')));
   assert.ok(agentMessage.includes(rules.business.halalCertificate));
   assert.ok(agentMessage.includes(`เริ่ม ${rules.services.mealBox.priceFrom} บาท/กล่อง`));
   assert.ok(agentMessage.includes('MENU_CONTEXT'), 'price authority rule present');

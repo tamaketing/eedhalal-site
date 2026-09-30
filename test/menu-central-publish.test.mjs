@@ -401,3 +401,47 @@ test('publish rejects machine-local image paths before anything is written', asy
   const after = await loadPublished(dir);
   assert.equal(after.menuDataJs, before.menuDataJs);
 });
+
+test('bulk hide is refused without confirmation, then allowed with it', async () => {
+  const { dataDir, overrides, menuDataJs } = await seedTempRoot();
+  const draft = await seedCentral(dataDir, overrides, menuDataJs);
+  const onDisk = async () => (await loadCentral(dataDir)).menus
+    .filter((menu) => menu.hidden === true).map((menu) => menu.id).sort((a, b) => a - b);
+  const before = await onDisk();
+
+  // Hide 6 live menus in one save. On 2026-09-29 a bad click target did exactly
+  // this and publish v72 put 32 live menus behind `deleted` on the customer site.
+  const visible = draft.menus.filter((menu) => menu.hidden !== true).slice(0, 6);
+  assert.equal(visible.length, 6);
+  const runaway = {
+    ...draft,
+    menus: draft.menus.map((menu) => (visible.some((v) => v.id === menu.id) ? { ...menu, hidden: true } : menu)),
+  };
+
+  const refused = await saveCentral(dataDir, runaway);
+  assert.equal(refused.ok, false, 'runaway bulk hide must be refused');
+  assert.equal(refused.bulkHide, true);
+  assert.deepEqual(refused.newlyHidden, visible.map((menu) => menu.id).sort((a, b) => a - b));
+  assert.deepEqual(await onDisk(), before, 'a refused save must not touch the file');
+
+  // A normal single hide still saves with no confirmation.
+  const oneSaved = await saveCentral(dataDir, {
+    ...draft,
+    menus: draft.menus.map((menu) => (menu.id === visible[0].id ? { ...menu, hidden: true } : menu)),
+  });
+  assert.equal(oneSaved.ok, true);
+  assert.deepEqual(await onDisk(), [...before, visible[0].id].sort((a, b) => a - b));
+
+  // The owner re-confirming lets the batch through.
+  const confirmed = await saveCentral(dataDir, { ...runaway, confirmBulkHide: true });
+  assert.equal(confirmed.ok, true, 'an explicitly confirmed bulk hide is allowed');
+  assert.deepEqual(await onDisk(), [...before, ...visible.map((m) => m.id)].sort((a, b) => a - b));
+
+  // Un-hiding many at once is never blocked — the guard only guards hiding.
+  const restored = await saveCentral(dataDir, {
+    ...confirmed.data,
+    menus: confirmed.data.menus.map((menu) => ({ ...menu, hidden: false })),
+  });
+  assert.equal(restored.ok, true);
+  assert.deepEqual(await onDisk(), []);
+});

@@ -4,6 +4,8 @@
   var QUOTE_LINE_URL = (typeof EED !== 'undefined' && EED.lineUrl) ? EED.lineUrl : 'https://lin.ee/CfvqJTd';
   var LINE_OA_ID = (typeof EED !== 'undefined' && EED.lineId) ? EED.lineId : '@EEDHALAL';
   var PHONE_DISPLAY = (typeof EED !== 'undefined' && EED.phoneDisplay) ? EED.phoneDisplay : '098-871-5179';
+  var STARTING_PRICE = (typeof EED !== 'undefined' && EED.startingPrice) ? EED.startingPrice : '65';
+  var MIN_ORDER = (typeof EED !== 'undefined' && EED.minOrder) ? EED.minOrder : '10';
   var PHONE_HREF = (typeof EED !== 'undefined' && EED.phoneHref) ? EED.phoneHref : 'tel:+66988715179';
   var IS_FILE = window.location.protocol === 'file:';
   function fileAware(p){
@@ -1086,7 +1088,7 @@
     return {
       cssClass: 'banner-default',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
-      text: '\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21 60 \u0e1a\u0e32\u0e17 ออกใบเสนอราคา+ใบเสร็จรับเงินได้',
+      text: '\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21 ' + STARTING_PRICE + ' \u0e1a\u0e32\u0e17 ออกใบเสนอราคา+ใบเสร็จรับเงินได้',
       linkText: '\u0e17\u0e31\u0e01 LINE \u0e02\u0e2d\u0e43\u0e1a\u0e40\u0e2a\u0e19\u0e2d\u0e23\u0e32\u0e04\u0e32',
       linkHref: QUOTE_LINE_URL
     };
@@ -1171,7 +1173,7 @@
               "name": "\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33\u0e01\u0e35\u0e48\u0e01\u0e25\u0e48\u0e2d\u0e07?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33 10 \u0e01\u0e25\u0e48\u0e2d\u0e07\u0e02\u0e36\u0e49\u0e19\u0e44\u0e1b \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e17\u0e35\u0e48 65 \u0e1a\u0e32\u0e17/\u0e01\u0e25\u0e48\u0e2d\u0e07 กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ"
+                "text": "\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33 " + MIN_ORDER + " \u0e01\u0e25\u0e48\u0e2d\u0e07\u0e02\u0e36\u0e49\u0e19\u0e44\u0e1b \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e17\u0e35\u0e48 " + STARTING_PRICE + " \u0e1a\u0e32\u0e17/\u0e01\u0e25\u0e48\u0e2d\u0e07 กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ"
               }
             },
             {

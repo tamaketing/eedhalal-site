@@ -20,6 +20,17 @@ const [html, appJs, css] = await Promise.all([
 const { server } = createInternalApi({ repos: createMemoryAdapter(), env: { EED_INTERNAL_API_SECRET: SECRET } });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}`;
+
+// owner-console/app.js is committed with CRLF endings, so a plain `indexOf('\n}\n')`
+// never matches and slice() silently returns the rest of the file. Anchoring on
+// \r?\n keeps these per-function inspections scoped to the one function.
+function functionSource(signature) {
+  const start = appJs.indexOf(signature);
+  assert.ok(start >= 0, `${signature} exists`);
+  const rest = appJs.slice(start);
+  const end = rest.search(/\r?\n}\r?\n/);
+  return end === -1 ? rest : rest.slice(0, end);
+}
 test.after(() => new Promise((resolve) => server.close(resolve)));
 
 async function get(pathname, secret = SECRET) {
@@ -145,8 +156,7 @@ test('SENT review is read-only with a separate learning CTA', () => {
 
 test('opt-in requires confirmation and posts identity only', () => {
   assert.ok(appJs.includes('เป็นตัวอย่างสำหรับการตอบครั้งต่อไปหรือไม่'), 'deliberate Thai confirmation');
-  const start = appJs.indexOf('async function learnExample');
-  const learnFn = appJs.slice(start, appJs.indexOf('\n}\n', start));
+  const learnFn = functionSource('async function learnExample');
   assert.ok(learnFn.includes('/api/v1/response-examples/from-draft/'), 'opt-in endpoint');
   const callStart = learnFn.indexOf('await api(');
   const postCall = learnFn.slice(callStart, learnFn.indexOf(');', callStart));
@@ -174,8 +184,7 @@ test('stale examples show a rules warning without auto-disable', () => {
 });
 
 test('SEND never auto-creates an example', () => {
-  const start = appJs.indexOf('async function confirmSend');
-  const sendFn = appJs.slice(start, appJs.indexOf('\n}\n', start));
+  const sendFn = functionSource('async function confirmSend');
   assert.ok(!/from-draft|response-examples|learnExample|btn-learn/.test(sendFn), 'send path has no learning calls');
 });
 

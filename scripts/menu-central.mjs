@@ -203,11 +203,34 @@ export async function loadCentral(dataDir) {
   return result.data;
 }
 
+// A single save that hides a large batch of menus is almost always a runaway
+// click loop, never a real business decision. On 2026-09-29 a bad click target
+// walked 14 saves from 25 to 39 hidden menus and publish v72 removed 32 live
+// menus from the customer site. Refuse it unless the owner re-confirms.
+export const BULK_HIDE_LIMIT = 5;
+
 // Atomic save (temp + rename) + version bump. Local only — never pushed.
 export async function saveCentral(dataDir, raw) {
   const result = validateCentral(raw);
   if (!result.ok) return result;
   const current = await loadCentral(dataDir).catch(() => null);
+  // Only guards an EDIT of an existing draft: the first write (migration/seed)
+  // legitimately carries whatever the published file already had hidden.
+  const hiddenIds = (menus) => new Set((menus || []).filter((menu) => menu.hidden === true).map((menu) => menu.id));
+  const hiddenBefore = current ? hiddenIds(current.menus) : hiddenIds(result.data.menus);
+  const newlyHidden = [...hiddenIds(result.data.menus)].filter((id) => !hiddenBefore.has(id)).sort((a, b) => a - b);
+  if (newlyHidden.length > BULK_HIDE_LIMIT && raw?.confirmBulkHide !== true) {
+    return {
+      ok: false,
+      bulkHide: true,
+      newlyHidden,
+      errors: [
+        `คำสั่งนี้ซ่อนเมนู ${newlyHidden.length} เมนูในครั้งเดียว (ID ${newlyHidden.join(', ')}) — เกิน ${BULK_HIDE_LIMIT} เมนู`,
+        'ฐานกลางยังไม่ถูกเปลี่ยน — กดยืนยันอีกครั้งถ้าตั้งใจซ่อนจริง หรือกด “โหลดข้อมูลใหม่” เพื่อยกเลิก',
+      ],
+      data: null,
+    };
+  }
   const version = (current?.version ?? 0) + 1;
   const updatedAt = new Date().toISOString();
   const payload = { ...result.data, version, updatedAt };

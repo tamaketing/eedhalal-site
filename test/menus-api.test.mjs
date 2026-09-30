@@ -55,14 +55,14 @@ test('exact price 75 returns only planner price-75 menus', async () => {
   assert.equal(response.json.serviceType, 'mealbox');
   assert.equal(response.json.source, 'planner-overrides');
   assert.deepEqual(response.json.filters, { price: 75, maxPrice: null, category: null, q: null, limit: 20 });
-  assert.deepEqual(response.json.menus.map((menu) => menu.id).sort(), ['104', '14', '15', '20']);
+  assert.deepEqual(response.json.menus.map((menu) => menu.id).sort(), ['104', '14', '15', '21']);
   for (const menu of response.json.menus) assert.equal(menu.price, 75);
 });
 
 test('max price 100 caps every candidate at 100', async () => {
   const response = await call('/api/v1/menus/mealbox?maxPrice=100&limit=100');
   assert.equal(response.status, 200);
-  assert.equal(response.json.menus.length, 33);
+  assert.equal(response.json.menus.length, 32);
   for (const menu of response.json.menus) assert.ok(menu.price <= 100);
 });
 

@@ -341,15 +341,31 @@ function assertUnique(values, message) {
   assert.equal(new Set(values).size, values.length, message);
 }
 
+// เมนูที่ใช้ "ขั้นต่ำต่อเมนูเตรียมพิเศษ" (อินเดีย / พรีเมียม) แทนค่ามาตรฐาน
+// ตอนนี้ทั้งสองค่าเท่ากัน (10 กล่องทุกเมนู) แต่คงการแยกไว้เผื่อกฎเปลี่ยนอีก
+const SPECIAL_MINIMUM_CATEGORIES = new Set(['อาหารอินเดีย', 'พรีเมียม']);
+
 export function validateData(rules, catalog, legacy) {
   assert.equal(rules.schemaVersion, 1, 'unsupported business rules schema');
   assert.match(rules.revision, /^\d{4}-\d{2}-\d{2}$/, 'revision must use YYYY-MM-DD');
   assert.equal(rules.services.mealBox.minimumOrder, 10);
   assert.equal(rules.services.snackBox.minimumOrder, 30, 'Snack Box minimum must be 30');
-  assert.deepEqual(
-    new Set(Object.values(catalog.mins)),
-    new Set([rules.services.mealBox.standardMenuMinimum, rules.services.mealBox.specialMenuMinimum]),
-    'menu minimums must be 5 or 10',
+  // Per-menu minimum is a business fact. The owner menu tool can edit it freely,
+  // so every published menu is checked against the rule — a set-level "only
+  // these values exist" check let all 44 menus drift to one value unnoticed.
+  const standardMinimum = rules.services.mealBox.standardMenuMinimum;
+  const specialMinimum = rules.services.mealBox.specialMenuMinimum;
+  for (const [id, minimum] of Object.entries(catalog.mins)) {
+    const expected = SPECIAL_MINIMUM_CATEGORIES.has(catalog.categories[id]) ? specialMinimum : standardMinimum;
+    assert.equal(minimum, expected, `menu ${id} (${catalog.categories[id]}) per-menu minimum must be ${expected}`);
+  }
+  // The site advertises "more than 30 menus" everywhere, so a publish that
+  // silently hides most of the catalog must fail here rather than on the site.
+  const hiddenIds = new Set((catalog.deleted || []).map(String));
+  const activeMenus = Object.keys(catalog.prices || {}).filter((id) => !hiddenIds.has(String(id)));
+  assert.ok(
+    activeMenus.length >= rules.services.mealBox.menuCountFrom,
+    `active menus (${activeMenus.length}) must cover the advertised ${rules.services.mealBox.menuCountFrom}+ menus`,
   );
 
   assertUnique(legacy.menus.map((menu) => menu.id), 'menu IDs must be unique');
@@ -372,8 +388,8 @@ export function validateData(rules, catalog, legacy) {
     assert.equal(menu.category, catalog.categories[id], `menu ${id} category drift`);
     assert.equal(menu.image, catalog.images[id], `menu ${id} image drift`);
     assert.equal(menu.minPerMenu, catalog.mins[id], `menu ${id} minimum drift`);
-    if (menu.category === 'อาหารอินเดีย') {
-      assert.equal(menu.minPerMenu, rules.services.mealBox.specialMenuMinimum, `Indian menu ${id} must use special minimum`);
+    if (SPECIAL_MINIMUM_CATEGORIES.has(menu.category)) {
+      assert.equal(menu.minPerMenu, specialMinimum, `${menu.category} menu ${id} must use the special minimum`);
     }
     // Publish-managed maps (written by the menu publish pipeline from the
     // central draft). Asserted only when present so legacy files still pass.
@@ -383,6 +399,15 @@ export function validateData(rules, catalog, legacy) {
     if (catalog.noMeatMenus !== undefined) {
       assert.equal(menu.noMeat === true, catalog.noMeatMenus.map(String).includes(id), `menu ${id} no-meat flag drift`);
     }
+  }
+  // "ไม่เลือกเนื้อ" is a food claim, so it can never sit on a dish whose own name
+  // names meat or seafood. The v72 publish flagged all 16 such dishes (chicken,
+  // beef, shrimp, crab) and none of the 16 that read as meat-free; this catches
+  // the next inversion before it reaches the customer menu list.
+  for (const id of catalog.noMeatMenus ?? []) {
+    const name = catalog.names?.[String(id)] ?? '';
+    const claimed = /ไก่|เนื้อ|หมู|ปลา|กุ้ง|ปู|ทะเล|กั้ง|หอย|แหมง|ไข่|ลูกชิ้น|แพะ/.test(name);
+    assert.ok(!claimed, `menu ${id} is marked no-meat but its name contains meat: ${name}`);
   }
   // Shared topping/meat lists must match the published compat headers.
   if (catalog.meats !== undefined && legacy.meats !== undefined) {
@@ -430,6 +455,16 @@ function assertNoBakedMenuCatalog(jsCode, owner) {
   assert.ok(!code.includes('budgetContext'), `${owner} must not carry the retired budget candidate list`);
   assert.ok(!/"price"\s*:\s*\d+/.test(code), `${owner} must not embed menu prices`);
   assert.ok(!/\|\s*\d+\s*บาท\/กล่อง/.test(code), `${owner} must not embed menu price lines`);
+}
+
+// js/main.js renders on every page, so a price or minimum typed straight into
+// its copy becomes a customer-facing claim that no business rule can correct.
+// It must read EED.startingPrice / EED.minOrder instead.
+function assertNoBakedBusinessNumbersInMainJs(mainJs) {
+  // The file mixes \uXXXX escapes with raw Thai, so decode before matching.
+  const code = String(mainJs || '').replace(/\\u([0-9a-f]{4})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+  const found = code.match(/\d+\s*บาท|ขั้นต่ำ\s*\d+\s*กล่อง/g);
+  assert.ok(!found, `js/main.js must read prices from EED (business-rules.json), not hardcode: ${found?.join(' / ')}`);
 }
 
 function parseRevision(jsCode, nodeName) {
@@ -590,6 +625,7 @@ export async function checkCandidateMenuLookup(candidate, rules) {
 export async function checkSystem(root = ROOT) {
   const data = await loadSystemData(root);
   validateData(data.rules, data.catalog, data.legacy);
+  assertNoBakedBusinessNumbersInMainJs(await readFile(path.join(root, 'js/main.js'), 'utf8'));
   const expectedKnowledge = renderKnowledge(data.rules, data.catalog, data.legacy.menus);
   const actualKnowledge = await readFile(path.join(root, 'line-ai/knowledge-pack.md'), 'utf8');
   assert.equal(actualKnowledge.replace(/\r\n/g, '\n'), expectedKnowledge, 'AI knowledge is stale; run with --write');

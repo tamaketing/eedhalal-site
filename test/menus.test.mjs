@@ -44,13 +44,13 @@ test('full active catalog matches the audited planner counts', async () => {
 
 test('exact price 75 returns only planner price-75 menus', async () => {
   const menus = await findMealboxMenusByExactPrice(75);
-  assert.deepEqual(menus.map((menu) => menu.id).sort(), ['104', '14', '15', '20']);
+  assert.deepEqual(menus.map((menu) => menu.id).sort(), ['104', '14', '15', '21']);
   for (const menu of menus) assert.equal(menu.price, 75);
 });
 
-test('max price 100 never leaks 120/150/180/200 menus', async () => {
+test('max price 100 never leaks 110/150/180/200 menus', async () => {
   const menus = await findMealboxMenusByMaxPrice(100, { limit: 100 });
-  assert.equal(menus.length, 33);
+  assert.equal(menus.length, 32);
   for (const menu of menus) assert.ok(menu.price <= 100, `${menu.name} leaks at ${menu.price}`);
 });
 

@@ -192,6 +192,25 @@ function startExpanded() {
   return true;
 }
 
+function updateCountLabel() {
+  const count = $('#mc-count');
+  if (!count || !state.working) return;
+  const hidden = state.working.menus.filter((menu) => menu.hidden).length;
+  count.textContent = `${state.working.menus.length} เมนู · แสดงบนเว็บ ${state.working.menus.length - hidden} · ซ่อน ${hidden}`;
+}
+
+// Checkbox clicks must NOT re-render the table. renderTable() replaces the
+// rows while the browser is still dispatching the click that caused it, so the
+// next click at the same screen position lands on a different menu — on
+// 2026-09-29 that walked owner-hidden from 25 to 39 menus, one per save, and
+// publish v72 put 32 live menus behind `deleted`. Toggling a flag only needs
+// the row's own state and the counter refreshed, so patch those in place.
+function refreshRowState(target) {
+  const row = target.closest('tr[data-mc-row]');
+  if (row) row.classList.toggle('wait', target.checked);
+  updateCountLabel();
+}
+
 function renderTable() {
   if (!state.working) return;
   const rows = state.working.menus
@@ -199,10 +218,7 @@ function renderTable() {
     .filter(({ menu }) => matchesFilter(menu))
     .sort((a, b) => a.menu.sortOrder - b.menu.sortOrder || a.menu.id - b.menu.id);
   const count = $('#mc-count');
-  if (count) {
-    const hidden = state.working.menus.filter((menu) => menu.hidden).length;
-    count.textContent = `${state.working.menus.length} เมนู · แสดงบนเว็บ ${state.working.menus.length - hidden} · ซ่อน ${hidden}`;
-  }
+  if (count) updateCountLabel();
   const groups = $('#mc-groups');
   if (!groups) {
     const body = $('#mc-tbody');
@@ -296,7 +312,7 @@ function onEdit(target) {
   setFormStatus('', '');
 }
 
-async function save() {
+async function save({ confirmBulkHide = false } = {}) {
   if (state.busy || !state.working) return;
   state.busy = true;
   updateButtons();
@@ -305,7 +321,7 @@ async function save() {
     const response = await fetch('/menu-central', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(state.working),
+      body: JSON.stringify(confirmBulkHide ? { ...state.working, confirmBulkHide: true } : state.working),
     });
     if (response.status === 200) {
       const payload = await response.json();
@@ -314,10 +330,25 @@ async function save() {
       return;
     }
     let errors = [];
+    let body = null;
     try {
-      const body = await response.json();
+      body = await response.json();
       if (Array.isArray(body?.errors)) errors = body.errors;
     } catch { /* keep generic */ }
+    // Refused runaway bulk hide: nothing was written, so asking twice is safe.
+    if (body?.bulkHide === true && !confirmBulkHide) {
+      const ids = (body.newlyHidden || []).join(', ');
+      setFormStatus(errors.join(' | '), 'bad');
+      if (window.confirm(`คำสั่งนี้ซ่อนเมนูหลายรายการในครั้งเดียว (ID ${ids})\n\nโดยปกติหมายถึงว่าคลิกผิดแถว ไม่ใช่การตั้งใจซ่อนจริง\nกด "ตกลง" เพื่อซ่อนตามนี้ หรือ "ยกเลิก" เพื่อโหลดข้อมูลกลับไปเป็นฉบับที่บันทึกไว้`)) {
+        // Release the busy flag first: the recursive call returns early on it.
+        state.busy = false;
+        await save({ confirmBulkHide: true });
+      } else {
+        await load({ silent: true });
+        setFormStatus('ยกเลิกแล้ว — โหลดข้อมูลกลับไปเป็นฉบับที่บันทึกไว้', 'ok');
+      }
+      return;
+    }
     if (!errors.length) errors = [`บันทึกไม่สำเร็จ (HTTP ${response.status}) — ฐานกลางยังไม่ถูกเปลี่ยน`];
     setFormStatus(errors.join(' | '), 'bad');
   } catch {
@@ -434,7 +465,13 @@ function bind() {
   });
   document.addEventListener('change', (event) => {
     const target = event.target;
-    if (target.dataset?.mc !== undefined && target.dataset.field) { onEdit(target); renderTable(); }
+    if (target.dataset?.mc !== undefined && target.dataset.field) {
+      onEdit(target);
+      // Checkbox: patch the row in place (see refreshRowState). Everything else
+      // re-renders, because a sort-order or category edit changes the row list.
+      if (target.type === 'checkbox') refreshRowState(target);
+      else renderTable();
+    }
     if (target.id === 'mc-search') { state.filter.q = target.value; renderTable(); }
     if (target.id === 'mc-vis') { state.filter.vis = target.value; renderTable(); }
   });
