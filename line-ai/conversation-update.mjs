@@ -114,9 +114,14 @@ export function findPersistenceMisconfigurations(workflow) {
 // LINE webhook event into a flat, safe payload for the Internal API chain.
 // Stable LINE identifiers (message.id, webhookEventId) become sourceEventId
 // so retried deliveries deduplicate instead of duplicating business records.
+// This file's own line endings must never leak into generated n8n code.
+// The builders below return multi-line template literals, so on a CRLF
+// checkout they would bake CRLF into the workflow JSON and then fail the
+// LF-based CI comparison. Always emit LF.
+const lf = (code) => String(code).replaceAll('\r\n', '\n');
 export function buildNormalizeNodeCode(ruleRevision = '') {
   const revision = JSON.stringify(String(ruleRevision || ''));
-  return `// EED HALAL persistence chain — normalization only. No LINE calls,
+  return lf(`// EED HALAL persistence chain — normalization only. No LINE calls,
 // no static writes. PostgreSQL (via Internal API) is the Draft store.
 const RULE_REVISION = ${revision};
 function readNode(name) {
@@ -147,7 +152,7 @@ return [{ json: {
   sourceEventId,
   replyToken: event.replyToken || null,
   menuContext: incoming.menuContext || null,
-} }];`;
+} }];`);
 }
 
 // Single source for the Persist Draft request body. The only workflow
@@ -160,7 +165,7 @@ export function buildPersistDraftJsonBody(normalizeName = 'Normalize Event', opt
   const metadata = includeReplyToken
     ? `metadata: { replyToken: $("${normalizeName}").item.json.replyToken, menuContext: $("${normalizeName}").item.json.menuContext }`
     : `metadata: { menuContext: $("${normalizeName}").item.json.menuContext }`;
-  return `={{ JSON.stringify({ customerId: $("Resolve Customer").item.json.customer.id, leadId: $("Evaluate Lead").item.json.lead?.id || null, channel: $("${normalizeName}").item.json.channel, incomingMessage: $("${normalizeName}").item.json.incomingMessage, draftResponse: $("${normalizeName}").item.json.draftResponse, source: $("${normalizeName}").item.json.source, aiModel: $("${normalizeName}").item.json.aiModel, ruleRevision: $("${normalizeName}").item.json.ruleRevision, sourceEventId: $("${normalizeName}").item.json.sourceEventId, ${metadata} }) }}`;
+  return lf(`={{ JSON.stringify({ customerId: $("Resolve Customer").item.json.customer.id, leadId: $("Evaluate Lead").item.json.lead?.id || null, channel: $("${normalizeName}").item.json.channel, incomingMessage: $("${normalizeName}").item.json.incomingMessage, draftResponse: $("${normalizeName}").item.json.draftResponse, source: $("${normalizeName}").item.json.source, aiModel: $("${normalizeName}").item.json.aiModel, ruleRevision: $("${normalizeName}").item.json.ruleRevision, sourceEventId: $("${normalizeName}").item.json.sourceEventId, ${metadata} }) }}`);
 }
 
 // Declarative Internal API call. Auth comes from the n8n credential store
@@ -216,14 +221,14 @@ export function buildPersistenceNodes() {
 // back WAITING_FOR_HUMAN and STOPS. No LINE calls, no static writes, no
 // fallback. Any failure surfaces as a failed execution for the owner.
 export function buildVerifyDraftNodeCode() {
-  return `// EED HALAL persistence chain — terminal guard. Asserts PostgreSQL holds
+  return lf(`// EED HALAL persistence chain — terminal guard. Asserts PostgreSQL holds
 // a WAITING_FOR_HUMAN draft, then STOPS. Never sends, never stores.
 const out = $input.first().json || {};
 const draft = out.draft || {};
 if (draft.status !== 'WAITING_FOR_HUMAN') {
   throw new Error('Draft persistence did not return WAITING_FOR_HUMAN; stopping without LINE send.');
 }
-return [{ json: { draftId: draft.draftId || null, status: draft.status, deduped: !!out.deduped } }];`;
+return [{ json: { draftId: draft.draftId || null, status: draft.status, deduped: !!out.deduped } }];`);
 }
 // Deterministic router: menu-intent parsing only. This node embeds NO
 // menu catalog and NO prices: numeric/name filters become a menuPlan for
@@ -275,7 +280,7 @@ const ROUTER_RUNNER = [
 ].join('\n');
 
 export function buildConversationRouter() {
-  return `${MENU_INTENT_ROUTER_PRELUDE}\n${ROUTER_RUNNER}`;
+  return lf(`${MENU_INTENT_ROUTER_PRELUDE}\n${ROUTER_RUNNER}`);
 }
 export const conversationRouter = buildConversationRouter();
 
@@ -296,7 +301,7 @@ const MENU_CONTEXT_RUNNER = [
 ].join('\n');
 
 export function buildMenuContextNodeCode() {
-  return `${MENU_INTENT_PRELUDE}\n${MENU_CONTEXT_RUNNER}`;
+  return lf(`${MENU_INTENT_PRELUDE}\n${MENU_CONTEXT_RUNNER}`);
 }
 
 export function buildMenuLookupIfNode(position = [2060, 140]) {
@@ -373,7 +378,7 @@ const DETERMINISTIC_DRAFT_RUNNER = [
 ].join('\n');
 
 export function buildDeterministicMenuDraftNodeCode() {
-  return `${MENU_INTENT_PRELUDE}\n${DETERMINISTIC_DRAFT_RUNNER}`;
+  return lf(`${MENU_INTENT_PRELUDE}\n${DETERMINISTIC_DRAFT_RUNNER}`);
 }
 
 export function buildDeterministicMenuDraftNode(position = [2860, 140]) {
