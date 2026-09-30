@@ -3,9 +3,15 @@
  * Data comes from the site's central sources — nothing is duplicated here:
  *  - js/menu-data.js (EED_MENUS: id, name, image, desc, category) via <script>
  *  - data/planner-overrides.json -> deleted[] (menus hidden from customers)
+ *                                -> quoteOnly[] (served by name, but the shop
+ *                                   has not confirmed the cost, so it cannot be
+ *                                   ordered or priced online)
  *
  * This page never shows prices: sale prices stay in the central data untouched
  * and are never rendered into the DOM, alt text, or structured data here.
+ * Menus in quoteOnly[] stay visible by name (customers can still see what the
+ * shop cooks) and carry a clear "สอบถามราคา" label, so nobody assumes an
+ * unpriced dish can be ordered at a published price.
  * Copy buttons use the async clipboard API with a manual-selection fallback.
  */
 (function () {
@@ -57,34 +63,42 @@
     return '<button class="pm-btn pm-copy-btn" type="button" data-copy-name>คัดลอกชื่อเมนู</button>';
   }
 
+  // Menus whose cost the shop has not confirmed stay listed by name, but must
+  // never look orderable at a published price.
+  function quoteBadge() {
+    return '<p class="pm-quote-note">ราคาขอสอบถามทาง LINE</p>';
+  }
+
   function lineCta(label, source, extraClass) {
     return '<a class="pm-btn pm-btn-outline ' + (extraClass || '') + '" href="' + LINE_URL + '" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="' + source + '">' + label + ' <span aria-hidden="true">↗</span></a>';
   }
 
-  function renderCard(menu) {
+  function renderCard(menu, quoteOnly) {
     // NOTE: menu.price is deliberately never read here — no prices on this page.
     return '' +
-      '<article class="pm-card" data-menu-id="' + escapeHtml(menu.id) + '">' +
+      '<article class="pm-card' + (quoteOnly ? ' pm-card-quote' : '') + '" data-menu-id="' + escapeHtml(menu.id) + '">' +
         imageCell(menu) +
         '<div class="pm-card-body">' +
           '<p class="pm-card-cat">' + escapeHtml(menu.category) + '</p>' +
           '<h3 class="pm-card-name">' + escapeHtml(menu.name) + '</h3>' +
           (menu.desc ? '<p class="pm-card-desc">' + escapeHtml(menu.desc) + '</p>' : '') +
-          lineCta('สอบถามเมนูนี้ทาง LINE', 'popular_menu_card', 'pm-card-cta') +
+          (quoteOnly ? quoteBadge() : '') +
+          lineCta(quoteOnly ? 'สอบถามราคาเมนูนี้ทาง LINE' : 'สอบถามเมนูนี้ทาง LINE', 'popular_menu_card', 'pm-card-cta') +
           copyButton() +
         '</div>' +
       '</article>';
   }
 
-  function renderRow(menu) {
+  function renderRow(menu, quoteOnly) {
     return '' +
-      '<div class="pm-row" data-menu-id="' + escapeHtml(menu.id) + '">' +
+      '<div class="pm-row' + (quoteOnly ? ' pm-row-quote' : '') + '" data-menu-id="' + escapeHtml(menu.id) + '">' +
         '<div class="pm-row-text">' +
           '<p class="pm-row-cat">' + escapeHtml(menu.category) + '</p>' +
           '<p class="pm-row-name">' + escapeHtml(menu.name) + '</p>' +
+          (quoteOnly ? quoteBadge() : '') +
         '</div>' +
         '<div class="pm-row-actions">' +
-          lineCta('สอบถามทาง LINE', 'popular_menu_row', 'pm-row-cta') +
+          lineCta(quoteOnly ? 'สอบถามราคาทาง LINE' : 'สอบถามทาง LINE', 'popular_menu_row', 'pm-row-cta') +
           copyButton() +
         '</div>' +
       '</div>';
@@ -196,21 +210,24 @@
     });
   }
 
-  function render(menus) {
+  function render(menus, quoteOnly) {
     var grid = document.getElementById(GRID_ID);
     var list = document.getElementById(LIST_ID);
     var counts = {};
+    var isQuoteOnly = function (menu) {
+      return quoteOnly.has(Number(menu.id)) || quoteOnly.has(String(menu.id));
+    };
     // Display order only: dishes with real photos first, then compact rows.
     // The central catalog order is never modified — groups keep it stable.
     var photoMenus = menus.filter(hasDishPhoto);
     var plainMenus = menus.filter(function (menu) { return !hasDishPhoto(menu); });
     grid.innerHTML = photoMenus.map(function (menu) {
       counts[menu.category] = (counts[menu.category] || 0) + 1;
-      return renderCard(menu);
+      return renderCard(menu, isQuoteOnly(menu));
     }).join('');
     list.innerHTML = plainMenus.map(function (menu) {
       counts[menu.category] = (counts[menu.category] || 0) + 1;
-      return renderRow(menu);
+      return renderRow(menu, isQuoteOnly(menu));
     }).join('');
     bindImageFallbacks(grid);
     bindCopyButtons(grid);
@@ -221,19 +238,32 @@
     applyFilter();
   }
 
-  function loadDeleted() {
+  // Availability comes from the one published planner file: deleted[] means
+  // hidden from customers entirely, quoteOnly[] means shown by name but not
+  // orderable. A failed fetch must not mark everything orderable, so both sets
+  // fall back to empty (the page still renders, just without those flags).
+  function loadAvailability() {
     return fetch('data/planner-overrides.json', { cache: 'no-store' })
-      .then(function (res) { return res.ok ? res.json() : { deleted: [] }; })
-      .then(function (data) { return new Set(data.deleted || []); })
-      .catch(function () { return new Set(); });
+      .then(function (res) { return res.ok ? res.json() : { deleted: [], quoteOnly: [] }; })
+      .then(function (data) {
+        return {
+          deleted: new Set(data.deleted || []),
+          quoteOnly: new Set(data.quoteOnly || [])
+        };
+      })
+      .catch(function () {
+        return { deleted: new Set(), quoteOnly: new Set() };
+      });
   }
 
   function boot() {
     var menus = (typeof EED_MENUS !== 'undefined' && Array.isArray(EED_MENUS)) ? EED_MENUS : [];
-    loadDeleted().then(function (deleted) {
-      render(menus.filter(function (menu) {
-        return menu && menu.id != null && !deleted.has(Number(menu.id)) && !deleted.has(String(menu.id));
-      }));
+    loadAvailability().then(function (availability) {
+      var shown = menus.filter(function (menu) {
+        return menu && menu.id != null &&
+          !availability.deleted.has(Number(menu.id)) && !availability.deleted.has(String(menu.id));
+      });
+      render(shown, availability.quoteOnly);
     });
   }
 

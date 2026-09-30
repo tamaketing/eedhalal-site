@@ -51,6 +51,16 @@ export function getEffectiveMenus(menus, catalog) {
     }));
 }
 
+// The ORDERABLE subset: served by name, minus owner-hidden, minus quote-only.
+// Customer-facing copy that implies "you can order this now" must come from
+// here. The ordering API strips quoteOnly[] too (services/menus.mjs), so
+// advertising the wider served list as orderable would promise dishes the
+// shop cannot accept.
+export function getOrderableMenus(menus, catalog) {
+  const quoteOnly = new Set(catalog.quoteOnly || []);
+  return getEffectiveMenus(menus, catalog).filter((menu) => !quoteOnly.has(menu.id));
+}
+
 // Delivery is admin-quoted since 2026-09-24: no zone rates, no vehicle rule,
 // no free-delivery thresholds. Every district gets the same answer — ask the
 // admin with the delivery location and order quantity. There is intentionally
@@ -91,10 +101,13 @@ export function renderKnowledge(rules, catalog, menus) {
   const tableService = rules.services.tableService;
   const setMenu = rules.services.setMenu;
   const payment = rules.paymentTerms;
-  const specialMenus = getEffectiveMenus(menus, catalog)
+  const specialMenus = getOrderableMenus(menus, catalog)
     .filter((menu) => menu.minPerMenu === meal.specialMenuMinimum)
     .map((menu) => menu.name)
     .join(', ');
+  const quoteOnlyMenus = getEffectiveMenus(menus, catalog)
+    .filter((menu) => (catalog.quoteOnly || []).includes(menu.id))
+    .map((menu) => menu.name);
   const policy = deliveryPolicy(rules);
   const leadTimeLines = rules.leadTimes.map((range) => `- ${formatRange(range)}`).join('\n');
   const guestRange = (minimum, maximum) => maximum === null ? `${minimum}+ คน (จำนวนที่รองรับให้ทีมยืนยันตามงาน)` : `${minimum}–${maximum} คน`;
@@ -134,7 +147,7 @@ export function renderKnowledge(rules, catalog, menus) {
 - Set Menu / Sit-down Dinner ฮาลาล: เริ่ม ${setMenu.priceFrom} บาท/หัว ขั้นต่ำ ${setMenu.minimumGuests} คน รองรับ ${guestRange(setMenu.minimumGuests, setMenu.maximumGuests)} ${setMenu.serviceStyle} ${setMenu.courseCountFrom}–${setMenu.courseCountTo} คอร์ส ทีม${setMenu.serviceTeam}
 - ขั้นต่ำออเดอร์องค์กร: ${meal.minimumOrder}+ กล่อง
 - ขั้นต่ำต่อเมนู: เมนูทั่วไปส่วนมาก ${meal.standardMenuMinimum} กล่อง เมนูที่ต้องเตรียมพิเศษ ${meal.specialMenuMinimum} กล่อง ให้ยึดขั้นต่ำรายเมนูจากระบบ
-- เมนูขั้นต่ำ ${meal.specialMenuMinimum} กล่องปัจจุบัน: ${specialMenus}
+- เมนูขั้นต่ำ ${meal.specialMenuMinimum} กล่องปัจจุบัน (สั่งได้เลย): ${specialMenus}${quoteOnlyMenus.length ? `\n- อีก ${quoteOnlyMenus.length} เมนู (${quoteOnlyMenus.join(', ')}) ร้านยังไม่ยืนยันทุน จึงยังสั่งออนไลน์ไม่ได้ ให้ลูกค้าสอบถามทาง LINE เพื่อเช็กราคา` : ''}
 - สั่ง 1 กล่อง: ไม่รับผ่านเว็บ ให้ไปสั่งผ่าน LINEMAN
 - มี ${meal.menuCountFrom}+ เมนู ปรับเผ็ดและเครื่องได้
 

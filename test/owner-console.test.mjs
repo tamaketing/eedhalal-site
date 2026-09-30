@@ -17,6 +17,26 @@ const [html, appJs, css] = await Promise.all([
   readFile(new URL('owner-console/styles.css', root), 'utf8'),
 ]);
 
+// Extract one top-level function by brace matching so the assertion really
+// covers that function. A newline sentinel ('\n}\n') silently returns -1 on
+// CRLF files, which makes slice(start, -1) cover the whole rest of the file
+// and turns a precise check into a meaningless one.
+function functionSource(source, signature) {
+  const start = source.indexOf(signature);
+  assert.notEqual(start, -1, `${signature} must exist`);
+  const body = source.indexOf('{', start);
+  let depth = 0;
+  for (let i = body; i < source.length; i += 1) {
+    if (source[i] === '{') depth += 1;
+    else if (source[i] === '}') {
+      depth -= 1;
+      if (depth === 0) return source.slice(start, i + 1);
+    }
+  }
+  assert.fail(`${signature} is not closed`);
+  return '';
+}
+
 const { server } = createInternalApi({ repos: createMemoryAdapter(), env: { EED_INTERNAL_API_SECRET: SECRET } });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -24,13 +44,6 @@ const base = `http://127.0.0.1:${server.address().port}`;
 // owner-console/app.js is committed with CRLF endings, so a plain `indexOf('\n}\n')`
 // never matches and slice() silently returns the rest of the file. Anchoring on
 // \r?\n keeps these per-function inspections scoped to the one function.
-function functionSource(signature) {
-  const start = appJs.indexOf(signature);
-  assert.ok(start >= 0, `${signature} exists`);
-  const rest = appJs.slice(start);
-  const end = rest.search(/\r?\n}\r?\n/);
-  return end === -1 ? rest : rest.slice(0, end);
-}
 test.after(() => new Promise((resolve) => server.close(resolve)));
 
 async function get(pathname, secret = SECRET) {
@@ -88,7 +101,7 @@ test('queue uses WAITING + desc and attaches Authorization', () => {
   assert.ok(appJs.includes("loadQueue('WAITING_FOR_HUMAN')") && appJs.includes("loadQueue('SENT')"));
   assert.ok(appJs.includes('Authorization'));
   // lineUserId appears only as read-only display fallback, never in a request.
-  const sendFn = appJs.slice(appJs.indexOf('async function confirmSend'));
+  const sendFn = functionSource(appJs, 'async function confirmSend');
   assert.ok(!/lineUserId|retryKey|X-Line-Retry-Key/i.test(sendFn), 'no recipient/key material in send request');
 });
 
@@ -112,7 +125,7 @@ test('edit sends concurrency fields; reject/send require confirmation', () => {
 });
 
 test('send request carries identity and concurrency only', () => {
-  const sendBlock = appJs.slice(appJs.indexOf('async function confirmSend'));
+  const sendBlock = functionSource(appJs, 'async function confirmSend');
   assert.ok(!/lineUserId|retryKey|X-Line-Retry-Key|resizeImage|message:\s*finalText/i.test(sendBlock), 'no recipient/message/key in send body');
   assert.ok(sendBlock.includes('concurrencyOf'), 'concurrency on send');
 });
@@ -156,7 +169,7 @@ test('SENT review is read-only with a separate learning CTA', () => {
 
 test('opt-in requires confirmation and posts identity only', () => {
   assert.ok(appJs.includes('เป็นตัวอย่างสำหรับการตอบครั้งต่อไปหรือไม่'), 'deliberate Thai confirmation');
-  const learnFn = functionSource('async function learnExample');
+  const learnFn = functionSource(appJs, 'async function learnExample');
   assert.ok(learnFn.includes('/api/v1/response-examples/from-draft/'), 'opt-in endpoint');
   const callStart = learnFn.indexOf('await api(');
   const postCall = learnFn.slice(callStart, learnFn.indexOf(');', callStart));
@@ -184,7 +197,7 @@ test('stale examples show a rules warning without auto-disable', () => {
 });
 
 test('SEND never auto-creates an example', () => {
-  const sendFn = functionSource('async function confirmSend');
+  const sendFn = functionSource(appJs, 'async function confirmSend');
   assert.ok(!/from-draft|response-examples|learnExample|btn-learn/.test(sendFn), 'send path has no learning calls');
 });
 

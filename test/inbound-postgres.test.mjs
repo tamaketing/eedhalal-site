@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
-import pg from 'pg';
 import { migrateUp } from '../db/migrate.mjs';
 import { createPostgresAdapter } from '../db/postgres.mjs';
 import { inboundContract } from '../test-helpers/inbound-contract.mjs';
 import { receiveInboundMessage, markProcessing } from '../services/inboundMessages.mjs';
+
+// 'pg' is imported lazily (same as db/postgres.mjs) so this file still loads
+// when the driver is not installed. A static top-level import would throw
+// ERR_MODULE_NOT_FOUND before the skip guard below could run, turning an
+// intentional environment skip into a red suite.
 
 // Run PG suites with --test-concurrency=1. BOTH URLs must address ONLY the
 // existing loopback eedhalal_test database. Never infer from production env.
@@ -25,6 +29,7 @@ test('inbound real PostgreSQL migration, contracts, races and least privilege', 
   guard(adminUrl);
   assert.ok(runtimeUrl, 'test-only EED_TEST_RUNTIME_DATABASE_URL required for permission proof');
   guard(runtimeUrl);
+  const { default: pg } = await import('pg');
   const admin = new pg.Client({ connectionString: adminUrl, connectionTimeoutMillis: 5000 });
   const runtime = new pg.Client({ connectionString: runtimeUrl, connectionTimeoutMillis: 5000 });
   let repos;

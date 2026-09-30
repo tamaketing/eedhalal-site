@@ -382,7 +382,18 @@ export function createLocalServer({ dataDir = resolveDataDir() } = {}) {
           // Publish the saved central draft (single source), not the request
           // body: the preview the owner confirmed and the release must match.
           const central = await ensureCentral(dataDir);
-          const result = await publishCentral({ root: ROOT, dataDir, central });
+          // Costs decide which served menus are orderable vs ask-for-quote
+          // (business rule: data/business-rules.json -> menuPublishing). The
+          // cost store is a separate file the owner may not have touched yet,
+          // so a read failure must not silently publish every menu as
+          // orderable — fall back to "no cost data" (same as the preview).
+          let costs = null;
+          try {
+            costs = await readCosts(dataDir);
+          } catch {
+            costs = null;
+          }
+          const result = await publishCentral({ root: ROOT, dataDir, central, costs });
           return sendJson(200, { ok: true, record: result.record });
         } catch (error) {
           // Truthful failure only: the previous release is untouched and the

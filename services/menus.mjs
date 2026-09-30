@@ -5,7 +5,9 @@
 //   MINIMUM/MENU   -> planner mins[id]
 //   DISPLAY NAME   -> planner names[id]      (Thai; no English names exist)
 //   CATEGORY       -> planner categories[id]
-//   AVAILABILITY   -> planner deleted[]       (listed ids are hidden)
+//   AVAILABILITY   -> planner deleted[]       (listed ids are hidden everywhere)
+//   ORDERABLE      -> planner quoteOnly[]     (served by name; excluded from
+//                      ordering/calculation until the cost is confirmed)
 //
 // Menu identity is stable by menu id. The legacy website JS menu file may
 // still provide non-price descriptive metadata (desc/badge) elsewhere, but
@@ -65,10 +67,13 @@ function normalizeId(value) {
   return null;
 }
 
-// Build the ACTIVE catalog (planner ids minus deleted[]) from raw planner
-// JSON. Throws MenuCatalogError on anything unexpected: missing maps,
-// invalid price/min/name/category/image, inconsistent id sets across maps,
-// or an invalid deleted entry. Never returns partial/stale data.
+// Build the ACTIVE (orderable) catalog (planner ids minus deleted[] minus
+  // quoteOnly[]) from raw planner JSON. Quote-only menus stay visible by name
+  // on the menu page with an ask-for-quote label, but never enter ordering,
+  // calculation, or recommendation. Throws MenuCatalogError on anything
+  // unexpected: missing maps, invalid price/min/name/category/image,
+  // inconsistent id sets across maps, or an invalid deleted/quoteOnly entry.
+  // Never returns partial/stale data.
 function buildActiveCatalog(planner) {
   if (!isRecord(planner)) fail();
   const { prices, mins, names, categories, images, deleted } = planner;
@@ -94,9 +99,24 @@ function buildActiveCatalog(planner) {
     deletedIds.add(id);
   }
 
+  // Cost gate: quoteOnly[] menus are served by name but are NOT orderable.
+  // They stay out of this catalog entirely (ordering, calculation, and
+  // recommendations) until the shop confirms their cost. A menu that is both
+  // hidden and quote-only is contradictory and fails closed.
+  const quoteOnly = planner.quoteOnly === undefined ? [] : planner.quoteOnly;
+  if (!Array.isArray(quoteOnly)) fail();
+  const quoteOnlyIds = new Set();
+  for (const entry of quoteOnly) {
+    const id = normalizeId(entry);
+    if (id === null || !Object.hasOwn(prices, id)) fail();
+    if (deletedIds.has(id)) fail();
+    quoteOnlyIds.add(id);
+  }
+
   const menus = [];
   for (const id of priceIds) {
     if (deletedIds.has(id)) continue;
+    if (quoteOnlyIds.has(id)) continue;
     const price = prices[id];
     const minPerMenu = mins[id];
     const name = names[id];

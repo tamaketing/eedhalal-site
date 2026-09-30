@@ -11,8 +11,10 @@
 //     internal-only fields. "บันทึก" writes here; admin tools read the latest
 //     immediately while customers keep the published files until "เผยแพร่".
 //   owner-costs.json            = INTERNAL cost DB (local only). Costs live
-//     ONLY there — never in menu-central, never in published files. A cost-only
-//     edit therefore never creates a pending web publish (by construction).
+//     ONLY there — never in menu-central, never in published files. A cost
+//     AMOUNT-only edit (still orderable) never creates a pending web publish,
+//     but a cost edit that flips quote-only status (served <-> orderable)
+//     does, because ordering availability changes.
 //
 // Publish = regenerate the two published static files from the central draft
 // with an explicit public-field allowlist, verify (no internal leak, images
@@ -40,7 +42,7 @@ export const PUBLISH_STATE_FILE = 'menu-publish-state.json';
 // proves which central version a file was built from (used by live checks).
 export const PUBLIC_OVERRIDE_KEYS = [
   'prices', 'mins', 'images', 'names', 'categories',
-  'descs', 'badges', 'sortOrder', 'popular', 'deleted',
+  'descs', 'badges', 'sortOrder', 'popular', 'deleted', 'quoteOnly',
   'newMenus', 'meats', 'toppings', 'noMeatMenus',
   'snackPrices', 'snackNames', 'snackCats', 'snackAddons',
   'exportedAt', 'release',
@@ -48,9 +50,13 @@ export const PUBLIC_OVERRIDE_KEYS = [
 
 // Central-managed keys: rebuilt from the central draft on every publish
 // (`release` included: the build stamp belongs to the pipeline, never carried).
+// meats/toppings/noMeatMenus are rebuilt too — leaving them to the carry-over
+// loop below would silently keep stale published values even though lines 502+
+// just rebuilt them from the draft.
 export const CENTRAL_MANAGED_KEYS = [
   'prices', 'mins', 'images', 'names', 'categories',
-  'descs', 'badges', 'sortOrder', 'popular', 'deleted', 'release',
+  'descs', 'badges', 'sortOrder', 'popular', 'deleted', 'quoteOnly', 'release',
+  'meats', 'toppings', 'noMeatMenus',
 ];
 
 // Tokens that must NEVER appear in published artifacts (case-insensitive).
@@ -111,6 +117,8 @@ export function migrateCentral({ menuDataMenus = [], planner = {}, popularIds = 
       hidden: deleted.has(String(id)),
       sortOrder: fileOrder.has(String(id)) ? fileOrder.get(String(id)) : 10000 + Number(id),
       noMeat: legacy.noMeat === true || (planner.noMeatMenus || []).map(String).includes(String(id)),
+      showPrice: true,
+      noLock: true,
       internalNote: '',
     };
   });
@@ -169,6 +177,12 @@ export function validateCentral(central) {
       hidden: raw.hidden === true,
       sortOrder,
       noMeat: raw.noMeat === true,
+      // Owner switches (business rule: data/business-rules.json -> menuPublishing).
+      // showPrice:false publishes the menu in `quoteOnly` (name + ask-for-quote
+      // marker, excluded from ordering) because there is no customer-facing
+      // price. noLock is owner-tool only and is never published.
+      showPrice: raw.showPrice === undefined ? true : raw.showPrice === true,
+      noLock: raw.noLock === undefined ? true : raw.noLock === true,
       internalNote: typeof raw.internalNote === 'string' ? raw.internalNote : '',
     });
   }
@@ -210,10 +224,28 @@ export async function loadCentral(dataDir) {
 export const BULK_HIDE_LIMIT = 5;
 
 // Atomic save (temp + rename) + version bump. Local only — never pushed.
-export async function saveCentral(dataDir, raw) {
+// Optimistic concurrency: when opts.expectedVersion is provided and the disk
+// version differs, the write is refused ({ok:false, conflict:true}) instead of
+// silently overwriting another editor's save.
+export async function saveCentral(dataDir, raw, opts = {}) {
   const result = validateCentral(raw);
   if (!result.ok) return result;
   const current = await loadCentral(dataDir).catch(() => null);
+  // Optimistic concurrency: reject a save based on a stale draft instead of
+  // silently overwriting someone else's edit.
+  const expected = opts?.expectedVersion;
+  if (expected !== undefined && expected !== null && current) {
+    const diskVersion = Number(current.version ?? 0);
+    if (Number(expected) !== diskVersion) {
+      return {
+        ok: false,
+        conflict: true,
+        currentVersion: diskVersion,
+        errors: [`ข้อมูลบนดิสก์เปลี่ยนไปแล้ว (รุ่น ${diskVersion}) — โหลดข้อมูลใหม่ก่อนบันทึก เพื่อไม่ให้เขียนทับกัน`],
+        data: null,
+      };
+    }
+  }
   // Only guards an EDIT of an existing draft: the first write (migration/seed)
   // legitimately carries whatever the published file already had hidden.
   const hiddenIds = (menus) => new Set((menus || []).filter((menu) => menu.hidden === true).map((menu) => menu.id));
@@ -254,9 +286,74 @@ export async function loadPublished(root) {
   return { overrides, menuDataJs };
 }
 
+// Cost rule (business rule: data/business-rules.json -> menuPublishing).
+// Three tiers:
+//   1. served (owner-visible, hidden=false) -> name shows in the menu lists
+//      (cards + full name list), even without a confirmed cost, with a
+//      "ask for quote" marker. Preserves SEO/AI discovery.
+//   2. orderable (served + CONFIRMED food cost > 0) -> included in ordering,
+//      price calculation and automatic recommendations.
+//   3. owner-hidden (hidden=true) -> hidden everywhere.
+// `costs` is the owner-costs.json shape ({dishes:[{menuId,foodCost,status}]}).
+// When `costs` is null/undefined the cost split is disabled (backwards
+// compatible for tests and deploy preflight without cost data): every
+// served menu counts as orderable.
+export function readyCostIds(costs) {
+  const ready = new Set();
+  for (const dish of costs?.dishes || []) {
+    if (!dish) continue;
+    if (dish.status !== 'confirmed') continue;
+    const value = Number(dish.foodCost);
+    if (!Number.isFinite(value) || value <= 0) continue;
+    if (dish.menuId !== null && dish.menuId !== undefined && dish.menuId !== '') {
+      ready.add(String(dish.menuId));
+    }
+    const match = String(dish.id || '').match(/^menu-(\d+)$/);
+    if (match) ready.add(String(Number(match[1])));
+  }
+  return ready;
+}
+
+export function isMenuCostReady(costs, menuId) {
+  if (!costs) return true;
+  return readyCostIds(costs).has(String(menuId));
+}
+
+export function costGateSummary(central, costs) {
+  if (!costs) return { enabled: false, ready: 0, waiting: 0, blocked: [] };
+  const ready = readyCostIds(costs);
+  const blocked = [];
+  for (const menu of central?.menus || []) {
+    if (menu.hidden === true) continue;
+    if (!ready.has(String(menu.id))) blocked.push({ id: Number(menu.id), name: menu.name });
+  }
+  return {
+    enabled: true,
+    ready: (central?.menus || []).filter((menu) => menu.hidden !== true).length - blocked.length,
+    waiting: blocked.length,
+    blocked,
+  };
+}
+
+function effectiveHiddenOf(menu) {
+  return menu.hidden === true;
+}
+
+// Quote-only: served by the shop (owner-visible) but the customer cannot see a
+// price — either the cost is not confirmed yet, or the owner turned the price
+// off (business rule: menuPublishing.showPriceRuleTh). Name may show with an
+// ask-for-quote marker, but the menu stays out of ordering/calculation/
+// recommendation.
+function isQuoteOnly(menu, costs) {
+  if (menu.hidden === true) return false;
+  if (menu.showPrice === false) return true;
+  if (!costs) return false;
+  return !isMenuCostReady(costs, menu.id);
+}
+
 // Public projection of the central draft: ONLY publishable fields.
 // Cost/internal data cannot leak through the diff because it never enters it.
-export function publicProjectionOfCentral(central) {
+export function publicProjectionOfCentral(central, costs = null) {
   const menus = new Map();
   for (const menu of central.menus || []) {
     menus.set(String(menu.id), {
@@ -267,7 +364,12 @@ export function publicProjectionOfCentral(central) {
       desc: menu.desc || '',
       badge: menu.badge || '',
       minPerMenu: menu.minPerMenu,
-      hidden: menu.hidden === true,
+      hidden: effectiveHiddenOf(menu),
+      ownerHidden: menu.hidden === true,
+      // Cost gate (needs owner-costs) OR owner hid the price. Kept separate so
+      // the admin can tell "waiting for cost" from "price switched off".
+      costBlocked: !costs ? false : isQuoteOnly(menu, costs),
+      priceHidden: menu.showPrice === false,
       sortOrder: menu.sortOrder,
       noMeat: menu.noMeat === true,
     });
@@ -315,16 +417,29 @@ const COMPARE_FIELDS = [
 ];
 
 // Diff central draft vs last published release, public fields only.
-// A cost-only edit never appears here (costs are not part of either
-// projection), so it never creates a pending web publish.
-export function diffPublicChanges(central, published) {
-  const left = publicProjectionOfCentral(central);
+// A cost-AMOUNT-only edit (still orderable) never appears here; a cost edit
+// that flips quote-only status (no cost -> confirmed, or confirmed -> cleared)
+// DOES create a pending web publish because ordering availability changes.
+// Name/price/category edits always appear, so renames reach both the cards
+// and the full name list in one publish.
+export function diffPublicChanges(central, published, costs = null) {
+  const left = publicProjectionOfCentral(central, costs);
   const right = publicProjectionOfPublished(published);
+  const publishedQuoteOnly = new Set(
+    ((published.overrides || published)?.quoteOnly || []).map(String),
+  );
   const added = [];
   const changed = [];
   const shown = [];
   const hidden = [];
+  const costBlocked = [];
   for (const [id, menu] of left.menus) {
+    if (menu.costBlocked) {
+      const reason = menu.priceHidden
+        ? 'เจ้าของปิดแสดงราคา — แสดงแต่ชื่อพร้อมป้ายสอบถามราคา ไม่เข้าระบบคำนวณ'
+        : 'รอทุนยืนยัน — แสดงชื่อได้ สอบถามราคา ไม่เข้าระบบคำนวณ';
+      costBlocked.push({ id: Number(id), name: menu.name, reason });
+    }
     const base = right.menus.get(id);
     if (!base) {
       added.push({ id: Number(id), name: menu.name, fields: ['new'] });
@@ -339,13 +454,21 @@ export function diffPublicChanges(central, published) {
   for (const [id, base] of right.menus) {
     if (!left.menus.has(id)) removed.push({ id: Number(id), name: base.name });
   }
+  // Quote-only flips (ordering availability) count as pending publish.
+  const nextQuoteOnly = [...left.menus.entries()]
+    .filter(([, menu]) => menu.costBlocked)
+    .map(([id]) => String(id))
+    .sort();
+  const prevQuoteOnly = [...publishedQuoteOnly].sort();
+  const quoteOnlyChanged = JSON.stringify(nextQuoteOnly) !== JSON.stringify(prevQuoteOnly);
   const toppingsChanged = JSON.stringify(left.toppings) !== JSON.stringify(right.toppings);
   const meatsChanged = JSON.stringify(left.meats) !== JSON.stringify(right.meats);
   const popularChanged = JSON.stringify(left.popular) !== JSON.stringify(right.popular);
   const hasChanges = added.length > 0 || changed.length > 0 || removed.length > 0
-    || toppingsChanged || meatsChanged || popularChanged;
+    || quoteOnlyChanged || toppingsChanged || meatsChanged || popularChanged;
   return {
-    added, changed, shown, hidden, removed,
+    added, changed, shown, hidden, removed, costBlocked,
+    quoteOnlyChanged,
     toppingsChanged, meatsChanged, popularChanged,
     hasChanges,
   };
@@ -364,7 +487,7 @@ export function sha256Hex(content) {
   return createHash('sha256').update(String(content), 'utf8').digest('hex');
 }
 
-export function buildPlannerOverrides(central, current, now = new Date()) {
+export function buildPlannerOverrides(central, current, now = new Date(), costs = null) {
   // Preserve the currently published key order (minimal diff, stable for
   // readers); brand-new ids append sorted by display order.
   const currentOrder = Object.keys(current?.prices || {});
@@ -390,11 +513,21 @@ export function buildPlannerOverrides(central, current, now = new Date()) {
   next.popular = (central.popular || []).map(Number);
   // Preserve the previously published hidden order (minimal diff); newly
   // hidden ids append numerically. Consumers treat it as a set.
-  const stillHidden = new Set(sorted.filter((menu) => menu.hidden).map((menu) => String(menu.id)));
+  // Owner-hidden hides everywhere. Cost-unready (but served) menus stay
+  // visible by name and are published in `quoteOnly` instead: name lists
+  // show them with an ask-for-quote marker, while ordering/calculation
+  // paths exclude them.
+  const stillHidden = new Set(sorted.filter((menu) => effectiveHiddenOf(menu)).map((menu) => String(menu.id)));
   const keptOrder = (current?.deleted || []).map(String).filter((id) => stillHidden.has(id));
   const appended = [...stillHidden].filter((id) => !keptOrder.includes(id))
     .sort((a, b) => Number(a) - Number(b));
   next.deleted = [...keptOrder, ...appended].map(Number);
+  // A menu with the price switched off lands here even when its cost is
+  // confirmed: there is no customer-facing price to sell at.
+  next.quoteOnly = sorted
+    .filter((menu) => isQuoteOnly(menu, costs))
+    .map((menu) => menu.id)
+    .sort((a, b) => a - b);
   next.meats = central.meats || [];
   next.toppings = central.toppings || [];
   next.noMeatMenus = sorted.filter((menu) => menu.noMeat).map((menu) => menu.id);
@@ -503,8 +636,17 @@ export function assertPublishSafe({ overrides, menuDataJs, root }) {
   for (const entry of overrides.deleted || []) {
     if (!Object.hasOwn(prices, String(entry))) throw new Error(`deleted อ้าง id ที่ไม่มีใน catalog: ${entry}`);
   }
+  for (const entry of overrides.quoteOnly || []) {
+    if (!Object.hasOwn(prices, String(entry))) throw new Error(`quoteOnly อ้าง id ที่ไม่มีใน catalog: ${entry}`);
+    if ((overrides.deleted || []).map(String).includes(String(entry))) {
+      throw new Error(`quoteOnly ห้ามซ้อนกับ deleted (id ${entry}): ซ่อนโดยเจ้าของต้องซ่อนทุกที่`);
+    }
+  }
   for (const id of overrides.popular || []) {
     if (!Object.hasOwn(prices, String(id))) throw new Error(`popular อ้าง id ที่ไม่มีใน catalog: ${id}`);
+  }
+  for (const id of overrides.noMeatMenus || []) {
+    if (!Object.hasOwn(prices, String(id))) throw new Error(`noMeatMenus อ้าง id ที่ไม่มีใน catalog: ${id}`);
   }
   // Actionable image errors first (which menu, what path), generic leak scan
   // second as a backstop.
@@ -573,7 +715,9 @@ export function computePublishStatus({ diff, file, live }) {
   if (file?.status === 'failed') return 'failed';
   if (diff?.hasChanges) return 'dirty';
   if (!file || file.status !== 'staged') return 'draft';
-  if (live?.state === 'live' && Number(live.liveVersion) === Number(file.fileVersion)) return 'published';
+  // 'live' is authoritative on its own: verifyLiveRelease reports it only on
+  // content match (version labels may differ across draft lineages).
+  if (live?.state === 'live') return 'published';
   return 'staged';
 }
 
@@ -596,7 +740,7 @@ export const LIVE_STATE_TH = {
 // fault: test-only hooks — 'pre-rename' throws after temps are verified but
 // before any published file is replaced; 'between-renames' throws after the
 // first rename. Both must leave the previous COMPLETE release in place.
-export async function publishCentral({ root, dataDir, central, now = new Date(), fault = null }) {
+export async function publishCentral({ root, dataDir, central, costs = null, now = new Date(), fault = null }) {
   const validated = validateCentral(central);
   if (!validated.ok) {
     const error = new Error(`ฐานกลางไม่ผ่านการตรวจ: ${validated.errors.join(' | ')}`);
@@ -605,7 +749,7 @@ export async function publishCentral({ root, dataDir, central, now = new Date(),
   }
   const clean = { ...validated.data, version: central.version ?? 0, updatedAt: central.updatedAt ?? null };
   const current = await loadPublished(root);
-  const overrides = buildPlannerOverrides(clean, current.overrides, now);
+  const overrides = buildPlannerOverrides(clean, current.overrides, now, costs);
   const menuDataJs = buildMenuDataJs(clean, now);
   assertPublishSafe({ overrides, menuDataJs, root });
 
@@ -701,15 +845,32 @@ export async function verifyLiveRelease({ root, file, liveBaseUrl = 'https://eed
   if (!Number.isFinite(liveVersion)) {
     return { state: 'unverified', liveVersion: null, checkedAt, reason: 'เว็บจริงยังไม่มี release marker — ยืนยันฉบับไม่ได้' };
   }
+  // Content first: version counters are per-draft-lineage (fresh installs and
+  // re-migrations restart them), so equal MENU content means live even when
+  // the build labels differ. Provenance metadata (release) and volatile
+  // build timestamps are excluded from the comparison — customers get content.
+  const canonical = (obj) => {
+    const copy = JSON.parse(JSON.stringify(obj));
+    delete copy.exportedAt;
+    delete copy.release;
+    return sha256Hex(JSON.stringify(copy));
+  };
+  let localParsed = null;
+  try {
+    localParsed = JSON.parse(localRaw);
+  } catch {
+    return { state: 'unverified', liveVersion: null, checkedAt, reason: 'ไฟล์ในเครื่องไม่ใช่ JSON ที่ถูกต้อง' };
+  }
+  if (canonical(live) === canonical(localParsed)) {
+    const extra = liveVersion === Number(file.fileVersion)
+      ? ''
+      : ` (เลขรุ่นต่างสาย: เว็บ v${liveVersion} ≡ ไฟล์ v${file.fileVersion} เนื้อหาตรงกัน)`;
+    return { state: 'live', liveVersion, checkedAt, reason: `เว็บจริงให้บริการตรงกับไฟล์ที่สร้างแล้ว${extra}` };
+  }
   if (liveVersion !== Number(file.fileVersion)) {
-    return { state: 'outdated', liveVersion, checkedAt, reason: `เว็บจริงเป็นฉบับ v${liveVersion} ส่วนฉบับไฟล์คือ v${file.fileVersion}` };
+    return { state: 'outdated', liveVersion, checkedAt, reason: `เว็บจริงเป็นฉบับ v${liveVersion} ส่วนฉบับไฟล์คือ v${file.fileVersion} และเนื้อหาไม่ตรงกัน` };
   }
-  // Same version: compare canonical content so a same-version drift still shows.
-  const same = sha256Hex(JSON.stringify(live)) === sha256Hex(JSON.stringify(JSON.parse(localRaw)));
-  if (!same) {
-    return { state: 'outdated', liveVersion, checkedAt, reason: `ฉบับตรงกัน (v${liveVersion}) แต่เนื้อหาไม่ตรงทั้งหมด — ตรวจเพิ่มก่อนถือว่าสำเร็จ` };
-  }
-  return { state: 'live', liveVersion, checkedAt, reason: `เว็บจริงให้บริการฉบับ v${liveVersion} ตรงกับไฟล์ที่สร้างแล้ว` };
+  return { state: 'outdated', liveVersion, checkedAt, reason: `ฉบับตรงกัน (v${liveVersion}) แต่เนื้อหาไม่ตรงทั้งหมด — ตรวจเพิ่มก่อนถือว่าสำเร็จ` };
 }
 
 // Parse js/menu-data.js EED_MENUS without executing page scripts. The result

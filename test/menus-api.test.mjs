@@ -22,11 +22,26 @@ async function call(pathname, { secret = SECRET } = {}) {
   return { status: response.status, json: await response.json() };
 }
 
-function writePlannerFixture(price14) {
+// The owner publishes the menu in batches, so expected results are derived from
+// the currently published planner file instead of frozen ids/prices.
+const published = () => JSON.parse(readFileSync(path.resolve('data', 'planner-overrides.json'), 'utf8'));
+// Orderable = published, minus owner-hidden, minus ask-for-quote.
+const activeEntries = (planner = published()) => {
+  const hidden = new Set((planner.deleted || []).map(String));
+  const quoteOnly = new Set((planner.quoteOnly || []).map(String));
+  return Object.entries(planner.prices).filter(
+    ([id]) => !hidden.has(String(id)) && !quoteOnly.has(String(id)),
+  );
+};
+const firstActive = (planner = published()) => activeEntries(planner)[0];
+const nameOf = (id, planner = published()) => planner.names[String(id)];
+
+function writePlannerFixture(newPrice) {
   const dir = mkdtempSync(path.join(tmpdir(), 'eed-menu-api-'));
   const file = path.join(dir, 'planner-overrides.json');
   const planner = JSON.parse(readFileSync(path.resolve('data', 'planner-overrides.json'), 'utf8'));
-  planner.prices['14'] = price14;
+  // Patch the first PUBLISHED menu so the fixture works whatever batch is live.
+  planner.prices[(firstActive()[0])] = newPrice;
   writeFileSync(file, JSON.stringify(planner));
   clearMenuCache(file);
   return file;
@@ -49,47 +64,78 @@ async function callWithPlanner(pathname, plannerPath) {
   }
 }
 
-test('exact price 75 returns only planner price-75 menus', async () => {
-  const response = await call('/api/v1/menus/mealbox?price=75');
+test('exact price returns exactly the published planner menus at that price', async () => {
+  const planner = published();
+  const [id, price] = firstActive(planner);
+  const response = await call(`/api/v1/menus/mealbox?price=${price}`);
   assert.equal(response.status, 200);
   assert.equal(response.json.serviceType, 'mealbox');
   assert.equal(response.json.source, 'planner-overrides');
-  assert.deepEqual(response.json.filters, { price: 75, maxPrice: null, category: null, q: null, limit: 20 });
-  assert.deepEqual(response.json.menus.map((menu) => menu.id).sort(), ['104', '14', '15', '21']);
-  for (const menu of response.json.menus) assert.equal(menu.price, 75);
+  assert.deepEqual(response.json.filters, { price, maxPrice: null, category: null, q: null, limit: 20 });
+  const expected = activeEntries(planner)
+    .filter(([, value]) => value === price)
+    .map(([menuId]) => String(menuId))
+    .sort();
+  assert.deepEqual(response.json.menus.map((menu) => menu.id).sort(), expected);
+  assert.ok(response.json.menus.some((menu) => menu.id === String(id)));
+  for (const menu of response.json.menus) assert.equal(menu.price, price);
 });
 
-test('max price 100 caps every candidate at 100', async () => {
-  const response = await call('/api/v1/menus/mealbox?maxPrice=100&limit=100');
+test('max price caps every candidate and matches the published planner', async () => {
+  const planner = published();
+  const cap = 100;
+  const response = await call(`/api/v1/menus/mealbox?maxPrice=${cap}&limit=100`);
   assert.equal(response.status, 200);
-  assert.equal(response.json.menus.length, 32);
-  for (const menu of response.json.menus) assert.ok(menu.price <= 100);
+  const expected = activeEntries(planner).filter(([, price]) => price <= cap).length;
+  assert.equal(response.json.menus.length, Math.min(expected, 100));
+  for (const menu of response.json.menus) assert.ok(menu.price <= cap);
 });
 
 test('Thai name lookup returns the live planner price', async () => {
-  const response = await call('/api/v1/menus/mealbox?q=%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%A7%E0%B9%84%E0%B8%81%E0%B9%88%E0%B9%80%E0%B8%97%E0%B8%AD%E0%B8%A3%E0%B8%B4%E0%B8%A2%E0%B8%B2%E0%B8%81%E0%B8%B4');
+  const planner = published();
+  const [id] = firstActive(planner);
+  const name = nameOf(id, planner);
+  const response = await call(`/api/v1/menus/mealbox?q=${encodeURIComponent(name)}`);
   assert.equal(response.status, 200);
-  assert.ok(response.json.menus.length >= 1);
-  assert.equal(response.json.menus[0].id, '14');
-  assert.equal(response.json.menus[0].price, 75);
+  assert.ok(response.json.menus.length >= 1, `no result for active menu ${id}`);
+  assert.equal(response.json.menus[0].id, String(id));
+  assert.equal(response.json.menus[0].price, planner.prices[String(id)]);
 });
 
-test('unknown and deleted names return an empty factual result', async () => {
+test('unknown, hidden and ask-for-quote menus never resolve, by id or by name', async () => {
   const unknown = await call('/api/v1/menus/mealbox?q=menu-that-does-not-exist-zzz');
   assert.equal(unknown.status, 200);
   assert.deepEqual(unknown.json.menus, []);
-  const deleted = await call('/api/v1/menus/mealbox?q=%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%A7%E0%B8%A3%E0%B8%B2%E0%B8%94%E0%B8%81%E0%B8%B0%E0%B9%80%E0%B8%9E%E0%B8%A3%E0%B8%B2%E0%B8%97%E0%B8%B0%E0%B9%80%E0%B8%A5');
-  assert.equal(deleted.status, 200);
-  assert.deepEqual(deleted.json.menus, []);
+  const planner = published();
+  const blocked = new Set([...(planner.deleted || []).map(String), ...(planner.quoteOnly || []).map(String)]);
+  assert.ok(blocked.size > 0, 'fixture must exercise at least one blocked menu');
+  for (const id of blocked) {
+    const name = nameOf(id, planner);
+    if (!name) continue;
+    // Substring matches on OTHER orderable dishes are legitimate; only the
+    // blocked id itself must never come back.
+    const byName = await call(`/api/v1/menus/mealbox?q=${encodeURIComponent(name)}`);
+    assert.equal(byName.status, 200);
+    for (const menu of byName.json.menus) {
+      assert.ok(!blocked.has(String(menu.id)), `blocked menu ${id} must not resolve by name`);
+    }
+  }
 });
 
 test('category plus maxPrice filters compose', async () => {
-  const response = await call('/api/v1/menus/mealbox?category=%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%A7%E0%B8%9C%E0%B8%B1%E0%B8%94&maxPrice=70&limit=100');
+  const planner = published();
+  const active = activeEntries(planner);
+  const [category] = [...new Set(active.map(([id]) => planner.categories[id]))];
+  const cap = Math.max(...active.map(([id]) => planner.prices[id]));
+  const response = await call(`/api/v1/menus/mealbox?category=${encodeURIComponent(category)}&maxPrice=${cap}&limit=100`);
   assert.equal(response.status, 200);
-  assert.ok(response.json.menus.length > 0);
+  const expected = active
+    .filter(([id]) => planner.categories[id] === category && planner.prices[id] <= cap)
+    .map(([id]) => String(id)).sort();
+  assert.deepEqual(response.json.menus.map((menu) => menu.id).sort(), expected);
   for (const menu of response.json.menus) {
-    assert.equal(menu.category, 'ข้าวผัด');
-    assert.ok(menu.price <= 70);
+    assert.equal(menu.category, category);
+    assert.ok(menu.price <= cap);
   }
 });
 
@@ -101,13 +147,16 @@ test('invalid query prices are rejected as 400', async () => {
 });
 
 test('limits clamp: default 20, maximum 100', async () => {
-  const def = await call('/api/v1/menus/mealbox?maxPrice=1000');
+  // Clamp values are code contracts; how many rows come back depends on how many
+  // menus the owner currently publishes.
+  const activeCount = activeEntries().length;
+  const def = await call('/api/v1/menus/mealbox?maxPrice=1000000');
   assert.equal(def.status, 200);
-  assert.equal(def.json.menus.length, 20);
-  const capped = await call('/api/v1/menus/mealbox?maxPrice=1000&limit=1000');
+  assert.equal(def.json.menus.length, Math.min(20, activeCount));
+  const capped = await call('/api/v1/menus/mealbox?maxPrice=1000000&limit=1000');
   assert.equal(capped.status, 200);
   assert.ok(capped.json.menus.length <= 100);
-  assert.equal(capped.json.menus.length, 37);
+  assert.equal(capped.json.menus.length, Math.min(100, activeCount));
 });
 
 test('menu entries expose only public catalog fields', async () => {
@@ -122,10 +171,18 @@ test('menu entries expose only public catalog fields', async () => {
 });
 
 test('fixture planner path proves runtime planner authority (planner wins)', async () => {
+  const planner = published();
+  const id = String(firstActive(planner)[0]);
   const fixture = writePlannerFixture(80);
-  const response = await callWithPlanner('/api/v1/menus/mealbox?price=80', fixture);
+  const response = await callWithPlanner(`/api/v1/menus/mealbox?price=80`, fixture);
   assert.equal(response.status, 200);
-  assert.ok(response.json.menus.some((menu) => menu.id === '14' && menu.price === 80));
+  assert.ok(
+    response.json.menus.some((menu) => menu.id === id && menu.price === 80),
+    `the patched menu ${id} must be served from the fixture planner`,
+  );
+  // The real published file is untouched by the fixture.
+  const after = published();
+  assert.notEqual(after.prices[id], 80, 'the fixture must not write to the real planner file');
 });
 
 test('corrupt planner fails closed with no stale menu data', async () => {

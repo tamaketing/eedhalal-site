@@ -1,4 +1,4 @@
-/* EED HALAL — Menu database for budget calculator — auto-export 29/9/2569 10:55:23 */
+/* EED HALAL — Menu database for budget calculator — auto-export 1/10/2569 06:27:27 */
 var EED_DEFAULT_MEATS = [{"name":"ไก่สับ","price":0},{"name":"ไก่ชิ้น","price":0},{"name":"เนื้อวัวชิ้น","price":10},{"name":"เนื้อวัวสับ","price":10},{"name":"กุ้ง","price":20},{"name":"ปลาหมึก","price":20},{"name":"ทะเล","price":30},{"name":"ไม่เอาเนื้อ","price":0}];
 var EED_DEFAULT_TOPPINGS = [{"name":"ไข่ดาว","price":10},{"name":"ไข่เจียว","price":10},{"name":"ไข่ต้ม","price":10},{"name":"ผลไม้","price":35}];
 var EED_MENUS = [

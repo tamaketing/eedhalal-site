@@ -102,6 +102,10 @@ export async function checkPublishSafety(root = ROOT) {
     const allowed = new Set([
       'prices', 'mins', 'images', 'names', 'categories',
       'descs', 'badges', 'sortOrder', 'popular', 'deleted',
+      // quoteOnly: served by name, but not orderable (no confirmed cost or the
+      // owner switched its price off). Required by services/menus.mjs to keep
+      // ask-for-quote dishes out of ordering. Reveals no cost figure.
+      'quoteOnly',
       'newMenus', 'meats', 'toppings', 'noMeatMenus',
       'snackPrices', 'snackNames', 'snackCats', 'snackAddons',
       'exportedAt', 'release',

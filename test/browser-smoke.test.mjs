@@ -3,10 +3,11 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const [popularHtml, snackHtml, popularSource, snackHydrateSource, plannerSource] = await Promise.all([
+const [popularHtml, snackHtml, popularSource, popularRenderer, snackHydrateSource, plannerSource] = await Promise.all([
   readFile(new URL('../popular-menu.html', import.meta.url), 'utf8'),
   readFile(new URL('../snack-box.html', import.meta.url), 'utf8'),
   readFile(new URL('../js/popular-menu-hydrate.js', import.meta.url), 'utf8'),
+  readFile(new URL('../js/popular-menu.js', import.meta.url), 'utf8'),
   readFile(new URL('../js/snack-hydrate.js', import.meta.url), 'utf8'),
   readFile(new URL('../js/budget-planner.js', import.meta.url), 'utf8'),
 ]);
@@ -17,6 +18,7 @@ function element(id) {
   return {
     id,
     innerHTML: '',
+    childNodes: [],
     get textContent() { return textContent; },
     set textContent(value) { textContent = String(value); },
     value: '',
@@ -27,6 +29,7 @@ function element(id) {
     addEventListener(name, handler) { listeners[name] = handler; },
     dispatch(name) { if (listeners[name]) listeners[name].call(this, { target: this }); },
     querySelectorAll() { return []; },
+    appendChild(child) { this.childNodes.push(child); },
   };
 }
 
@@ -36,6 +39,16 @@ function browserContext(ids, values = {}) {
     readyState: 'complete',
     getElementById(id) { return elements[id] || null; },
     querySelectorAll() { return []; },
+    createElement(tag) {
+      const node = element(`created-${tag}`);
+      node.tagName = String(tag).toUpperCase();
+      node.childNodes = [];
+      node.appendChild = (child) => {
+        node.childNodes.push(child);
+        node.textContent += child.textContent;
+      };
+      return node;
+    },
     addEventListener() {},
     dispatchEvent() {},
   };
@@ -121,4 +134,45 @@ test('planner applies local menu overrides without authentication or browser dep
 test('public pages load their browser enhancers after shared data scripts', () => {
   assert.ok(popularHtml.indexOf('js/menu-data.js') < popularHtml.indexOf('js/popular-menu.js'));
   assert.ok(snackHtml.indexOf('js/snack-data.js') < snackHtml.indexOf('js/snack-hydrate.js'));
+});
+
+test('production menu renderer marks ask-for-quote dishes and never prints a price', async () => {
+  const menus = [
+    { id: 1, name: 'เมนูพร้อมราคา', price: 65, category: 'ข้าวราดแกง', image: 'img/a.jpg', desc: '' },
+    { id: 2, name: 'เมนูไม่มีทุน', price: 70, category: 'ข้าวราดแกง', image: 'img/b.jpg', desc: '' },
+  ];
+  const { context, elements } = browserContext(['pm-grid', 'pm-list', 'pm-search', 'pm-filter', 'pm-count', 'pm-empty', 'pm-photo-heading', 'pm-plain-heading'], {
+    EED_MENUS: menus,
+    fetch: async () => ({ ok: true, json: async () => ({ deleted: [], quoteOnly: [2] }) }),
+  });
+  vm.runInNewContext(popularRenderer, context);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const grid = elements['pm-grid'].innerHTML;
+  assert.match(grid, /เมนูพร้อมราคา/);
+  assert.match(grid, /เมนูไม่มีทุน/);
+  // The ask-for-quote dish carries a visible label and a price-asking CTA.
+  assert.match(grid, /pm-quote-note/);
+  assert.match(grid, /สอบถามราคาเมนูนี้ทาง LINE/);
+  // No sale price may ever reach the DOM on this page.
+  assert.ok(!grid.includes('65') && !grid.includes('70'), 'no price figure is rendered');
+  assert.ok(!/บาท/.test(grid), 'no currency label is rendered');
+});
+
+test('production menu renderer still hides owner-hidden dishes', async () => {
+  const menus = [
+    { id: 1, name: 'ยังแสดง', price: 65, category: 'ข้าวราดแกง', image: 'img/a.jpg', desc: '' },
+    { id: 2, name: 'ถูกซ่อน', price: 70, category: 'ข้าวราดแกง', image: 'img/b.jpg', desc: '' },
+  ];
+  const { context, elements } = browserContext(['pm-grid', 'pm-list', 'pm-search', 'pm-filter', 'pm-count', 'pm-empty', 'pm-photo-heading', 'pm-plain-heading'], {
+    EED_MENUS: menus,
+    fetch: async () => ({ ok: true, json: async () => ({ deleted: [2], quoteOnly: [] }) }),
+  });
+  vm.runInNewContext(popularRenderer, context);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const grid = elements['pm-grid'].innerHTML;
+  assert.match(grid, /ยังแสดง/);
+  assert.ok(!grid.includes('ถูกซ่อน'), 'hidden dishes never reach the page');
+  assert.ok(!grid.includes('pm-quote-note'), 'no ask-for-quote label when nothing is gated');
 });

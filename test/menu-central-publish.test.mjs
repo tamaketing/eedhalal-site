@@ -335,7 +335,13 @@ test('status matrix: draft/staged/published/failed/publishing are computed, neve
   assert.equal(computePublishStatus({ diff: clean, file: null, live: null }), 'draft');
   assert.equal(computePublishStatus({ diff: clean, file: { status: 'staged', fileVersion: 3 }, live: { state: 'unknown' } }), 'staged');
   assert.equal(computePublishStatus({ diff: clean, file: { status: 'staged', fileVersion: 3 }, live: { state: 'live', liveVersion: 3 } }), 'published');
-  assert.equal(computePublishStatus({ diff: clean, file: { status: 'staged', fileVersion: 3 }, live: { state: 'live', liveVersion: 2 } }), 'staged');
+  // 'live' is authoritative: verifyLiveRelease only reports it on a CONTENT
+  // match, which is stronger proof than a version counter (counters restart
+  // across draft lineages). A stale version label with matching content is live.
+  assert.equal(computePublishStatus({ diff: clean, file: { status: 'staged', fileVersion: 3 }, live: { state: 'live', liveVersion: 2 } }), 'published');
+  // Anything other than a confirmed live check must never claim "published".
+  assert.equal(computePublishStatus({ diff: clean, file: { status: 'staged', fileVersion: 3 }, live: { state: 'outdated', liveVersion: 2 } }), 'staged');
+  assert.equal(computePublishStatus({ diff: clean, file: { status: 'staged', fileVersion: 3 }, live: { state: 'unverified', liveVersion: null } }), 'staged');
   assert.equal(computePublishStatus({ diff: clean, file: { status: 'staged', fileVersion: 3 }, live: null }), 'staged');
   assert.equal(computePublishStatus({ diff: clean, file: { status: 'failed' }, live: null }), 'failed');
   assert.equal(computePublishStatus({ diff: clean, file: { status: 'publishing' }, live: null }), 'publishing');
@@ -365,9 +371,35 @@ test('verifyLiveRelease: live / outdated / unverified', async () => {
   assert.equal(live.state, 'live');
   assert.equal(live.liveVersion, draft.version);
 
-  const oldFetch = async () => ({ ok: true, json: async () => ({ ...localRaw, release: { centralVersion: draft.version - 1 } }) });
-  const outdated = await verifyLiveRelease({ root: dir, file: state.file, fetchImpl: oldFetch });
+  // Same content, different build label: still live (the label is provenance,
+  // customers get the content). The reason must say so instead of hiding it.
+  const relabelledFetch = async () => ({
+    ok: true,
+    json: async () => ({ ...localRaw, release: { centralVersion: draft.version - 1 } }),
+  });
+  const relabelled = await verifyLiveRelease({ root: dir, file: state.file, fetchImpl: relabelledFetch });
+  assert.equal(relabelled.state, 'live');
+  assert.match(relabelled.reason, /ฉบับ|v\d+/);
+
+  // Genuinely older CONTENT with a different version is outdated.
+  const staleFetch = async () => ({
+    ok: true,
+    json: async () => ({
+      ...localRaw,
+      prices: { ...localRaw.prices, 1: Number(localRaw.prices['1']) + 1 },
+      release: { centralVersion: draft.version - 1 },
+    }),
+  });
+  const outdated = await verifyLiveRelease({ root: dir, file: state.file, fetchImpl: staleFetch });
   assert.equal(outdated.state, 'outdated');
+
+  // Same version label but different content must NOT be reported as live.
+  const sameVersionStaleFetch = async () => ({
+    ok: true,
+    json: async () => ({ ...localRaw, prices: { ...localRaw.prices, 1: Number(localRaw.prices['1']) + 1 } }),
+  });
+  const sameVersionStale = await verifyLiveRelease({ root: dir, file: state.file, fetchImpl: sameVersionStaleFetch });
+  assert.notEqual(sameVersionStale.state, 'live');
 
   const noMarkerFetch = async () => ({ ok: true, json: async () => ({ prices: {} }) });
   const noMarker = await verifyLiveRelease({ root: dir, file: state.file, fetchImpl: noMarkerFetch });
