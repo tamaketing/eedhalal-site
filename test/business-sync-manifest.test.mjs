@@ -41,7 +41,10 @@ test('the starting-price resolver refuses a prefix that matches nothing', () => 
 });
 
 test('the catalogue price set for a dish family is exactly what is sold', () => {
-  assert.deepEqual(khaoMokPrices, [85, 110, 150, 180, 200]);
+  // Beef khao mok was repriced 150 -> 170 and goat 200 -> 265. Keep these in
+  // step with the catalogue so the landing pages cannot quietly keep quoting
+  // the old figures.
+  assert.deepEqual(khaoMokPrices, [85, 110, 170, 180, 265]);
   assert.throws(
     () => plannerPricesWhereNameStartsWith(planner, 'เมนูไม่มีจริง'),
     /no published dish name starts with/,
@@ -78,10 +81,11 @@ test('the premium set starts at the figure business-rules publishes', async () =
 test('a wrong price in prose or JSON-LD is caught on either language page', async (t) => {
   const cases = [
     ['khao-mok.html', 'เริ่ม 85 บาท', 'เริ่ม 90 บาท', 'prose drifting back to the old figure'],
-    ['khao-mok.html', '"price": "150.00"', '"price": "90.00"', 'a JSON-LD price that was never sold'],
+    ['khao-mok.html', '"price": "170.00"', '"price": "90.00"', 'a JSON-LD price that was never sold'],
+    ['khao-mok.html', 'ข้าวหมกเนื้อ - 170 บาท', 'ข้าวหมกเนื้อ - 150 บาท', 'the old beef price coming back'],
     ['khao-mok.html', '"highPrice": "180"', '"highPrice": "90"', 'an offer range floor that was never sold'],
     ['en/khao-mok.html', 'starting at 85 THB per box', 'starting at 90 THB per box', 'English meta drifting back'],
-    ['en/khao-mok.html', '150 THB / box', '99 THB / box', 'an English card price that was never sold'],
+    ['en/khao-mok.html', '170 THB / box', '99 THB / box', 'an English card price that was never sold'],
   ];
 
   for (const [file, from, to] of cases) {
