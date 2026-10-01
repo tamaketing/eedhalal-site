@@ -92,11 +92,13 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
 - Halal Meal Boxes: https://eedhalal.com/corporate.html
 
 ## Ordering Flow
+There is **no online ordering**: the site has no cart and no checkout. Every order is placed over LINE.
 1. Browse the menu catalog on the website (meal boxes: popular-menu.html, snack box: snack-box.html product page, buffet: buffet.html 7 categories)
 2. For 10+ meal box orders, 30+ Snack Box orders (30 boxes per menu), or 30+ guest catering, send a work brief through LINE to request a quotation (headcount + budget + date + venue)
 3. Confirm details such as quantity, date, location, and menu direction with the team
 4. For single-box orders, use the store's delivery-app channels instead of the website
 5. For next-day corporate orders, confirm quantity, menu, delivery time, and delivery point by 15:00 on the business day before delivery
+6. Never state a per-dish price without MENU_CONTEXT. For the dishes whose cost the shop has not confirmed, say the team will check and quote over LINE.
 
 ## Bulk Order Facts
 - The website is designed around organization-ready orders: meal boxes 10+ boxes (65 THB/box), Snack Box 30+ boxes (40 THB/box), buffet 30+ guests from 200 THB/head.
@@ -178,7 +180,7 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
   - `index.html` — `FoodEstablishment.makesOffer` with `"price": "65"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"` + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"`
   - `snack-box.html` — `Service` with `Offer` `"price": "40"` + `HowTo` + `FAQPage` (9 Q) for Snack Box 30+ boxes
   - `buffet.html` — buffet facts must reflect `data/business-rules.json`: from 200 THB/head, minimum 30 guests; do not invent an upper price or capacity from an unspecified maximum.
-  - `popular-menu.html` — `ItemList` of `Menu` entries (names, categories, images) mirroring the catalogue. This page publishes **no prices by design**: sale prices stay in the central data and are never rendered into the DOM, alt text, or structured data, so there is intentionally no `offers`/`price` here. Ask-for-quote dishes are listed with a "ราคาขอสอบถามทาง LINE" label. For a price, use `faq.html` (65 THB starting price) and route the quote to LINE.
+  - `popular-menu.html` — `ItemList` of `Menu` entries (names, categories, images) mirroring the catalogue. This page publishes **no prices by design**: sale prices stay in the central data and are never rendered into the DOM, alt text, or structured data, so there is intentionally no `offers`/`price` here. For a price, use `faq.html` (65 THB starting price) and route the quote to LINE.
   - `faq.html` — `FAQPage` with full Q&A for price, minimum, VAT, delivery, lead time
   - `reviews.html` — `ItemList` of `Review` (6 reviews) + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"` for trust extraction
   - Local area pages — `FAQPage` with area-specific minimum, delivery-quote policy, and pricing

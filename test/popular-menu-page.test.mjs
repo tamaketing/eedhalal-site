@@ -77,23 +77,25 @@ test('every dish is deep-linkable, before and after JavaScript runs', async () =
   assert.match(css, /scroll-margin-top/, 'anchors must clear the sticky header');
 });
 
-test('the FAQ answers why a dish cannot be ordered online', () => {
+test('the FAQ states plainly that this site has no online ordering', () => {
   const block = [...page.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
     .map(([, raw]) => JSON.parse(raw))
     .flatMap((j) => j['@graph'] || [j])
     .find((n) => n['@type'] === 'FAQPage');
   assert.ok(block, 'FAQPage must exist');
-  const questions = block.mainEntity.map((q) => q.name);
-  assert.ok(
-    questions.some((q) => /สั่งออนไลน์ไม่ได้/.test(q)),
-    'the cost gate needs a plain-language answer for customers and AI engines',
-  );
-  const gate = block.mainEntity.find((q) => /สั่งออนไลน์ไม่ได้/.test(q.name));
-  assert.match(gate.acceptedAnswer.text, /LINE/);
-  assert.match(gate.acceptedAnswer.text, /ยืนยันต้นทุน/);
-  // Speakable so a voice/AI answer can quote the page rather than paraphrase it.
-  assert.ok(gate.acceptedAnswer.speakable, 'the cost-gate answer must be speakable');
-  assert.ok(block.mainEntity.some((q) => q.acceptedAnswer.speakable), 'at least one speakable answer');
+  const how = block.mainEntity.find((q) => /อย่างไร/.test(q.name) && /สั่ง/.test(q.name));
+  assert.ok(how, 'the page must explain how ordering actually works');
+  assert.match(how.acceptedAnswer.text, /ยังไม่มีระบบสั่งซื้อออนไลน์/);
+  assert.match(how.acceptedAnswer.text, /LINE/);
+  // Nothing on the page may imply an online purchase path for some dishes.
+  const whole = JSON.stringify(block);
+  assert.ok(!/ทำไมบางเมนู/.test(whole), 'the cost gate must not be framed as an ordering restriction');
+  assert.ok(!/สั่งออนไลน์ไม่ได้/.test(whole), 'no dish may be described as unorderable online');
+  // A price answer must still be offered, sourced from the business rules.
+  const price = block.mainEntity.find((q) => /ราคาเท่าไหร่/.test(q.name));
+  assert.ok(price, 'a price question must be answered');
+  assert.match(price.acceptedAnswer.text, /65 บาท/);
+  assert.match(price.acceptedAnswer.text, /LINE/);
 });
 
 test('every served menu appears exactly once, and no hidden menu appears', () => {
@@ -105,19 +107,21 @@ test('every served menu appears exactly once, and no hidden menu appears', () =>
   assert.deepEqual([...ids].sort(), catalogue.map((m) => m.id).sort());
 });
 
-test('ask-for-quote dishes are labelled and orderable ones are not', () => {
+test('the cost gate is not surfaced on the catalogue page', () => {
+  // The site has no ordering flow at all: it is a catalogue and every order is
+  // placed over LINE. Labelling dishes by cost state would invent a purchase
+  // path that does not exist, so the page must treat every dish identically.
   const quoteOnly = new Set((overrides.quoteOnly || []).map(String));
   assert.ok(quoteOnly.size > 0, 'fixture must exercise the cost gate');
   for (const item of catalogue) {
     const block = blockFor(item.id);
-    const shouldQuote = quoteOnly.has(item.id);
-    assert.equal(block.includes('pm-quote-note'), shouldQuote, `menu ${item.id} ask-for-quote label must be ${shouldQuote}`);
-    assert.equal(block.includes('สอบถามราคา'), shouldQuote, `menu ${item.id} price-asking CTA must be ${shouldQuote}`);
-    assert.ok(
-      block.includes('สอบถาม') && block.includes('https://lin.ee/CfvqJTd'),
-      `menu ${item.id} must always route to LINE`,
-    );
+    assert.ok(!/pm-quote-note/.test(block), `menu ${item.id} must carry no cost-state label`);
+    assert.ok(!/สอบถามราคา/.test(block), `menu ${item.id} must use the same CTA as every other dish`);
+    assert.ok(block.includes('สอบถาม'), `menu ${item.id} must still route to LINE`);
+    assert.ok(block.includes('https://lin.ee/CfvqJTd'), `menu ${item.id} must link LINE`);
   }
+  assert.ok(!markup.includes('pm-quote-note'), 'no ask-for-quote label anywhere on the page');
+  assert.ok(!markup.includes('ราคาขอสอบถามทาง LINE'), 'no ask-for-quote wording anywhere on the page');
 });
 
 test('the page publishes no price: not in markup, not in alt text, not in JSON-LD', () => {

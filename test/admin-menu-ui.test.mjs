@@ -153,7 +153,10 @@ test('the single action shows the diff and the gated dishes before anything runs
   const modal = nodes.get('mc-modal-body').innerHTML;
   assert.match(modal, /ยืนยันอัปเดตเว็บทั้งหมด/);
   assert.match(modal, /ผัดไทยกุ้งสด/, 'the gate must list what changes');
-  assert.match(modal, /จะยังสั่งออนไลน์ไม่ได้/, 'the gate must list what stays unorderable');
+  assert.match(modal, /รอยืนยันต้นทุน/, 'the gate must list dishes awaiting a confirmed cost');
+  // The gate is about the shop's pricing, not about the customer's ability to
+  // order: the site has no online ordering at all.
+  assert.ok(!/สั่งออนไลน์/.test(modal), 'must not frame the gate as an ordering restriction');
   assert.match(modal, /id="mc-release-go"/);
 });
 

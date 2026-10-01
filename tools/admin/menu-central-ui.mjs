@@ -484,10 +484,10 @@ async function openPreview() {
       + diffList('จะกลับมาแสดง', diff.shown)
       + (diff.removed.length ? `<p style="color:#DC2626;font-weight:800">พบ ${diff.removed.length} รายการหายจากฐานกลาง — ระบบห้ามลบเมนู ให้ใช้ “ซ่อนจากเว็บ” แทน กรุณาตรวจสอบก่อนเผยแพร่</p>` : '')
       + ((diff.toppingsChanged || diff.meatsChanged || diff.popularChanged) ? '<p class="cp-sub">มีการเปลี่ยนรายการท็อปปิ้ง/เนื้อ/ลำดับยอดนิยมร่วมด้วย</p>' : '')
-      + (diff.costBlocked?.length ? diffList(`จะยังสั่งออนไลน์ไม่ได้ (แสดงชื่ออย่างเดียว · ${diff.costBlocked.length} รายการ)`, diff.costBlocked.map((item) => ({ id: item.id, name: `${item.name} — ${item.reason}` }))) : '')
+      + (diff.costBlocked?.length ? diffList(`รอยืนยันต้นทุน — ระบบจะไม่มีราคาชัดเจนที่จะคิดให้ลูกค้า (${diff.costBlocked.length} รายการ)`, diff.costBlocked.map((item) => ({ id: item.id, name: `${item.name} — ${item.reason}` }))) : '')
       + warningPanel(info.startingPrice)
-      + `<div style="margin:.75rem 0"><strong>ตัวอย่างหน้าเว็บ (8 รายการแรกที่จะแสดง)</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.5rem;margin-top:.4rem">`
-      + info.preview.map((item) => `<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden"><img src="${esc(item.image)}" alt="" style="width:100%;height:90px;object-fit:cover;display:block" onerror="this.style.display='none'"><div style="padding:.4rem .55rem"><div style="font-weight:800;font-size:.82rem">${esc(item.name)}</div><div class="cp-sub">${esc(item.category)} · ${item.quoteOnly ? '<strong style="color:#8A5A12">ราคาขอสอบถามทาง LINE</strong>' : `${esc(item.price)} บาท`}</div></div></div>`).join('')
+      + `<div style="margin:.75rem 0"><strong>ตัวอย่างหน้าเว็บ (8 รายการแรกที่จะแสดง)</strong> <span class="cp-sub">· หน้าเว็บเป็นแค่แคตตาล็อก ไม่มีราคาและไม่มีระบบสั่งออนไลน์ ลูกค้าเลือกเมนูแล้วทัก LINE</span><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.5rem;margin-top:.4rem">`
+      + info.preview.map((item) => `<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden"><img src="${esc(item.image)}" alt="" style="width:100%;height:90px;object-fit:cover;display:block" onerror="this.style.display='none'"><div style="padding:.4rem .55rem"><div style="font-weight:800;font-size:.82rem">${esc(item.name)}</div><div class="cp-sub">${esc(item.category)}</div></div></div>`).join('')
       + '</div></div>'
       + `<p class="cp-sub">กดยืนยัน = สร้างไฟล์ในเครื่องเท่านั้น (สถานะ “เตรียมไฟล์แล้ว — รอขึ้นเว็บไซต์”) · ขึ้นเว็บจริงเป็นอีกขั้นตอนที่การ์ดด้านล่าง · ถ้าสร้างไฟล์ล้มเหลว ฉบับเดิมยังใช้งานได้และสถานะจะขึ้น “เผยแพร่ไม่สำเร็จ”</p>`
       + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-publish-confirm">ยืนยันเผยแพร่</button><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button><span class="cp-form-status" id="mc-publish-status"></span></div>`;
@@ -617,7 +617,7 @@ async function runFullRelease() {
     + diffList('จะเปลี่ยน', diff.changed)
     + diffList('จะซ่อนจากเว็บ', diff.hidden)
     + diffList('จะกลับมาแสดง', diff.shown)
-    + (diff.costBlocked?.length ? diffList(`จะยังสั่งออนไลน์ไม่ได้ (${diff.costBlocked.length})`, diff.costBlocked.map((item) => ({ id: item.id, name: `${item.name} — ${item.reason}` }))) : '')
+    + (diff.costBlocked?.length ? diffList(`รอยืนยันต้นทุน (${diff.costBlocked.length})`, diff.costBlocked.map((item) => ({ id: item.id, name: `${item.name} — ${item.reason}` }))) : '')
     + '<p class="cp-sub">ระบบจะทำต่อให้จบเอง: สร้างไฟล์ → commit เฉพาะ 2 ไฟล์เผยแพร่ → push → รอเว็บจริง → ตรวจว่าเว็บให้บริการตรงกับฉบับนี้ ถ้าตรวจไม่ได้จะขึ้น “ยังไม่ยืนยัน” ไม่ถือว่าสำเร็จ</p>'
     + '<p class="cp-sub">ห้ามรวมงานอื่นเข้า commit อัตโนมัติ: ถ้ามี commit อื่นรอ push อยู่ ระบบจะหยุดและแจ้งสาเหตุ</p>'
     + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-release-go">ยืนยันและอัปเดตเว็บ</button><button type="button" class="cp-btn ghost" data-mc-close>ยกเลิก</button><span class="cp-form-status" id="mc-release-status"></span></div>`

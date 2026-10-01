@@ -136,11 +136,13 @@ test('public pages load their browser enhancers after shared data scripts', () =
   assert.ok(snackHtml.indexOf('js/snack-data.js') < snackHtml.indexOf('js/snack-hydrate.js'));
 });
 
-test('production menu renderer marks ask-for-quote dishes and never prints a price', async () => {
+test('production menu renderer prints no price and hides nothing by cost state', async () => {
   const menus = [
-    { id: 1, name: 'เมนูพร้อมราคา', price: 65, category: 'ข้าวราดแกง', image: 'img/a.jpg', desc: '' },
-    { id: 2, name: 'เมนูไม่มีทุน', price: 70, category: 'ข้าวราดแกง', image: 'img/b.jpg', desc: '' },
+    { id: 1, name: 'เมนูหนึ่ง', price: 65, category: 'ข้าวราดแกง', image: 'img/a.jpg', desc: '' },
+    { id: 2, name: 'เมนูสอง', price: 70, category: 'ข้าวราดแกง', image: 'img/b.jpg', desc: '' },
   ];
+  // quoteOnly is still fetched for internal reasons, but nothing may change on
+  // the page because of it: the site has no ordering flow to gate.
   const { context, elements } = browserContext(['pm-grid', 'pm-list', 'pm-search', 'pm-filter', 'pm-count', 'pm-empty', 'pm-photo-heading', 'pm-plain-heading'], {
     EED_MENUS: menus,
     fetch: async () => ({ ok: true, json: async () => ({ deleted: [], quoteOnly: [2] }) }),
@@ -149,11 +151,12 @@ test('production menu renderer marks ask-for-quote dishes and never prints a pri
   await new Promise((resolve) => setImmediate(resolve));
 
   const grid = elements['pm-grid'].innerHTML;
-  assert.match(grid, /เมนูพร้อมราคา/);
-  assert.match(grid, /เมนูไม่มีทุน/);
-  // The ask-for-quote dish carries a visible label and a price-asking CTA.
-  assert.match(grid, /pm-quote-note/);
-  assert.match(grid, /สอบถามราคาเมนูนี้ทาง LINE/);
+  assert.match(grid, /เมนูหนึ่ง/);
+  assert.match(grid, /เมนูสอง/);
+  // No cost-state label, and both dishes get the identical CTA.
+  assert.ok(!grid.includes('pm-quote-note'), 'no ask-for-quote label');
+  assert.ok(!grid.includes('สอบถามราคา'), 'no price-asking CTA');
+  assert.equal((grid.match(/สอบถามเมนูนี้ทาง LINE/g) || []).length, 2);
   // No sale price may ever reach the DOM on this page.
   assert.ok(!grid.includes('65') && !grid.includes('70'), 'no price figure is rendered');
   assert.ok(!/บาท/.test(grid), 'no currency label is rendered');
@@ -166,7 +169,7 @@ test('production menu renderer still hides owner-hidden dishes', async () => {
   ];
   const { context, elements } = browserContext(['pm-grid', 'pm-list', 'pm-search', 'pm-filter', 'pm-count', 'pm-empty', 'pm-photo-heading', 'pm-plain-heading'], {
     EED_MENUS: menus,
-    fetch: async () => ({ ok: true, json: async () => ({ deleted: [2], quoteOnly: [] }) }),
+    fetch: async () => ({ ok: true, json: async () => ({ deleted: [2] }) }),
   });
   vm.runInNewContext(popularRenderer, context);
   await new Promise((resolve) => setImmediate(resolve));
@@ -174,5 +177,4 @@ test('production menu renderer still hides owner-hidden dishes', async () => {
   const grid = elements['pm-grid'].innerHTML;
   assert.match(grid, /ยังแสดง/);
   assert.ok(!grid.includes('ถูกซ่อน'), 'hidden dishes never reach the page');
-  assert.ok(!grid.includes('pm-quote-note'), 'no ask-for-quote label when nothing is gated');
 });

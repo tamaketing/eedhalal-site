@@ -147,7 +147,7 @@ export function renderKnowledge(rules, catalog, menus) {
 - Set Menu / Sit-down Dinner ฮาลาล: เริ่ม ${setMenu.priceFrom} บาท/หัว ขั้นต่ำ ${setMenu.minimumGuests} คน รองรับ ${guestRange(setMenu.minimumGuests, setMenu.maximumGuests)} ${setMenu.serviceStyle} ${setMenu.courseCountFrom}–${setMenu.courseCountTo} คอร์ส ทีม${setMenu.serviceTeam}
 - ขั้นต่ำออเดอร์องค์กร: ${meal.minimumOrder}+ กล่อง
 - ขั้นต่ำต่อเมนู: เมนูทั่วไปส่วนมาก ${meal.standardMenuMinimum} กล่อง เมนูที่ต้องเตรียมพิเศษ ${meal.specialMenuMinimum} กล่อง ให้ยึดขั้นต่ำรายเมนูจากระบบ
-- เมนูขั้นต่ำ ${meal.specialMenuMinimum} กล่องปัจจุบัน (สั่งได้เลย): ${specialMenus}${quoteOnlyMenus.length ? `\n- อีก ${quoteOnlyMenus.length} เมนู (${quoteOnlyMenus.join(', ')}) ร้านยังไม่ยืนยันทุน จึงยังสั่งออนไลน์ไม่ได้ ให้ลูกค้าสอบถามทาง LINE เพื่อเช็กราคา` : ''}
+- เมนูขั้นต่ำ ${meal.specialMenuMinimum} กล่องที่ระบบทราบราคาชัดเจน: ${specialMenus}${quoteOnlyMenus.length ? `\n- อีก ${quoteOnlyMenus.length} เมนู (${quoteOnlyMenus.join(', ')}) ร้านยังไม่ได้ยืนยันต้นทุนของตัวเอง จึงยังไม่มีราคาที่ระบบกล้าวคิดให้ ห้ามเดาราคาเหล่านี้ — บอกลูกค้าว่าจะให้ทีมเช็กราคาและส่งใบเสนอราคาทาง LINE` : ''}
 - สั่ง 1 กล่อง: ไม่รับผ่านเว็บ ให้ไปสั่งผ่าน LINEMAN
 - มี ${meal.menuCountFrom}+ เมนู ปรับเผ็ดและเครื่องได้
 

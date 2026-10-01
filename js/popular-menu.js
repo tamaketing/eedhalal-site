@@ -3,15 +3,16 @@
  * Data comes from the site's central sources — nothing is duplicated here:
  *  - js/menu-data.js (EED_MENUS: id, name, image, desc, category) via <script>
  *  - data/planner-overrides.json -> deleted[] (menus hidden from customers)
- *                                -> quoteOnly[] (served by name, but the shop
- *                                   has not confirmed the cost, so it cannot be
- *                                   ordered or priced online)
  *
  * This page never shows prices: sale prices stay in the central data untouched
  * and are never rendered into the DOM, alt text, or structured data here.
- * Menus in quoteOnly[] stay visible by name (customers can still see what the
- * shop cooks) and carry a clear "สอบถามราคา" label, so nobody assumes an
- * unpriced dish can be ordered at a published price.
+ *
+ * There is NO ordering flow on this site. It is a catalogue; every order is
+ * placed over LINE. The planner's quoteOnly[] marks dishes whose cost the shop
+ * has not confirmed, which decides whether the SHOP can quote a dish from its
+ * own data - not whether a customer can buy it. So it is deliberately not
+ * rendered here: labelling those dishes would invent a purchase path that does
+ * not exist and would imply the other dishes are somehow different.
  * Copy buttons use the async clipboard API with a manual-selection fallback.
  */
 (function () {
@@ -63,45 +64,37 @@
     return '<button class="pm-btn pm-copy-btn" type="button" data-copy-name>คัดลอกชื่อเมนู</button>';
   }
 
-  // Menus whose cost the shop has not confirmed stay listed by name, but must
-  // never look orderable at a published price.
-  function quoteBadge() {
-    return '<p class="pm-quote-note">ราคาขอสอบถามทาง LINE</p>';
-  }
-
   function lineCta(label, source, extraClass) {
     return '<a class="pm-btn pm-btn-outline ' + (extraClass || '') + '" href="' + LINE_URL + '" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="' + source + '">' + label + ' <span aria-hidden="true">↗</span></a>';
   }
 
-function renderCard(menu, quoteOnly) {
+function renderCard(menu) {
 // NOTE: menu.price is deliberately never read here — no prices on this page.
   // The anchor id matches scripts/popular-menu-page.mjs so a shared deep link
   // (popular-menu.html#menu-17) lands on the dish before AND after this
   // renderer replaces the container.
     return '' +
-      '<article class="pm-card' + (quoteOnly ? ' pm-card-quote' : '') + '" id="menu-' + escapeHtml(menu.id) + '" data-menu-id="' + escapeHtml(menu.id) + '">' +
+      '<article class="pm-card" id="menu-' + escapeHtml(menu.id) + '" data-menu-id="' + escapeHtml(menu.id) + '">' +
         imageCell(menu) +
         '<div class="pm-card-body">' +
           '<p class="pm-card-cat">' + escapeHtml(menu.category) + '</p>' +
           '<h3 class="pm-card-name">' + escapeHtml(menu.name) + '</h3>' +
           (menu.desc ? '<p class="pm-card-desc">' + escapeHtml(menu.desc) + '</p>' : '') +
-          (quoteOnly ? quoteBadge() : '') +
-          lineCta(quoteOnly ? 'สอบถามราคาเมนูนี้ทาง LINE' : 'สอบถามเมนูนี้ทาง LINE', 'popular_menu_card', 'pm-card-cta') +
+          lineCta('สอบถามเมนูนี้ทาง LINE', 'popular_menu_card', 'pm-card-cta') +
           copyButton() +
         '</div>' +
       '</article>';
   }
 
-  function renderRow(menu, quoteOnly) {
+  function renderRow(menu) {
     return '' +
-      '<div class="pm-row' + (quoteOnly ? ' pm-row-quote' : '') + '" id="menu-' + escapeHtml(menu.id) + '" data-menu-id="' + escapeHtml(menu.id) + '">' +
+      '<div class="pm-row" id="menu-' + escapeHtml(menu.id) + '" data-menu-id="' + escapeHtml(menu.id) + '">' +
         '<div class="pm-row-text">' +
           '<p class="pm-row-cat">' + escapeHtml(menu.category) + '</p>' +
           '<p class="pm-row-name">' + escapeHtml(menu.name) + '</p>' +
-          (quoteOnly ? quoteBadge() : '') +
         '</div>' +
         '<div class="pm-row-actions">' +
-          lineCta(quoteOnly ? 'สอบถามราคาทาง LINE' : 'สอบถามทาง LINE', 'popular_menu_row', 'pm-row-cta') +
+          lineCta('สอบถามทาง LINE', 'popular_menu_row', 'pm-row-cta') +
           copyButton() +
         '</div>' +
       '</div>';
@@ -213,24 +206,21 @@ function renderCard(menu, quoteOnly) {
     });
   }
 
-  function render(menus, quoteOnly) {
+  function render(menus) {
     var grid = document.getElementById(GRID_ID);
     var list = document.getElementById(LIST_ID);
     var counts = {};
-    var isQuoteOnly = function (menu) {
-      return quoteOnly.has(Number(menu.id)) || quoteOnly.has(String(menu.id));
-    };
     // Display order only: dishes with real photos first, then compact rows.
     // The central catalog order is never modified — groups keep it stable.
     var photoMenus = menus.filter(hasDishPhoto);
     var plainMenus = menus.filter(function (menu) { return !hasDishPhoto(menu); });
     grid.innerHTML = photoMenus.map(function (menu) {
       counts[menu.category] = (counts[menu.category] || 0) + 1;
-      return renderCard(menu, isQuoteOnly(menu));
+      return renderCard(menu);
     }).join('');
     list.innerHTML = plainMenus.map(function (menu) {
       counts[menu.category] = (counts[menu.category] || 0) + 1;
-      return renderRow(menu, isQuoteOnly(menu));
+      return renderRow(menu);
     }).join('');
     bindImageFallbacks(grid);
     bindCopyButtons(grid);
@@ -241,32 +231,24 @@ function renderCard(menu, quoteOnly) {
     applyFilter();
   }
 
-  // Availability comes from the one published planner file: deleted[] means
-  // hidden from customers entirely, quoteOnly[] means shown by name but not
-  // orderable. A failed fetch must not mark everything orderable, so both sets
-  // fall back to empty (the page still renders, just without those flags).
-  function loadAvailability() {
+  // Visibility comes from the one published planner file: deleted[] means the
+  // owner hid the dish from customers. Nothing else is read here - the cost gate
+  // is an internal pricing matter and is not rendered.
+  function loadHidden() {
     return fetch('data/planner-overrides.json', { cache: 'no-store' })
-      .then(function (res) { return res.ok ? res.json() : { deleted: [], quoteOnly: [] }; })
-      .then(function (data) {
-        return {
-          deleted: new Set(data.deleted || []),
-          quoteOnly: new Set(data.quoteOnly || [])
-        };
-      })
-      .catch(function () {
-        return { deleted: new Set(), quoteOnly: new Set() };
-      });
+      .then(function (res) { return res.ok ? res.json() : { deleted: [] }; })
+      .then(function (data) { return new Set(data.deleted || []); })
+      .catch(function () { return new Set(); });
   }
 
   function boot() {
     var menus = (typeof EED_MENUS !== 'undefined' && Array.isArray(EED_MENUS)) ? EED_MENUS : [];
-    loadAvailability().then(function (availability) {
+    loadHidden().then(function (hidden) {
       var shown = menus.filter(function (menu) {
         return menu && menu.id != null &&
-          !availability.deleted.has(Number(menu.id)) && !availability.deleted.has(String(menu.id));
+          !hidden.has(Number(menu.id)) && !hidden.has(String(menu.id));
       });
-      render(shown, availability.quoteOnly);
+      render(shown);
     });
   }
 

@@ -50,11 +50,18 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - The business supports quotation-driven ordering and procurement-friendly communication.
 - Single-box meal orders should be directed to delivery apps, not the bulk-order website flow.
 
+## Ordering Model (read this first)
+- EED HALAL has NO online ordering and NO cart or checkout. popular-menu.html is a catalogue to browse and pick from; every order is placed over LINE.
+- How to order: pick the dish names on popular-menu.html, message LINE with the dish names, box count, date, delivery area and budget, and the team replies with a quotation (normally within 15 minutes during business hours).
+- The site publishes no per-dish prices. Never quote a per-dish price from memory or from a cached answer — send it to LINE.
+- Meal-box minimum order is 10 boxes, and 10 boxes per menu.
+- There is no nationwide delivery. Delivery is quoted by the team after you give the location and quantity.
+
 ## Meal-Box Menu Availability (AEO / GEO)
-- The meal-box catalogue lists 44 dishes by name at https://eedhalal.com/popular-menu.html. That page publishes no prices on purpose.
-- Only a dish whose cost the kitchen has confirmed can be ordered online. Confirmed right now: ผัดไทยกุ้งสด, ข้าวหมกไก่สะโพก, ข้าว คั่วกลิ้งไก่สับ, ข้าวหมกน่องไก่, ข้าวผัดกะเพราเนื้อ พร้อมผลไม้.
-- The other 39 dishes are still on the menu by name and are marked "ราคาขอสอบถามทาง LINE". They are not orderable online until their cost is confirmed; send a LINE enquiry and the team will quote them.
-- Do not imply an unconfirmed dish is available to order, and do not state a price for one.
+- The meal-box catalogue lists 44 dishes by name at https://eedhalal.com/popular-menu.html.
+- For 5 dishes the shop has confirmed its own food cost, so the bot can quote their price from data: ผัดไทยกุ้งสด, ข้าวหมกไก่สะโพก, ข้าว คั่วกลิ้งไก่สับ, ข้าวหมกน่องไก่, ข้าวผัดกะเพราเนื้อ พร้อมผลไม้.
+- For the other 39 dishes the shop has not confirmed its food cost yet, so no price is held for them. Do NOT state a price for these. Tell the customer the team will check and quote over LINE.
+- Every dish can still be ordered the same way, over LINE. The cost gate is an internal pricing matter, not a restriction on the customer.
 
 ## Priority Service Pages
 - Halal Buffet: https://eedhalal.com/buffet.html

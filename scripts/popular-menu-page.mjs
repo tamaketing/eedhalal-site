@@ -17,8 +17,8 @@
 // PRICES ARE NEVER EMITTED
 // popular-menu.html deliberately shows no prices: sale prices stay in the
 // central data and are never rendered into the DOM, alt text, or structured
-// data. Price questions are routed to LINE. The cost gate is respected by
-// marking ask-for-quote dishes as such, without revealing a figure.
+// data. Every dish routes to LINE, because this site has no ordering flow at
+// all - it is a catalogue.
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -84,33 +84,32 @@ function cardHtml(item) {
   const photo = hasDishPhoto(item)
     ? `<img class="pm-photo" src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" loading="lazy">`
     : `<div class="pm-photo-placeholder" aria-hidden="true"><span>${escapeHtml(item.name.trim().charAt(0) || '•')}</span></div>`;
-  const quote = item.orderable ? '' : '<p class="pm-quote-note">ราคาขอสอบถามทาง LINE</p>';
-  const cta = item.orderable ? 'สอบถามเมนูนี้ทาง LINE' : 'สอบถามราคาเมนูนี้ทาง LINE';
+  // Every dish is treated identically here. There is no online ordering on this
+  // site at all: it is a catalogue, and every order is placed over LINE. The
+  // cost gate decides whether the SHOP can quote a dish from its own data, not
+  // whether the customer can buy it, so showing that difference here would
+  // invent a purchase path that does not exist.
   return ''
-    + `<article class="pm-card${item.orderable ? '' : ' pm-card-quote'}" id="menu-${escapeHtml(item.id)}" data-menu-id="${escapeHtml(item.id)}">`
+    + `<article class="pm-card" id="menu-${escapeHtml(item.id)}" data-menu-id="${escapeHtml(item.id)}">`
     + photo
     + '<div class="pm-card-body">'
     + `<p class="pm-card-cat">${escapeHtml(item.category)}</p>`
     + `<h3 class="pm-card-name">${escapeHtml(item.name)}</h3>`
     + (item.desc ? `<p class="pm-card-desc">${escapeHtml(item.desc)}</p>` : '')
-    + quote
-    + `<a class="pm-btn pm-btn-outline pm-card-cta" href="${LINE_URL}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_card">${cta} <span aria-hidden="true">↗</span></a>`
+    + `<a class="pm-btn pm-btn-outline pm-card-cta" href="${LINE_URL}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_card">สอบถามเมนูนี้ทาง LINE <span aria-hidden="true">↗</span></a>`
     + '</div>'
     + '</article>';
 }
 
 function rowHtml(item) {
-  const quote = item.orderable ? '' : '<p class="pm-quote-note">ราคาขอสอบถามทาง LINE</p>';
-  const cta = item.orderable ? 'สอบถามทาง LINE' : 'สอบถามราคาทาง LINE';
   return ''
-    + `<div class="pm-row${item.orderable ? '' : ' pm-row-quote'}" id="menu-${escapeHtml(item.id)}" data-menu-id="${escapeHtml(item.id)}">`
+    + `<div class="pm-row" id="menu-${escapeHtml(item.id)}" data-menu-id="${escapeHtml(item.id)}">`
     + '<div class="pm-row-text">'
     + `<p class="pm-row-cat">${escapeHtml(item.category)}</p>`
     + `<p class="pm-row-name">${escapeHtml(item.name)}</p>`
-    + quote
     + '</div>'
     + '<div class="pm-row-actions">'
-    + `<a class="pm-btn pm-btn-outline pm-row-cta" href="${LINE_URL}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_row">${cta} <span aria-hidden="true">↗</span></a>`
+    + `<a class="pm-btn pm-btn-outline pm-row-cta" href="${LINE_URL}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_row">สอบถามทาง LINE <span aria-hidden="true">↗</span></a>`
     + '</div>'
     + '</div>';
 }
@@ -129,7 +128,6 @@ export function renderStaticMenu(items) {
  * valid and Google merges them.
  *
  * Names only: this page publishes no prices, so no offer/price is emitted.
- * Ask-for-quote dishes are still listed because they are genuinely served.
  */
 export function renderItemListJsonLd(items) {
   const itemList = {
