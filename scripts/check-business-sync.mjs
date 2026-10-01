@@ -15,10 +15,12 @@ const FORBIDDEN_SCAN_SELF_EXCLUDE = new Set([
 const FORBIDDEN_SCAN_EXTENSIONS = new Set(['.html', '.js', '.json', '.txt', '.md']);
 // artifacts/ holds generated audits and "before" snapshots. They intentionally
 // keep the numbers they captured at capture time, so scanning them would report
-// drift for content nobody is supposed to edit.
-const FORBIDDEN_SCAN_SKIP_DIRS = new Set([
+// drift for content nobody is supposed to edit. demo/ is the owner's private
+// draft (gitignored, never published); the release flow publishes from it, so
+// policing it here would only confuse the owner with drift in their own notes.
+export const FORBIDDEN_SCAN_SKIP_DIRS = new Set([
   '.git', '.github', 'node_modules', 'img', 'img_archive_local', 'tmp-chrome-profile',
-  'artifacts',
+  'artifacts', 'demo',
 ]);
 
 function getPath(obj, dotted) {

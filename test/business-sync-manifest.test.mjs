@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   checkBusinessSync,
+  FORBIDDEN_SCAN_SKIP_DIRS,
   plannerMinPriceWhereNameStartsWith,
   plannerPricesWhereNameStartsWith,
 } from '../scripts/check-business-sync.mjs';
@@ -89,12 +90,12 @@ test('the khao-mok starting price is a tracked fact on every page that states it
   assert.match(rule.pattern, /\(?!85\\b\)/, 'the rule must reject any figure other than the real one');
 });
 
-test('generated audit snapshots are not scanned for drift', async () => {
-  // artifacts/catering-sync/before.json still contains the old figures on
-  // purpose. It is a capture, not content, so it must not be treated as drift.
-  const snapshot = new URL('artifacts/catering-sync/before.json', root);
-  const original = await readFile(snapshot, 'utf8').catch(() => null);
-  if (original === null || !original.includes('90 THB')) return;
+test('generated snapshots and the owner\'s private draft are not scanned for drift', async () => {
+  // artifacts/ keeps the numbers it captured on purpose, and demo/ is the
+  // owner's private draft. Neither is content anyone edits to satisfy this
+  // check, so a forbidden string in them must not be reported as drift.
+  assert.ok(FORBIDDEN_SCAN_SKIP_DIRS.has('artifacts'));
+  assert.ok(FORBIDDEN_SCAN_SKIP_DIRS.has('demo'));
   const summary = await checkBusinessSync();
   assert.ok(summary.scanned > 0);
   assert.ok(summary.cataloguePages >= 2);
