@@ -20,8 +20,7 @@
   "services": {
     "mealBox": {
       "priceFrom": 65,
-      "premiumPriceFrom": 180,
-      "premiumPriceTo": 250,
+      "premiumPriceFrom": 230,
       "minimumOrder": 10,
       "standardMenuMinimum": 10,
       "specialMenuMinimum": 10,

@@ -104,7 +104,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 - The website is designed around organization-ready orders: meal boxes 10+ boxes (65 THB/box), Snack Box 30+ boxes (40 THB/box), buffet 30+ guests from 200 THB/head.
 - Typical use cases include meetings, seminars, staff training, internal company events, team catering, coffee breaks, and buffet receptions.
 - Per-menu minimums apply for meal boxes: 10 boxes per menu, Thai and Indian alike. Snack Box: minimum 30 boxes per order.
-- Standard meal boxes start at 65 THB per box; premium sets range from 180-250 THB; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet, Live Cooking, and Cocktail start at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
+- Standard meal boxes start at 65 THB per box; premium sets start at 230 THB; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet, Live Cooking, and Cocktail start at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
 - Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; all catering formats should be booked at least 7 days ahead.
 - Order details should be confirmed by 15:00 on the business day before delivery.

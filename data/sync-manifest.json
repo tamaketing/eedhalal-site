@@ -30,6 +30,31 @@
       ]
     },
     {
+      "id": "premium-set-price",
+      "description": "เซ็ตพรีเมียมเริ่มต้นกี่บาท (ไม่มีเพดาน ราคาจริงขึ้นกับเมนูที่เลือก)",
+      "source": "services.mealBox.premiumPriceFrom",
+      "variants": [
+        "เซ็ตพรีเมียมเริ่ม {{services.mealBox.premiumPriceFrom}} บาท",
+        "premium sets start at {{services.mealBox.premiumPriceFrom}} THB",
+        "premium sets from {{services.mealBox.premiumPriceFrom}} THB",
+        "Premium sets start from {{services.mealBox.premiumPriceFrom}} baht"
+      ],
+      "files": [
+        "catering.html", "corporate.html", "faq.html", "popular-menu.html",
+        "en/catering.html", "en/faq.html",
+        "llms.txt", "llms-full.md",
+        "line-ai/rich-menu.json", "line-ai/test-10-questions.md",
+        "blog/corporate-meeting-100-people-checklist.html", "blog/corporate-meeting-50-people-checklist.html",
+        "blog/halal-box-100-boxes-price.html", "blog/halal-box-100-people-budget.html",
+        "blog/halal-box-50-people-price.html", "blog/halal-box-budget-70-baht.html",
+        "blog/seminar-200-people-menu.html",
+        "en/blog/corporate-meeting-100-people-checklist.html", "en/blog/corporate-meeting-50-people-checklist.html",
+        "en/blog/halal-box-100-boxes-price.html", "en/blog/halal-box-100-people-budget.html",
+        "en/blog/halal-box-50-people-price.html", "en/blog/halal-box-budget-70-baht.html",
+        "en/blog/seminar-200-people-menu.html"
+      ]
+    },
+    {
       "id": "mealbox-minimum",
       "description": "ขั้นต่ำออเดอร์องค์กร (boxes)",
       "source": "services.mealBox.minimumOrder",

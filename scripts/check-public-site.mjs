@@ -267,14 +267,19 @@ export async function checkPublicSite(root = ROOT) {
     readFile(path.join(ROOT, 'llms.txt'), 'utf8'),
     readFile(path.join(ROOT, 'line-ai/rich-menu.json'), 'utf8'),
   ]);
-  if (!thaiFaq.includes('180–250 บาท') || !englishFaq.includes('180–250 baht')) failures.push('FAQ: premium-set range must be 180–250 THB');
-  if (!thaiFaq.includes('พื้นที่นอกกรุงเทพฯ สอบถามเป็นรายกรณี') || !englishFaq.includes('outside Bangkok is quoted case by case')) failures.push('FAQ: outside-Bangkok policy is missing');
-  if (!llms.includes('premium sets range from 180-250 THB') || !llms.includes('outside Bangkok are quoted case by case')) failures.push('llms.txt: customer facts are stale');
-  if (!richMenu.includes('เซ็ตพรีเมียม 180-250 บาท')) failures.push('line-ai/rich-menu.json: premium-set reply is stale');
-
   const rules = JSON.parse(await readFile(path.join(ROOT, 'data/business-rules.json'), 'utf8'));
   const thaiDeliveryPolicy = rules.delivery.messageTh;
   const englishDeliveryPolicy = rules.delivery.messageEn;
+  // Read the premium figure from business-rules rather than repeating it here,
+  // so changing the price once cannot leave this check asserting a stale band.
+  const premiumFrom = rules.services.mealBox.premiumPriceFrom;
+  const retiredPremiumBand = /180\s*[–-]\s*250/;
+
+  if (!thaiFaq.includes(`เซ็ตพรีเมียมเริ่ม ${premiumFrom} บาท`) || retiredPremiumBand.test(thaiFaq)) failures.push(`FAQ: premium sets must start at ${premiumFrom} THB`);
+  if (!thaiFaq.includes('พื้นที่นอกกรุงเทพฯ สอบถามเป็นรายกรณี') || !englishFaq.includes('outside Bangkok is quoted case by case')) failures.push('FAQ: outside-Bangkok policy is missing');
+  if (!englishFaq.includes(`Premium sets start from ${premiumFrom} baht`) || retiredPremiumBand.test(englishFaq)) failures.push(`en FAQ: premium sets must start at ${premiumFrom} THB`);
+  if (!llms.includes(`premium sets start at ${premiumFrom} THB`) || !llms.includes('outside Bangkok are quoted case by case')) failures.push('llms.txt: customer facts are stale');
+  if (!richMenu.includes(`เซ็ตพรีเมียมเริ่ม ${premiumFrom} บาท`) || retiredPremiumBand.test(richMenu)) failures.push(`line-ai/rich-menu.json: premium-set reply must start at ${premiumFrom} THB`);
   const llmsFull = await readFile(path.join(ROOT, 'llms-full.md'), 'utf8');
   if (!thaiFaq.includes(thaiDeliveryPolicy) || !englishFaq.includes(englishDeliveryPolicy)) failures.push('FAQ: Thai and English delivery policy must match business rules');
   if (!thaiFaq.includes('10–50 กล่อง') || !thaiFaq.includes('51–100 กล่อง') || !thaiFaq.includes('101+ กล่อง')) failures.push('FAQ: Thai lead-time ranges must be exclusive');

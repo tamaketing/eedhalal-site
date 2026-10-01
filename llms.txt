@@ -38,7 +38,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 ## Published Facts
 - Corporate website and LINE flow are designed for 10+ box orders (meal boxes) and 30+ box orders (Snack Box, 30 boxes per menu).
 - Per-menu minimums apply: 10 boxes per menu (both Thai and Indian menus).
-- Standard meal boxes start at 65 THB per box; premium sets range from 180-250 THB; Snack Box starts at 40 THB per box (minimum 30 boxes).
+- Standard meal boxes start at 65 THB per box; premium sets start at 230 THB; Snack Box starts at 40 THB per box (minimum 30 boxes).
 - Halal buffet starts at 200 THB per head for 30–1000+ guests, with 7 menu categories and an on-site line, refill, and service team. Live Cooking and Cocktail / Finger Food start at 200 THB per head; Chinese / Thai table service starts at 3,000 THB per table; Set Menu starts at 350 THB per head.
 - Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; buffet, Live Cooking, Cocktail, Chinese / Thai table service, and Set Menu should be booked at least 7 days ahead.

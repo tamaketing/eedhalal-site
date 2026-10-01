@@ -137,7 +137,7 @@ export function renderKnowledge(rules, catalog, menus) {
 
 ## 2. ราคาและขั้นต่ำ
 - ข้าวกล่องมาตรฐาน: เริ่ม ${meal.priceFrom} บาท/กล่อง
-- เมนูพรีเมียม: เริ่ม ${meal.premiumPriceFrom}-${meal.premiumPriceTo} บาท/กล่อง
+- เซ็ตพรีเมียม: เริ่ม ${meal.premiumPriceFrom} บาท/กล่องขึ้นไป ราคาจริงขึ้นอยู่กับเมนูที่ลูกค้าเลือก
 - Snack Box: เริ่ม ${snack.priceFrom} บาท/กล่อง ขั้นต่ำ ${snack.minimumOrder} กล่อง
 - ข้าวกล่องฮาลาล: เริ่ม ${meal.priceFrom} บาท/กล่อง ขั้นต่ำ ${meal.minimumOrder} กล่อง รองรับ ${meal.minimumOrder}+ กล่อง (จำนวนที่รองรับให้ทีมยืนยันตามงาน) ${meal.halalMaterial} ${meal.packaging} และ${meal.fulfillment}
 - บุฟเฟต์ฮาลาล: เริ่ม ${buffet.priceFrom} บาท/หัว ขั้นต่ำ ${buffet.minimumGuests} คน รองรับ ${guestRange(buffet.minimumGuests, buffet.maximumGuests)} เมนู ${buffet.serviceCategories} หมวด ทีม${buffet.serviceTeam}
@@ -310,7 +310,6 @@ function syncBusinessSource(source, rules, catalog) {
     operatingHoursTh: rules.business.operatingDays,
     startingPrice: String(meal.priceFrom),
     premiumPriceFrom: String(meal.premiumPriceFrom),
-    premiumPriceTo: String(meal.premiumPriceTo),
     minOrder: String(meal.minimumOrder),
     thaiMinPerMenu: String(meal.standardMenuMinimum),
     indianMinPerMenu: String(meal.specialMenuMinimum),
@@ -439,7 +438,6 @@ export function validateData(rules, catalog, legacy) {
   const eed = legacy.business;
   assert.equal(Number(eed.startingPrice), rules.services.mealBox.priceFrom, 'starting price drift');
   assert.equal(Number(eed.premiumPriceFrom), rules.services.mealBox.premiumPriceFrom, 'premium price drift');
-  assert.equal(Number(eed.premiumPriceTo), rules.services.mealBox.premiumPriceTo, 'premium price drift');
   assert.equal(Number(eed.minOrder), rules.services.mealBox.minimumOrder, 'minimum order drift');
   assert.equal(Number(eed.thaiMinPerMenu), rules.services.mealBox.standardMenuMinimum, 'standard menu minimum drift');
   assert.equal(Number(eed.indianMinPerMenu), rules.services.mealBox.specialMenuMinimum, 'special menu minimum drift');
