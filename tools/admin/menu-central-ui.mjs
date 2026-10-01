@@ -366,6 +366,18 @@ function diffList(title, items, suffix = '') {
     + '</ul></div>';
 }
 
+// The advertised "starting from" price must equal the cheapest dish a customer
+// can actually order. If it does not, llms.txt / FAQ / JSON-LD will keep
+// advertising a price nobody can buy, so warn before the owner publishes.
+function warningPanel(startingPrice) {
+  if (!startingPrice || startingPrice.ok || !startingPrice.warnings?.length) return '';
+  return `<div style="margin:.75rem 0;padding:.7rem .85rem;border:1px solid #E4B768;background:#FFF9EC;border-radius:10px">`
+    + '<strong style="color:#8A5A12">ตรวจราคาเริ่มต้นก่อนเผยแพร่</strong>'
+    + `<ul style="margin:.35rem 0 0;padding-left:1.2rem;color:#8A5A12">`
+    + startingPrice.warnings.map((w) => `<li>${esc(w)}</li>`).join('')
+    + '</ul></div>';
+}
+
 async function openPreview() {
   const modal = $('#mc-modal');
   const body = $('#mc-modal-body');
@@ -391,8 +403,10 @@ async function openPreview() {
       + diffList('จะกลับมาแสดง', diff.shown)
       + (diff.removed.length ? `<p style="color:#DC2626;font-weight:800">พบ ${diff.removed.length} รายการหายจากฐานกลาง — ระบบห้ามลบเมนู ให้ใช้ “ซ่อนจากเว็บ” แทน กรุณาตรวจสอบก่อนเผยแพร่</p>` : '')
       + ((diff.toppingsChanged || diff.meatsChanged || diff.popularChanged) ? '<p class="cp-sub">มีการเปลี่ยนรายการท็อปปิ้ง/เนื้อ/ลำดับยอดนิยมร่วมด้วย</p>' : '')
+      + (diff.costBlocked?.length ? diffList(`จะยังสั่งออนไลน์ไม่ได้ (แสดงชื่ออย่างเดียว · ${diff.costBlocked.length} รายการ)`, diff.costBlocked.map((item) => ({ id: item.id, name: `${item.name} — ${item.reason}` }))) : '')
+      + warningPanel(info.startingPrice)
       + `<div style="margin:.75rem 0"><strong>ตัวอย่างหน้าเว็บ (8 รายการแรกที่จะแสดง)</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.5rem;margin-top:.4rem">`
-      + info.preview.map((item) => `<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden"><img src="${esc(item.image)}" alt="" style="width:100%;height:90px;object-fit:cover;display:block" onerror="this.style.display='none'"><div style="padding:.4rem .55rem"><div style="font-weight:800;font-size:.82rem">${esc(item.name)}</div><div class="cp-sub">${esc(item.category)} · ${esc(item.price)} บาท</div></div></div>`).join('')
+      + info.preview.map((item) => `<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden"><img src="${esc(item.image)}" alt="" style="width:100%;height:90px;object-fit:cover;display:block" onerror="this.style.display='none'"><div style="padding:.4rem .55rem"><div style="font-weight:800;font-size:.82rem">${esc(item.name)}</div><div class="cp-sub">${esc(item.category)} · ${item.quoteOnly ? '<strong style="color:#8A5A12">ราคาขอสอบถามทาง LINE</strong>' : `${esc(item.price)} บาท`}</div></div></div>`).join('')
       + '</div></div>'
       + `<p class="cp-sub">กดยืนยัน = สร้างไฟล์ในเครื่องเท่านั้น (สถานะ “เตรียมไฟล์แล้ว — รอขึ้นเว็บไซต์”) · ขึ้นเว็บจริงเป็นอีกขั้นตอนที่การ์ดด้านล่าง · ถ้าสร้างไฟล์ล้มเหลว ฉบับเดิมยังใช้งานได้และสถานะจะขึ้น “เผยแพร่ไม่สำเร็จ”</p>`
       + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-publish-confirm">ยืนยันเผยแพร่</button><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button><span class="cp-form-status" id="mc-publish-status"></span></div>`;

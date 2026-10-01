@@ -335,6 +335,55 @@ export function costGateSummary(central, costs) {
   };
 }
 
+/**
+ * Guard the published "starting price" claim.
+ *
+ * llms.txt, llms-full.md, faq.html and the JSON-LD all advertise the meal-box
+ * starting price, and that number comes from data/business-rules.json
+ * (services.mealBox.priceFrom). Nothing connected it to the real catalogue, so
+ * raising every menu price would leave the site advertising a price nobody can
+ * buy. The claim must match the cheapest menu a customer can actually order:
+ * a hidden dish, or one that is ask-for-quote, is not orderable.
+ *
+ * Returns warnings rather than throwing: the owner still gets to publish, but
+ * the admin shows what to fix and CI fails.
+ */
+export function startingPriceConsistency(rules, projection) {
+  const declared = Number(rules?.services?.mealBox?.priceFrom);
+  const orderable = [];
+  const served = [];
+  for (const menu of (projection?.menus || new Map()).values()) {
+    if (menu.hidden === true) continue;
+    served.push(menu);
+    if (!menu.costBlocked && menu.price > 0) orderable.push(menu);
+  }
+  const minOrderable = orderable.length ? Math.min(...orderable.map((m) => m.price)) : null;
+  const minServed = served.length ? Math.min(...served.map((m) => m.price)) : null;
+  const warnings = [];
+  if (!Number.isFinite(declared)) {
+    warnings.push('ไม่พบราคาเริ่มต้นใน business-rules.json (services.mealBox.priceFrom)');
+  } else if (minOrderable === null) {
+    warnings.push('ยังไม่มีเมนูที่สั่งซื้อได้เลย — ยังยืนยันราคาเริ่มต้นไม่ได้ ต้องยืนยันทุนอย่างน้อย 1 เมนู');
+  } else if (declared !== minOrderable) {
+    warnings.push(
+      `ราคาเริ่มต้นใน business-rules.json คือ ${declared} บาท แต่เมนูที่สั่งซื้อได้ราคาต่ำสุดคือ ${minOrderable} บาท`
+      + ' — ต้องแก้ services.mealBox.priceFrom ให้ตรงกับราคาจริง (แล้วแก้ llms.txt / llms-full.md / FAQ ตาม)',
+    );
+  }
+  if (declared !== minServed && Number.isFinite(declared) && minServed !== null) {
+    warnings.push(`เมนูที่แสดงบนเว็บมีราคาต่ำสุด ${minServed} บาท ต่างจากราคาเริ่มต้นที่ประกาศ — ตรวจว่าตั้งใจให้เป็นแบบนี้`);
+  }
+  return {
+    ok: warnings.length === 0,
+    declared,
+    minOrderable,
+    minServed,
+    orderableCount: orderable.length,
+    servedCount: served.length,
+    warnings,
+  };
+}
+
 function effectiveHiddenOf(menu) {
   return menu.hidden === true;
 }
@@ -368,7 +417,9 @@ export function publicProjectionOfCentral(central, costs = null) {
       ownerHidden: menu.hidden === true,
       // Cost gate (needs owner-costs) OR owner hid the price. Kept separate so
       // the admin can tell "waiting for cost" from "price switched off".
-      costBlocked: !costs ? false : isQuoteOnly(menu, costs),
+      // A switched-off price is a draft decision, so it holds even when no
+      // cost file exists yet; only the cost check needs owner-costs.
+      costBlocked: menu.showPrice === false || (!costs ? false : isQuoteOnly(menu, costs)),
       priceHidden: menu.showPrice === false,
       sortOrder: menu.sortOrder,
       noMeat: menu.noMeat === true,

@@ -15,6 +15,8 @@ import {
   migrateCentral,
   parseMenuDataJs,
   parsePopularIds,
+  publicProjectionOfCentral,
+  startingPriceConsistency,
   publishCentral,
   PUBLISH_STATUS_TH,
   readPublishState,
@@ -141,16 +143,48 @@ async function publishOverview(dataDir) {
   const central = await ensureCentral(dataDir);
   const published = await loadPublished(ROOT);
   const menuDataMenus = await parseMenuDataJs(published.menuDataJs);
-  const diff = diffPublicChanges(central, { overrides: published.overrides, menuDataMenus });
+  // Costs decide the cost gate, so the preview must see them too. Without this
+  // the dialog showed a price for every dish, including ones the ordering API
+  // refuses, and the diff never marked them ask-for-quote.
+  let costs = null;
+  try {
+    costs = await readCosts(dataDir);
+  } catch {
+    costs = null;
+  }
+  const diff = diffPublicChanges(central, { overrides: published.overrides, menuDataMenus }, costs);
   const state = (await readPublishState(dataDir)) || { file: null, live: null, deploy: null, error: null };
   const status = computePublishStatus({ diff, file: state.file, live: state.live });
+  // The published "starting from" claim must match the cheapest dish a
+  // customer can actually order, otherwise llms.txt / FAQ advertise a price
+  // nobody can buy.
+  let startingPrice = { ok: true, warnings: [] };
+  try {
+    const rules = JSON.parse(await readFile(path.join(ROOT, 'data', 'business-rules.json'), 'utf8'));
+    startingPrice = startingPriceConsistency(rules, publicProjectionOfCentral(central, costs));
+  } catch {
+    startingPrice = { ok: true, warnings: [], declared: null, minOrderable: null, minServed: null, orderableCount: null, servedCount: null };
+  }
   // Customer preview sample: first visible menus as the website would list
-  // them after publish (public fields only, sorted for display).
+  // them after publish (public fields only, sorted for display). A quote-only
+  // dish must never preview a price.
+  const costBlocked = new Map(diff.costBlocked.map((item) => [String(item.id), item]));
   const preview = [...central.menus]
     .filter((menu) => !menu.hidden)
     .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
     .slice(0, 8)
-    .map((menu) => ({ id: menu.id, name: menu.name, price: menu.price, category: menu.category, image: menu.image }));
+    .map((menu) => {
+      const blocked = costBlocked.get(String(menu.id));
+      return {
+        id: menu.id,
+        name: menu.name,
+        category: menu.category,
+        image: menu.image,
+        price: blocked ? null : menu.price,
+        quoteOnly: Boolean(blocked),
+        ...(blocked ? { reason: blocked.reason } : {}),
+      };
+    });
   return {
     status,
     statusTh: PUBLISH_STATUS_TH[status],
@@ -160,9 +194,11 @@ async function publishOverview(dataDir) {
     deploy: state.deploy,
     error: state.error,
     deployEnabled: DEPLOY_ENABLED,
+    startingPrice,
     diff: {
       added: diff.added, changed: diff.changed, shown: diff.shown,
-      hidden: diff.hidden, removed: diff.removed,
+      hidden: diff.hidden, removed: diff.removed, costBlocked: diff.costBlocked,
+      quoteOnlyChanged: diff.quoteOnlyChanged,
       toppingsChanged: diff.toppingsChanged, meatsChanged: diff.meatsChanged,
       popularChanged: diff.popularChanged, hasChanges: diff.hasChanges,
     },
