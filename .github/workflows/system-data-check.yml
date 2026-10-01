@@ -25,8 +25,11 @@ jobs:
       - name: Check repository safety and generated data
         run: |
           node scripts/check-repository-safety.mjs
+          node scripts/check-line-endings.mjs
           node scripts/check-system.mjs
           node scripts/sync-catering-content.mjs --check
+          node scripts/popular-menu-page.mjs --check
+          node scripts/check-starting-price.mjs
           node scripts/check-public-site.mjs
 
       - name: Run business rule tests
