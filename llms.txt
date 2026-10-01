@@ -37,7 +37,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 
 ## Published Facts
 - Corporate website and LINE flow are designed for 10+ box orders (meal boxes) and 30+ box orders (Snack Box, 30 boxes per menu).
-- Per-menu minimums apply: 5 boxes per Thai menu, 10 boxes per Indian menu.
+- Per-menu minimums apply: 10 boxes per menu (both Thai and Indian menus).
 - Standard meal boxes start at 65 THB per box; premium sets range from 180-250 THB; Snack Box starts at 40 THB per box (minimum 30 boxes).
 - Halal buffet starts at 200 THB per head for 30–1000+ guests, with 7 menu categories and an on-site line, refill, and service team. Live Cooking and Cocktail / Finger Food start at 200 THB per head; Chinese / Thai table service starts at 3,000 THB per table; Set Menu starts at 350 THB per head.
 - Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
@@ -45,11 +45,16 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Payment terms: 50% deposit confirms a booking. The catering balance is due 7 days before the event; the meal-box balance is due 1 day before delivery.
 - Order quantity, menu, delivery time, and delivery point should be confirmed by 15:00 on the business day before delivery.
 - Quantity changes are normally accepted until 15:00 on the business day before delivery; after ingredient preparation starts, reductions or cancellations may incur actual cost.
-- Quoted prices do not include VAT 7% because the business is not VAT-registered.
-- The business issues quotations and regular receipts (not VAT tax invoices) for organization orders.
+- Published prices are final; EED HALAL does not add VAT to them. The business is not VAT-registered, so it issues quotations and regular receipts rather than VAT tax invoices.
 - The business provides halal-certified food and publishes a halal certificate page (926/2568).
 - The business supports quotation-driven ordering and procurement-friendly communication.
 - Single-box meal orders should be directed to delivery apps, not the bulk-order website flow.
+
+## Meal-Box Menu Availability (AEO / GEO)
+- The meal-box catalogue lists 44 dishes by name at https://eedhalal.com/popular-menu.html. That page publishes no prices on purpose.
+- Only a dish whose cost the kitchen has confirmed can be ordered online. Confirmed right now: ผัดไทยกุ้งสด, ข้าวหมกไก่สะโพก, ข้าว คั่วกลิ้งไก่สับ, ข้าวหมกน่องไก่, ข้าวผัดกะเพราเนื้อ พร้อมผลไม้.
+- The other 39 dishes are still on the menu by name and are marked "ราคาขอสอบถามทาง LINE". They are not orderable online until their cost is confirmed; send a LINE enquiry and the team will quote them.
+- Do not imply an unconfirmed dish is available to order, and do not state a price for one.
 
 ## Priority Service Pages
 - Halal Buffet: https://eedhalal.com/buffet.html
@@ -68,7 +73,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Halal buffet: https://eedhalal.com/buffet.html
 - Live cooking station: https://eedhalal.com/live-cooking-station.html
 - Delivery areas: https://eedhalal.com/delivery-area.html
-- Popular menu: https://eedhalal.com/popular-menu.html
+- Popular menu (dish names and categories; no prices on this page): https://eedhalal.com/popular-menu.html
 - Halal khao mok (biryani): https://eedhalal.com/khao-mok.html
 - Snack box & coffee break: https://eedhalal.com/snack-box.html
 - Glossary (halal, CICOT, khao mok terms): https://eedhalal.com/glossary.html
@@ -76,7 +81,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - FAQ: https://eedhalal.com/faq.html
 - Halal certificate: https://eedhalal.com/halal-cert.html
 - Contact: https://eedhalal.com/contact.html
-- Meal-box menu (prices): https://eedhalal.com/popular-menu.html
+- Meal-box menu (names and categories; this page publishes no prices): https://eedhalal.com/popular-menu.html
 
 ## Local Pages
 - Sathon: https://eedhalal.com/sathorn.html
@@ -117,5 +122,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 ## Do Not Claim
 - Do not imply nationwide delivery coverage.
 - Do not describe the site as having a public cart or checkout.
-- Do not claim EED HALAL can issue VAT tax invoices; published facts say prices do not include VAT 7%, the business is not VAT-registered, and only regular receipts are issued.
+- Do not claim EED HALAL can issue VAT tax invoices; published prices are final and no VAT is added, because the business is not VAT-registered, and only regular receipts are issued.
+- Do not say "not including VAT" / "excluding VAT"; published prices already are the final amount.
+- Do not quote a per-menu meal-box price from https://eedhalal.com/popular-menu.html. That page publishes no prices on purpose. Use the FAQ page for the 65 THB starting price, and send price questions to LINE.
 - Do not invent lead times, menu prices, or minimums beyond published facts.

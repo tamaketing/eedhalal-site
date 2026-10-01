@@ -58,7 +58,7 @@ EED HALAL provides halal catering in Bangkok for corporate events and celebratio
 - Canonical buffet intent: https://eedhalal.com/buffet.html (30+ guests, 7 categories, line team, from 200 THB per head)
 - Canonical entity page (who is EED HALAL): https://eedhalal.com/about.html
 - Canonical ordering steps page for bulk-order intent: https://eedhalal.com/order-steps.html
-- Canonical menu reference page for bulk-order intent: https://eedhalal.com/popular-menu.html
+- Canonical menu reference page for bulk-order intent (dish names and categories, no prices): https://eedhalal.com/popular-menu.html
 - Office delivery Bangkok page: https://eedhalal.com/corporate.html
 - Catering Bangkok page: https://eedhalal.com/catering.html
 - Halal buffet Bangkok page: https://eedhalal.com/buffet.html
@@ -101,7 +101,7 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
 ## Bulk Order Facts
 - The website is designed around organization-ready orders: meal boxes 10+ boxes (65 THB/box), Snack Box 30+ boxes (40 THB/box), buffet 30+ guests from 200 THB/head.
 - Typical use cases include meetings, seminars, staff training, internal company events, team catering, coffee breaks, and buffet receptions.
-- Per-menu minimums apply for meal boxes: 5 boxes per Thai menu, 10 boxes per Indian menu. Snack Box: minimum 30 boxes per order.
+- Per-menu minimums apply for meal boxes: 10 boxes per menu, Thai and Indian alike. Snack Box: minimum 30 boxes per order.
 - Standard meal boxes start at 65 THB per box; premium sets range from 180-250 THB; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet, Live Cooking, and Cocktail start at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
 - Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; all catering formats should be booked at least 7 days ahead.
@@ -178,7 +178,7 @@ Additional services: halal Snack Box / Coffee Break and quotation support. Singl
   - `index.html` — `FoodEstablishment.makesOffer` with `"price": "65"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"` + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"`
   - `snack-box.html` — `Service` with `Offer` `"price": "40"` + `HowTo` + `FAQPage` (9 Q) for Snack Box 30+ boxes
   - `buffet.html` — buffet facts must reflect `data/business-rules.json`: from 200 THB/head, minimum 30 guests; do not invent an upper price or capacity from an unspecified maximum.
-  - `popular-menu.html` — `MenuItem[].offers` with per-item prices
+  - `popular-menu.html` — `ItemList` of `Menu` entries (names, categories, images) mirroring the catalogue. This page publishes **no prices by design**: sale prices stay in the central data and are never rendered into the DOM, alt text, or structured data, so there is intentionally no `offers`/`price` here. Ask-for-quote dishes are listed with a "ราคาขอสอบถามทาง LINE" label. For a price, use `faq.html` (65 THB starting price) and route the quote to LINE.
   - `faq.html` — `FAQPage` with full Q&A for price, minimum, VAT, delivery, lead time
   - `reviews.html` — `ItemList` of `Review` (6 reviews) + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"` for trust extraction
   - Local area pages — `FAQPage` with area-specific minimum, delivery-quote policy, and pricing

@@ -41,6 +41,22 @@
       ]
     },
     {
+      "id": "mealbox-per-menu-minimum",
+      "description": "ขั้นต่ำต่อเมนูข้าวกล่อง (boxes)",
+      "source": "services.mealBox.standardMenuMinimum",
+      "variants": [
+        "ขั้นต่ำต่อเมนู: เมนูทั่วไปส่วนมาก {{services.mealBox.standardMenuMinimum}} กล่อง",
+        "เมนูขั้นต่ำ {{services.mealBox.standardMenuMinimum}} กล่อง",
+        "{{services.mealBox.standardMenuMinimum}} boxes per menu",
+        "Per-menu minimums apply: {{services.mealBox.standardMenuMinimum}} boxes per menu"
+      ],
+      "files": [
+        "faq.html", "corporate.html", "budget-planner.html",
+        "en/faq.html", "en/corporate.html",
+        "llms.txt", "llms-full.md"
+      ]
+    },
+    {
       "id": "halal-certificate",
       "description": "เลขรับรองฮาลาล CICOT (เลขเดียวทั้งเว็บ)",
       "source": "business.halalCertificate",
