@@ -1,6 +1,14 @@
 {
   "_comment": "REGISTRY (machine-readable checklist): ทะเบียนกลางว่า business fact แต่ละข้อต้องปรากฏในไฟล์ไหนบ้าง แก้ business-rules.json แล้วต้องแก้ไฟล์ในลิสต์ให้ครบ ไม่เช่นนั้น node --test จะแดง ดูวิธีตรวจที่ scripts/check-business-sync.mjs และสรุปภาษาคนที่ FACTS.md",
   "version": 1,
+  "cataloguePrices": [
+    {
+      "id": "khao-mok",
+      "prefix": "ข้าวหมก",
+      "description": "หน้า landing ข้าวหมก: ตัวเลขราคาทุกจุด (ทั้งข้อความและ JSON-LD) ต้องเป็นราคาที่แคตตาล็อกขายจริง เคยมีหน้าเดียวที่พูด 4 ตัวเลขขัดกัน (85 ในเนื้อความ, 90 ใน price, 90 ใน low/highPrice, 100 ในชื่อ offer)",
+      "files": ["khao-mok.html", "en/khao-mok.html"]
+    }
+  ],
   "facts": [
     {
       "id": "mealbox-price",
@@ -54,6 +62,24 @@
         "faq.html", "corporate.html", "budget-planner.html",
         "en/faq.html", "en/corporate.html",
         "llms.txt", "llms-full.md"
+      ]
+    },
+    {
+      "id": "khao-mok-starting-price",
+      "description": "ราคาเริ่มต้นตระกูลข้าวหมก (บาท/กล่อง) = เมนูข้าวหมกที่ราคาถูกที่สุดที่เผยแพร่จริง",
+      "source": "planner.minPriceWhereNameStartsWith:ข้าวหมก",
+      "variants": [
+        "เริ่ม {{planner.minPriceWhereNameStartsWith:ข้าวหมก}} บาท",
+        "เริ่มต้น {{planner.minPriceWhereNameStartsWith:ข้าวหมก}} บาท",
+        "ราคาเริ่มต้น {{planner.minPriceWhereNameStartsWith:ข้าวหมก}} บาท",
+        "ราคาเริ่ม {{planner.minPriceWhereNameStartsWith:ข้าวหมก}} บาท",
+        "เริ่ม {{planner.minPriceWhereNameStartsWith:ข้าวหมก}} บาท/กล่อง",
+        "ราคาเริ่มต้นที่ {{planner.minPriceWhereNameStartsWith:ข้าวหมก}} บาท"
+      ],
+      "files": [
+        "khao-mok.html",
+        "blog/khao-mok-halal-explained.html",
+        "faq.html"
       ]
     },
     {
@@ -169,6 +195,12 @@
       "description": "เลขฮาลาลเก่าที่เลิกใช้แล้ว (เหลือได้เฉพาะบันทึกประวัติใน FACTS.md และไฟล์ snapshot ใน artifacts/)",
       "pattern": "926/2566|HL 926",
       "exclude": ["FACTS.md", "artifacts/"]
+    },
+    {
+      "id": "stale-khao-mok-starting-price",
+      "description": "ราคาเริ่มต้นตระกูลข้าวหมกที่ไม่ใช่ราคาจริง ราคาจริงคือเมนูที่ถูกที่สุดที่เผยแพร่ ดูจาก fact khao-mok-starting-price ซึ่งคำนวณจาก data/planner-overrides.json ทุกครั้ง (เคยตกหล่นเป็น 90 และ 100 บาท) ถ้าเพิ่มหรือลดราคาเมนู ต้องแก้เลขบนหน้าให้ตรง",
+      "pattern": "ข้าวหมก[^\\n]{0,60}?(?:ราคา)?เริ่ม(?:ต้น)?\\s*(?:ที่)?\\s*(?!85\\b)\\d[\\d,]*\\s*บาท|(?:ราคา)?เริ่ม(?:ต้น)?\\s*(?:ที่)?\\s*(?!85\\b)\\d[\\d,]*\\s*บาท[^\\n]{0,40}ข้าวหมก|ส่งถึงที่\\s*(?!85\\b)\\d[\\d,]*\\s*บาท",
+      "exclude": ["artifacts/", "FACTS.md"]
     },
     {
       "id": "tax-invoice-available",
