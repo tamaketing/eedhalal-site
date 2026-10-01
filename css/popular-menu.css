@@ -28,6 +28,8 @@
 .pm-card-desc{margin:0;color:#66675f;font-size:14px;line-height:1.7;flex:1}
 .pm-quote-note{margin:0;font-size:13px;line-height:1.6;color:#8a5a12;font-weight:700}
 .pm-card-quote,.pm-row-quote{background:#fffdf6}
+/* Deep links (popular-menu.html#menu-17) must clear the sticky page header. */
+[id^="menu-"]{scroll-margin-top:96px}
 .pm-btn{min-height:50px;display:inline-flex;align-items:center;justify-content:center;gap:14px;padding:11px 24px;border:1px solid transparent;border-radius:3px;font-weight:700;font-size:14px;transition:background-color .16s,color .16s;text-decoration:none;cursor:pointer;font-family:inherit}
 .pm-btn-green{background:#1d6b3e;color:#fff}
 .pm-btn-green:hover{background:#15552f}

@@ -73,10 +73,13 @@
     return '<a class="pm-btn pm-btn-outline ' + (extraClass || '') + '" href="' + LINE_URL + '" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="' + source + '">' + label + ' <span aria-hidden="true">↗</span></a>';
   }
 
-  function renderCard(menu, quoteOnly) {
-    // NOTE: menu.price is deliberately never read here — no prices on this page.
+function renderCard(menu, quoteOnly) {
+// NOTE: menu.price is deliberately never read here — no prices on this page.
+  // The anchor id matches scripts/popular-menu-page.mjs so a shared deep link
+  // (popular-menu.html#menu-17) lands on the dish before AND after this
+  // renderer replaces the container.
     return '' +
-      '<article class="pm-card' + (quoteOnly ? ' pm-card-quote' : '') + '" data-menu-id="' + escapeHtml(menu.id) + '">' +
+      '<article class="pm-card' + (quoteOnly ? ' pm-card-quote' : '') + '" id="menu-' + escapeHtml(menu.id) + '" data-menu-id="' + escapeHtml(menu.id) + '">' +
         imageCell(menu) +
         '<div class="pm-card-body">' +
           '<p class="pm-card-cat">' + escapeHtml(menu.category) + '</p>' +
@@ -91,7 +94,7 @@
 
   function renderRow(menu, quoteOnly) {
     return '' +
-      '<div class="pm-row' + (quoteOnly ? ' pm-row-quote' : '') + '" data-menu-id="' + escapeHtml(menu.id) + '">' +
+      '<div class="pm-row' + (quoteOnly ? ' pm-row-quote' : '') + '" id="menu-' + escapeHtml(menu.id) + '" data-menu-id="' + escapeHtml(menu.id) + '">' +
         '<div class="pm-row-text">' +
           '<p class="pm-row-cat">' + escapeHtml(menu.category) + '</p>' +
           '<p class="pm-row-name">' + escapeHtml(menu.name) + '</p>' +

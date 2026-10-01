@@ -61,6 +61,41 @@ test('every served menu name is present in the crawlable HTML', () => {
   }
 });
 
+test('every dish is deep-linkable, before and after JavaScript runs', async () => {
+  // The owner shares a dish over LINE; the link has to land on that dish both
+  // in the crawlable markup and after the renderer replaces the container.
+  const ids = catalogue.map((item) => item.id);
+  const anchors = [...markup.matchAll(/id="(menu-\d+)"/g)].map((m) => m[1]);
+  assert.deepEqual(anchors.sort(), ids.map((id) => `menu-${id}`).sort());
+  assert.equal(new Set(anchors).size, anchors.length, 'anchor ids must be unique');
+  const renderer = await readFile(new URL('js/popular-menu.js', root), 'utf8');
+  // The renderer builds the attribute by concatenation, so match the literal
+  // prefix it actually emits rather than a finished attribute.
+  assert.ok(renderer.includes('id="menu-'), 'the renderer must emit the same anchor');
+  assert.equal((renderer.match(/id="menu-/g) || []).length, 2, 'cards and rows both need the anchor');
+  const css = await readFile(new URL('css/popular-menu.css', root), 'utf8');
+  assert.match(css, /scroll-margin-top/, 'anchors must clear the sticky header');
+});
+
+test('the FAQ answers why a dish cannot be ordered online', () => {
+  const block = [...page.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+    .map(([, raw]) => JSON.parse(raw))
+    .flatMap((j) => j['@graph'] || [j])
+    .find((n) => n['@type'] === 'FAQPage');
+  assert.ok(block, 'FAQPage must exist');
+  const questions = block.mainEntity.map((q) => q.name);
+  assert.ok(
+    questions.some((q) => /สั่งออนไลน์ไม่ได้/.test(q)),
+    'the cost gate needs a plain-language answer for customers and AI engines',
+  );
+  const gate = block.mainEntity.find((q) => /สั่งออนไลน์ไม่ได้/.test(q.name));
+  assert.match(gate.acceptedAnswer.text, /LINE/);
+  assert.match(gate.acceptedAnswer.text, /ยืนยันต้นทุน/);
+  // Speakable so a voice/AI answer can quote the page rather than paraphrase it.
+  assert.ok(gate.acceptedAnswer.speakable, 'the cost-gate answer must be speakable');
+  assert.ok(block.mainEntity.some((q) => q.acceptedAnswer.speakable), 'at least one speakable answer');
+});
+
 test('every served menu appears exactly once, and no hidden menu appears', () => {
   const ids = [...markup.matchAll(/data-menu-id="([^"]+)"/g)].map((m) => m[1]);
   assert.equal(ids.length, catalogue.length, 'static markup must mirror the catalogue size');

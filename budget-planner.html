@@ -1,114 +1,169 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex,nofollow,noarchive">
-  <title>จัดการเมนู · EED HALAL (เฉพาะเจ้าของ)</title>
-  <meta name="description" content="เครื่องมือภายในสำหรับเจ้าของร้าน: จัดการเมนูฐานกลางและต้นทุนอาหาร เปิดได้เฉพาะเครื่องเจ้าของผ่านเซิร์ฟเวอร์ local เท่านั้น">
-  <link rel="stylesheet" href="/cost-planner.css">
-  <script type="module" src="/cost-planner.mjs"></script>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>จัดการเมนู · EED HALAL (เฉพาะเจ้าของ)</title>
+  <meta name="description" content="เครื่องมือภายในสำหรับเจ้าของร้าน: จัดการเมนูฐานกลางและต้นทุนอาหาร เปิดได้เฉพาะเครื่องเจ้าของผ่านเซิร์ฟเวอร์ local เท่านั้น">
+  <link rel="stylesheet" href="/cost-planner.css">
+<script type="module" src="/cost-planner.mjs"></script>
+  <script type="module" src="/bulk-costs-ui.mjs"></script>
   <script type="module" src="/menu-central-ui.mjs"></script>
-</head>
-<body>
-  <a class="skip-link" href="#main">ข้ามไปเนื้อหาหลัก</a>
-  <header class="cp-topbar">
-    <div class="cp-wrap cp-topbar-inner">
-      <div class="cp-brand">EED <b>HALAL</b><small>เครื่องมือสำหรับเจ้าของ · LOCAL ONLY</small></div>
-      <span class="cp-badge">จัดการเมนู · บันทึกในเครื่อง</span>
-      <nav class="cp-nav" aria-label="เครื่องมือเจ้าของ"><a href="/">← แนะนำชุดตามงบ</a></nav>
-    </div>
-  </header>
-  <main id="main" class="cp-wrap">
-    <section class="cp-hero" aria-label="จัดการเมนู">
-      <div class="cp-wrap">
-        <h1>จัดการเมนู</h1>
-        <p>ฐานข้อมูลกลางเมนู: เพิ่มและแก้ชื่อ รูป หมวดหมู่ รายละเอียด ราคาขาย และลำดับแสดงผลที่จุดเดียว อ้างอิงด้วย ID เมนูเดิมทุกส่วน</p>
-        <p class="cp-links-note"><strong>บันทึก</strong> = เก็บฐานกลางในเครื่อง เครื่องมือแอดมินใช้ข้อมูลล่าสุดทันที เว็บลูกค้ายังใช้ฉบับเผยแพร่เดิม · <strong>ดูตัวอย่างและเผยแพร่</strong> = เทียบกับฉบับเผยแพร่ออกเว็บก่อนยืนยัน · แก้เฉพาะต้นทุนไม่สร้างรายการรอเผยแพร่เว็บ</p>
-        <p class="cp-links-note">แก้ราคาแล้วกด <strong>บันทึก</strong> กลับไปหน้าแนะนำชุดแล้วกด “แนะนำชุดเมนู” ใหม่ทุกครั้ง — ผลแนะนำเดิมจะถูกยกเลิกเพื่อไม่ให้แสดงกำไรที่ล้าสมัย</p>
-        <details class="cp-details">
-          <summary>ข้อควรทราบก่อนใช้งาน</summary>
-          <div class="cp-hint" id="file-hint">เปิดหน้านี้ผ่าน URL local ที่แสดงในหน้าต่าง launcher หรือเซิร์ฟเวอร์ของเครื่องมือนี้เท่านั้น เปิดด้วยดับเบิลคลิกไฟล์ตรง ๆ จะโหลดข้อมูลไม่ได้ หน้านี้ไม่มีระบบยืนยันตัวตน การป้องกันคือเปิดได้เฉพาะเครื่องเจ้าของผ่านเซิร์ฟเวอร์ local เท่านั้น ห้ามเปิดเผยหรือส่งต่อให้บุคคลภายนอก</div>
-        </details>
-        <div class="cp-hint cp-hint-error" id="load-error" hidden>โหลดข้อมูลต้นทุนภายในไม่สำเร็จ กรุณาตรวจว่าเซิร์ฟเวอร์ local กำลังทำงาน แล้วกด “โหลดข้อมูลใหม่”</div>
-      </div>
-    </section>
-
-    <section class="cp-card" aria-label="ฐานข้อมูลกลางเมนู">
+</head>
+<body>
+  <a class="skip-link" href="#main">ข้ามไปเนื้อหาหลัก</a>
+  <header class="cp-topbar">
+    <div class="cp-wrap cp-topbar-inner">
+      <div class="cp-brand">EED <b>HALAL</b><small>เครื่องมือสำหรับเจ้าของ · LOCAL ONLY</small></div>
+      <span class="cp-badge">จัดการเมนู · บันทึกในเครื่อง</span>
+      <nav class="cp-nav" aria-label="เครื่องมือเจ้าของ"><a href="/">← แนะนำชุดตามงบ</a></nav>
+    </div>
+  </header>
+  <main id="main" class="cp-wrap">
+    <section class="cp-hero" aria-label="จัดการเมนู">
+      <div class="cp-wrap">
+        <h1>จัดการเมนู</h1>
+        <p>ฐานข้อมูลกลางเมนู: เพิ่มและแก้ชื่อ รูป หมวดหมู่ รายละเอียด ราคาขาย และลำดับแสดงผลที่จุดเดียว อ้างอิงด้วย ID เมนูเดิมทุกส่วน</p>
+        <p class="cp-links-note"><strong>บันทึก</strong> = เก็บฐานกลางในเครื่อง เครื่องมือแอดมินใช้ข้อมูลล่าสุดทันที เว็บลูกค้ายังใช้ฉบับเผยแพร่เดิม · <strong>ดูตัวอย่างและเผยแพร่</strong> = เทียบกับฉบับเผยแพร่ออกเว็บก่อนยืนยัน · แก้เฉพาะต้นทุนไม่สร้างรายการรอเผยแพร่เว็บ</p>
+        <p class="cp-links-note">แก้ราคาแล้วกด <strong>บันทึก</strong> กลับไปหน้าแนะนำชุดแล้วกด “แนะนำชุดเมนู” ใหม่ทุกครั้ง — ผลแนะนำเดิมจะถูกยกเลิกเพื่อไม่ให้แสดงกำไรที่ล้าสมัย</p>
+        <details class="cp-details">
+          <summary>ข้อควรทราบก่อนใช้งาน</summary>
+          <div class="cp-hint" id="file-hint">เปิดหน้านี้ผ่าน URL local ที่แสดงในหน้าต่าง launcher หรือเซิร์ฟเวอร์ของเครื่องมือนี้เท่านั้น เปิดด้วยดับเบิลคลิกไฟล์ตรง ๆ จะโหลดข้อมูลไม่ได้ หน้านี้ไม่มีระบบยืนยันตัวตน การป้องกันคือเปิดได้เฉพาะเครื่องเจ้าของผ่านเซิร์ฟเวอร์ local เท่านั้น ห้ามเปิดเผยหรือส่งต่อให้บุคคลภายนอก</div>
+        </details>
+        <div class="cp-hint cp-hint-error" id="load-error" hidden>โหลดข้อมูลต้นทุนภายในไม่สำเร็จ กรุณาตรวจว่าเซิร์ฟเวอร์ local กำลังทำงาน แล้วกด “โหลดข้อมูลใหม่”</div>
+      </div>
+    </section>
+
+    <section class="cp-card" aria-label="ฐานข้อมูลกลางเมนู">
+      <div class="cp-card-head">
+        <h2>ฐานข้อมูลกลางเมนู</h2>
+        <span id="mc-status" role="status" aria-live="polite"></span>
+      </div>
+      <p class="cp-note">เมนู ชุดอาหาร และรายการภายในแยกกันชัดเจน: ที่นี่คือ<span> </span><strong>เมนูอาหาร</strong> (อ้างอิงด้วย ID เดิม) ส่วนชุดอาหารของแอดมินอ้างอิงเมนูผ่านรหัส ไม่ทำสำเนา · ซ่อนเมนูจากเว็บได้โดยไม่ลบฐานข้อมูล เมนูที่ซ่อนยังอยู่ในชุดและประวัติ</p>
+      <div class="cp-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+        <button type="button" class="cp-btn" id="mc-save" disabled>บันทึก</button>
+        <button type="button" class="cp-btn ghost" id="mc-publish-open" disabled>ดูตัวอย่างและเผยแพร่</button>
+        <button type="button" class="cp-btn ghost" id="mc-reload">โหลดข้อมูลใหม่</button>
+        <button type="button" class="cp-btn ghost" id="mc-refresh-profit">รีเฟรชกำไรจากต้นทุนล่าสุด</button>
+        <span class="cp-form-status" id="mc-dirty-hint" role="status"></span>
+      </div>
+      <div class="cp-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.5rem">
+        <input class="cp-input" type="search" id="mc-search" placeholder="ค้นหาชื่อ/หมวด/ID" aria-label="ค้นหาเมนู" style="max-width:220px">
+        <select class="cp-input" id="mc-vis" aria-label="กรองการแสดงผล" style="max-width:180px">
+          <option value="all">ทั้งหมด</option>
+          <option value="visible">แสดงบนเว็บ</option>
+          <option value="hidden">ซ่อนจากเว็บ</option>
+        </select>
+        <span class="cp-sub" id="mc-count"></span>
+      </div>
+      <div class="cp-form-status" id="mc-form-status" role="status" aria-live="polite"></div>
+      <div id="mc-groups"><p class="cp-sub">กำลังโหลดเมนู…</p></div>
+      <div class="cp-add-row" id="mc-add-row">
+        <label class="cp-field">ชื่อเมนูใหม่<input class="cp-input" type="text" id="mc-new-name" placeholder="เช่น ข้าวราดผัดหน่อไม้"></label>
+        <label class="cp-field">หมวด<select class="cp-input" id="mc-new-cat"><option>ข้าวราดแกง</option><option>ข้าวผัด</option><option>เส้น</option><option>อาหารอินเดีย</option><option>พรีเมียม</option></select></label>
+        <label class="cp-field">ราคาขาย (บาท)<input class="cp-input narrow" type="number" id="mc-new-price" value="65" min="1" step="5"></label>
+        <label class="cp-field">ขั้นต่ำ (กล่อง)<input class="cp-input narrow" type="number" id="mc-new-min" value="5" min="1" step="1"></label>
+        <label class="cp-field">รูป<input class="cp-input" type="text" id="mc-new-img" value="img/logo.jpg" placeholder="img/..."></label>
+        <label class="cp-field">คำอธิบาย<input class="cp-input" type="text" id="mc-new-desc" placeholder="สั้นๆ สำหรับลูกค้า"></label>
+        <button type="button" class="cp-btn ghost sm" id="mc-add">+ เพิ่มเมนู</button>
+        <span class="cp-sub" id="mc-new-msg"></span>
+      </div>
+      <div id="mc-modal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow:auto">
+        <div style="background:#fff;border-radius:16px;max-width:720px;width:100%;padding:1.25rem 1.4rem" role="dialog" aria-modal="true" aria-label="ตัวอย่างก่อนเผยแพร่">
+          <h3 style="margin:0 0 .5rem">ตัวอย่างก่อนเผยแพร่</h3>
+          <div id="mc-modal-body"></div>
+          <div class="cp-editor-actions"><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cp-card" aria-label="ยืนยันต้นทุนหลายเมนูพร้อมกัน">
       <div class="cp-card-head">
-        <h2>ฐานข้อมูลกลางเมนู</h2>
-        <span id="mc-status" role="status" aria-live="polite"></span>
+        <h2>ยืนยันต้นทุนหลายเมนูพร้อมกัน</h2>
+        <span class="cp-save" id="bulk-status" role="status" aria-live="polite"></span>
       </div>
-      <p class="cp-note">เมนู ชุดอาหาร และรายการภายในแยกกันชัดเจน: ที่นี่คือ<span> </span><strong>เมนูอาหาร</strong> (อ้างอิงด้วย ID เดิม) ส่วนชุดอาหารของแอดมินอ้างอิงเมนูผ่านรหัส ไม่ทำสำเนา · ซ่อนเมนูจากเว็บได้โดยไม่ลบฐานข้อมูล เมนูที่ซ่อนยังอยู่ในชุดและประวัติ</p>
+      <p class="cp-note">
+        เมนูที่ยังไม่ยืนยันต้นทุน จะขึ้นบนเว็บแค่ชื่อ สั่งออนไลน์ไม่ได้
+        กรอกต้นทุนอาหารและกล่องให้ครบ แล้วกดยืนยันทีเดียวทั้งหมด
+        เมนูที่ยืนยันแล้วจะกลับมาสั่งได้ทันทีหลังกดอัปเดตเว็บ
+        <strong>ห้ามใส่ 0</strong> — ระบบจะไม่ยืนยันให้ และเมนูนั้นจะยังสอบถามราคาต่อไป
+      </p>
       <div class="cp-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-        <button type="button" class="cp-btn" id="mc-save" disabled>บันทึก</button>
-        <button type="button" class="cp-btn ghost" id="mc-publish-open" disabled>ดูตัวอย่างและเผยแพร่</button>
-        <button type="button" class="cp-btn ghost" id="mc-reload">โหลดข้อมูลใหม่</button>
-        <button type="button" class="cp-btn ghost" id="mc-refresh-profit">รีเฟรชกำไรจากต้นทุนล่าสุด</button>
-        <span class="cp-form-status" id="mc-dirty-hint" role="status"></span>
-      </div>
-      <div class="cp-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.5rem">
-        <input class="cp-input" type="search" id="mc-search" placeholder="ค้นหาชื่อ/หมวด/ID" aria-label="ค้นหาเมนู" style="max-width:220px">
-        <select class="cp-input" id="mc-vis" aria-label="กรองการแสดงผล" style="max-width:180px">
+        <input class="cp-input" type="search" id="bulk-search" placeholder="ค้นหาชื่อเมนู / ID" aria-label="ค้นหาเมนูที่รอยืนยันทุน">
+        <select class="cp-input" id="bulk-scope" aria-label="ขอบเขตรายการ">
+          <option value="waiting">เฉพาะที่ยังไม่ยืนยัน</option>
           <option value="all">ทั้งหมด</option>
-          <option value="visible">แสดงบนเว็บ</option>
-          <option value="hidden">ซ่อนจากเว็บ</option>
         </select>
-        <span class="cp-sub" id="mc-count"></span>
+        <label class="cp-field">กล่องเริ่มต้น
+          <select class="cp-input" id="bulk-box"><option value="">— เลือกเองทีละแถว —</option></select>
+        </label>
+        <input class="cp-input narrow" type="number" id="bulk-food" min="1" step="1" placeholder="ต้นทุนอาหาร" aria-label="ต้นทุนอาหารเริ่มต้น">
+        <button type="button" class="cp-btn ghost sm" id="bulk-fill">ใส่ค่านี้ในทุกแถวที่ยังว่าง</button>
+        <button type="button" class="cp-btn" id="bulk-open" disabled>เปิดรายการรอยืนยัน</button>
       </div>
-      <div class="cp-form-status" id="mc-form-status" role="status" aria-live="polite"></div>
-      <div id="mc-groups"><p class="cp-sub">กำลังโหลดเมนู…</p></div>
-      <div class="cp-add-row" id="mc-add-row">
-        <label class="cp-field">ชื่อเมนูใหม่<input class="cp-input" type="text" id="mc-new-name" placeholder="เช่น ข้าวราดผัดหน่อไม้"></label>
-        <label class="cp-field">หมวด<select class="cp-input" id="mc-new-cat"><option>ข้าวราดแกง</option><option>ข้าวผัด</option><option>เส้น</option><option>อาหารอินเดีย</option><option>พรีเมียม</option></select></label>
-        <label class="cp-field">ราคาขาย (บาท)<input class="cp-input narrow" type="number" id="mc-new-price" value="65" min="1" step="5"></label>
-        <label class="cp-field">ขั้นต่ำ (กล่อง)<input class="cp-input narrow" type="number" id="mc-new-min" value="5" min="1" step="1"></label>
-        <label class="cp-field">รูป<input class="cp-input" type="text" id="mc-new-img" value="img/logo.jpg" placeholder="img/..."></label>
-        <label class="cp-field">คำอธิบาย<input class="cp-input" type="text" id="mc-new-desc" placeholder="สั้นๆ สำหรับลูกค้า"></label>
-        <button type="button" class="cp-btn ghost sm" id="mc-add">+ เพิ่มเมนู</button>
-        <span class="cp-sub" id="mc-new-msg"></span>
-      </div>
-      <div id="mc-modal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow:auto">
-        <div style="background:#fff;border-radius:16px;max-width:720px;width:100%;padding:1.25rem 1.4rem" role="dialog" aria-modal="true" aria-label="ตัวอย่างก่อนเผยแพร่">
-          <h3 style="margin:0 0 .5rem">ตัวอย่างก่อนเผยแพร่</h3>
-          <div id="mc-modal-body"></div>
-          <div class="cp-editor-actions"><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>
+      <div class="cp-sub" id="bulk-count"></div>
+      <div id="bulk-panel"><p class="cp-sub">กด “เปิดรายการรอยืนยัน” เพื่อดูเมนูที่ยังไม่ยืนยันทุน</p>
+          <div style="overflow:auto;margin-top:.6rem">
+            <table class="cp-table" style="width:100%;border-collapse:collapse;font-size:.86rem">
+              <thead><tr>
+                <th style="text-align:left;padding:.35rem">ID</th>
+                <th style="text-align:left;padding:.35rem">เมนู</th>
+                <th style="text-align:left;padding:.35rem">ต้นทุนอาหาร</th>
+                <th style="text-align:left;padding:.35rem">กล่อง</th>
+                <th style="text-align:left;padding:.35rem">รวมกล่อง</th>
+                <th style="text-align:left;padding:.35rem">กำไรต่อกล่อง</th>
+                <th style="text-align:left;padding:.35rem">สถานะ</th>
+              </tr></thead>
+              <tbody id="bulk-rows"><tr><td colspan="7" class="cp-sub">กำลังโหลด…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      <div id="bulk-modal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:1rem">
+        <div style="background:#fff;border-radius:16px;max-width:920px;width:100%;max-height:88vh;overflow:auto;padding:1.25rem 1.4rem" role="dialog" aria-modal="true" aria-labelledby="bulk-modal-title">
+          <h3 id="bulk-modal-title" style="margin:0 0 .5rem">ยืนยันต้นทุนหลายเมนู</h3>
+          <div id="bulk-modal-body"></div>
+          <div class="cp-editor-actions">
+            <button type="button" class="cp-btn" id="bulk-save">ยืนยันที่กรอกไว้ทั้งหมด</button>
+            <button type="button" class="cp-btn ghost" data-bulk-close>ปิด</button>
+            <span class="cp-form-status" id="bulk-modal-status"></span>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="cp-card" aria-label="ขึ้นเว็บจริง">
-      <div class="cp-card-head">
-        <h2>ขึ้นเว็บจริง</h2>
-      </div>
-      <p class="cp-note">“เตรียมไฟล์แล้ว” ยังไม่ใช่ “เผยแพร่แล้ว” — หน้านี้แยกให้เห็น 3 ฉบับ: <strong>ฉบับร่าง</strong> (ฐานกลางในเครื่อง) <strong>ฉบับไฟล์</strong> (ไฟล์สาธารณะในเครื่อง) และ<strong>ฉบับบนเว็บ</strong> (ตรวจจากเว็บจริงแล้วเท่านั้น) ถ้าตรวจเว็บจริงไม่ได้จะขึ้น “ยังไม่ยืนยัน”</p>
-      <div id="mc-deploy"><p class="cp-sub">กำลังโหลดสถานะ…</p></div>
-    </section>
-
-    <section class="cp-card" aria-label="ภาพรวมและบันทึก">
-      <div class="cp-card-head">
-        <h2>ภาพรวมต้นทุน</h2>
-        <span class="cp-save" id="save-status" role="status" aria-live="polite"></span>
-      </div>
-      <div class="cp-stats" id="stats"></div>
-      <div class="cp-actions">
-        <button type="button" class="cp-btn" id="save-all" disabled>บันทึกการแก้ไขทั้งหมด</button>
-        <button type="button" class="cp-btn ghost" id="reload">โหลดข้อมูลใหม่</button>
-        <span class="cp-form-status" id="form-status" role="status" aria-live="polite"></span>
-      </div>
-      <div class="cp-errors" id="save-errors" hidden></div>
-      <p class="cp-note">แสดง “บันทึกแล้ว” ต่อเมื่อเซิร์ฟเวอร์ตอบรับว่าบันทึกสำเร็จจริงเท่านั้น · รายการที่เว้นราคาไว้จะขึ้น “รอยืนยัน” และไม่ถูกนำไปจัดชุดอัตโนมัติ · การยืนยันราคาเป็นสิทธิ์เจ้าของ ระบบไม่ยืนยันรายการร่างให้เอง</p>
-    </section>
-
-    <div id="groups"></div>
-
-    <footer class="cp-foot">
-      <p>EED HALAL · เครื่องมือภายในสำหรับเจ้าของเท่านั้น</p>
-      <p>ข้อมูลสาธารณะอ้างอิง (อ่านอย่างเดียว หน้านี้ไม่แก้ราคาขาย): ข้าวกล่อง เมนูขั้นต่ำ 10 กล่อง · Snack Box ขั้นต่ำ 30 กล่อง · ราคาขายกลางเปลี่ยนผ่านกระบวนการ sync ปกติเท่านั้น</p>
-      <p><a href="/">← แนะนำชุดตามงบ</a></p>
-    </footer>
-  </main>
-  <!-- ฐานกลางเมนู (local): demo/owner-set-builder/menu-central.json ผ่านปุ่ม "บันทึก" · ฉบับเผยแพร่: data/planner-overrides.json + js/menu-data.js ผ่านปุ่ม "ดูตัวอย่างและเผยแพร่" (ต้อง commit + push เอง) · ส่วนต้นทุนแตะเฉพาะ owner-costs.json ในเครื่องเท่านั้น -->
-  <style>#mc-modal[hidden]{display:none}</style>
-</body>
-</html>
+    <section class="cp-card" aria-label="ขึ้นเว็บจริง">
+      <div class="cp-card-head">
+        <h2>ขึ้นเว็บจริง</h2>
+      </div>
+      <p class="cp-note">“เตรียมไฟล์แล้ว” ยังไม่ใช่ “เผยแพร่แล้ว” — หน้านี้แยกให้เห็น 3 ฉบับ: <strong>ฉบับร่าง</strong> (ฐานกลางในเครื่อง) <strong>ฉบับไฟล์</strong> (ไฟล์สาธารณะในเครื่อง) และ<strong>ฉบับบนเว็บ</strong> (ตรวจจากเว็บจริงแล้วเท่านั้น) ถ้าตรวจเว็บจริงไม่ได้จะขึ้น “ยังไม่ยืนยัน”</p>
+      <div id="mc-deploy"><p class="cp-sub">กำลังโหลดสถานะ…</p></div>
+    </section>
+
+    <section class="cp-card" aria-label="ภาพรวมและบันทึก">
+      <div class="cp-card-head">
+        <h2>ภาพรวมต้นทุน</h2>
+        <span class="cp-save" id="save-status" role="status" aria-live="polite"></span>
+      </div>
+      <div class="cp-stats" id="stats"></div>
+      <div class="cp-actions">
+        <button type="button" class="cp-btn" id="save-all" disabled>บันทึกการแก้ไขทั้งหมด</button>
+        <button type="button" class="cp-btn ghost" id="reload">โหลดข้อมูลใหม่</button>
+        <span class="cp-form-status" id="form-status" role="status" aria-live="polite"></span>
+      </div>
+      <div class="cp-errors" id="save-errors" hidden></div>
+      <p class="cp-note">แสดง “บันทึกแล้ว” ต่อเมื่อเซิร์ฟเวอร์ตอบรับว่าบันทึกสำเร็จจริงเท่านั้น · รายการที่เว้นราคาไว้จะขึ้น “รอยืนยัน” และไม่ถูกนำไปจัดชุดอัตโนมัติ · การยืนยันราคาเป็นสิทธิ์เจ้าของ ระบบไม่ยืนยันรายการร่างให้เอง</p>
+    </section>
+
+    <div id="groups"></div>
+
+    <footer class="cp-foot">
+      <p>EED HALAL · เครื่องมือภายในสำหรับเจ้าของเท่านั้น</p>
+      <p>ข้อมูลสาธารณะอ้างอิง (อ่านอย่างเดียว หน้านี้ไม่แก้ราคาขาย): ข้าวกล่อง เมนูขั้นต่ำ 10 กล่อง · Snack Box ขั้นต่ำ 30 กล่อง · ราคาขายกลางเปลี่ยนผ่านกระบวนการ sync ปกติเท่านั้น</p>
+      <p><a href="/">← แนะนำชุดตามงบ</a></p>
+    </footer>
+  </main>
+  <!-- ฐานกลางเมนู (local): demo/owner-set-builder/menu-central.json ผ่านปุ่ม "บันทึก" · ฉบับเผยแพร่: data/planner-overrides.json + js/menu-data.js ผ่านปุ่ม "ดูตัวอย่างและเผยแพร่" (ต้อง commit + push เอง) · ส่วนต้นทุนแตะเฉพาะ owner-costs.json ในเครื่องเท่านั้น -->
+  <style>#mc-modal[hidden]{display:none}</style>
+</body>
+</html>

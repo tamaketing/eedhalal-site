@@ -87,7 +87,7 @@ function cardHtml(item) {
   const quote = item.orderable ? '' : '<p class="pm-quote-note">ราคาขอสอบถามทาง LINE</p>';
   const cta = item.orderable ? 'สอบถามเมนูนี้ทาง LINE' : 'สอบถามราคาเมนูนี้ทาง LINE';
   return ''
-    + `<article class="pm-card${item.orderable ? '' : ' pm-card-quote'}" data-menu-id="${escapeHtml(item.id)}">`
+    + `<article class="pm-card${item.orderable ? '' : ' pm-card-quote'}" id="menu-${escapeHtml(item.id)}" data-menu-id="${escapeHtml(item.id)}">`
     + photo
     + '<div class="pm-card-body">'
     + `<p class="pm-card-cat">${escapeHtml(item.category)}</p>`
@@ -103,7 +103,7 @@ function rowHtml(item) {
   const quote = item.orderable ? '' : '<p class="pm-quote-note">ราคาขอสอบถามทาง LINE</p>';
   const cta = item.orderable ? 'สอบถามทาง LINE' : 'สอบถามราคาทาง LINE';
   return ''
-    + `<div class="pm-row${item.orderable ? '' : ' pm-row-quote'}" data-menu-id="${escapeHtml(item.id)}">`
+    + `<div class="pm-row${item.orderable ? '' : ' pm-row-quote'}" id="menu-${escapeHtml(item.id)}" data-menu-id="${escapeHtml(item.id)}">`
     + '<div class="pm-row-text">'
     + `<p class="pm-row-cat">${escapeHtml(item.category)}</p>`
     + `<p class="pm-row-name">${escapeHtml(item.name)}</p>`

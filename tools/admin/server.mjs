@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { MAX_BODY_BYTES, readCosts, saveCosts, validateCosts } from './cost-store.mjs';
+import { applyBulkCosts, bulkCostRows } from './bulk-costs.mjs';
 import { backupBeforeWrite, listBackups, liveNameFromBackup, restoreBackup } from '../../scripts/menu-backups.mjs';
 import {
   computePublishStatus,
@@ -98,6 +99,7 @@ const files = new Map([
   ['/recommend.mjs', ['recommend.mjs', 'text/javascript; charset=utf-8']],
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
   ['/cost-planner.mjs', ['cost-planner.mjs', 'text/javascript; charset=utf-8']],
+  ['/bulk-costs-ui.mjs', ['bulk-costs-ui.mjs', 'text/javascript; charset=utf-8']],
   ['/cost-planner.css', ['cost-planner.css', 'text/css; charset=utf-8']],
   ['/menu-central-ui.mjs', ['menu-central-ui.mjs', 'text/javascript; charset=utf-8']],
 ]);
@@ -438,6 +440,40 @@ export function createLocalServer({ dataDir = resolveDataDir() } = {}) {
           return sendJson(500, { ok: false, error: error.message, state });
         }
       }
+      if (pathname === '/owner-costs/bulk' && request.method === 'POST') {
+        const sameOrigin = origin === expectedOrigin ||
+          (!origin && ['same-origin', 'none'].includes(String(fetchSite || '')));
+        if (!sameOrigin) return send(403, 'Local use only');
+        const contentType = String(request.headers['content-type'] || '');
+        if (!contentType.includes('application/json')) return send(415, 'Send application/json');
+        let parsed;
+        try {
+          parsed = JSON.parse(await readJsonBody(request));
+        } catch {
+          return sendJson(400, { ok: false, error: 'JSON ไม่ถูกต้อง' });
+        }
+        const current = await readCosts(dataDir);
+        const result = applyBulkCosts(current, parsed?.rows);
+        if (result.errors.length) return sendJson(400, { ok: false, errors: result.errors });
+        // Refuse to write anything the existing validator rejects, so a bad
+        // batch can never corrupt the owner's cost file.
+        const validated = validateCosts(result.costs);
+        if (!validated.ok) return sendJson(400, { ok: false, errors: validated.errors, skipped: result.skipped });
+        try {
+          await backupBeforeWrite(dataDir, 'owner-costs.json');
+        } catch (error) {
+          return sendJson(500, { ok: false, errors: [error.message] });
+        }
+        const saved = await saveCosts(dataDir, result.costs);
+        if (!saved.ok) return sendJson(400, { ok: false, errors: saved.errors, skipped: result.skipped });
+        return sendJson(200, {
+          ok: true,
+          version: saved.data.version,
+          updatedAt: saved.data.updatedAt,
+          applied: result.applied,
+          skipped: result.skipped,
+        });
+      }
       if (pathname === '/owner-costs' && request.method === 'POST') {
         // Saving costs is owner-only: same-origin browser request or an explicit local client.
         const sameOrigin = origin === expectedOrigin ||
@@ -465,6 +501,20 @@ export function createLocalServer({ dataDir = resolveDataDir() } = {}) {
       if (request.method === 'POST') return send(405, 'GET only');
       if (pathname === '/readiness') return sendJson(200, { ready: true, app: 'owner-set-builder' });
       if (pathname === '/owner-costs') return send(200, JSON.stringify(await readCosts(dataDir)), 'application/json; charset=utf-8');
+      if (pathname === '/owner-costs/bulk' && request.method === 'GET') {
+        const costs = await readCosts(dataDir);
+        const catalogue = (await loadCentral(dataDir)).menus
+          .filter((menu) => menu.hidden !== true)
+          .map((menu) => ({
+            id: menu.id,
+            name: menu.name,
+            category: menu.category,
+            image: menu.image,
+            price: menu.price,
+            minPerMenu: menu.minPerMenu,
+          }));
+        return send(200, JSON.stringify({ rows: bulkCostRows(costs, catalogue), boxes: costs.boxes || {} }), 'application/json; charset=utf-8');
+      }
       if (pathname === '/owner-settings') return send(200, await readFile(path.join(dataDir, 'owner-settings.json')), 'application/json; charset=utf-8');
       if (pathname === '/menu-catalog') return send(200, JSON.stringify(await catalog(dataDir)), 'application/json; charset=utf-8');
       const rootFile = rootFiles.get(pathname);
