@@ -11,6 +11,7 @@ import {
 const root = new URL('../', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('data/sync-manifest.json', root), 'utf8'));
 const planner = JSON.parse(await readFile(new URL('data/planner-overrides.json', root), 'utf8'));
+const rules = JSON.parse(await readFile(new URL('data/business-rules.json', root), 'utf8'));
 
 test('every business fact is present in all registered files (edit ALL files on change)', async () => {
   await checkBusinessSync();
@@ -54,6 +55,24 @@ test('both khao-mok landing pages are guarded against invented prices', async ()
   for (const file of ['khao-mok.html', 'en/khao-mok.html']) {
     assert.ok(rule.files.includes(file), `${file} quotes prices and must be registered`);
   }
+});
+
+// Khao mok was repeatedly sold as the premium tier (90-120 THB/head, "premium
+// set") while the premium set is a different dish. A proximity regex kept
+// producing false positives here: describing a premium set that *contains* khao
+// mok is legitimate, and the standard price of 65 appears in the same sentence
+// as any premium figure. A heuristic that cannot tell those apart is worse than
+// no guard, so the four precise checks carry this instead: the
+// premium-set-price fact across all 24 files, the premium floor agreeing with
+// the catalogue, the cataloguePrices rule on the landing pages, and the
+// forbidden rule rejecting the old khao-mok figures.
+
+test('the premium set starts at the figure business-rules publishes', async () => {
+  const premiumFrom = plannerPricesWhereNameStartsWith(planner, 'เซ็ตพรีเมียม');
+  assert.deepEqual(premiumFrom, [230]);
+  assert.equal(rules.services.mealBox.premiumPriceFrom, premiumFrom[0], 'business-rules and the catalogue must agree');
+  // There is no upper bound: the price follows whichever menu the customer picks.
+  assert.equal('premiumPriceTo' in rules.services.mealBox, false, 'a premium ceiling would be invented data');
 });
 
 test('a wrong price in prose or JSON-LD is caught on either language page', async (t) => {
