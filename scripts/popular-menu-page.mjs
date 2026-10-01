@@ -187,7 +187,11 @@ export async function buildPopularMenuPage(root = ROOT) {
 export async function checkPopularMenuPage(root = ROOT) {
   const onDisk = await readFile(path.join(root, PAGE), 'utf8');
   const expected = await buildPopularMenuPage(root);
-  return { ok: onDisk === expected, file: PAGE };
+  // Compare line-ending agnostically. This repository is checked out with
+  // CRLF on Windows and LF on CI, so a byte comparison would fail on one
+  // platform and pass on the other even when the content is identical.
+  const norm = (text) => text.replaceAll('\r\n', '\n');
+  return { ok: norm(onDisk) === norm(expected), file: PAGE };
 }
 
 // Compare resolved file URLs: a manual "file://" + path string is wrong on
@@ -197,7 +201,13 @@ if (invokedDirectly) {
   const write = process.argv.includes('--write');
   const { writeFile } = await import('node:fs/promises');
   if (write) {
-    await writeFile(path.join(ROOT, PAGE), await buildPopularMenuPage(ROOT), 'utf8');
+    const target = path.join(ROOT, PAGE);
+    // Keep the file's existing line-ending convention so writing on Windows
+    // does not rewrite every line of the page.
+    const existing = await readFile(target, 'utf8');
+    const built = await buildPopularMenuPage(ROOT);
+    const crlf = existing.includes('\r\n');
+    await writeFile(target, crlf ? built.replaceAll('\n', '\r\n') : built, 'utf8');
     console.log(`${PAGE}: static menu block written`);
   } else {
     const result = await checkPopularMenuPage(ROOT);
