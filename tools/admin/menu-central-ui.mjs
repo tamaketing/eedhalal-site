@@ -29,6 +29,74 @@ const clone = (value) => JSON.parse(JSON.stringify(value));
 const isDirty = () => Boolean(state.saved && state.working)
   && JSON.stringify(state.working.menus) !== JSON.stringify(state.saved.menus);
 
+// ---------------------------------------------------------------------------
+// Draft recovery (local only).
+// The owner edits prices for a while and then closes the tab or the laptop
+// sleeps. Without this every unsaved edit is gone. The draft is mirrored into
+// localStorage on every keystroke (debounced) and offered back on the next
+// load. It never overwrites the saved draft: the owner has to choose.
+// ---------------------------------------------------------------------------
+const DRAFT_KEY = 'eedhalal.menuCentral.draft';
+
+function draftBackup() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDraftBackup() {
+  if (!state.working || !isDirty()) return;
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      baseVersion: state.saved?.version ?? null,
+      savedAt: new Date().toISOString(),
+      working: state.working,
+    }));
+  } catch { /* storage full or blocked: recovery is best effort */ }
+}
+
+function clearDraftBackup() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+}
+
+let draftTimer = null;
+function scheduleDraftBackup() {
+  if (draftTimer) clearTimeout(draftTimer);
+  draftTimer = setTimeout(writeDraftBackup, 400);
+}
+
+// Offer back an unsaved draft. Only when it was based on the version we just
+// loaded, so a stale backup from an older revision can never resurrect itself.
+function offerDraftRestore() {
+  const backup = draftBackup();
+  if (!backup?.working || !state.saved) return false;
+  if ((backup.baseVersion ?? null) !== (state.saved.version ?? null)) {
+    clearDraftBackup();
+    return false;
+  }
+  if (!JSON.stringify(backup.working.menus)) return false;
+  const changed = backup.working.menus.filter((menu, index) => JSON.stringify(menu) !== JSON.stringify(state.saved.menus[index]));
+  if (!changed.length) {
+    clearDraftBackup();
+    return false;
+  }
+  const when = new Date(backup.savedAt).toLocaleString('th-TH');
+  const summary = changed.slice(0, 6).map((m) => `#${m.id} ${m.name}`).join(', ')
+    + (changed.length > 6 ? ` (+${changed.length - 6})` : '');
+  if (!window.confirm(`พบร่างที่ยังไม่ได้บันทึกจาก ${when}\n${summary}\n\nกู้คืนร่างนี้? (กด "ตกลง" เพื่อกู้คืน, "ยกเลิก" เพื่อใช้ฉบับที่บันทึกไว้)`)) {
+    clearDraftBackup();
+    return false;
+  }
+  state.working = backup.working;
+  renderTable();
+  updateButtons();
+  setFormStatus(`กู้คืนร่างที่ยังไม่บันทึกแล้ว (${changed.length} รายการ) — กด "บันทึก" เพื่อเก็บถาวร`, 'ok');
+  return true;
+}
+
 function costByMenuId(menuId) {
   const dish = (state.costs?.dishes || []).find((item) => Number(item.menuId) === Number(menuId));
   if (!dish) return null;
@@ -78,13 +146,21 @@ function renderDeploy() {
     : '<p class="cp-sub">การขึ้นเว็บอัตโนมัติยังไม่เปิดในเครื่องนี้ (รอบนี้ทดสอบกระบวนการเท่านั้น) — เปิดโดยตั้งค่า EED_ALLOW_GIT_DEPLOY=1 แล้วเริ่ม server ใหม่</p>';
   box.innerHTML = `${phase}${liveLine}${guardNote}`
     + `<div class="cp-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">`
+    + `<button type="button" class="cp-btn" id="mc-release-open">อัปเดตเว็บทั้งหมด</button>`
     + `<button type="button" class="cp-btn ghost sm" id="mc-verify-live">ตรวจเว็บจริงตอนนี้</button>`
-    + `<button type="button" class="cp-btn sm" id="mc-deploy-open"${info.deployEnabled ? '' : ' disabled title="ยังไม่เปิดการขึ้นเว็บอัตโนมัติ"'}>เผยแพร่ขึ้นเว็บจริง</button>`
+    + `<button type="button" class="cp-btn ghost sm" id="mc-deploy-open"${info.deployEnabled ? '' : ' disabled title="ยังไม่เปิดการขึ้นเว็บอัตโนมัติ"'}>เผยแพร่ขึ้นเว็บจริง</button>`
     + `<span class="cp-form-status" id="mc-deploy-status"></span></div>`
+    + '<div id="mc-release-panel"></div>'
     + `<div id="mc-backups"><p class="cp-sub">กำลังโหลดรายการสำรอง…</p></div>`;
   $('#mc-verify-live')?.addEventListener('click', verifyLive);
   $('#mc-deploy-open')?.addEventListener('click', openDeployConfirm);
+  $('#mc-release-open')?.addEventListener('click', openRelease);
   loadBackups();
+}
+
+/** The single-button path: one gate, then stage + push + wait + verify. */
+function openRelease() {
+  runFullRelease();
 }
 
 async function verifyLive() {
@@ -290,7 +366,10 @@ async function load({ silent = false } = {}) {
     renderTable();
     updateButtons();
     await refreshPublish();
-    if (!silent) setFormStatus(`โหลดฐานกลางแล้ว · รุ่น ${state.saved.version ?? 0}`, 'ok');
+    if (!silent) {
+      const restored = offerDraftRestore();
+      if (!restored) setFormStatus(`โหลดฐานกลางแล้ว · รุ่น ${state.saved.version ?? 0}`, 'ok');
+    }
   } catch {
     state.loadOk = false;
     updateButtons();
@@ -308,6 +387,7 @@ function onEdit(target) {
     const value = target.value === '' ? '' : Number(target.value);
     menu[field] = value;
   } else menu[field] = target.value;
+  scheduleDraftBackup();
   updateButtons();
   setFormStatus('', '');
 }
@@ -325,6 +405,7 @@ async function save({ confirmBulkHide = false } = {}) {
     });
     if (response.status === 200) {
       const payload = await response.json();
+      clearDraftBackup();
       await load({ silent: true });
       setFormStatus(`บันทึกแล้ว ✓ รุ่น ${payload.version ?? ''} — เครื่องมือแอดมินใช้ข้อมูลล่าสุดทันที เว็บลูกค้ายังใช้ฉบับเผยแพร่เดิม`.trim(), 'ok');
       return;
@@ -445,6 +526,174 @@ async function publish() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// One-button release: publish -> push -> wait -> verify.
+//
+// The owner used to click through three separate panels and read two modals.
+// The safety gate stays exactly where it was (nothing is written or pushed
+// until the diff has been shown and confirmed), but once confirmed the whole
+// chain runs by itself and reports each step, so "published" is never a guess.
+// ---------------------------------------------------------------------------
+const RELEASE_STEPS = [
+  { key: 'preview', label: 'ตรวจรายการเปลี่ยนแปลง' },
+  { key: 'stage', label: 'สร้างไฟล์ฉบับใหม่' },
+  { key: 'push', label: 'ส่งขึ้น GitHub' },
+  { key: 'wait', label: 'รอเว็บจริงอัปเดต' },
+  { key: 'verify', label: 'ตรวจว่าเว็บจริงตรงกับฉบับนี้' },
+];
+
+function renderReleaseProgress(box, steps) {
+  box.innerHTML = `<ol style="margin:.6rem 0 0;padding-left:1.3rem">`
+    + steps.map((step) => {
+      const tone = { ok: '#1d6b3e', bad: '#DC2626', wait: '#8a5a12' }[step.tone] || '#66675f';
+      const mark = { ok: '✓', bad: '✗', wait: '…' }[step.tone] || '·';
+      return `<li style="color:${tone}">${mark} ${esc(step.label)}${step.detail ? ` — ${esc(step.detail)}` : ''}</li>`;
+    }).join('')
+    + '</ol>';
+}
+
+async function pollUntilSettled(onStep, { timeoutMs = 240000, intervalMs = 2000 } = {}) {
+  const deadline = Date.now() + timeoutMs;
+  let last = '';
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => { setTimeout(resolve, intervalMs); });
+    let info;
+    try {
+      const response = await fetch('/menu-publish-preview', { cache: 'no-store' });
+      if (!response.ok) continue;
+      info = await response.json();
+    } catch {
+      continue;
+    }
+    state.publish = info;
+    const deploy = info.deploy || {};
+    const phase = String(deploy.phase || '');
+    onStep(info, phase, last);
+    last = phase;
+    // Settled when the deploy finished and the live check agrees with the file.
+    const deployDone = /^(done|success|failed|error|verified|live)$/i.test(phase);
+    if (deployDone && (info.live?.state === 'live' || info.live?.state === 'outdated' || info.live?.state === 'unverified')) {
+      return info;
+    }
+    if (/failed|error|abort/i.test(phase)) return info;
+  }
+  return null;
+}
+
+/**
+ * One click: stage the files, then push, then wait, then verify. Stops early
+ * and says why if the local machine has deploy disabled, so a half-done release
+ * is never presented as success.
+ */
+async function runFullRelease() {
+  const modal = $('#mc-modal');
+  const body = $('#mc-modal-body');
+  if (!modal || !body) return;
+  const info = state.publish;
+  if (!info?.diff?.hasChanges) {
+    await refreshPublish();
+    if (!state.publish?.diff?.hasChanges) {
+      body.innerHTML = `<p><strong>ไม่มีรายการรออัปเดต</strong></p><p class="cp-sub">ฐานกลางตรงกับฉบับที่เผยแพร่แล้ว</p><div class="cp-editor-actions"><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>`;
+      modal.hidden = false;
+      return;
+    }
+  }
+
+  if (!state.publish.deployEnabled) {
+    // Deploy is off on this machine: stage only, and be explicit about it.
+    body.innerHTML = warningPanel(state.publish.startingPrice)
+      + `<p><strong>สร้างไฟล์ได้ แต่ขึ้นเว็บอัตโนมัติยังไม่เปิด</strong></p>`
+      + '<p class="cp-sub">เครื่องนี้ยังไม่ได้ตั้ง EED_ALLOW_GIT_DEPLOY=1 — ระบบจะสร้างไฟล์ในเครื่องเท่านั้น ไม่ได้ push ขึ้น GitHub</p>'
+      + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-release-stage-only">สร้างไฟล์เท่านั้น</button><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>`;
+    modal.hidden = false;
+    $('#mc-release-stage-only')?.addEventListener('click', () => { publish(); });
+    return;
+  }
+
+  const diff = state.publish.diff;
+  body.innerHTML = `<p><strong>ยืนยันอัปเดตเว็บทั้งหมด</strong> <span class="cp-sub">· สถานะตอนนี้ ${esc(state.publish.statusTh)}</span></p>`
+    + warningPanel(state.publish.startingPrice)
+    + diffList('จะเพิ่ม', diff.added)
+    + diffList('จะเปลี่ยน', diff.changed)
+    + diffList('จะซ่อนจากเว็บ', diff.hidden)
+    + diffList('จะกลับมาแสดง', diff.shown)
+    + (diff.costBlocked?.length ? diffList(`จะยังสั่งออนไลน์ไม่ได้ (${diff.costBlocked.length})`, diff.costBlocked.map((item) => ({ id: item.id, name: `${item.name} — ${item.reason}` }))) : '')
+    + '<p class="cp-sub">ระบบจะทำต่อให้จบเอง: สร้างไฟล์ → commit เฉพาะ 2 ไฟล์เผยแพร่ → push → รอเว็บจริง → ตรวจว่าเว็บให้บริการตรงกับฉบับนี้ ถ้าตรวจไม่ได้จะขึ้น “ยังไม่ยืนยัน” ไม่ถือว่าสำเร็จ</p>'
+    + '<p class="cp-sub">ห้ามรวมงานอื่นเข้า commit อัตโนมัติ: ถ้ามี commit อื่นรอ push อยู่ ระบบจะหยุดและแจ้งสาเหตุ</p>'
+    + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-release-go">ยืนยันและอัปเดตเว็บ</button><button type="button" class="cp-btn ghost" data-mc-close>ยกเลิก</button><span class="cp-form-status" id="mc-release-status"></span></div>`
+    + '<div id="mc-release-progress"></div>';
+  modal.hidden = false;
+  $('#mc-release-go')?.addEventListener('click', () => { executeRelease(); });
+}
+
+async function executeRelease() {
+  const body = $('#mc-modal-body');
+  const progress = $('#mc-release-progress');
+  const statusBox = $('#mc-release-status');
+  const go = $('#mc-release-go');
+  if (go) go.disabled = true;
+  const steps = RELEASE_STEPS.map((step) => ({ ...step, tone: 'wait' }));
+  if (progress) renderReleaseProgress(progress, steps);
+  const mark = (key, tone, detail = '') => {
+    const step = steps.find((s) => s.key === key);
+    if (!step) return;
+    step.tone = tone;
+    step.detail = detail;
+    if (progress) renderReleaseProgress(progress, steps);
+  };
+
+  mark('preview', 'ok');
+  try {
+    // 1. Stage the release (writes the two published files).
+    if (statusBox) statusBox.textContent = 'กำลังสร้างไฟล์…';
+    const stage = await fetch('/menu-publish', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
+    });
+    const staged = await stage.json().catch(() => ({}));
+    if (stage.status !== 200 || !staged.ok) throw new Error(staged.error || `HTTP ${stage.status}`);
+    mark('stage', 'ok', `ไฟล์ v${staged.record?.file?.fileVersion ?? ''}`);
+
+    // 2. Push.
+    if (statusBox) statusBox.textContent = 'กำลังส่งขึ้น GitHub…';
+    const deploy = await fetch('/menu-deploy', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ confirm: true }),
+    });
+    const pushed = await deploy.json().catch(() => ({}));
+    if (deploy.status !== 202 || !pushed.ok) throw new Error(pushed.error || `HTTP ${deploy.status}`);
+    mark('push', 'ok');
+    if (statusBox) statusBox.textContent = 'รอเว็บจริงอัปเดต…';
+
+    // 3+4. Wait for the deploy, then confirm the live site serves this build.
+    const settled = await pollUntilSettled((current, phase) => {
+      if (/pushing|commit/i.test(phase)) mark('push', 'wait', phase);
+      if (/wait|build|deploy/i.test(phase)) mark('wait', 'wait', phase);
+      if (/fail|error|abort/i.test(phase)) mark('wait', 'bad', phase);
+    });
+    const live = state.publish?.live || {};
+    if (live.state === 'live') {
+      mark('wait', 'ok', live.liveVersion ? `เว็บ v${live.liveVersion}` : '');
+      mark('verify', 'ok', 'เว็บจริงให้บริการตรงกับฉบับนี้แล้ว');
+      if (statusBox) { statusBox.textContent = 'อัปเดตเว็บเรียบร้อย ✓'; statusBox.className = 'cp-form-status ok'; }
+    } else {
+      mark('wait', live.state === 'unverified' ? 'bad' : 'wait', live.stateTh || live.state || '');
+      mark('verify', 'bad', live.reason || 'ยังไม่ยืนยัน — ไม่ถือว่าสำเร็จ');
+      if (statusBox) { statusBox.textContent = `ยังไม่ยืนยัน: ${live.reason || 'ตรวจเว็บจริงอีกครั้ง'}`; statusBox.className = 'cp-form-status bad'; }
+    }
+    void settled;
+  } catch (error) {
+    mark('push', 'bad', error.message);
+    if (statusBox) { statusBox.textContent = `ไม่สำเร็จ: ${error.message}`; statusBox.className = 'cp-form-status bad'; }
+  } finally {
+    if (go) go.disabled = false;
+    await refreshPublish();
+    renderTable();
+  }
+}
+
 function addMenu() {
   const name = ($('#mc-new-name')?.value || '').trim();
   const msg = $('#mc-new-msg');
@@ -505,6 +754,17 @@ function bind() {
   $('#mc-reload')?.addEventListener('click', () => load());
   $('#mc-refresh-profit')?.addEventListener('click', () => load({ silent: true }));
   $('#mc-add')?.addEventListener('click', addMenu);
+
+  // Last line of defence: flush any pending debounce when the tab goes away.
+  window.addEventListener('beforeunload', () => {
+    if (draftTimer) { clearTimeout(draftTimer); writeDraftBackup(); }
+  });
+  // Warn before losing unsaved edits, but never on a plain reload-with-recovery.
+  window.addEventListener('beforeunload', (event) => {
+    if (!isDirty()) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
 }
 
 bind();
