@@ -13,12 +13,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RUNTIME_FILES = [
   'tools/admin/server.mjs',
-  'tools/admin/cost-store.mjs',
-  'tools/admin/cost-planner.mjs',
   'tools/admin/menu-central-ui.mjs',
   'tools/admin/app.mjs',
-  'tools/admin/logic.mjs',
-  'tools/admin/recommend.mjs',
   'tools/admin/launcher.mjs',
   'tools/admin/index.html',
   'tools/admin/cost-planner.css',

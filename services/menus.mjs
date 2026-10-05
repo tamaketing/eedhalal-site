@@ -4,7 +4,7 @@
 //   PRICE          -> planner prices[id]      (customer selling price, THB/box)
 //   MINIMUM/MENU   -> planner mins[id]
 //   DISPLAY NAME   -> planner names[id]      (Thai; no English names exist)
-//   CATEGORY       -> planner categories[id]
+//   TIER           -> planner tiers[id]      (classic | signature | executive)
 //   AVAILABILITY   -> planner deleted[]       (listed ids are hidden everywhere)
 //   ORDERABLE      -> planner quoteOnly[]     (served by name; excluded from
 //                      ordering/calculation until the cost is confirmed)
@@ -20,11 +20,10 @@
 // price-only planner edit is visible without an API restart, without
 // check-system --write, and without prompt regeneration.
 //
-// LIMITATION (by data, not by code): planner categories are
-// ข้าวราดแกง / ข้าวผัด / เส้น / อาหารอินเดีย / พรีเมียม. There is no
-// protein/type field, so a query like "เมนูไก่ไม่เกิน 100" cannot be
-// reliably classified from category alone. This service does NOT infer
-// protein from menu names.
+// LIMITATION (by data, not by code): the tier is a product LEVEL, not a
+// dish type, so a query like "เมนูไก่ไม่เกิน 100" cannot be reliably
+// classified from the tier alone. This service does NOT infer protein from
+// menu names — that is the caller's job via `q`.
 
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
@@ -38,6 +37,10 @@ export const MEALBOX_SOURCE = 'planner-overrides';
 export const MEALBOX_SERVICE_TYPE = 'mealbox';
 export const MENU_DEFAULT_LIMIT = 20;
 export const MENU_MAX_LIMIT = 100;
+// The only levels a published menu may carry (data/business-rules.json ->
+// services.mealBox.tiers). A menu outside this set is a data fault, not a
+// filter value the caller may invent.
+export const MENU_TIERS = ['classic', 'signature', 'executive'];
 
 // Fail-closed catalog error. The HTTP layer maps unknown errors to
 // 500 { error: 'internal_error' }, so the message below never reaches a
@@ -71,13 +74,13 @@ function normalizeId(value) {
   // quoteOnly[]) from raw planner JSON. Quote-only menus stay visible by name
   // on the menu page with an ask-for-quote label, but never enter ordering,
   // calculation, or recommendation. Throws MenuCatalogError on anything
-  // unexpected: missing maps, invalid price/min/name/category/image,
-  // inconsistent id sets across maps, or an invalid deleted/quoteOnly entry.
-  // Never returns partial/stale data.
+// unexpected: missing maps, invalid price/min/name/tier/image,
+// inconsistent id sets across maps, or an invalid deleted/quoteOnly entry.
+// Never returns partial/stale data.
 function buildActiveCatalog(planner) {
   if (!isRecord(planner)) fail();
-  const { prices, mins, names, categories, images, deleted } = planner;
-  for (const map of [prices, mins, names, categories, images]) {
+  const { prices, mins, names, tiers, images, deleted } = planner;
+  for (const map of [prices, mins, names, tiers, images]) {
     if (!isRecord(map)) fail();
   }
   if (!Array.isArray(deleted)) fail();
@@ -87,7 +90,7 @@ function buildActiveCatalog(planner) {
   // The five catalog maps must cover exactly the same menu ids. A partial
   // edit (e.g. price added without a name) fails closed instead of
   // serving a half-written entry.
-  for (const map of [mins, names, categories, images]) {
+  for (const map of [mins, names, tiers, images]) {
     const keys = Object.keys(map);
     if (keys.length !== priceIds.length || !priceIds.every((id) => Object.hasOwn(map, id))) fail();
   }
@@ -120,19 +123,19 @@ function buildActiveCatalog(planner) {
     const price = prices[id];
     const minPerMenu = mins[id];
     const name = names[id];
-    const category = categories[id];
+    const tier = tiers[id];
     const image = images[id];
     if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) fail();
     if (typeof minPerMenu !== 'number' || !Number.isInteger(minPerMenu) || minPerMenu < 1) fail();
     if (typeof name !== 'string' || !name.trim()) fail();
-    if (typeof category !== 'string' || !category.trim()) fail();
+    if (!MENU_TIERS.includes(tier)) fail();
     if (typeof image !== 'string' || !image.trim()) fail();
     menus.push({
       id,
       name: name.trim(),
       price,
       minPerMenu,
-      category: category.trim(),
+      tier,
       image: image.trim(),
     });
   }
@@ -241,9 +244,10 @@ export async function findMealboxMenusByMaxPrice(maxPrice, options = {}) {
 // Combined deterministic filter. exactPrice/maxPrice must be finite
 // numbers > 0 when provided; invalid filter input throws ValidationError
 // (HTTP 400), while catalog problems throw MenuCatalogError (fail closed).
-// Unknown categories match nothing (never an error, never a guess).
+// An unknown tier is a 400 (the caller may only name a real level); a real
+// level nobody orders yet simply matches nothing.
 export async function findMealboxMenus(options = {}) {
-  const { exactPrice, maxPrice, category, query, limit, plannerPath } = options;
+  const { exactPrice, maxPrice, tier, query, limit, plannerPath } = options;
   let menus = await loadActiveCatalog(plannerPath);
   if (exactPrice !== undefined && exactPrice !== null) {
     if (typeof exactPrice !== 'number' || !Number.isFinite(exactPrice) || exactPrice <= 0) {
@@ -257,9 +261,10 @@ export async function findMealboxMenus(options = {}) {
     }
     menus = menus.filter((menu) => menu.price <= maxPrice);
   }
-  if (category !== undefined && category !== null && String(category).trim() !== '') {
-    const wanted = String(category).trim();
-    menus = menus.filter((menu) => menu.category === wanted);
+  if (tier !== undefined && tier !== null && String(tier).trim() !== '') {
+    const wanted = String(tier).trim();
+    if (!MENU_TIERS.includes(wanted)) throw new ValidationError('invalid tier');
+    menus = menus.filter((menu) => menu.tier === wanted);
   }
   if (query !== undefined && query !== null && normalizeMenuQuery(query) !== '') {
     const q = normalizeMenuQuery(query);

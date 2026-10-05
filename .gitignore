@@ -23,6 +23,17 @@ line-ai/*.db
 line-ai/*.db-*
 line-ai/*.log
 
+# Owner-only menu data. The central draft is the private editable catalogue and
+# the publish state is the local build stamp; both are written by the admin tool
+# on this machine and must never be committed (the draft carries internal notes
+# and per-side costs). data/business-rules.json, planner-overrides.json and
+# sync-manifest.json ARE committed — those are the public sources.
+data/menu-central.json
+data/menu-publish-state.json
+data/*.bak
+data/*.tmp
+data/owner-costs.json
+
 # Project-owned Node dependencies (package.json/lock are committed, modules are not).
 node_modules/
 

@@ -67,11 +67,11 @@ async function callWithPlanner(pathname, plannerPath) {
 test('exact price returns exactly the published planner menus at that price', async () => {
   const planner = published();
   const [id, price] = firstActive(planner);
-  const response = await call(`/api/v1/menus/mealbox?price=${price}`);
+  const response = await call(`/api/v1/menus/mealbox?price=${price}&limit=100`);
   assert.equal(response.status, 200);
   assert.equal(response.json.serviceType, 'mealbox');
   assert.equal(response.json.source, 'planner-overrides');
-  assert.deepEqual(response.json.filters, { price, maxPrice: null, category: null, q: null, limit: 20 });
+  assert.deepEqual(response.json.filters, { price, maxPrice: null, tier: null, q: null, limit: 100 });
   const expected = activeEntries(planner)
     .filter(([, value]) => value === price)
     .map(([menuId]) => String(menuId))
@@ -106,36 +106,75 @@ test('unknown, hidden and ask-for-quote menus never resolve, by id or by name', 
   const unknown = await call('/api/v1/menus/mealbox?q=menu-that-does-not-exist-zzz');
   assert.equal(unknown.status, 200);
   assert.deepEqual(unknown.json.menus, []);
-  const planner = published();
-  const blocked = new Set([...(planner.deleted || []).map(String), ...(planner.quoteOnly || []).map(String)]);
-  assert.ok(blocked.size > 0, 'fixture must exercise at least one blocked menu');
-  for (const id of blocked) {
-    const name = nameOf(id, planner);
-    if (!name) continue;
-    // Substring matches on OTHER orderable dishes are legitimate; only the
-    // blocked id itself must never come back.
-    const byName = await call(`/api/v1/menus/mealbox?q=${encodeURIComponent(name)}`);
-    assert.equal(byName.status, 200);
-    for (const menu of byName.json.menus) {
-      assert.ok(!blocked.has(String(menu.id)), `blocked menu ${id} must not resolve by name`);
-    }
+
+  // The live planner has no price-switched dish, so build a fixture that has
+  // one and serve it through a second API instance. A quote-only dish must stay
+  // invisible to ordering no matter how the customer asks for it.
+  const base = published();
+  const blockedId = activeEntries(base)[0][0];
+  assert.ok(blockedId, 'fixture must expose at least one orderable menu');
+  const dir = mkdtempSync(path.join(tmpdir(), 'eed-menu-quote-only-'));
+  const fixture = path.join(dir, 'planner-overrides.json');
+  writeFileSync(fixture, JSON.stringify({ ...base, quoteOnly: [blockedId] }));
+
+  const { server: quoted } = createInternalApi({
+    repos: createMemoryAdapter(),
+    env: { EED_INTERNAL_API_SECRET: SECRET, EED_PLANNER_PATH: fixture },
+  });
+  await new Promise((resolve) => quoted.listen(0, '127.0.0.1', resolve));
+  try {
+    const quotedBase = `http://127.0.0.1:${quoted.address().port}`;
+    const ask = async (query) => {
+      const response = await fetch(`${quotedBase}/api/v1/menus/mealbox?${query}&limit=100`, {
+        headers: { authorization: `Bearer ${SECRET}` },
+      });
+      assert.equal(response.status, 200);
+      return response.json();
+    };
+    const name = base.names[blockedId];
+    assert.ok(name, 'the blocked dish must have a name to look up');
+    const byName = await ask(`q=${encodeURIComponent(name)}`);
+    assert.ok(
+      !byName.menus.some((menu) => menu.id === String(blockedId)),
+      `quote-only menu ${blockedId} must not resolve by name`,
+    );
+    const byPrice = await ask(`price=${base.prices[blockedId]}`);
+    assert.ok(
+      !byPrice.menus.some((menu) => menu.id === String(blockedId)),
+      `quote-only menu ${blockedId} must not resolve by its own price`,
+    );
+    const wide = await ask('maxPrice=100000');
+    assert.ok(
+      !wide.menus.some((menu) => menu.id === String(blockedId)),
+      `quote-only menu ${blockedId} must not leak into the full list`,
+    );
+  } finally {
+    await new Promise((resolve) => quoted.close(resolve));
   }
 });
 
-test('category plus maxPrice filters compose', async () => {
+test('level plus maxPrice filters compose', async () => {
   const planner = published();
   const active = activeEntries(planner);
-  const [category] = [...new Set(active.map(([id]) => planner.categories[id]))];
+  const [tier] = [...new Set(active.map(([id]) => planner.tiers[id]))];
   const cap = Math.max(...active.map(([id]) => planner.prices[id]));
-  const response = await call(`/api/v1/menus/mealbox?category=${encodeURIComponent(category)}&maxPrice=${cap}&limit=100`);
+  const response = await call(`/api/v1/menus/mealbox?tier=${encodeURIComponent(tier)}&maxPrice=${cap}&limit=100`);
   assert.equal(response.status, 200);
+  assert.equal(response.json.filters.tier, tier);
   const expected = active
-    .filter(([id]) => planner.categories[id] === category && planner.prices[id] <= cap)
+    .filter(([id]) => planner.tiers[id] === tier && planner.prices[id] <= cap)
     .map(([id]) => String(id)).sort();
   assert.deepEqual(response.json.menus.map((menu) => menu.id).sort(), expected);
   for (const menu of response.json.menus) {
-    assert.equal(menu.category, category);
+    assert.equal(menu.tier, tier);
     assert.ok(menu.price <= cap);
+  }
+});
+
+test('an unknown level is rejected as 400, not treated as no match', async () => {
+  for (const bad of ['platinum', encodeURIComponent('ข้าวราดแกง')]) {
+    const response = await call(`/api/v1/menus/mealbox?tier=${bad}`);
+    assert.equal(response.status, 400, bad);
   }
 });
 
@@ -162,7 +201,7 @@ test('limits clamp: default 20, maximum 100', async () => {
 test('menu entries expose only public catalog fields', async () => {
   const response = await call('/api/v1/menus/mealbox?price=75');
   for (const menu of response.json.menus) {
-    assert.deepEqual(Object.keys(menu).sort(), ['category', 'id', 'image', 'minPerMenu', 'name', 'price']);
+    assert.deepEqual(Object.keys(menu).sort(), ['id', 'image', 'minPerMenu', 'name', 'price', 'tier']);
   }
   const serialized = JSON.stringify(response.json);
   for (const leaked of ['.json', 'data/', 'C:', 'cost', 'margin', 'supplier']) {

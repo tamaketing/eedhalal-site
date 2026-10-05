@@ -10,7 +10,7 @@ const PORT = 4185;
 const HOST = '127.0.0.1';
 const PAGE_URL = `http://${HOST}:${PORT}/`;
 const ID = 'owner-set-builder';
-const ASSETS = ['/readiness', '/', '/style.css', '/app.mjs', '/logic.mjs', '/recommend.mjs', '/menu-catalog', '/owner-costs', '/owner-settings', '/budget-planner.html', '/cost-planner.mjs', '/cost-planner.css', '/menu-central-ui.mjs', '/menu-central', '/menu-publish-state'];
+const ASSETS = ['/readiness', '/', '/style.css', '/app.mjs', '/sellable-menus', '/budget-planner.html', '/cost-planner.css', '/menu-central-ui.mjs', '/menu-central', '/menu-publish-state'];
 
 function portOccupied() {
   return new Promise((resolve) => {
@@ -40,14 +40,12 @@ async function ready() {
         // as this tool, otherwise it is ignored (never reused, never stopped).
         const body = await response.json().catch(() => null);
         if (body?.ready !== true || body?.app !== ID) return false;
-      } else if (resource === '/owner-costs') {
-        // Schema guard: current data carries a toppings array. An older server
+      } else if (resource === '/sellable-menus') {
+        // Shape guard: current data carries a menus array. An older server
         // answering 200 with a previous schema must not be reused with new data.
-        // Shape-only check: nothing is logged or retained.
         const body = await response.json().catch(() => null);
-        if (!body || !Array.isArray(body.toppings)) return false;
+        if (!body || !Array.isArray(body.menus)) return false;
       } else {
-        // Do not read, log, or retain private cost response bodies.
         await response.body?.cancel();
       }
     }

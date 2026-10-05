@@ -10,7 +10,7 @@
 //     demo/. Never committed, never deployed). Full menu records incl.
 //     internal-only fields. "บันทึก" writes here; admin tools read the latest
 //     immediately while customers keep the published files until "เผยแพร่".
-//   owner-costs.json            = INTERNAL cost DB (local only). Costs live
+//   (the retired internal cost DB is gone; prices are the only gate)
 //     ONLY there — never in menu-central, never in published files. A cost
 //     AMOUNT-only edit (still orderable) never creates a pending web publish,
 //     but a cost edit that flips quote-only status (served <-> orderable)
@@ -31,33 +31,185 @@ import { statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import {
+  SIDE_ITEM_KINDS,
+  TIER_CLASSIC,
+  computeTierFloors,
+  isTierId,
+  normalizeTier,
+  setsFromProjection,
+  tierDefinitions,
+} from './mealbox-tiers.mjs';
 
 export const CENTRAL_FILE = 'menu-central.json';
 export const PUBLISH_STATE_FILE = 'menu-publish-state.json';
 
 // Public-field allowlist for data/planner-overrides.json top-level keys.
 // Central-managed keys are rebuilt on publish; carried-over keys are preserved
-// verbatim from the currently published file (snacks/toppings/meats are out of
+// verbatim from the currently published file (snacks/toppings are out of
 // the menu-publish scope and must survive a publish unchanged). `release`
 // proves which central version a file was built from (used by live checks).
+// A menu has exactly one level and no category: the tier list in
+// data/business-rules.json (services.mealBox.tiers) is the single grouping the
+// whole system uses — admin filters, the customer menu pages, the calculator,
+// the internal API and the LINE bot all read that tier, never a second axis.
+// ---------------------------------------------------------------------------
+// Side items = the Signature component database
+// ---------------------------------------------------------------------------
+// A side item is the SECOND dish that sits in the Signature box beside the main
+// dish: rice, main, second dish, vegetables. It is a product component, never a
+// menu: it is not browsable, not orderable on its own and carries no rice.
+//
+// `kind` says what kind of second dish it is. It is not shown to the customer
+// (the page says "อาหารเมนูที่ 2" and lists the dishes); it exists because
+// cooking type changes cost, portion and packing, and because it decides what
+// may go in which tier:
+//   side      = a savoury second dish for the Signature box
+//   soup_curry = a soup or curry second dish for the Signature box
+//   dessert   = sweet, needs a corrugated box, so it is NOT a Signature box
+//               item; it belongs to the premium Executive set
+//
+// Two invariants the rest of the pipeline relies on:
+//   1. `cost` NEVER leaves this draft. It is kitchen data, so the published
+//      projection is built field-by-field below and simply has no cost key.
+//   2. A price is published only when the owner has confirmed it. An item whose
+//      `priceAdjustment` is missing is forced to `pending`, so
+//      `priceStatus === 'ready'` always implies a real number exists.
+// SIDE_ITEM_KINDS itself lives in mealbox-tiers.mjs (this module already imports
+// it) so the dependency stays one-way.
+export const SIDE_ITEM_PRICE_STATUS = ['pending', 'ready'];
+const SIDE_ITEM_ID = /^[a-z0-9][a-z0-9-]*$/;
+
+function sideItemErrors(raw, label) {
+  const errors = [];
+  if (!isPlainObject(raw)) return [`${label}: ข้อมูลไม่ถูกต้อง`];
+  const id = text(raw.id).toLowerCase();
+  if (!SIDE_ITEM_ID.test(id)) {
+    errors.push(`${label}: id ต้องเป็นตัวอักษรอังกฤษและตัวเลขคั่นด้วยขีด เช่น side-001`);
+  }
+  if (!text(raw.nameTh)) errors.push(`${label}: ต้องมีชื่อภาษาไทย`);
+  if (!text(raw.nameEn)) errors.push(`${label}: ต้องมีชื่อภาษาอังกฤษ`);
+  const kind = text(raw.kind);
+  if (!SIDE_ITEM_KINDS.includes(kind)) {
+    errors.push(`${label}: ต้องเลือกประเภท (${SIDE_ITEM_KINDS.join(' / ')})`);
+  }
+  const status = text(raw.priceStatus);
+  if (status && !SIDE_ITEM_PRICE_STATUS.includes(status)) {
+    errors.push(`${label}: priceStatus ต้องเป็น ${SIDE_ITEM_PRICE_STATUS.join(' หรือ ')}`);
+  }
+  if (raw.cost !== undefined && raw.cost !== null && raw.cost !== '') {
+    const cost = Number(raw.cost);
+    if (!Number.isFinite(cost) || cost < 0) errors.push(`${label}: ต้นทุนต้องเป็นตัวเลขที่ไม่ติดลบ`);
+  }
+  if (raw.priceAdjustment !== undefined && raw.priceAdjustment !== null && raw.priceAdjustment !== '') {
+    const adjustment = Number(raw.priceAdjustment);
+    if (!Number.isFinite(adjustment) || adjustment <= 0) errors.push(`${label}: ราคาเพิ่มต้องเป็นตัวเลขมากกว่า 0 (ยังไม่พร้อมให้ใส่ค่าว่าง)`);
+  }
+  return errors;
+}
+
+function normalizeSideItem(raw) {
+  const id = text(raw?.id).toLowerCase();
+  const nameTh = text(raw?.nameTh);
+  const kind = text(raw?.kind);
+  if (!SIDE_ITEM_ID.test(id) || !nameTh || !SIDE_ITEM_KINDS.includes(kind)) return null;
+  const nameEn = text(raw?.nameEn);
+  const cost = Number(raw.cost);
+  const rawAdjustment = raw.priceAdjustment;
+  const hasAdjustment = rawAdjustment !== undefined && rawAdjustment !== null && rawAdjustment !== '';
+  const adjustment = Number(rawAdjustment);
+  const priceAdjustment = hasAdjustment && Number.isFinite(adjustment) && adjustment > 0
+    ? Math.round(adjustment * 100) / 100
+    : null;
+  // No number means nothing to publish, whatever the status field claims.
+  const priceStatus = priceAdjustment === null
+    ? 'pending'
+    : (SIDE_ITEM_PRICE_STATUS.includes(text(raw.priceStatus)) ? text(raw.priceStatus) : 'pending');
+  return {
+    id,
+    nameTh,
+    nameEn: nameEn || nameTh,
+    kind,
+    ...(Number.isFinite(cost) && cost >= 0 ? { cost: Math.round(cost * 100) / 100 } : {}),
+    priceAdjustment,
+    priceStatus,
+    active: raw.active === undefined ? true : raw.active === true,
+    // The owner's job is to decide WHEN a dish goes on the web, so a dish they
+    // just added is visible by default; switching it off is one checkbox.
+    public: raw.public === undefined ? true : raw.public === true,
+  };
+}
+
+export function normalizeSideItems(raw) {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const item of raw) {
+    const normalized = normalizeSideItem(item);
+    if (!normalized || seen.has(normalized.id)) continue;
+    seen.add(normalized.id);
+    out.push(normalized);
+  }
+  return out;
+}
+
+// Exactly the fields the web may read. `cost` has no key here by construction.
+// `kind` is published so consumers can tell a Signature second dish from a
+// premium-box dessert; the customer-facing label stays "อาหารเมนูที่ 2".
+export function publicSideItemOf(item) {
+  return {
+    id: item.id,
+    nameTh: item.nameTh,
+    nameEn: item.nameEn,
+    kind: item.kind,
+    priceAdjustment: item.priceStatus === 'ready' ? item.priceAdjustment : null,
+    priceStatus: item.priceStatus,
+    active: item.active === true,
+    public: item.public === true,
+  };
+}
+
+export function publicSideItemsOf(list) {
+  return normalizeSideItems(list).map(publicSideItemOf);
+}
+
+// A menu's tier decides the starting price a customer is shown for it, so the
+// migration never guesses: the published tier wins, then the legacy one, and a
+// draft written before tiers existed falls back to the classic tier. The owner
+// refines the rest from the admin page.
+function tierFromSources(publishedTier, legacyTier) {
+  for (const candidate of [publishedTier, legacyTier]) {
+    if (isTierId(candidate)) return candidate;
+  }
+  return TIER_CLASSIC;
+}
+
 export const PUBLIC_OVERRIDE_KEYS = [
-  'prices', 'mins', 'images', 'names', 'categories',
+  'prices', 'mins', 'images', 'names',
   'descs', 'badges', 'sortOrder', 'popular', 'deleted', 'quoteOnly',
-  'newMenus', 'meats', 'toppings', 'noMeatMenus',
+  'tiers', 'newMenus', 'toppings', 'sideItems',
   'snackPrices', 'snackNames', 'snackCats', 'snackAddons',
   'exportedAt', 'release',
 ];
 
 // Central-managed keys: rebuilt from the central draft on every publish
 // (`release` included: the build stamp belongs to the pipeline, never carried).
-// meats/toppings/noMeatMenus are rebuilt too — leaving them to the carry-over
-// loop below would silently keep stale published values even though lines 502+
-// just rebuilt them from the draft.
+// toppings is rebuilt too — leaving it to the carry-over loop below would
+// silently keep stale published values even though lines 502+ just rebuilt it
+// from the draft. sideItems is rebuilt here for the same reason: a renamed side
+// or a confirmed price must reach the web on publish.
 export const CENTRAL_MANAGED_KEYS = [
-  'prices', 'mins', 'images', 'names', 'categories',
+  'prices', 'mins', 'images', 'names',
   'descs', 'badges', 'sortOrder', 'popular', 'deleted', 'quoteOnly', 'release',
-  'meats', 'toppings', 'noMeatMenus',
+  'tiers', 'toppings', 'sideItems',
 ];
+
+// Keys a previously published file may still carry that this pipeline no longer
+// produces. They are DROPPED on publish — never carried over, never an error — so
+// the first publish after a field is retired removes it from the web instead of
+// failing or leaving the retired value live. `categories` + `categoryList` are
+// here because a menu is now grouped by its tier alone, with no second axis.
+export const RETIRED_OVERRIDE_KEYS = ['categories', 'categoryList'];
 
 // Tokens that must NEVER appear in published artifacts (case-insensitive).
 // Covers costs, profit, internal notes/flags, secrets, machine-local paths.
@@ -83,9 +235,9 @@ function text(value) {
 
 // Build the central draft from existing sources. Nothing is invented:
 // public values come from the planner maps (= published authority), descriptive
-// values (desc/badge/noMeat) from js/menu-data.js, display order from the
+// values (desc/badge) from js/menu-data.js, display order from the
 // menu-data.js line order, popular order from the hydrate POPULAR_IDS list.
-// Costs are deliberately NOT copied here (they stay in owner-costs.json).
+// Internal data is deliberately NOT copied here.
 export function migrateCentral({ menuDataMenus = [], planner = {}, popularIds = [] } = {}) {
   const byId = new Map();
   for (const entry of menuDataMenus) {
@@ -109,14 +261,13 @@ export function migrateCentral({ menuDataMenus = [], planner = {}, popularIds = 
       id: Number(id),
       name: planner.names?.[id] ?? legacy.name ?? '',
       price: planner.prices?.[id] ?? legacy.price ?? 0,
-      category: planner.categories?.[id] ?? legacy.category ?? '',
+      tier: tierFromSources(planner.tiers?.[id], legacy.tier),
       image: planner.images?.[id] ?? legacy.image ?? '',
       desc: typeof legacy.desc === 'string' ? legacy.desc : '',
       badge: typeof legacy.badge === 'string' ? legacy.badge : '',
       minPerMenu: planner.mins?.[id] ?? legacy.minPerMenu ?? 5,
       hidden: deleted.has(String(id)),
       sortOrder: fileOrder.has(String(id)) ? fileOrder.get(String(id)) : 10000 + Number(id),
-      noMeat: legacy.noMeat === true || (planner.noMeatMenus || []).map(String).includes(String(id)),
       showPrice: true,
       noLock: true,
       internalNote: '',
@@ -130,7 +281,9 @@ export function migrateCentral({ menuDataMenus = [], planner = {}, popularIds = 
     updatedAt: new Date().toISOString(),
     menus,
     toppings: Array.isArray(planner.toppings) ? planner.toppings : [],
-    meats: Array.isArray(planner.meats) ? planner.meats : [],
+    // Side items carry no cost in the published file, so a fresh migration can
+    // only recover the customer-facing half; the owner re-enters cost locally.
+    sideItems: publicSideItemsOf(planner.sideItems || []),
     popular: popularIds.map(String).filter((id) => existing.has(id)),
   };
 }
@@ -155,8 +308,10 @@ export function validateCentral(central) {
     if (!name) errors.push(`${label}: ต้องมีชื่อเมนู`);
     const price = Number(raw.price);
     if (!Number.isFinite(price) || price <= 0) errors.push(`${label}: ราคาขายต้องมากกว่า 0`);
-    const category = text(raw.category);
-    if (!category) errors.push(`${label}: ต้องมีหมวดหมู่`);
+    const tier = text(raw.tier);
+    if (tier && !isTierId(tier)) {
+      errors.push(`${label}: ระดับสินค้า “${tier}” ไม่ถูกต้อง (ต้องเป็น classic, signature หรือ executive)`);
+    }
     const image = text(raw.image);
     if (!image) errors.push(`${label}: ต้องมีรูป`);
     const minPerMenu = Number(raw.minPerMenu);
@@ -169,14 +324,15 @@ export function validateCentral(central) {
       id,
       name,
       price: Math.round(price * 100) / 100,
-      category,
+      // A draft written before tiers existed gets the migration default here,
+      // so saving never silently flattens every set to the classic tier.
+      tier: isTierId(raw.tier) ? raw.tier : tierFromSources(undefined, undefined),
       image,
       desc: typeof raw.desc === 'string' ? raw.desc : '',
       badge: typeof raw.badge === 'string' ? raw.badge : '',
       minPerMenu,
       hidden: raw.hidden === true,
       sortOrder,
-      noMeat: raw.noMeat === true,
       // Owner switches (business rule: data/business-rules.json -> menuPublishing).
       // showPrice:false publishes the menu in `quoteOnly` (name + ask-for-quote
       // marker, excluded from ordering) because there is no customer-facing
@@ -186,10 +342,25 @@ export function validateCentral(central) {
       internalNote: typeof raw.internalNote === 'string' ? raw.internalNote : '',
     });
   }
-  for (const key of ['toppings', 'meats']) {
+for (const key of ['toppings']) {
     const list = central[key];
     if (list !== undefined && !Array.isArray(list)) errors.push(`${key} ต้องเป็นอาร์เรย์`);
   }
+  // Side items: a malformed entry is an error, never a silent drop. The owner
+  // must never believe a side he typed was saved when it was thrown away.
+  const rawSideItems = central.sideItems === undefined ? [] : central.sideItems;
+  if (!Array.isArray(rawSideItems)) {
+    errors.push('sideItems ต้องเป็นอาร์เรย์');
+  } else {
+    const sideIds = new Set();
+    rawSideItems.forEach((raw, index) => {
+      errors.push(...sideItemErrors(raw, `sideItems[${index}]`));
+      const id = text(raw?.id).toLowerCase();
+      if (sideIds.has(id)) errors.push(`sideItems[${index}]: id ซ้ำ (${id})`);
+      sideIds.add(id);
+    });
+  }
+  const sideItems = normalizeSideItems(rawSideItems);
   const popular = central.popular === undefined ? [] : central.popular;
   if (!Array.isArray(popular)) errors.push('popular ต้องเป็นอาร์เรย์รหัสเมนูตามลำดับแสดง');
   else {
@@ -199,11 +370,10 @@ export function validateCentral(central) {
   }
   if (errors.length) return { ok: false, errors, data: null };
   data.toppings = Array.isArray(central.toppings) ? central.toppings : [];
-  data.meats = Array.isArray(central.meats) ? central.meats : [];
+  data.sideItems = sideItems;
   data.popular = popular.map((id) => Number(id));
   return { ok: true, errors: [], data };
 }
-
 export async function loadCentral(dataDir) {
   const raw = JSON.parse(await readFile(path.join(dataDir, CENTRAL_FILE), 'utf8'));
   const result = validateCentral(raw);
@@ -286,155 +456,99 @@ export async function loadPublished(root) {
   return { overrides, menuDataJs };
 }
 
-// Cost rule (business rule: data/business-rules.json -> menuPublishing).
-// Three tiers:
-//   1. served (owner-visible, hidden=false) -> name shows in the menu lists
-//      (cards + full name list), even without a confirmed cost, with a
-//      "ask for quote" marker. Preserves SEO/AI discovery.
-//   2. orderable (served + CONFIRMED food cost > 0) -> included in ordering,
-//      price calculation and automatic recommendations.
-//   3. owner-hidden (hidden=true) -> hidden everywhere.
-// `costs` is the owner-costs.json shape ({dishes:[{menuId,foodCost,status}]}).
-// When `costs` is null/undefined the cost split is disabled (backwards
-// compatible for tests and deploy preflight without cost data): every
-// served menu counts as orderable.
-export function readyCostIds(costs) {
-  const ready = new Set();
-  for (const dish of costs?.dishes || []) {
-    if (!dish) continue;
-    if (dish.status !== 'confirmed') continue;
-    const value = Number(dish.foodCost);
-    if (!Number.isFinite(value) || value <= 0) continue;
-    if (dish.menuId !== null && dish.menuId !== undefined && dish.menuId !== '') {
-      ready.add(String(dish.menuId));
-    }
-    const match = String(dish.id || '').match(/^menu-(\d+)$/);
-    if (match) ready.add(String(Number(match[1])));
-  }
-  return ready;
-}
-
-export function isMenuCostReady(costs, menuId) {
-  if (!costs) return true;
-  return readyCostIds(costs).has(String(menuId));
-}
-
-export function costGateSummary(central, costs) {
-  if (!costs) return { enabled: false, ready: 0, waiting: 0, blocked: [] };
-  const ready = readyCostIds(costs);
-  const blocked = [];
-  for (const menu of central?.menus || []) {
-    if (menu.hidden === true) continue;
-    if (!ready.has(String(menu.id))) blocked.push({ id: Number(menu.id), name: menu.name });
-  }
-  return {
-    enabled: true,
-    ready: (central?.menus || []).filter((menu) => menu.hidden !== true).length - blocked.length,
-    waiting: blocked.length,
-    blocked,
-  };
-}
-
-/**
- * Guard the published "starting price" claim.
- *
- * llms.txt, llms-full.md, faq.html and the JSON-LD all advertise the meal-box
- * starting price, and that number comes from data/business-rules.json
- * (services.mealBox.priceFrom). Nothing connected it to the real catalogue, so
- * raising every menu price would leave the site advertising a price nobody can
- * buy. The claim must match the cheapest menu a customer can actually order:
- * a hidden dish, or one that is ask-for-quote, is not orderable.
- *
- * Returns warnings rather than throwing: the owner still gets to publish, but
- * the admin shows what to fix and CI fails.
- */
-export function startingPriceConsistency(rules, projection) {
-  const declared = Number(rules?.services?.mealBox?.priceFrom);
-  const orderable = [];
-  const served = [];
-  for (const menu of (projection?.menus || new Map()).values()) {
-    if (menu.hidden === true) continue;
-    served.push(menu);
-    if (!menu.costBlocked && menu.price > 0) orderable.push(menu);
-  }
-  const minOrderable = orderable.length ? Math.min(...orderable.map((m) => m.price)) : null;
-  const minServed = served.length ? Math.min(...served.map((m) => m.price)) : null;
+// Price rule (business rule: data/business-rules.json -> mealBox.tiers + the
+// central menu database). A tier starting price is never declared anywhere: it
+// is the cheapest set of that tier that is open for sale and shown on the web.
+// A tier with no such set has no price, and the web asks for a quotation
+// instead of repeating an older figure.
+export function tierPriceConsistency(rules, projection) {
+  const menus = projection?.menus instanceof Map ? projection.menus : new Map();
+  const definitions = tierDefinitions(rules);
+  const sets = setsFromProjection(projection);
+  const { floors, members } = computeTierFloors(sets);
   const warnings = [];
-  if (!Number.isFinite(declared)) {
-    warnings.push('ไม่พบราคาเริ่มต้นใน business-rules.json (services.mealBox.priceFrom)');
-  } else if (minOrderable === null) {
-    warnings.push('ยังไม่มีเมนูที่สั่งซื้อได้เลย — ยังยืนยันราคาเริ่มต้นไม่ได้ ต้องยืนยันทุนอย่างน้อย 1 เมนู');
-  } else if (declared !== minOrderable) {
-    warnings.push(
-      `ราคาเริ่มต้นใน business-rules.json คือ ${declared} บาท แต่เมนูที่สั่งซื้อได้ราคาต่ำสุดคือ ${minOrderable} บาท`
-      + ' — ต้องแก้ services.mealBox.priceFrom ให้ตรงกับราคาจริง (แล้วแก้ llms.txt / llms-full.md / FAQ ตาม)',
-    );
+  if (!definitions.length) {
+    warnings.push('ไม่พบระดับข้าวกล่องใน business-rules.json (services.mealBox.tiers)');
   }
-  if (declared !== minServed && Number.isFinite(declared) && minServed !== null) {
-    warnings.push(`เมนูที่แสดงบนเว็บมีราคาต่ำสุด ${minServed} บาท ต่างจากราคาเริ่มต้นที่ประกาศ — ตรวจว่าตั้งใจให้เป็นแบบนี้`);
+  if (!floors[TIER_CLASSIC]) {
+    warnings.push('ยังไม่มีชุดระดับ classic ที่เปิดขายและแสดงบนเว็บ — ยังประกาศราคาเริ่มต้นไม่ได้');
   }
+  const tiers = definitions.map((tier) => {
+    const floor = floors[tier.id] ?? null;
+    return {
+      id: tier.id,
+      nameTh: tier.nameTh,
+      nameEn: tier.nameEn,
+      boxFormatTh: tier.boxFormatTh,
+      boxFormatEn: tier.boxFormatEn,
+      priceFrom: floor ? floor.priceFrom : null,
+      sourceId: floor ? floor.sourceId : null,
+      sourceName: floor ? floor.sourceName : null,
+      memberCount: members[tier.id].length,
+    };
+  });
+  const unassigned = [...menus.entries()]
+    .filter(([, menu]) => menu.hidden !== true && !isTierId(menu.tier))
+    .map(([id, menu]) => ({ id: Number(id), name: menu.name }))
+    .sort((a, b) => a.id - b.id);
   return {
     ok: warnings.length === 0,
-    declared,
-    minOrderable,
-    minServed,
-    orderableCount: orderable.length,
-    servedCount: served.length,
+    tiers,
+    unassigned,
+    sellableCount: sets.filter(isSellableSet).length,
     warnings,
   };
+}
+
+function isSellableSet(set) {
+  return !set.hidden && !set.quoteOnly && set.price > 0;
 }
 
 function effectiveHiddenOf(menu) {
   return menu.hidden === true;
 }
 
-// Quote-only: served by the shop (owner-visible) but the customer cannot see a
-// price — either the cost is not confirmed yet, or the owner turned the price
-// off (business rule: menuPublishing.showPriceRuleTh). Name may show with an
-// ask-for-quote marker, but the menu stays out of ordering/calculation/
-// recommendation.
-function isQuoteOnly(menu, costs) {
+// Quote-only: the owner deliberately switched the price off, so the customer
+// cannot see a price. The name may still show with an ask-for-quote marker, but
+// the menu stays out of ordering/calculation/recommendation. There is no cost
+// gate — every served menu that carries a price is orderable.
+function isQuoteOnly(menu) {
   if (menu.hidden === true) return false;
-  if (menu.showPrice === false) return true;
-  if (!costs) return false;
-  return !isMenuCostReady(costs, menu.id);
+  return menu.showPrice === false;
 }
 
 // Public projection of the central draft: ONLY publishable fields.
 // Cost/internal data cannot leak through the diff because it never enters it.
-export function publicProjectionOfCentral(central, costs = null) {
+export function publicProjectionOfCentral(central) {
   const menus = new Map();
   for (const menu of central.menus || []) {
     menus.set(String(menu.id), {
       name: menu.name,
       price: menu.price,
-      category: menu.category,
+      tier: normalizeTier(menu.tier),
       image: menu.image,
       desc: menu.desc || '',
       badge: menu.badge || '',
       minPerMenu: menu.minPerMenu,
       hidden: effectiveHiddenOf(menu),
       ownerHidden: menu.hidden === true,
-      // Cost gate (needs owner-costs) OR owner hid the price. Kept separate so
-      // the admin can tell "waiting for cost" from "price switched off".
-      // A switched-off price is a draft decision, so it holds even when no
-      // cost file exists yet; only the cost check needs owner-costs.
-      costBlocked: menu.showPrice === false || (!costs ? false : isQuoteOnly(menu, costs)),
+      // The owner switched the price off — the only reason a served dish is not
+      // orderable.
+      costBlocked: isQuoteOnly(menu),
       priceHidden: menu.showPrice === false,
       sortOrder: menu.sortOrder,
-      noMeat: menu.noMeat === true,
     });
   }
   return {
     menus,
     toppings: central.toppings || [],
-    meats: central.meats || [],
+sideItems: publicSideItemsOf(central.sideItems || []),
     popular: (central.popular || []).map(String),
   };
 }
 
 // Public projection of the published files. menu-data.js is parsed for
-// desc/badge/sortOrder/noMeat (overrides maps carry the rest).
+// desc/badge/sortOrder (overrides maps carry the rest).
 export function publicProjectionOfPublished({ overrides, menuDataMenus = [] }) {
   const legacyById = new Map(menuDataMenus.map((menu) => [String(menu.id), menu]));
   const menus = new Map();
@@ -444,37 +558,36 @@ export function publicProjectionOfPublished({ overrides, menuDataMenus = [] }) {
     menus.set(String(id), {
       name: overrides.names?.[id] ?? legacy.name,
       price: overrides.prices?.[id],
-      category: overrides.categories?.[id] ?? legacy.category,
+      tier: normalizeTier(overrides.tiers?.[id] ?? legacy.tier),
       image: overrides.images?.[id] ?? legacy.image,
       desc: overrides.descs?.[id] ?? legacy.desc ?? '',
       badge: overrides.badges?.[id] ?? legacy.badge ?? '',
       minPerMenu: overrides.mins?.[id] ?? legacy.minPerMenu,
       hidden: deleted.has(String(id)),
       sortOrder: overrides.sortOrder?.[id] ?? legacy.sortOrder ?? null,
-      noMeat: legacy.noMeat === true || (overrides.noMeatMenus || []).map(String).includes(String(id)),
     });
   }
   return {
     menus,
     toppings: overrides.toppings || [],
-    meats: overrides.meats || [],
+sideItems: publicSideItemsOf(overrides.sideItems || []),
     popular: (overrides.popular || []).map(String),
   };
 }
 
 const COMPARE_FIELDS = [
-  'name', 'price', 'category', 'image', 'desc', 'badge',
-  'minPerMenu', 'hidden', 'sortOrder', 'noMeat',
+  'name', 'price', 'tier', 'image', 'desc', 'badge',
+  'minPerMenu', 'hidden', 'sortOrder',
 ];
 
 // Diff central draft vs last published release, public fields only.
 // A cost-AMOUNT-only edit (still orderable) never appears here; a cost edit
 // that flips quote-only status (no cost -> confirmed, or confirmed -> cleared)
 // DOES create a pending web publish because ordering availability changes.
-// Name/price/category edits always appear, so renames reach both the cards
+// Name/price/tier edits always appear, so renames reach both the cards
 // and the full name list in one publish.
-export function diffPublicChanges(central, published, costs = null) {
-  const left = publicProjectionOfCentral(central, costs);
+export function diffPublicChanges(central, published) {
+  const left = publicProjectionOfCentral(central);
   const right = publicProjectionOfPublished(published);
   const publishedQuoteOnly = new Set(
     ((published.overrides || published)?.quoteOnly || []).map(String),
@@ -512,15 +625,19 @@ export function diffPublicChanges(central, published, costs = null) {
     .sort();
   const prevQuoteOnly = [...publishedQuoteOnly].sort();
   const quoteOnlyChanged = JSON.stringify(nextQuoteOnly) !== JSON.stringify(prevQuoteOnly);
-  const toppingsChanged = JSON.stringify(left.toppings) !== JSON.stringify(right.toppings);
-  const meatsChanged = JSON.stringify(left.meats) !== JSON.stringify(right.meats);
+const toppingsChanged = JSON.stringify(left.toppings) !== JSON.stringify(right.toppings);
   const popularChanged = JSON.stringify(left.popular) !== JSON.stringify(right.popular);
-  const hasChanges = added.length > 0 || changed.length > 0 || removed.length > 0
-    || quoteOnlyChanged || toppingsChanged || meatsChanged || popularChanged;
+  // A side rename, a confirmed price or a retired side all change what the web
+  // may say about Signature, so each one is a pending publish.
+  const sideItemsChanged = JSON.stringify(left.sideItems) !== JSON.stringify(right.sideItems);
+  const hasChanges = added.length > 0 || changed.length > 0 || shown.length > 0
+    || hidden.length > 0 || removed.length > 0
+    || quoteOnlyChanged || toppingsChanged || popularChanged
+    || sideItemsChanged;
   return {
     added, changed, shown, hidden, removed, costBlocked,
     quoteOnlyChanged,
-    toppingsChanged, meatsChanged, popularChanged,
+    toppingsChanged, popularChanged, sideItemsChanged,
     hasChanges,
   };
 }
@@ -538,7 +655,7 @@ export function sha256Hex(content) {
   return createHash('sha256').update(String(content), 'utf8').digest('hex');
 }
 
-export function buildPlannerOverrides(central, current, now = new Date(), costs = null) {
+export function buildPlannerOverrides(central, current, now = new Date()) {
   // Preserve the currently published key order (minimal diff, stable for
   // readers); brand-new ids append sorted by display order.
   const currentOrder = Object.keys(current?.prices || {});
@@ -557,7 +674,7 @@ export function buildPlannerOverrides(central, current, now = new Date(), costs 
   next.mins = pick((menu) => menu.minPerMenu);
   next.images = pick((menu) => menu.image);
   next.names = pick((menu) => menu.name);
-  next.categories = pick((menu) => menu.category);
+  next.tiers = pick((menu) => normalizeTier(menu.tier));
   next.descs = pick((menu) => menu.desc || '');
   next.badges = pick((menu) => menu.badge || '');
   next.sortOrder = pick((menu) => menu.sortOrder);
@@ -576,15 +693,29 @@ export function buildPlannerOverrides(central, current, now = new Date(), costs 
   // A menu with the price switched off lands here even when its cost is
   // confirmed: there is no customer-facing price to sell at.
   next.quoteOnly = sorted
-    .filter((menu) => isQuoteOnly(menu, costs))
+    .filter((menu) => isQuoteOnly(menu))
     .map((menu) => menu.id)
     .sort((a, b) => a - b);
-  next.meats = central.meats || [];
   next.toppings = central.toppings || [];
-  next.noMeatMenus = sorted.filter((menu) => menu.noMeat).map((menu) => menu.id);
+  // Side items: published field-by-field, so `cost` cannot leak and an
+  // unconfirmed price stays null instead of becoming a number to guess at.
+  next.sideItems = publicSideItemsOf(central.sideItems || []);
   // Carried-over keys (preserved verbatim; out of menu-publish scope).
   for (const key of Object.keys(current || {})) {
     if (CENTRAL_MANAGED_KEYS.includes(key)) continue;
+    if (RETIRED_OVERRIDE_KEYS.includes(key)) continue;
+    // newMenus[] used to carry owner-added sets that predated the central draft,
+    // straight past the draft into the published file. Because those entries are
+    // not owned by the draft, hiding a menu in the admin UI could never reach
+    // them: the customer menu page appended every one of them to the catalogue
+    // at runtime, so retired dishes kept showing up next to live ones. The
+    // central draft is the single source of truth for the catalogue, so a set
+    // that is not in the draft is not for sale. The key stays (as an empty list)
+    // so the consumers that read it keep working.
+    if (key === 'newMenus') {
+      next.newMenus = [];
+      continue;
+    }
     if (!PUBLIC_OVERRIDE_KEYS.includes(key)) {
       throw new Error(`planner key ไม่ได้อยู่ใน allowlist: ${key}`);
     }
@@ -603,23 +734,20 @@ function jsString(value) {
 }
 
 // Regenerate js/menu-data.js from the central draft. Same line format as the
-// legacy exporter (id/name/price/category/image/desc/badge/minPerMenu +
-// shared toppings + noMeat flag) plus sortOrder for display order.
+// legacy exporter (id/name/price/tier/image/desc/badge/minPerMenu + shared
+// toppings) plus sortOrder for display order.
 export function buildMenuDataJs(central, exportedAt = new Date()) {
   const sorted = [...central.menus].sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
-  const toppings = central.toppings || [];
-  const meats = central.meats || [];
+const toppings = central.toppings || [];
   const lines = [
     `/* EED HALAL — Menu database for budget calculator — auto-export ${exportedAt.toLocaleString('th-TH')} */`,
-    `var EED_DEFAULT_MEATS = ${JSON.stringify(meats)};`,
     `var EED_DEFAULT_TOPPINGS = ${JSON.stringify(toppings)};`,
     'var EED_MENUS = [',
   ];
   sorted.forEach((menu, index) => {
     const topStr = toppings.length ? `, toppings: ${JSON.stringify(toppings)}` : '';
-    const noMeatStr = menu.noMeat ? ', noMeat: true' : '';
     const imgSafe = String(menu.image || '').replace(/\\/g, '/');
-    let line = `  { id: ${menu.id}, name: ${jsString(menu.name)}, price: ${menu.price}, category: ${jsString(menu.category)}, image: ${jsString(imgSafe)}, desc: ${jsString(menu.desc || '')}, badge: ${jsString(menu.badge || '')}, minPerMenu: ${menu.minPerMenu}, sortOrder: ${menu.sortOrder}${topStr}${noMeatStr} }`;
+    let line = `  { id: ${menu.id}, name: ${jsString(menu.name)}, price: ${menu.price}, tier: ${jsString(normalizeTier(menu.tier))}, image: ${jsString(imgSafe)}, desc: ${jsString(menu.desc || '')}, badge: ${jsString(menu.badge || '')}, minPerMenu: ${menu.minPerMenu}, sortOrder: ${menu.sortOrder}${topStr} }`;
     if (index < sorted.length - 1) line += ',';
     lines.push(line);
   });
@@ -665,23 +793,28 @@ function scanForbidden(label, content) {
 
 // Verify freshly built artifacts BEFORE they replace the working release:
 // allowlisted keys only, no internal leak, every image web-reachable, and the
-// strict 5-map id consistency the menu API relies on (fail closed).
+// strict catalog id consistency the menu API relies on (fail closed).
 export function assertPublishSafe({ overrides, menuDataJs, root }) {
   for (const key of Object.keys(overrides)) {
     if (!PUBLIC_OVERRIDE_KEYS.includes(key)) {
       throw new Error(`คีย์สาธารณะไม่อยู่ใน allowlist: ${key}`);
     }
   }
-  const { prices, mins, names, categories, images } = overrides;
-  for (const map of [prices, mins, names, categories, images]) {
+  const { prices, mins, names, images, tiers } = overrides;
+  for (const map of [prices, mins, names, images, tiers]) {
     if (!isPlainObject(map)) throw new Error('catalog maps ต้องเป็นอ็อบเจกต์');
   }
   const priceIds = Object.keys(prices || {});
   if (priceIds.length === 0) throw new Error('catalog ว่างเปล่า — ห้ามเผยแพร่');
-  for (const map of [mins, names, categories, images]) {
+  for (const map of [mins, names, images, tiers]) {
     const keys = Object.keys(map || {});
     if (keys.length !== priceIds.length || !priceIds.every((id) => Object.hasOwn(map, id))) {
       throw new Error('catalog maps คลุม id ไม่ตรงกัน — ห้ามเผยแพร่ครึ่งๆ กลางๆ');
+    }
+  }
+  for (const [id, tier] of Object.entries(tiers)) {
+    if (!isTierId(tier)) {
+      throw new Error(`tiers[${id}] = “${tier}” ไม่ใช่ระดับสินค้าที่ถูกต้อง`);
     }
   }
   for (const entry of overrides.deleted || []) {
@@ -696,8 +829,20 @@ export function assertPublishSafe({ overrides, menuDataJs, root }) {
   for (const id of overrides.popular || []) {
     if (!Object.hasOwn(prices, String(id))) throw new Error(`popular อ้าง id ที่ไม่มีใน catalog: ${id}`);
   }
-  for (const id of overrides.noMeatMenus || []) {
-    if (!Object.hasOwn(prices, String(id))) throw new Error(`noMeatMenus อ้าง id ที่ไม่มีใน catalog: ${id}`);
+  // Side items: the same rule the tier copy depends on — a published price must
+  // be a confirmed number, and kitchen cost must never reach the web.
+  const sideIds = new Set();
+  for (const item of overrides.sideItems || []) {
+    if (!isPlainObject(item)) throw new Error('sideItems ต้องเป็นอาร์เรย์ของอ็อบเจกต์');
+    if (Object.hasOwn(item, 'cost')) throw new Error(`sideItems ${item.id}: ต้นทุนห้ามเผยแพร่`);
+    if (sideIds.has(item.id)) throw new Error(`sideItems: id ซ้ำ (${item.id})`);
+    sideIds.add(item.id);
+    if (item.priceStatus === 'ready' && !Number.isFinite(Number(item.priceAdjustment))) {
+      throw new Error(`sideItems ${item.id}: priceStatus=ready แต่ไม่มีราคาเพิ่ม — ห้ามเผยแพร่ราคาที่ยังไม่ยืนยัน`);
+    }
+    if (item.priceStatus !== 'ready' && item.priceAdjustment !== null) {
+      throw new Error(`sideItems ${item.id}: ยังไม่ยืนยันราคาแต่มีตัวเลขอยู่ — ต้องตั้ง priceStatus เป็น ready เมื่อพร้อม`);
+    }
   }
   // Actionable image errors first (which menu, what path), generic leak scan
   // second as a backstop.
@@ -791,7 +936,7 @@ export const LIVE_STATE_TH = {
 // fault: test-only hooks — 'pre-rename' throws after temps are verified but
 // before any published file is replaced; 'between-renames' throws after the
 // first rename. Both must leave the previous COMPLETE release in place.
-export async function publishCentral({ root, dataDir, central, costs = null, now = new Date(), fault = null }) {
+export async function publishCentral({ root, dataDir, central, now = new Date(), fault = null }) {
   const validated = validateCentral(central);
   if (!validated.ok) {
     const error = new Error(`ฐานกลางไม่ผ่านการตรวจ: ${validated.errors.join(' | ')}`);
@@ -800,7 +945,7 @@ export async function publishCentral({ root, dataDir, central, costs = null, now
   }
   const clean = { ...validated.data, version: central.version ?? 0, updatedAt: central.updatedAt ?? null };
   const current = await loadPublished(root);
-  const overrides = buildPlannerOverrides(clean, current.overrides, now, costs);
+  const overrides = buildPlannerOverrides(clean, current.overrides, now);
   const menuDataJs = buildMenuDataJs(clean, now);
   assertPublishSafe({ overrides, menuDataJs, root });
 

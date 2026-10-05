@@ -4,7 +4,8 @@
    ห้ามแก้กฎธุรกิจที่ไฟล์นี้: แก้ data/business-rules.json แล้วรัน
    node scripts/check-system.mjs --write เพื่อสร้างไฟล์นี้ใหม่
    ใช้คู่กับ attribute data-eed="key" ใน HTML เช่น:
-     <span data-eed="startingPrice">60</span> บาท/กล่อง
+     <span data-eed="minOrder">10</span> กล่อง
+   ราคาเริ่มต้นไม่อยู่ในไฟล์นี้: คำนวณจาก data/planner-overrides.json ตอนรัน (ดู loadTiers)
    ค่าที่เขียนใน HTML คือค่า fallback (ตอน JavaScript ไม่ทำงาน)
    ===================================================================== */
 var EED = {
@@ -18,9 +19,11 @@ var EED = {
   operatingHoursTh: 'จันทร์-เสาร์',
   operatingHoursEn: 'Monday–Saturday',
 
-  /* ── ราคา ── */
-  startingPrice: '65',          /* บาท/กล่อง เมนูมาตรฐานเริ่มต้น */
-  premiumPriceFrom: '230',      /* บาท/กล่อง เซ็ตพรีเมียมเริ่มต้น ราคาจริงขึ้นอยู่กับเมนูที่เลือก */
+  /* ── ราคาเริ่มต้นของข้าวกล่อง ── */
+  /* ไม่มีตัวเลขตายตัว: คำนวณจาก data/planner-overrides.json ตอนรัน (ดู loadTiers)
+     ระดับที่ยังไม่มีชุดเปิดขายจะได้ null และหน้าเว็บจะไม่แสดงราคา */
+  startingPrice: null,        /* บาท/กล่อง ระดับ classic (คำนวณอัตโนมัติ) */
+  tiers: null,                /* [{ id, priceFrom, sourceName }] หลังโหลดเสร็จ */
 
   /* ── ขั้นต่ำและเงื่อนไข ── */
   minOrder: '10',               /* ขั้นต่ำออเดอร์องค์กร (กล่อง) */
@@ -28,7 +31,7 @@ var EED = {
   thaiMinPerMenu: '10',          /* ขั้นต่ำต่อเมนูอาหารไทย (กล่อง) */
   indianMinPerMenu: '10',       /* ขั้นต่ำต่อเมนูอาหารอินเดีย (กล่อง) */
   onTimeRate: '98',             /* % ส่งตรงเวลา */
-  menuCount: '30',              /* มีมากกว่า 30 เมนู */
+  menuCount: '12',              /* มีมากกว่า 30 เมนู */
 
   /* ── ค่าจัดส่ง (นโยบายถามแอดมิน — ไม่มีเรท/โซน/ยอดส่งฟรี) ── */
   /*    ข้อความมาจาก data/business-rules.json → delivery.messageTh/messageEn */
@@ -69,8 +72,46 @@ var EED = {
         m.setAttribute('content', EED[k]);
       }
     }
+  },
+
+  /* ราคาเริ่มต้นของแต่ละระดับ = ราคาต่ำสุดของชุดในระดับนั้นที่เปิดขายและ
+     แสดงบนเว็บ คำนวณตอนรันจาก data/planner-overrides.json (แหล่งเดียวกับ
+     scripts/mealbox-tiers.mjs) ไม่มีตัวเลขสำรอง: ระดับไหนไม่มีชุดจริง
+     จะได้ null และหน้าเว็บจะขอใบเสนอราคาแทนการเดาราคา */
+  loadTiers: function () {
+    var urls = ['data/planner-overrides.json', '../data/planner-overrides.json'];
+    var attempt = function (index) {
+      if (index >= urls.length) return Promise.resolve(null);
+      return fetch(urls[index] + '?t=' + Date.now(), { cache: 'no-store' })
+        .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+        .catch(function () { return attempt(index + 1); });
+    };
+    return attempt(0).then(function (data) {
+      if (!data) return EED.tiers;
+      var deleted = data.deleted || [];
+      var quoteOnly = data.quoteOnly || [];
+      var tiers = data.tiers || {};
+      var prices = data.prices || {};
+      var names = data.names || {};
+      var floors = {};
+      Object.keys(prices).forEach(function (id) {
+        if (deleted.indexOf(Number(id)) !== -1 || quoteOnly.indexOf(Number(id)) !== -1) return;
+        if (typeof prices[id] !== 'number' || !(prices[id] > 0)) return;
+        var tier = tiers[id] === 'signature' || tiers[id] === 'executive' ? tiers[id] : 'classic';
+        var best = floors[tier];
+        if (!best || prices[id] < best.priceFrom) {
+          floors[tier] = { priceFrom: prices[id], sourceName: names[id] || '' };
+        }
+      });
+      EED.tiers = floors;
+      EED.startingPrice = floors.classic ? String(floors.classic.priceFrom) : null;
+      return floors;
+    });
   }
 };
+
+// Environments without fetch (build-time sandboxes) get no price at all.
+EED.tiersReady = typeof fetch === 'function' ? EED.loadTiers() : Promise.resolve(null);
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', function () { EED.apply(); });

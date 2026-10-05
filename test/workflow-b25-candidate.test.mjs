@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
@@ -128,7 +128,7 @@ test('menu lookup gate fetches only for deterministic fetch modes', () => {
   assert.equal(cond.rightValue, 'fetch');
   const expr = cond.leftValue.replace(/^\s*=\{\{\s*/, '').replace(/\s*\}\}\s*$/, '');
   const gate = (menuPlan) => vm.runInNewContext(expr, { $json: { menuPlan } });
-  for (const mode of ['exact-price', 'max-price', 'name-lookup', 'category-price', 'category-max']) {
+  for (const mode of ['exact-price', 'max-price', 'name-lookup', 'name-price', 'name-max', 'tier-price', 'tier-max']) {
     assert.equal(gate({ mode }), 'fetch', mode);
   }
   for (const mode of ['clarify', 'none', undefined]) {
@@ -151,13 +151,13 @@ test('context builder turns API payloads into factual MENU_CONTEXT', async () =>
   assert.equal(code, buildMenuContextNodeCode());
   const faqJson = {
     body: { events: [{ message: { text: 'งบ 75 บาท' } }] },
-    menuPlan: { menuLookupNeeded: true, mode: 'exact-price', price: 75, maxPrice: null, category: null, query: null },
+    menuPlan: { menuLookupNeeded: true, mode: 'exact-price', price: 75, maxPrice: null, tier: null, query: null },
   };
   const run = (inputJson) => vm.runInNewContext(`(function () { ${code} })()`, {
     $input: { first: () => ({ json: inputJson }) },
     $: () => ({ first: () => ({ json: faqJson }) }),
   })[0].json;
-  const ok = run({ menus: [{ id: '14', name: 'ข้าวไก่เทอริยากิ', price: 75, minPerMenu: 5, category: 'ข้าวราดแกง' }] });
+  const ok = run({ menus: [{ id: '14', name: 'ข้าวไก่เทอริยากิ', price: 75, minPerMenu: 5, tier: 'classic' }] });
   assert.ok(ok.menuContext.includes('ข้าวไก่เทอริยากิ | 75 บาท/กล่อง'));
   assert.equal(ok.body.events[0].message.text, 'งบ 75 บาท');
   const empty = run({ menus: [] });
@@ -173,7 +173,7 @@ test('deterministic draft gate sends menu modes past Gemini', () => {
   assert.equal(cond.rightValue, 'draft');
   const expr = cond.leftValue.replace(/^\s*=\{\{\s*/, '').replace(/\s*\}\}\s*$/, '');
   const gate = (menuPlan) => vm.runInNewContext(expr, { $json: { menuPlan } });
-  for (const mode of ['exact-price', 'max-price', 'name-lookup', 'category-price', 'category-max', 'clarify']) {
+  for (const mode of ['exact-price', 'max-price', 'name-lookup', 'name-price', 'name-max', 'tier-price', 'tier-max', 'clarify']) {
     assert.equal(gate({ mode }), 'draft', mode);
   }
   assert.equal(gate({ mode: 'none' }), 'ai');
@@ -193,9 +193,9 @@ test('deterministic draft node renders facts without Gemini', async (t) => {
   assert.ok(!code.includes('const menus ='), 'no embedded catalog');
   const faqJson = {
     body: { events: [{ message: { text: 'งบ 75 บาท' } }] },
-    menuPlan: { menuLookupNeeded: true, mode: 'exact-price', price: 75, maxPrice: null, category: null, query: null },
+    menuPlan: { menuLookupNeeded: true, mode: 'exact-price', price: 75, maxPrice: null, tier: null, query: null },
   };
-  const fetched = { menus: [{ id: '14', name: 'ข้าวไก่เทอริยากิ', price: 75, minPerMenu: 5, category: 'ข้าวราดแกง' }] };
+  const fetched = { menus: [{ id: '14', name: 'ข้าวไก่เทอริยากิ', price: 75, minPerMenu: 5, tier: 'classic' }] };
   const run = (fetchJson) => vm.runInNewContext(`(function () { ${code} })()`, {
     $input: { first: () => ({ json: { menuContext: 'CTX' } }) },
     $: (name) => {

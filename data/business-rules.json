@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "2026-09-24",
+  "revision": "2026-10-04",
   "business": {
     "name": "EED HALAL",
     "owner": "เชฟและผู้ก่อตั้ง พี่อี๊ด",
@@ -19,12 +19,50 @@
   },
   "services": {
     "mealBox": {
-      "priceFrom": 65,
-      "premiumPriceFrom": 230,
+      "tiers": [
+        {
+          "id": "classic",
+          "nameTh": "Classic Halal Meal Box — ข้าวกล่องฮาลาลระดับคลาสสิก",
+          "nameEn": "Classic Halal Meal Box",
+          "sellingPointTh": "คุมงบง่าย ทานง่าย คนเยอะก็รับไหว",
+          "sellingPointEn": "Easy on the budget, easy to eat, and ready for a full room",
+          "bestForTh": "ประชุม อบรม สัมมนา และอาหารพนักงานประจำบริษัท",
+          "bestForEn": "Company meetings, training days, seminars, and regular staff meals",
+          "boxFormatTh": "กล่องข้าวมาตรฐาน",
+          "boxFormatEn": "Standard rice box"
+        },
+        {
+          "id": "signature",
+          "nameTh": "Signature Halal Meal Box — ข้าวกล่องฮาลาลระดับซิกเนเจอร์",
+          "nameEn": "Signature Halal Meal Box",
+          "sellingPointTh": "แขกเลือกได้สองอย่างในกล่องเดียว คุณไม่ต้องเดาเมนูว่าแขกจะชอบอะไร",
+          "sellingPointEn": "Your guests get two dishes in one box, so you never have to guess what they will like",
+          "bestForTh": "งานรับรองลูกค้า เปิดตัวสินค้า และงานเลี้ยงผู้บริหาร",
+          "bestForEn": "Client events, product launches, and executive dinners",
+          "boxFormatTh": "ข้าว อาหารหลัก 1 อย่าง อาหารรอง 1 อย่าง และผัก ในกล่อง 4 ช่อง",
+          "boxFormatEn": "Rice, one main, one second dish, and vegetables, in a four-compartment box",
+          "sideChoices": ["side-001", "side-002", "side-003", "soup-001", "soup-002", "curry-001"],
+          "sideChoiceLabelTh": "อาหารเมนูที่ 2",
+          "sideChoiceLabelEn": "Second dish",
+          "sideChoiceNoteTh": "บอกอาหารหลักที่ชอบมาได้เลย เราจะเสนออาหารรองที่เข้ากันให้ 2-3 ตัวเลือก ถ้าไม่สั่งเราก็ใช้คู่มาตรฐานของร้านให้ ราคาขึ้นตามคู่เมนูที่เลือก เราจะส่งราคารวมทั้งกล่องให้ก่อนเสมอ ไม่มีบรรทัดค่าเพิ่มทีหลัง",
+          "sideChoiceNoteEn": "Tell us the main you like and we will offer two or three second dishes that go with it; if you do not choose, we use our standard pairing. The price follows the pair you pick, so we always send the full box price first and never add an extra line afterwards."
+        },
+        {
+          "id": "executive",
+          "nameTh": "Executive Premium Halal Box — ข้าวกล่องฮาลาลระดับพรีเมียม",
+          "nameEn": "Executive Premium Halal Box",
+          "sellingPointTh": "วัตถุดิบและบรรจุภัณฑ์พรีเมียม เสิร์ฟได้เอง",
+          "sellingPointEn": "Premium ingredients and packaging, plated ready to serve",
+          "bestForTh": "ผู้บริหาร VIP คณะกรรมการ และงานสำคัญ",
+          "bestForEn": "VIP executives, boards of directors, and high-stakes events",
+          "boxFormatTh": "กล่องพรีเมียม วัตถุดิบและบรรจุภัณฑ์พิเศษ",
+          "boxFormatEn": "Premium box with premium ingredients and packaging"
+        }
+      ],
       "minimumOrder": 10,
       "standardMenuMinimum": 10,
       "specialMenuMinimum": 10,
-      "menuCountFrom": 30,
+      "menuCountFrom": 12,
       "maximumOrder": null,
       "leadTimeDays": 1,
       "halalMaterial": "วัตถุดิบฮาลาล 100%",
@@ -132,6 +170,7 @@
     "delivery": "https://eedhalal.com/delivery-area.html",
     "halal": "https://eedhalal.com/halal-cert.html",
     "contact": "https://eedhalal.com/contact.html",
+    "line": "https://lin.ee/CfvqJTd",
     "about": "https://eedhalal.com/about.html",
     "cocktail": "https://eedhalal.com/cocktail.html",
     "tableService": "https://eedhalal.com/table-service.html",

@@ -14,6 +14,7 @@ import {
 } from '../line-ai/draft-schema.mjs';
 import { findCustomerSenders, findKitchenAutoPush } from '../line-ai/conversation-update.mjs';
 import { loadSystemData } from '../scripts/check-system.mjs';
+import { computeTierFloors, setsFromPlanner, tierDefinitions } from '../scripts/mealbox-tiers.mjs';
 
 const execFileAsync = promisify(execFileCb);
 
@@ -125,7 +126,7 @@ test('C: no automatic kitchen push exists in the workflow', () => {
 // D. Bot business data derives from business-rules.json; meal-box prices
 // arrive only via runtime MENU_CONTEXT, never baked into the workflow.
 test('D: router carries no price catalog and draft revision matches the source of truth', async () => {
-  const { rules } = await loadSystemData();
+  const { rules, catalog } = await loadSystemData();
   const routerCode = byId.get('deterministic-faq').parameters.jsCode;
   assert.ok(!routerCode.includes('const menus ='), 'no embedded catalog');
   assert.ok(!routerCode.includes('budgetContext'), 'no retired candidate list');
@@ -138,7 +139,11 @@ test('D: router carries no price catalog and draft revision matches the source o
   // JSON-escaped with LF, so the \r has to come off before comparing.
   assert.ok(agentMessage.startsWith(knowledge.trim().split('\n')[0].replace(/\r$/, '')));
   assert.ok(agentMessage.includes(rules.business.halalCertificate));
-  assert.ok(agentMessage.includes(`เริ่ม ${rules.services.mealBox.priceFrom} บาท/กล่อง`));
+  const floors = computeTierFloors(setsFromPlanner(catalog)).floors;
+  assert.ok(agentMessage.includes(`เริ่ม ${floors.classic.priceFrom} บาท/กล่อง`));
+  for (const tier of tierDefinitions(rules)) {
+    assert.ok(agentMessage.includes(tier.nameEn), `${tier.id} level must reach the bot prompt`);
+  }
   assert.ok(agentMessage.includes('MENU_CONTEXT'), 'price authority rule present');
   assert.ok(!/^.+ \| \d+ บาท\/กล่อง/m.test(agentMessage), 'no baked menu price lines');
 });

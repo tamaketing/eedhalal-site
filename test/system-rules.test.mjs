@@ -8,6 +8,7 @@ import {
   loadSystemData,
   validateData,
 } from '../scripts/check-system.mjs';
+import { computeTierFloors, isTierId, setsFromPlanner, tierDefinitions } from '../scripts/mealbox-tiers.mjs';
 
 const data = await loadSystemData();
 
@@ -19,21 +20,29 @@ test('business and menu data satisfy the canonical rules', () => {
   validateData(data.rules, data.catalog, data.legacy);
   const activeMenus = getEffectiveMenus(data.legacy.menus, data.catalog);
   assert.ok(activeMenus.length >= data.rules.services.mealBox.menuCountFrom);
-  assert.equal(Math.min(...activeMenus.map((menu) => menu.price)), data.rules.services.mealBox.priceFrom);
+  // No starting price is published in business-rules.json any more: the classic
+  // floor is the cheapest set that is open for sale.
+  const sellable = activeMenus.filter((menu) => menu.price > 0);
+  assert.equal(Math.min(...sellable.map((menu) => menu.price)), computeTierFloors(setsFromPlanner(data.catalog)).floors.classic.priceFrom);
   assert.ok(activeMenus.every((menu) => menu.minPerMenu === data.rules.services.mealBox.standardMenuMinimum));
   assert.ok(activeMenus.some((menu) => menu.minPerMenu === 10));
   assert.ok(!activeMenus.some((menu) => menu.minPerMenu === 8));
 });
 
-test('premium menu prices clear the premium floor', () => {
-  const premium = getEffectiveMenus(data.legacy.menus, data.catalog)
-    .filter((menu) => menu.category === 'พรีเมียม');
-  assert.ok(premium.length > 0, 'at least one premium menu is required');
-  premium.forEach((menu) => {
-    // The premium set starts at premiumPriceFrom and then depends on which menu
-    // the customer picks, so there is no upper bound to assert.
-    assert.ok(menu.price >= data.rules.services.mealBox.premiumPriceFrom, `${menu.name} is below the premium price floor`);
-  });
+test('every published set carries a tier, and each tier floor is its cheapest set', () => {
+  const menus = getEffectiveMenus(data.legacy.menus, data.catalog);
+  assert.ok(menus.every((menu) => isTierId(data.catalog.tiers?.[String(menu.id)] ?? menu.tier)), 'every set needs a published tier');
+  const { floors, members } = computeTierFloors(setsFromPlanner(data.catalog));
+  for (const tier of tierDefinitions(data.rules)) {
+    const floor = floors[tier.id];
+    if (!floor) {
+      assert.equal(members[tier.id].length, 0, `${tier.id} has sets but no floor`);
+      continue;
+    }
+    const cheapest = members[tier.id].reduce((a, b) => (b.price < a.price ? b : a));
+    assert.equal(floor.priceFrom, cheapest.price, `${tier.id} floor must be its cheapest open set`);
+    assert.equal(floor.sourceId, cheapest.id, `${tier.id} floor must name the set it came from`);
+  }
 });
 
 test('order minimum accepts 10 boxes and rejects 9', () => {

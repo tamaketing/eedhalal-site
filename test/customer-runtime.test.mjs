@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
 import test from 'node:test';
 
@@ -17,7 +17,7 @@ async function missing(url) {
 }
 
 test('popular menu applies the complete catalog override shape', () => {
-  for (const field of ['prices', 'mins', 'images', 'names', 'categories', 'deleted', 'newMenus']) {
+  for (const field of ['prices', 'mins', 'images', 'names', 'tiers', 'deleted', 'newMenus']) {
     assert.match(popularMenu, new RegExp(field));
   }
   assert.match(popularMenu, /function applyCatalog/);

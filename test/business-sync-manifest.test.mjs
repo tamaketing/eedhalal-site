@@ -6,7 +6,9 @@ import {
   FORBIDDEN_SCAN_SKIP_DIRS,
   plannerMinPriceWhereNameStartsWith,
   plannerPricesWhereNameStartsWith,
+  tierPriceFromPlanner,
 } from '../scripts/check-business-sync.mjs';
+import { computeTierFloors, setsFromPlanner } from '../scripts/mealbox-tiers.mjs';
 
 const root = new URL('../', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('data/sync-manifest.json', root), 'utf8'));
@@ -41,10 +43,10 @@ test('the starting-price resolver refuses a prefix that matches nothing', () => 
 });
 
 test('the catalogue price set for a dish family is exactly what is sold', () => {
-  // Beef khao mok was repriced 150 -> 170 and goat 200 -> 265. Keep these in
-  // step with the catalogue so the landing pages cannot quietly keep quoting
-  // the old figures.
-  assert.deepEqual(khaoMokPrices, [85, 110, 170, 180, 265]);
+  // The owner curates this family down to the two sizes actually on sale
+  // (drumstick 85, thigh 110). Keep the assertion in step with the published
+  // prices so the landing pages cannot quietly quote a figure we do not sell.
+  assert.deepEqual(khaoMokPrices, [85, 110]);
   assert.throws(
     () => plannerPricesWhereNameStartsWith(planner, 'เมนูไม่มีจริง'),
     /no published dish name starts with/,
@@ -66,26 +68,52 @@ test('both khao-mok landing pages are guarded against invented prices', async ()
 // mok is legitimate, and the standard price of 65 appears in the same sentence
 // as any premium figure. A heuristic that cannot tell those apart is worse than
 // no guard, so the four precise checks carry this instead: the
-// premium-set-price fact across all 24 files, the premium floor agreeing with
-// the catalogue, the cataloguePrices rule on the landing pages, and the
-// forbidden rule rejecting the old khao-mok figures.
+// executive-tier-price fact across every registered file, the tier floors
+// agreeing with the published catalogue, the cataloguePrices rule on the
+// landing pages, and the forbidden rule rejecting the old khao-mok figures.
 
-test('the premium set starts at the figure business-rules publishes', async () => {
-  const premiumFrom = plannerPricesWhereNameStartsWith(planner, 'เซ็ตพรีเมียม');
-  assert.deepEqual(premiumFrom, [230]);
-  assert.equal(rules.services.mealBox.premiumPriceFrom, premiumFrom[0], 'business-rules and the catalogue must agree');
-  // There is no upper bound: the price follows whichever menu the customer picks.
+test('every registered tier price is the catalogue floor for that tier', async () => {
+  const floors = computeTierFloors(setsFromPlanner(planner)).floors;
+  const classicFrom = floors.classic.priceFrom;
+  const executiveFrom = floors.executive?.priceFrom ?? null;
+  // The figures are never typed: they are whatever the published sets produce.
+  assert.equal(tierPriceFromPlanner(planner, 'classic'), classicFrom);
+  assert.equal(tierPriceFromPlanner(planner, 'executive'), executiveFrom);
+  const premiumNames = plannerPricesWhereNameStartsWith(planner, 'เซ็ตพรีเมียม');
+  if (executiveFrom !== null) {
+    assert.ok(premiumNames.includes(executiveFrom), 'the executive floor must be a set the catalogue sells');
+    for (const price of premiumNames) {
+      assert.ok(price >= executiveFrom, 'no executive set may sit below the executive floor');
+    }
+  }
+  // No price ceiling exists anywhere: the figure follows whichever set is chosen.
+  assert.equal('priceTo' in rules.services.mealBox, false, 'a tier ceiling would be invented data');
   assert.equal('premiumPriceTo' in rules.services.mealBox, false, 'a premium ceiling would be invented data');
+});
+
+test('a tier starting price is the cheapest published set of that tier', async () => {
+  const summary = await checkBusinessSync();
+  assert.ok(summary.cells > 0);
+  // Signature is open for sale now, so its fact must resolve to a real number
+  // rather than being skipped. The skip path is still exercised by the tier that
+  // has no open set, so the guard keeps working when one appears.
+  const signature = tierPriceFromPlanner(planner, 'signature');
+  assert.ok(signature > 0, 'Signature has published sets, so it must have a starting price');
+  const published = Object.keys(planner.prices)
+    .filter((id) => !(planner.deleted || []).map(String).includes(String(id)))
+    .filter((id) => !(planner.quoteOnly || []).map(String).includes(String(id)))
+    .filter((id) => planner.tiers[id] === 'signature')
+    .map((id) => Number(planner.prices[id]));
+  assert.equal(signature, Math.min(...published), 'the price must be the cheapest open Signature set');
 });
 
 test('a wrong price in prose or JSON-LD is caught on either language page', async (t) => {
   const cases = [
     ['khao-mok.html', 'เริ่ม 85 บาท', 'เริ่ม 90 บาท', 'prose drifting back to the old figure'],
-    ['khao-mok.html', '"price": "170.00"', '"price": "90.00"', 'a JSON-LD price that was never sold'],
-    ['khao-mok.html', 'ข้าวหมกเนื้อ - 170 บาท', 'ข้าวหมกเนื้อ - 150 บาท', 'the old beef price coming back'],
-    ['khao-mok.html', '"highPrice": "180"', '"highPrice": "90"', 'an offer range floor that was never sold'],
+    ['khao-mok.html', '"price": "85.00"', '"price": "90.00"', 'a JSON-LD price that was never sold'],
+    ['khao-mok.html', '"highPrice": "110"', '"highPrice": "150"', 'an offer range ceiling that was never sold'],
     ['en/khao-mok.html', 'starting at 85 THB per box', 'starting at 90 THB per box', 'English meta drifting back'],
-    ['en/khao-mok.html', '170 THB / box', '99 THB / box', 'an English card price that was never sold'],
+    ['en/khao-mok.html', '110 THB / box', '150 THB / box', 'an English card price that was never sold'],
   ];
 
   for (const [file, from, to] of cases) {

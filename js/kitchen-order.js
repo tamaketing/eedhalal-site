@@ -41,7 +41,6 @@
     return menus.find(function(menu){ return String(menu.id) === String(id); });
   }
   function toppings(menu){ return Array.isArray(menu.toppings) ? menu.toppings : (typeof EED_DEFAULT_TOPPINGS !== 'undefined' ? EED_DEFAULT_TOPPINGS : []); }
-  function meats(){ return typeof EED_DEFAULT_MEATS !== 'undefined' ? EED_DEFAULT_MEATS : [{name:'ไก่สับ',price:0}]; }
   function optionsFor(id){
     var menu = menuById(id);
     if(!menu) return { names:[], extra:0 };
@@ -53,10 +52,6 @@
       var topping = toppings(menu)[parseInt(index,10)];
       if(topping){ names.push(topping.name); extra += Number(topping.price)||0; }
     });
-    var meatIndex = draft.selectedMeats && draft.selectedMeats[id];
-    if(meatIndex === undefined) meatIndex = 0;
-    var meat = meats()[parseInt(meatIndex,10)];
-    if(meat) { names.unshift(meat.name); extra += Number(meat.price)||0; }
     return {names:names, extra:extra};
   }
   function applyOverrides(data){
@@ -69,7 +64,6 @@
         window.EED_DEFAULT_TOPPINGS = data.toppings.slice();
         menus.forEach(function(menu){ menu.toppings = data.toppings.map(function(t){ return {name:String(t.name),price:parseInt(t.price,10)||0}; }); });
       }
-      if(data.meats && Array.isArray(data.meats)) window.EED_DEFAULT_MEATS = data.meats.slice();
       if(Array.isArray(data.deleted)){
         var remaining = menus.filter(function(menu){ return data.deleted.indexOf(menu.id)===-1 && data.deleted.indexOf(String(menu.id))===-1; });
         menus.splice(0, menus.length);
@@ -84,7 +78,6 @@
       draft = {
         selected: standardizedDraft.legacy && standardizedDraft.legacy.selected || {},
         selectedToppings: standardizedDraft.legacy && standardizedDraft.legacy.selectedToppings || {},
-        selectedMeats: standardizedDraft.legacy && standardizedDraft.legacy.selectedMeats || {},
         quantity: parseInt(standardizedDraft.totals && standardizedDraft.totals.requestedQuantity,10) || 0,
         budgetPerBox: 0,
         deliveryDate: standardizedDraft.delivery && standardizedDraft.delivery.date || '',
@@ -98,7 +91,6 @@
     shipping = readJSON(LS_SHIP, {});
     draft.selected = draft.selected && typeof draft.selected === 'object' ? draft.selected : {};
     draft.selectedToppings = draft.selectedToppings && typeof draft.selectedToppings === 'object' ? draft.selectedToppings : {};
-    draft.selectedMeats = draft.selectedMeats && typeof draft.selectedMeats === 'object' ? draft.selectedMeats : {};
     draft.quantity = parseInt(draft.quantity,10) || 0;
     draft.budgetPerBox = parseInt(draft.budgetPerBox,10) || 0;
     draft.deliveryDate = readValue(LS_DATE);
@@ -108,7 +100,7 @@
     var data = {};
     var keys = {
       prices:'eed_selling_v1', mins:'eed_mins_v1', names:'eed_names_v1',
-      toppings:'eed_toppings_v1', meats:'eed_meats_v1', deleted:'eed_deleted_v1',
+      toppings:'eed_toppings_v1', deleted:'eed_deleted_v1',
       newMenus:'eed_new_menus_v1'
     };
     Object.keys(keys).forEach(function(type){

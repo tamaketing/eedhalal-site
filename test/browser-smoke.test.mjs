@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
@@ -77,7 +77,7 @@ function browserContext(ids, values = {}) {
 test('popular menu hydrates its grid in a browser-like context', () => {
   const { context, elements } = browserContext(['popularMenuGrid'], {
     EED_MENUS: [
-      { id: 1, name: 'เมนู <ทดสอบ>', price: 60, category: 'ข้าวราดแกง', image: 'img/test.jpg', desc: 'เมนูทดสอบ' },
+      { id: 1, name: 'เมนู <ทดสอบ>', price: 60, tier: 'classic', image: 'img/test.jpg', desc: 'เมนูทดสอบ' },
     ],
   });
   vm.runInNewContext(popularSource, context);
@@ -118,8 +118,8 @@ test('planner applies local menu overrides without authentication or browser dep
     ['eed_selling_v1', JSON.stringify({ 1: 85 })],
     ['eed_mins_v1', JSON.stringify({ 1: 8 })],
   ]);
-  const { context, elements } = browserContext(['plannerApp', 'priceTableBody', 'statCount', 'statCat', 'statRange', 'statLast', 'globalToppingsList', 'meatsList', 'snackTableBody'], {
-    EED_MENUS: [{ id: 1, name: 'เมนูทดสอบ', price: 60, category: 'ข้าวราดแกง', image: 'img/test.jpg', minPerMenu: 5 }],
+  const { context, elements } = browserContext(['plannerApp', 'priceTableBody', 'statCount', 'statCat', 'statRange', 'statLast', 'globalToppingsList', 'snackTableBody'], {
+    EED_MENUS: [{ id: 1, name: 'เมนูทดสอบ', price: 60, tier: 'classic', image: 'img/test.jpg', minPerMenu: 5 }],
     EED_DEFAULT_TOPPINGS: [],
     EED_SNACK_MENUS: [],
     localStorage: { getItem(key) { return stored.get(key) ?? null; }, setItem(key, value) { stored.set(key, value); }, removeItem(key) { stored.delete(key); } },
@@ -136,10 +136,10 @@ test('public pages load their browser enhancers after shared data scripts', () =
   assert.ok(snackHtml.indexOf('js/snack-data.js') < snackHtml.indexOf('js/snack-hydrate.js'));
 });
 
-test('production menu renderer prints no price and hides nothing by cost state', async () => {
+test('production menu renderer shows the catalogue price and hides nothing by cost state', async () => {
   const menus = [
-    { id: 1, name: 'เมนูหนึ่ง', price: 65, category: 'ข้าวราดแกง', image: 'img/a.jpg', desc: '' },
-    { id: 2, name: 'เมนูสอง', price: 70, category: 'ข้าวราดแกง', image: 'img/b.jpg', desc: '' },
+    { id: 1, name: 'เมนูหนึ่ง', price: 65, tier: 'classic', image: 'img/a.jpg', desc: '' },
+    { id: 2, name: 'เมนูสอง', price: 70, tier: 'classic', image: 'img/b.jpg', desc: '' },
   ];
   // quoteOnly is still fetched for internal reasons, but nothing may change on
   // the page because of it: the site has no ordering flow to gate.
@@ -156,16 +156,35 @@ test('production menu renderer prints no price and hides nothing by cost state',
   // No cost-state label, and both dishes get the identical CTA.
   assert.ok(!grid.includes('pm-quote-note'), 'no ask-for-quote label');
   assert.ok(!grid.includes('สอบถามราคา'), 'no price-asking CTA');
-  assert.equal((grid.match(/สอบถามเมนูนี้ทาง LINE/g) || []).length, 2);
-  // No sale price may ever reach the DOM on this page.
-  assert.ok(!grid.includes('65') && !grid.includes('70'), 'no price figure is rendered');
-  assert.ok(!/บาท/.test(grid), 'no currency label is rendered');
+  assert.equal((grid.match(/สั่งเมนูนี้/g) || []).length, 2);
+  // Each dish shows its own published per-box figure with the unit spelled out.
+  assert.match(grid, /pm-card-price[^>]*>65 บาท/);
+  assert.match(grid, /pm-card-price[^>]*>70 บาท/);
+  assert.equal((grid.match(/pm-price-unit/g) || []).length, 2, 'the unit is stated on every priced dish');
+});
+
+test('a dish with no price renders no figure rather than a zero', async () => {
+  const menus = [
+    { id: 1, name: 'มีราคา', price: 65, tier: 'classic', image: 'img/a.jpg', desc: '' },
+    { id: 2, name: 'ไม่มีราคา', tier: 'classic', image: 'img/b.jpg', desc: '' },
+    { id: 3, name: 'ราคาศูนย์', price: 0, tier: 'classic', image: 'img/c.jpg', desc: '' },
+  ];
+  const { context, elements } = browserContext(['pm-grid', 'pm-list', 'pm-search', 'pm-filter', 'pm-count', 'pm-empty', 'pm-photo-heading', 'pm-plain-heading'], {
+    EED_MENUS: menus,
+    fetch: async () => ({ ok: true, json: async () => ({ deleted: [], quoteOnly: [] }) }),
+  });
+  vm.runInNewContext(popularRenderer, context);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const grid = elements['pm-grid'].innerHTML;
+  assert.equal((grid.match(/pm-card-price/g) || []).length, 1, 'only the priced dish shows a figure');
+  assert.ok(!grid.includes('>0 บาท'), 'a missing price must never render as zero');
 });
 
 test('production menu renderer still hides owner-hidden dishes', async () => {
   const menus = [
-    { id: 1, name: 'ยังแสดง', price: 65, category: 'ข้าวราดแกง', image: 'img/a.jpg', desc: '' },
-    { id: 2, name: 'ถูกซ่อน', price: 70, category: 'ข้าวราดแกง', image: 'img/b.jpg', desc: '' },
+    { id: 1, name: 'ยังแสดง', price: 65, tier: 'classic', image: 'img/a.jpg', desc: '' },
+    { id: 2, name: 'ถูกซ่อน', price: 70, tier: 'classic', image: 'img/b.jpg', desc: '' },
   ];
   const { context, elements } = browserContext(['pm-grid', 'pm-list', 'pm-search', 'pm-filter', 'pm-count', 'pm-empty', 'pm-photo-heading', 'pm-plain-heading'], {
     EED_MENUS: menus,
@@ -177,4 +196,85 @@ test('production menu renderer still hides owner-hidden dishes', async () => {
   const grid = elements['pm-grid'].innerHTML;
   assert.match(grid, /ยังแสดง/);
   assert.ok(!grid.includes('ถูกซ่อน'), 'hidden dishes never reach the page');
+});
+
+// --- The product level is the only grouping on the public pages ---------------
+// A menu is filtered and grouped by its level alone. There is no dish-type
+// axis, so a level the catalogue serves must be filterable and a level nobody
+// declares must never swallow a dish.
+
+test('the level dropdown offers exactly the levels this catalogue serves', async () => {
+  const menus = [
+    { id: 1, name: 'ผัดไทย', price: 70, tier: 'classic', image: 'img/a.jpg', desc: '' },
+    { id: 2, name: 'ข้าวไก่ทอด', price: 180, tier: 'signature', image: 'img/b.jpg', desc: '' },
+  ];
+  const { context, elements } = browserContext(['pm-grid', 'pm-list', 'pm-search', 'pm-filter', 'pm-count', 'pm-empty', 'pm-photo-heading', 'pm-plain-heading'], {
+    EED_MENUS: menus,
+    fetch: async () => ({ ok: true, json: async () => ({ deleted: [], quoteOnly: [] }) }),
+  });
+  vm.runInNewContext(popularRenderer, context);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const options = elements['pm-filter'].childNodes.map((option) => option.textContent).join('|');
+  assert.match(options, /ทั้งหมด \(2\)/);
+  assert.match(options, /Classic \(1\)/);
+  assert.match(options, /Signature \(1\)/);
+  assert.ok(!/Executive/.test(options), 'a level nobody serves must not be offered');
+
+  // Each card states its level and no dish-type label.
+  const html = elements['pm-grid'].innerHTML + elements['pm-list'].innerHTML;
+  assert.match(html, /pm-card-tier">Classic</);
+  assert.match(html, /pm-row-tier|Signature/);
+  assert.ok(!/pm-card-cat|pm-row-cat/.test(html), 'no category label may reach the page');
+});
+
+test('a #tier- deep link drives the same level state the dropdown shows', async () => {
+  // The tier table and the homepage cards link to #tier-<id>. That deep link and
+  // the dropdown write the same activeTier, so a shared link can never leave the
+  // dropdown showing "all" while the page is filtered to one level.
+  // (Card-level hiding is not observable in this stub — querySelectorAll returns
+  // [] — so this asserts the shared state, not the per-card hidden flag.)
+  const menus = [
+    { id: 1, name: 'ผัดไทย', price: 70, tier: 'classic', image: 'img/a.jpg', desc: '' },
+    { id: 2, name: 'ข้าวไก่ทอด', price: 180, tier: 'signature', image: 'img/b.jpg', desc: '' },
+    { id: 3, name: 'เซ็ตผู้บริหาร', price: 230, tier: 'executive', image: 'img/c.jpg', desc: '' },
+  ];
+  const { context, elements } = browserContext(['pm-grid', 'pm-list', 'pm-search', 'pm-filter', 'pm-count', 'pm-empty', 'pm-photo-heading', 'pm-plain-heading'], {
+    EED_MENUS: menus,
+    fetch: async () => ({ ok: true, json: async () => ({ deleted: [], quoteOnly: [] }) }),
+    location: { protocol: 'file:', pathname: '/popular-menu.html', hash: '#tier-signature' },
+  });
+  vm.runInNewContext(popularRenderer, context);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(elements['pm-filter'].value, 'signature');
+  assert.match(elements['pm-count'].textContent, /ระดับ Signature/);
+  assert.match(elements['pm-grid'].innerHTML, /data-tier="signature"/, 'the level must reach the DOM');
+});
+
+test('with no deep link the dropdown starts on ทั้งหมด', async () => {
+  const menus = [
+    { id: 1, name: 'ผัดไทย', price: 70, tier: 'classic', image: 'img/a.jpg', desc: '' },
+    { id: 2, name: 'ข้าวไก่ทอด', price: 180, tier: 'signature', image: 'img/b.jpg', desc: '' },
+  ];
+  const { context, elements } = browserContext(['pm-grid', 'pm-list', 'pm-search', 'pm-filter', 'pm-count', 'pm-empty', 'pm-photo-heading', 'pm-plain-heading'], {
+    EED_MENUS: menus,
+    fetch: async () => ({ ok: true, json: async () => ({ deleted: [], quoteOnly: [] }) }),
+  });
+  vm.runInNewContext(popularRenderer, context);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(elements['pm-filter'].value, 'all');
+  assert.ok(!/ระดับ /.test(elements['pm-count'].textContent));
+});
+
+test('a level the rules do not declare still gets a section, never a hidden dish', async () => {
+  const menus = [{ id: 1, name: 'เซ็ตพิเศษ', price: 65, tier: 'platinum', image: 'img/a.jpg', desc: '' }];
+  const { context, elements } = browserContext(['fullMenuBody'], {
+    EED_MENUS: menus,
+  });
+  vm.runInNewContext(popularSource, context);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.match(elements.fullMenuBody.innerHTML, /เซ็ตพิเศษ/, 'an unknown level must still list its dish');
 });

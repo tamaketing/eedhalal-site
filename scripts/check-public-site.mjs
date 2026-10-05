@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { computeTierFloors, setsFromPlanner } from './mealbox-tiers.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ORIGIN = 'https://eedhalal.com';
@@ -100,13 +101,21 @@ export async function checkPublishSafety(root = ROOT) {
   }
   if (overrides) {
     const allowed = new Set([
-      'prices', 'mins', 'images', 'names', 'categories',
+      'prices', 'mins', 'images', 'names',
       'descs', 'badges', 'sortOrder', 'popular', 'deleted',
       // quoteOnly: served by name, but not orderable (no confirmed cost or the
       // owner switched its price off). Required by services/menus.mjs to keep
       // ask-for-quote dishes out of ordering. Reveals no cost figure.
       'quoteOnly',
-      'newMenus', 'meats', 'toppings', 'noMeatMenus',
+      // tiers: which published level each set belongs to. The starting price a
+      // customer sees per level is computed from prices + tiers, so this reveals
+      // no cost figure either.
+      'tiers',
+      'newMenus', 'toppings',
+      // sideItems: the second dishes a Signature box may offer (name + kind +
+      // whether the price is confirmed). No cost ever reaches this file, so a
+      // customer learns the dish name while the number stays in the quotation.
+      'sideItems',
       'snackPrices', 'snackNames', 'snackCats', 'snackAddons',
       'exportedAt', 'release',
     ]);
@@ -270,17 +279,32 @@ export async function checkPublicSite(root = ROOT) {
   const rules = JSON.parse(await readFile(path.join(ROOT, 'data/business-rules.json'), 'utf8'));
   const thaiDeliveryPolicy = rules.delivery.messageTh;
   const englishDeliveryPolicy = rules.delivery.messageEn;
-  // Read the premium figure from business-rules rather than repeating it here,
-  // so changing the price once cannot leave this check asserting a stale band.
-  const premiumFrom = rules.services.mealBox.premiumPriceFrom;
+  // Tier prices are computed from the published catalogue, never repeated here.
+  const overrides = JSON.parse(await readFile(path.join(ROOT, 'data/planner-overrides.json'), 'utf8'));
+  const tierFloors = computeTierFloors(setsFromPlanner(overrides)).floors;
+  const premiumFrom = tierFloors.executive?.priceFrom ?? null;
+  const classicFrom = tierFloors.classic?.priceFrom ?? null;
+  const tierNameTh = (id) => String((rules.services.mealBox.tiers || []).find((tier) => tier.id === id)?.nameTh || id);
+  const tierNameEn = (id) => String((rules.services.mealBox.tiers || []).find((tier) => tier.id === id)?.nameEn || id);
   const retiredPremiumBand = /180\s*[–-]\s*250/;
 
-  if (!thaiFaq.includes(`เซ็ตพรีเมียมเริ่ม ${premiumFrom} บาท`) || retiredPremiumBand.test(thaiFaq)) failures.push(`FAQ: premium sets must start at ${premiumFrom} THB`);
-  if (!thaiFaq.includes('พื้นที่นอกกรุงเทพฯ สอบถามเป็นรายกรณี') || !englishFaq.includes('outside Bangkok is quoted case by case')) failures.push('FAQ: outside-Bangkok policy is missing');
-  if (!englishFaq.includes(`Premium sets start from ${premiumFrom} baht`) || retiredPremiumBand.test(englishFaq)) failures.push(`en FAQ: premium sets must start at ${premiumFrom} THB`);
-  if (!llms.includes(`premium sets start at ${premiumFrom} THB`) || !llms.includes('outside Bangkok are quoted case by case')) failures.push('llms.txt: customer facts are stale');
-  if (!richMenu.includes(`เซ็ตพรีเมียมเริ่ม ${premiumFrom} บาท`) || retiredPremiumBand.test(richMenu)) failures.push(`line-ai/rich-menu.json: premium-set reply must start at ${premiumFrom} THB`);
+  if (premiumFrom === null) failures.push('catalogue: the executive tier has no open set, so its starting price cannot be published');
+  if (classicFrom === null) failures.push('catalogue: the classic tier has no open set, so its starting price cannot be published');
+  else if (!thaiFaq.includes(`เริ่ม ${classicFrom} บาท`)) failures.push(`FAQ: meal boxes must state the classic starting price ${classicFrom} THB`);
+  if (premiumFrom !== null) {
+    // The FAQ and the LINE quick reply must name the tier, not a retired
+    // product word, whenever they quote its price.
+    if (!thaiFaq.includes(tierNameTh('executive'))) failures.push('FAQ: the executive tier must be named on first use (TH)');
+    if (!englishFaq.includes(tierNameEn('executive'))) failures.push('en FAQ: the executive tier must be named (EN)');
+    if (!llms.includes(tierNameEn('executive'))) failures.push('llms.txt: the executive tier must be named');
+    if (!llms.includes(`premium sets start at ${premiumFrom} THB`) && !llms.includes(`${tierNameEn('executive')} from ${premiumFrom} THB`)) failures.push(`llms.txt: executive tier price is stale (catalogue says ${premiumFrom})`);
+    const richNamesTheTier = [tierNameTh('executive'), tierNameEn('executive')].some((label) => richMenu.includes(label));
+    if (!richNamesTheTier || !richMenu.includes(String(premiumFrom))) failures.push(`line-ai/rich-menu.json: the executive tier reply must name the tier and match the catalogue (${premiumFrom} THB)`);
+    if (retiredPremiumBand.test(thaiFaq) || retiredPremiumBand.test(englishFaq) || retiredPremiumBand.test(richMenu)) failures.push('a retired premium price band is still published');
+  }
   const llmsFull = await readFile(path.join(ROOT, 'llms-full.md'), 'utf8');
+  if (!thaiFaq.includes('พื้นที่นอกกรุงเทพฯ สอบถามเป็นรายกรณี') || !englishFaq.includes('outside Bangkok is quoted case by case')) failures.push('FAQ: outside-Bangkok policy is missing');
+  if (!llms.includes('outside Bangkok are quoted case by case')) failures.push('llms.txt: customer facts are stale');
   if (!thaiFaq.includes(thaiDeliveryPolicy) || !englishFaq.includes(englishDeliveryPolicy)) failures.push('FAQ: Thai and English delivery policy must match business rules');
   if (!thaiFaq.includes('10–50 กล่อง') || !thaiFaq.includes('51–100 กล่อง') || !thaiFaq.includes('101+ กล่อง')) failures.push('FAQ: Thai lead-time ranges must be exclusive');
   if (!englishFaq.includes('10–50 boxes') || !englishFaq.includes('51–100 boxes') || !englishFaq.includes('101+ boxes')) failures.push('FAQ: English lead-time ranges must be exclusive');

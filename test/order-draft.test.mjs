@@ -49,4 +49,6 @@ test('legacy calculator storage migrates to a versioned draft', () => {
   assert.equal(draft.source, 'budget_calculator_legacy');
   assert.equal(draft.delivery.district, 'สาทร');
   assert.equal(draft.legacy.selected['114'], 10);
+  // The retired meat selection must not survive the migration.
+  assert.equal('selectedMeats' in draft.legacy, false);
 });

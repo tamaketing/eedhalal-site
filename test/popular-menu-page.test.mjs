@@ -2,6 +2,7 @@
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { computeTierFloors, isLaunching, setsFromPlanner, tierDefinitions } from '../scripts/mealbox-tiers.mjs';
 import {
   buildCatalogue,
   checkPopularMenuPage,
@@ -14,13 +15,14 @@ import {
 // popular-menu.html used to ship an empty #pm-grid / #pm-list and let
 // JavaScript fill it, so any crawler that does not run JS saw a page with no
 // menu at all. These tests pin the crawlable layer to the published planner so
-// it can never drift back, and they pin the deliberate no-prices rule.
+// it can never drift back, and pin every displayed price to the catalogue.
 
 const root = new URL('../', import.meta.url);
 const ROOT_PATH = fileURLToPath(root);
 const page = await readFile(new URL('popular-menu.html', root), 'utf8');
 const overrides = JSON.parse(await readFile(new URL('data/planner-overrides.json', root), 'utf8'));
 const catalogue = await loadCatalogue(ROOT_PATH);
+const rules = JSON.parse(await readFile(new URL('data/business-rules.json', root), 'utf8'));
 
 /** The ItemList node, parsed back out of the generated ld+json block. */
 const buildItemListJsonLd = (items) => JSON.parse(
@@ -107,34 +109,78 @@ test('every served menu appears exactly once, and no hidden menu appears', () =>
   assert.deepEqual([...ids].sort(), catalogue.map((m) => m.id).sort());
 });
 
-test('the cost gate is not surfaced on the catalogue page', () => {
+test('the price switch is not surfaced on the catalogue page', () => {
   // The site has no ordering flow at all: it is a catalogue and every order is
-  // placed over LINE. Labelling dishes by cost state would invent a purchase
+  // placed over LINE. Labelling dishes by price state would invent a purchase
   // path that does not exist, so the page must treat every dish identically.
-  const quoteOnly = new Set((overrides.quoteOnly || []).map(String));
-  assert.ok(quoteOnly.size > 0, 'fixture must exercise the cost gate');
   for (const item of catalogue) {
     const block = blockFor(item.id);
-    assert.ok(!/pm-quote-note/.test(block), `menu ${item.id} must carry no cost-state label`);
+    assert.ok(!/pm-quote-note/.test(block), `menu ${item.id} must carry no price-state label`);
     assert.ok(!/สอบถามราคา/.test(block), `menu ${item.id} must use the same CTA as every other dish`);
-    assert.ok(block.includes('สอบถาม'), `menu ${item.id} must still route to LINE`);
+    assert.ok(block.includes('สั่งเมนูนี้'), `menu ${item.id} must still route to LINE`);
     assert.ok(block.includes('https://lin.ee/CfvqJTd'), `menu ${item.id} must link LINE`);
   }
   assert.ok(!markup.includes('pm-quote-note'), 'no ask-for-quote label anywhere on the page');
   assert.ok(!markup.includes('ราคาขอสอบถามทาง LINE'), 'no ask-for-quote wording anywhere on the page');
 });
 
-test('the page publishes no price: not in markup, not in alt text, not in JSON-LD', () => {
-  // js/popular-menu.js is explicit that sale prices never reach this page.
-  const forbidden = [/\d+\s*บาท/, /฿\s*\d/, /\d{2,3}\s*THB/, /"price"/, /"lowPrice"/, /"offers"/, /"priceCurrency"/];
-  const itemList = JSON.stringify(buildItemListJsonLd(catalogue));
-  for (const [label, text] of [['grid', gridHtml], ['list', listHtml], ['itemlist', itemList]]) {
-    for (const re of forbidden) {
-      assert.ok(!re.test(text), `${label} must not contain ${re}`);
+test('the page publishes the catalogue price for every dish, and no other figure', () => {
+  // The owner asked for prices on the menu page. The figure shown must be the
+  // one the catalogue publishes for that dish - never a typed approximation -
+  // and a dish with no quotable price must show no figure rather than a zero.
+  const quoteOnly = new Set((overrides.quoteOnly || []).map(String));
+  const sellable = catalogue.filter((item) => quoteOnly.has(item.id) === false);
+
+  for (const item of catalogue) {
+    const block = blockFor(item.id);
+    assert.ok(block, `dish ${item.id} must render a card or row`);
+    const expected = quoteOnly.has(item.id) ? null : Number(overrides.prices[item.id]);
+    if (expected == null || !Number.isFinite(expected) || expected <= 0) {
+      assert.ok(!/pm-(?:card|row)-price/.test(block), `dish ${item.id} has no quotable price, so none may be shown`);
+      continue;
     }
+    assert.match(block, new RegExp(`pm-(?:card|row)-price[^>]*>${expected} บาท`), `dish ${item.id} must show its catalogue price ${expected}`);
   }
-  for (const alt of [...gridHtml.matchAll(/alt="([^"]*)"/g)].map((m) => m[1])) {
-    assert.ok(!/\d/.test(alt), `alt text must not contain digits: ${alt}`);
+
+  // No invented figures: every บาท amount in the menu markup is a catalogue price.
+  const cataloguePrices = new Set(Object.values(overrides.prices).map(Number));
+  for (const [, figure] of markup.matchAll(/(\d[\d,]*) บาท/g)) {
+    assert.ok(cataloguePrices.has(Number(figure.replace(/,/g, ''))), `${figure} THB is not a catalogue price`);
+  }
+  assert.ok(sellable.length > 0, 'the page must actually show prices, not just skip them');
+
+  // The structured data publishes the same figure as the markup, so a crawler
+  // and a reader never disagree.
+  const itemList = buildItemListJsonLd(catalogue);
+  itemList.itemListElement.forEach((entry) => {
+    const id = entry.item['@id'].split('#menu-')[1];
+    const quoted = entry.item.offers?.price;
+    if (quoteOnly.has(id) || !Number(overrides.prices[id])) assert.equal(quoted, undefined, `dish ${id} must publish no offer`);
+    else assert.equal(Number(quoted), Number(overrides.prices[id]), `dish ${id} offer must equal the catalogue price`);
+  });
+});
+
+test('the tier table sits before the menu list and prices only level starts', () => {
+  const table = /<!-- BUSINESS-RULES:MEALBOX-TIERS:TH -->[\s\S]*?<!-- \/BUSINESS-RULES:MEALBOX-TIERS:TH -->/.exec(page);
+  assert.ok(table, 'the generated tier table must exist on the menu page');
+  assert.ok(page.indexOf(table[0]) < page.indexOf('MENU:GRID:START'), 'the table must come before the menu list');
+  const floors = computeTierFloors(setsFromPlanner(overrides)).floors;
+  for (const tier of tierDefinitions(rules)) {
+    assert.ok(table[0].includes(`id="tier-${tier.id}"`), `${tier.id} row`);
+    const floor = floors[tier.id];
+    if (floor) assert.ok(table[0].includes(String(floor.priceFrom)), `${tier.id} must show its computed price`);
+    else if (isLaunching(tier, floor)) {
+      // Preparing to launch: say so, and do not offer an order path.
+      assert.ok(table[0].includes('กำลังเตรียมเปิดตัว'), `${tier.id} must say it is launching`);
+      assert.ok(table[0].includes('แจ้งให้ผมทราบเมื่อเปิด'), `${tier.id} must invite interest, not an order`);
+    } else assert.ok(table[0].includes('สอบถามรายละเอียดชุดอาหาร'), `${tier.id} must ask instead of quoting a price`);
+  }
+  // No dish is priced inside the tier table: it only states where each level
+  // starts, and where that figure came from.
+  const dishPrices = [...table[0].matchAll(/(\d[\d,]*)\s*บาท/g)].map((m) => Number(m[1].replace(/,/g, '')));
+  const sellable = new Set(setsFromPlanner(overrides).filter((set) => set.price > 0).map((set) => set.price));
+  for (const figure of dishPrices) {
+    assert.ok(sellable.has(figure), `${figure} THB is not a catalogue price`);
   }
 });
 
@@ -189,19 +235,39 @@ test('rendering is idempotent: re-running the generator changes nothing', () => 
   assert.equal(twice, once, 'generator must be idempotent or CI would flap');
 });
 
-test('buildCatalogue drops hidden menus and marks quote-only ones', () => {
+test('buildCatalogue drops hidden menus, marks quote-only ones and keeps the level', () => {
   const fake = [
-    { id: 1, name: 'a', category: 'c', image: 'img/a.jpg', desc: '' },
-    { id: 2, name: 'b', category: 'c', image: 'img/b.jpg', desc: '' },
-    { id: 3, name: 'c', category: 'c', image: 'img/c.jpg', desc: '' },
+    { id: 1, name: 'a', tier: 'classic', image: 'img/a.jpg', desc: '' },
+    { id: 2, name: 'b', tier: 'signature', image: 'img/b.jpg', desc: '' },
+    { id: 3, name: 'c', tier: 'classic', image: 'img/c.jpg', desc: '' },
   ];
   const items = buildCatalogue({
     deleted: [3],
     quoteOnly: [2],
     names: { 1: 'A', 2: 'B', 3: 'C' },
-    categories: { 1: 'x', 2: 'y', 3: 'z' },
+    tiers: { 1: 'executive', 2: 'signature', 3: 'classic' },
   }, fake);
   assert.deepEqual(items.map((m) => m.id), ['1', '2']);
   assert.equal(items.find((m) => m.id === '1').orderable, true);
   assert.equal(items.find((m) => m.id === '2').orderable, false);
+  assert.equal(items.find((m) => m.id === '1').tier, 'executive', 'the published level wins');
+  assert.ok(!('category' in items[0]), 'a catalogue item has no category field');
+});
+
+test('cards state the level and the JSON-LD carries it honestly', () => {
+  const items = buildCatalogue({}, [
+    { id: 1, name: 'ข้าวผัดกะเพรา', tier: 'classic', image: 'img/a.jpg', desc: 'หอมกระทะ' },
+    { id: 2, name: 'ข้าวไก่ทอด', tier: 'signature', image: 'img/b.jpg', desc: '' },
+  ]);
+  const { grid, list } = renderStaticMenu(items);
+  assert.match(grid, /pm-card-tier">Classic</);
+  assert.doesNotMatch(grid, /pm-card-cat|category/);
+  assert.doesNotMatch(list, /pm-row-cat|category/);
+
+  const ld = JSON.parse(renderItemListJsonLd(items).replace(/^<script[^>]*>\n?/, '').replace(/<\/script>$/, ''));
+  for (const entry of ld.itemListElement) {
+    assert.ok(!('category' in entry.item), 'a level is not a dish-type category');
+    assert.equal(entry.item.additionalProperty.name, 'ระดับสินค้า');
+  }
+  assert.deepEqual(ld.itemListElement.map((e) => e.item.additionalProperty.value), ['Classic', 'Signature']);
 });

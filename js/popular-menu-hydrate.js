@@ -2,7 +2,7 @@
  * Keeps static HTML for crawlers (Google/AI) — only enhances for humans with JS.
  * Reads EED_MENUS + planner-overrides.json + localStorage and re-renders:
  *  - #popularMenuGrid  (16 cards)
- *  - #fullMenuBody     (full categorized menu list)
+ *  - #fullMenuBody     (full menu list, grouped by product level)
  * If data is available. If JS fails or file missing, static HTML remains.
  */
 (function(){
@@ -13,7 +13,7 @@
   var LS_MINS = 'eed_mins_v1';
   var LS_IMAGES = 'eed_images_v1';
   var LS_NAMES = 'eed_names_v1';
-  var LS_CATEGORIES = 'eed_categories_v1';
+  var LS_TIERS = 'eed_tiers_v1';
   var LS_DELETED = 'eed_deleted_v1';
   var LS_NEW_MENUS = 'eed_new_menus_v1';
   var LS_TOPPINGS = 'eed_toppings_v1';
@@ -25,21 +25,44 @@
   var PUBLISHED_POPULAR = null;
   var PUBLISHED_SORT = null;
 
-  // Category config for full menu — order = display order
-  var CATS_TH = [
-    { key: 'ข้าวผัด',  emoji: '🍳', label: 'เมนูข้าวผัด' },
-    { key: 'ข้าวราดแกง', emoji: '🍛', label: 'เมนูข้าวราดแกง' },
-    { key: 'เส้น',     emoji: '🍝', label: 'เมนูเส้น' },
-    { key: 'อาหารอินเดีย',  emoji: '🍛', label: 'เมนูอาหารอินเดีย' },
-    { key: 'พรีเมียม', emoji: '👑', label: 'เมนูพรีเมียม' }
+// Full-menu sections are grouped by product LEVEL (data/business-rules.json ->
+// services.mealBox.tiers), which is the only grouping a menu has. Order here
+// is the display order and matches the level chips and the tier table.
+var FALLBACK_TH = [
+    { key: 'classic',   emoji: '🍚', label: 'Classic — ข้าวกล่องคุมงบ' },
+    { key: 'signature', emoji: '✨', label: 'Signature — สองอย่างในกล่องเดียว' },
+    { key: 'executive', emoji: '👑', label: 'Executive — พรีเมียมพร้อมเสิร์ฟ' }
   ];
-  var CATS_EN = [
-    { key: 'ข้าวผัด',  emoji: '🍳', label: 'Fried Rice Dishes' },
-    { key: 'ข้าวราดแกง', emoji: '🍛', label: 'Rice with Curry & Toppings' },
-    { key: 'เส้น',     emoji: '🍝', label: 'Noodle Dishes' },
-    { key: 'อาหารอินเดีย',  emoji: '🍛', label: 'Indian Dishes' },
-    { key: 'พรีเมียม', emoji: '👑', label: 'Premium Sets' }
+  var FALLBACK_EN = [
+    { key: 'classic',   emoji: '🍚', label: 'Classic — budget-friendly rice boxes' },
+    { key: 'signature', emoji: '✨', label: 'Signature — two dishes in one box' },
+    { key: 'executive', emoji: '👑', label: 'Executive — premium, plated to serve' }
   ];
+var DEFAULT_EMOJI = '🍽';
+
+  // The level list is a closed set from business-rules.json, so the fallbacks
+  // above ARE it. The one safety net kept here: a menu carrying a level the
+  // rules do not declare still gets a section, so no dish can disappear from
+  // the page.
+  function mergeCats(declared, fallback) {
+    var out = [];
+    var seen = {};
+    fallback.forEach(function (item) {
+      seen[item.key] = true;
+      out.push(item);
+    });
+    if (typeof EED_MENUS !== 'undefined' && Array.isArray(EED_MENUS)) {
+      EED_MENUS.forEach(function (menu) {
+        var key = menu && menu.tier ? String(menu.tier) : 'classic';
+        if (!key || seen[key]) return;
+        seen[key] = true;
+        out.push({ key: key, emoji: DEFAULT_EMOJI, label: key });
+      });
+    }
+    return out;
+  }
+  var CATS_TH = mergeCats(null, FALLBACK_TH);
+  var CATS_EN = mergeCats(null, FALLBACK_EN);
 
   function escapeHtml(s){
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -56,7 +79,7 @@
 
   function applyCatalog(data){
     if(!data || typeof data!=='object' || typeof EED_MENUS==='undefined') return;
-    var fields={prices:'price',mins:'minPerMenu',images:'image',names:'name',categories:'category'};
+    var fields={prices:'price',mins:'minPerMenu',images:'image',names:'name',tiers:'tier'};
     Object.keys(fields).forEach(function(key){
       var values=data[key];
       if(!values || typeof values!=='object') return;
@@ -83,12 +106,12 @@
     }
     if(Array.isArray(data.newMenus)) data.newMenus.forEach(function(menu){
       if(!menu || menu.id===undefined || !menu.name || EED_MENUS.some(function(item){ return String(item.id)===String(menu.id); })) return;
-      EED_MENUS.push({id:menu.id,name:String(menu.name),price:parseFloat(menu.price)||0,category:String(menu.category||'ข้าวราดแกง'),image:String(menu.image||''),desc:String(menu.desc||''),badge:String(menu.badge||''),minPerMenu:parseInt(menu.minPerMenu,10)||5,toppings:Array.isArray(data.toppings)?data.toppings.map(function(t){ return {name:String(t.name),price:parseInt(t.price,10)||0}; }):[]});
+      EED_MENUS.push({id:menu.id,name:String(menu.name),price:parseFloat(menu.price)||0,tier:String(menu.tier||'classic'),image:String(menu.image||''),desc:String(menu.desc||''),badge:String(menu.badge||''),minPerMenu:parseInt(menu.minPerMenu,10)||5,toppings:Array.isArray(data.toppings)?data.toppings.map(function(t){ return {name:String(t.name),price:parseInt(t.price,10)||0}; }):[]});
     });
   }
 
   function applyOverrides(){
-    try{ applyCatalog({prices:JSON.parse(localStorage.getItem(LS_SELLING)||'null'),mins:JSON.parse(localStorage.getItem(LS_MINS)||'null'),images:JSON.parse(localStorage.getItem(LS_IMAGES)||'null'),names:JSON.parse(localStorage.getItem(LS_NAMES)||'null'),categories:JSON.parse(localStorage.getItem(LS_CATEGORIES)||'null'),deleted:JSON.parse(localStorage.getItem(LS_DELETED)||'null'),newMenus:JSON.parse(localStorage.getItem(LS_NEW_MENUS)||'null'),toppings:JSON.parse(localStorage.getItem(LS_TOPPINGS)||'null')}); }catch(e){}
+    try{ applyCatalog({prices:JSON.parse(localStorage.getItem(LS_SELLING)||'null'),mins:JSON.parse(localStorage.getItem(LS_MINS)||'null'),images:JSON.parse(localStorage.getItem(LS_IMAGES)||'null'),names:JSON.parse(localStorage.getItem(LS_NAMES)||'null'),tiers:JSON.parse(localStorage.getItem(LS_TIERS)||'null'),deleted:JSON.parse(localStorage.getItem(LS_DELETED)||'null'),newMenus:JSON.parse(localStorage.getItem(LS_NEW_MENUS)||'null'),toppings:JSON.parse(localStorage.getItem(LS_TOPPINGS)||'null')}); }catch(e){}
   }
 
   function loadServerOverrides(cb){
@@ -180,7 +203,7 @@
     var cats = isEnPath() ? CATS_EN : CATS_TH;
     try{
       var html = cats.map(function(cat){
-        var items = EED_MENUS.filter(function(m){ return m.category===cat.key; });
+        var items = EED_MENUS.filter(function(m){ return (m.tier || 'classic')===cat.key; });
         if(PUBLISHED_SORT){
           items = items.slice().sort(function(a,b){
             var oa = PUBLISHED_SORT[String(a.id)], ob = PUBLISHED_SORT[String(b.id)];

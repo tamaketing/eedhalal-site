@@ -3,7 +3,7 @@
 //
 // History: backups/ previously held MANUAL snapshots only. This module adds
 // the automatic step: every server-side overwrite of menu-central.json /
-// owner-costs.json first copies the current bytes aside. Rotation keeps the
+// menu-central.json first copies the current bytes aside. Rotation keeps the
 // newest BACKUP_KEEP files per name.
 //
 // LIMITATION: same-machine copies protect against bad edits and bad

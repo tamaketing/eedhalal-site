@@ -1,10 +1,11 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildMenuContext,
   buildMenuQueryString,
-  MENU_CATEGORIES,
   MENU_FETCH_MODES,
+  MENU_TIERS,
+  MENU_TIER_LABELS,
   parseMenuIntent,
 } from '../line-ai/menu-intent.mjs';
 
@@ -12,11 +13,14 @@ import {
 test('parser output keeps the deterministic plan shape', () => {
   for (const text of ['งบ 75 บาท', 'ไม่เกิน 100', 'ข้าวไก่เทอริยากิ ราคาเท่าไร', 'เมนูนี้ราคาเท่าไร', 'สวัสดี']) {
     const plan = parseMenuIntent(text);
-    assert.deepEqual(Object.keys(plan).sort(), ['category', 'maxPrice', 'menuLookupNeeded', 'mode', 'price', 'query']);
-    assert.ok(['exact-price', 'max-price', 'name-lookup', 'category-price', 'category-max', 'clarify', 'none'].includes(plan.mode));
+    assert.deepEqual(Object.keys(plan).sort(), ['maxPrice', 'menuLookupNeeded', 'mode', 'price', 'query', 'tier']);
+    assert.ok(['exact-price', 'max-price', 'name-lookup', 'name-price', 'name-max', 'tier-price', 'tier-max', 'clarify', 'none'].includes(plan.mode));
     assert.equal(plan.menuLookupNeeded, MENU_FETCH_MODES.includes(plan.mode));
   }
-  assert.deepEqual([...MENU_CATEGORIES].sort(), ['ข้าวผัด', 'ข้าวราดแกง', 'พรีเมียม', 'อาหารอินเดีย', 'เส้น'].sort());
+  // The three published levels, and every customer spelling maps onto one of
+  // them. No dish-type list exists any more.
+  assert.deepEqual([...new Set(Object.values(MENU_TIERS))].sort(), ['classic', 'executive', 'signature']);
+  assert.deepEqual(Object.keys(MENU_TIER_LABELS).sort(), ['classic', 'executive', 'signature']);
 });
 
 // §24 mandatory parser cases.
@@ -64,23 +68,61 @@ test('demonstrative without a name clarifies instead of guessing', () => {
   }
 });
 
-test('category plus price composes', () => {
+test('a dish word plus a budget still resolves, now as a name query', () => {
+  // "ข้าวผัด งบ 70" used to be a category lookup. There is no category axis any
+  // more, so the dish word is matched against menu names and composes with the
+  // price filter — the customer loses nothing.
   const exact = parseMenuIntent('ข้าวผัด งบ 70');
-  assert.equal(exact.mode, 'category-price');
-  assert.equal(exact.category, 'ข้าวผัด');
+  assert.equal(exact.mode, 'name-price');
+  assert.equal(exact.query, 'ข้าวผัด');
   assert.equal(exact.price, 70);
+  assert.equal(exact.tier, null);
   const max = parseMenuIntent('ข้าวผัดไม่เกิน 100');
-  assert.equal(max.mode, 'category-max');
-  assert.equal(max.category, 'ข้าวผัด');
+  assert.equal(max.mode, 'name-max');
+  assert.equal(max.query, 'ข้าวผัด');
   assert.equal(max.maxPrice, 100);
 });
 
-test('protein words stay name keywords, never a formal category', () => {
+test('the level a customer names resolves in either spelling', () => {
+  for (const [text, tier] of [
+    ['เมนู Signature งบ 200', 'signature'],
+    ['เมนูซิกเนเจอร์งบ 200', 'signature'],
+    ['เมนู Classic งบ 70', 'classic'],
+    ['เมนูพรีเมียมไม่เกิน 250', 'executive'],
+    ['เมนู executive ไม่เกิน 250', 'executive'],
+  ]) {
+    const plan = parseMenuIntent(text);
+    assert.equal(plan.tier, tier, text);
+    assert.ok(MENU_FETCH_MODES.includes(plan.mode), `${text}: ${plan.mode} must be a fetch mode`);
+    // The level word is consumed, so it never leaks into the name query.
+    assert.ok(!/signature|classic|executive|ซิกเนเจอร์|พรีเมียม/i.test(plan.query || ''), text);
+  }
+  assert.equal(parseMenuIntent('เมนู Signature งบ 200').mode, 'tier-price');
+  assert.equal(parseMenuIntent('เมนูพรีเมียมไม่เกิน 250').mode, 'tier-max');
+});
+
+test('a budget with no dish word and no level stays a plain price lookup', () => {
+  const plan = parseMenuIntent('งบ 70');
+  assert.equal(plan.mode, 'exact-price');
+  assert.equal(plan.price, 70);
+  assert.equal(plan.query, null);
+  assert.equal(plan.tier, null);
+});
+
+test('protein words stay name keywords, never a formal level', () => {
+  // "ไก่" is a menu-name keyword, never a level. The mode says `name-max`
+  // because the name filter really is applied alongside the cap (the query
+  // string always carried `q=`), so the label now matches the request instead
+  // of claiming a bare budget search.
   const plan = parseMenuIntent('มีเมนูไก่ไม่เกิน 100 บาทไหม');
-  assert.equal(plan.mode, 'max-price');
+  assert.equal(plan.mode, 'name-max');
   assert.equal(plan.maxPrice, 100);
-  assert.equal(plan.category, null);
+  assert.equal(plan.tier, null);
   assert.equal(plan.query, 'ไก่');
+  assert.equal(
+    buildMenuQueryString(plan),
+    'maxPrice=100&q=%E0%B9%84%E0%B8%81%E0%B9%88&limit=100',
+  );
 });
 
 test('delivery and general messages stay out of menu lookup', () => {
@@ -104,8 +146,16 @@ test('menu query string carries only applicable filters', () => {
   assert.equal(buildMenuQueryString({ price: 75 }), 'price=75&limit=100');
   assert.equal(buildMenuQueryString({ maxPrice: 100 }), 'maxPrice=100&limit=100');
   assert.equal(
-    buildMenuQueryString({ maxPrice: 100, category: 'ข้าวผัด', query: 'ไก่' }),
-    'maxPrice=100&category=%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%A7%E0%B8%9C%E0%B8%B1%E0%B8%94&q=%E0%B9%84%E0%B8%81%E0%B9%88&limit=100',
+    buildMenuQueryString({ maxPrice: 100, query: 'ไก่' }),
+    'maxPrice=100&q=%E0%B9%84%E0%B8%81%E0%B9%88&limit=100',
+  );
+  assert.equal(
+    buildMenuQueryString({ maxPrice: 100, tier: 'executive' }),
+    'maxPrice=100&tier=executive&limit=100',
+  );
+  assert.equal(
+    buildMenuQueryString({ price: 200, tier: 'signature', query: 'ไก่' }),
+    'price=200&tier=signature&q=%E0%B9%84%E0%B8%81%E0%B9%88&limit=100',
   );
   assert.equal(buildMenuQueryString({ mode: 'clarify' }), 'limit=100');
 });
@@ -117,15 +167,18 @@ function apiOk(menus) {
 
 test('context contains exactly the API-returned candidates', () => {
   const menus = [
-    { id: '14', name: 'ข้าวไก่เทอริยากิ', price: 75, minPerMenu: 5, category: 'ข้าวราดแกง' },
-    { id: '15', name: 'ข้าวคลุกกะปิ', price: 75, minPerMenu: 5, category: 'ข้าวผัด' },
-    { id: '20', name: 'ข้าวหมกน่องไก่', price: 75, minPerMenu: 10, category: 'อาหารอินเดีย' },
-    { id: '104', name: 'ข้าวผัดปลาทู', price: 75, minPerMenu: 5, category: 'ข้าวผัด' },
+    { id: '14', name: 'ข้าวไก่เทอริยากิ', price: 75, minPerMenu: 5, tier: 'classic' },
+    { id: '15', name: 'ข้าวคลุกกะปิ', price: 75, minPerMenu: 5, tier: 'classic' },
+    { id: '20', name: 'ข้าวหมกน่องไก่', price: 75, minPerMenu: 10, tier: 'signature' },
+    { id: '104', name: 'ข้าวผัดปลาทู', price: 75, minPerMenu: 5, tier: 'classic' },
   ];
   const context = buildMenuContext({ mode: 'exact-price', price: 75 }, apiOk(menus));
   assert.ok(context.includes('source: planner-overrides'));
   for (const menu of menus) assert.ok(context.includes(`${menu.id} | ${menu.name} | ${menu.price} บาท/กล่อง`), menu.id);
   assert.equal(context.match(/บาท\/กล่อง/g).length, 4);
+  // Every line names the level, never a dish-type category.
+  assert.ok(!context.includes('category:'), 'no category may reach the model');
+  assert.match(context, /ระดับ Signature/);
 });
 
 test('empty budget result carries no price to invent from', () => {
@@ -163,7 +216,7 @@ test('API failure fails closed with zero price figures', () => {
 test('context authority is the API payload alone', () => {
   const context = buildMenuContext(
     { mode: 'exact-price', price: 80 },
-    apiOk([{ id: '14', name: 'ข้าวไก่เทอริยากิ', price: 80, minPerMenu: 5, category: 'ข้าวราดแกง' }]),
+    apiOk([{ id: '14', name: 'ข้าวไก่เทอริยากิ', price: 80, minPerMenu: 5, tier: 'classic' }]),
   );
   assert.ok(context.includes('ข้าวไก่เทอริยากิ | 80 บาท/กล่อง'));
   assert.ok(!context.includes('75 บาท'));

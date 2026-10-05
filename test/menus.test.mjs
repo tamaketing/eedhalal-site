@@ -11,6 +11,7 @@ import {
   getMealboxMenuById,
   getMealboxMenuCatalog,
   lookupMealboxMenuByName,
+  MENU_TIERS,
   MenuCatalogError,
 } from '../services/menus.mjs';
 import { ValidationError } from '../services/errors.mjs';
@@ -56,16 +57,16 @@ test('active catalog is exactly the published planner minus hidden and ask-for-q
   assert.deepEqual(menus.map((menu) => menu.id).sort(), expected);
   assert.ok(menus.length > 0, 'the shop must always publish at least one orderable menu');
   for (const menu of menus) {
-    assert.deepEqual(Object.keys(menu).sort(), ['category', 'id', 'image', 'minPerMenu', 'name', 'price']);
+    assert.deepEqual(Object.keys(menu).sort(), ['id', 'image', 'minPerMenu', 'name', 'price', 'tier']);
     assert.match(menu.id, /^\d+$/);
     assert.ok(menu.name.trim());
     assert.ok(menu.price > 0);
     assert.ok(Number.isInteger(menu.minPerMenu) && menu.minPerMenu >= 1);
-    assert.ok(menu.category.trim());
+    assert.ok(MENU_TIERS.includes(menu.tier), `menu ${menu.id} has no real level`);
     // Every served field must come from the same published maps, never a guess.
     assert.equal(menu.price, priceOf(menu.id, planner));
     assert.equal(menu.name, planner.names[menu.id]);
-    assert.equal(menu.category, planner.categories[menu.id]);
+    assert.equal(menu.tier, planner.tiers[menu.id]);
     assert.equal(menu.image, planner.images[menu.id]);
     assert.equal(menu.minPerMenu, planner.mins[menu.id]);
     // Cost gate: nothing without a confirmed cost / switched-off price may order.
@@ -78,7 +79,7 @@ test('exact price returns exactly the published planner menus at that price', as
   const target = activeEntries(planner)[0];
   assert.ok(target, 'needs at least one active menu');
   const [id, price] = target;
-  const menus = await findMealboxMenusByExactPrice(price);
+  const menus = await findMealboxMenusByExactPrice(price, { limit: 100 });
   const expected = activeEntries(planner)
     .filter(([, value]) => value === price)
     .map(([menuId]) => String(menuId))
@@ -150,18 +151,20 @@ test('owner-hidden and ask-for-quote menus never appear in ordering', async () =
 });
 
 test('a quote-only menu is excluded even when its own price is in range', async () => {
-  const planner = published();
-  const quoteOnly = [...quoteOnlyIds(planner)];
-  assert.ok(quoteOnly.length > 0, 'fixture must have at least one ask-for-quote menu');
-  for (const id of quoteOnly) {
-    const price = priceOf(id, planner);
-    if (!(price > 0)) continue;
-    const at = await findMealboxMenusByExactPrice(price, { limit: 100 });
-    assert.ok(
-      !at.some((menu) => menu.id === String(id)),
-      `ask-for-quote menu ${id} must not be orderable at ${price}`,
-    );
-  }
+  // The live file has no price-switched dish, so create one and point the lookup
+  // at that fixture: an ask-for-quote dish must stay out of ordering even when a
+  // customer asks for exactly its own price.
+  const base = published();
+  const [id] = activeEntries(base)[0];
+  const price = priceOf(id, base);
+  assert.ok(price > 0, 'fixture must expose a priced menu');
+  const fixture = writeFixture((planner) => ({ ...planner, quoteOnly: [id] }));
+  const at = await findMealboxMenusByExactPrice(price, { limit: 100, plannerPath: fixture });
+  assert.ok(
+    !at.some((menu) => menu.id === String(id)),
+    `ask-for-quote menu ${id} must not be orderable at ${price}`,
+  );
+  assert.equal(await getMealboxMenuById(id, { plannerPath: fixture }), null, 'ask-for-quote id must not resolve');
 });
 
 test('planner fixture price change is visible without touching menu-data', async () => {
@@ -257,27 +260,36 @@ test('invalid filter input is a client error, not a catalog fallback', async () 
   await assert.rejects(findMealboxMenusByExactPrice('75'), ValidationError);
 });
 
-test('category plus maxPrice composes deterministically', async () => {
-  // Derive a category and cap that the CURRENT published batch actually has,
+test('level plus maxPrice composes deterministically', async () => {
+  // Derive a level and cap that the CURRENT published batch actually has,
   // so this stays meaningful while the owner publishes menus in small batches.
   const planner = published();
   const active = activeEntries(planner);
-  const [category] = [...new Set(active.map(([id]) => planner.categories[id]))];
+  const [tier] = [...new Set(active.map(([id]) => planner.tiers[id]))];
   const cap = Math.max(...active.map(([id]) => planner.prices[id]));
   const expected = active
-    .filter(([id]) => planner.categories[id] === category && planner.prices[id] <= cap)
+    .filter(([id]) => planner.tiers[id] === tier && planner.prices[id] <= cap)
     .map(([id]) => String(id)).sort();
-  const menus = await findMealboxMenus({ category, maxPrice: cap, limit: 100 });
+  const menus = await findMealboxMenus({ tier, maxPrice: cap, limit: 100 });
   assert.deepEqual(menus.map((menu) => menu.id).sort(), expected);
   for (const menu of menus) {
-    assert.equal(menu.category, category);
+    assert.equal(menu.tier, tier);
     assert.ok(menu.price <= cap);
   }
-  // A cap below the cheapest menu in that category must return nothing.
+  // A cap below the cheapest menu in that level must return nothing.
   const below = Math.max(0, cap - 1);
-  const strict = await findMealboxMenus({ category, maxPrice: below, limit: 100 });
+  const strict = await findMealboxMenus({ tier, maxPrice: below, limit: 100 });
   for (const menu of strict) assert.ok(menu.price <= below);
-  assert.deepEqual(await findMealboxMenus({ category: 'หมวดที่ไม่มีอยู่จริง', limit: 100 }), []);
+});
+
+test('an unknown level is a 400, never a silent empty result', async () => {
+  // A caller may only name a real level: a typo must fail loudly instead of
+  // looking like "we have no such menu".
+  await assert.rejects(findMealboxMenus({ tier: 'platinum', limit: 100 }), ValidationError);
+  await assert.rejects(findMealboxMenus({ tier: 'ข้าวราดแกง', limit: 100 }), ValidationError);
+  // A real level nobody orders yet simply matches nothing.
+  const empty = await findMealboxMenus({ tier: 'executive', maxPrice: 1, limit: 100 });
+  assert.deepEqual(empty, []);
 });
 
 test('results sort by price, then name, then id; limits clamp safely', async () => {

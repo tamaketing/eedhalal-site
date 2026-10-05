@@ -4,8 +4,6 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
-import { MAX_BODY_BYTES, readCosts, saveCosts, validateCosts } from './cost-store.mjs';
-import { applyBulkCosts, bulkCostRows } from './bulk-costs.mjs';
 import { backupBeforeWrite, listBackups, liveNameFromBackup, restoreBackup } from '../../scripts/menu-backups.mjs';
 import {
   computePublishStatus,
@@ -17,15 +15,16 @@ import {
   parseMenuDataJs,
   parsePopularIds,
   publicProjectionOfCentral,
-  startingPriceConsistency,
   publishCentral,
   PUBLISH_STATUS_TH,
   readPublishState,
   saveCentral,
+  tierPriceConsistency,
   validateCentral,
   verifyLiveRelease,
   writePublishState,
 } from '../../scripts/menu-central.mjs';
+import { computeTierFloors, normalizeTier, setsFromPlanner, setsFromProjection, tierDefinitions } from '../../scripts/mealbox-tiers.mjs';
 import { deployMenuRelease, realDeployDeps } from '../../scripts/menu-deploy.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -33,12 +32,14 @@ const execFileAsync = promisify(execFile);
 // develops + tests the process only — no real push/deploy happens here.
 const DEPLOY_ENABLED = process.env.EED_ALLOW_GIT_DEPLOY === '1';
 
+const MAX_BODY_BYTES = 128 * 1024;
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 
-// Private data lives OUTSIDE version control (costs, central draft, backups,
-// publish state). Default keeps the historic location so the existing machine
-// keeps working with zero migration; override per machine/install:
+// Private data lives OUTSIDE version control (central draft, backups, publish
+// state). Default keeps the historic location so the existing machine keeps
+// working with zero migration; override per machine/install:
 //   EED_ADMIN_DATA_DIR=/path/to/private-data  (or --data-dir <path>)
 function resolveDataDir(cliValue) {
   const fromCli = typeof cliValue === 'string' && cliValue.trim() ? cliValue.trim() : '';
@@ -46,60 +47,19 @@ function resolveDataDir(cliValue) {
   return path.resolve(fromCli || fromEnv || path.join(ROOT, 'demo', 'owner-set-builder'));
 }
 
-// First-run seed: empty-but-valid structures so a clean install opens,
-// saves, and previews immediately. Clearly marked as a starting point —
-// enter REAL costs before using recommendations. Never ships sample business
-// data as truth.
-const SEED_COSTS = {
-  _note: 'ข้อมูลเริ่มต้น (ยังไม่มีทุนจริง) — กรอกทุนจริงที่หน้าจัดการเมนู/ต้นทุนก่อนใช้งาน',
-  groupMeta: {},
-  dishes: [],
-  extras: [],
-  toppings: [],
-  fruit: { label: 'ผลไม้', cost: null, status: 'pending', note: 'เริ่มต้น — กรอกทุนจริงก่อนใช้' },
-  boxes: {
-    three: { label: 'กล่อง 3 ช่อง (เริ่มต้น)', cost: null, status: 'pending', note: '' },
-  },
-};
-const SEED_SETTINGS = {
-  _note: 'ตั้งค่าเริ่มต้น — ปรับตารางกำไรให้ตรงร้านก่อนใช้ระบบแนะนำ',
-  profitTiers: [],
-  maxResultsPerGroup: 6,
-  maxResultsPerMain: 2,
-};
-
+// First-run seed: make sure the private data directory exists so a clean
+// install opens and saves immediately.
 export async function ensureSeedData(dataDir) {
-  const { mkdir, writeFile: writeJsonFile } = await import('node:fs/promises');
+  const { mkdir } = await import('node:fs/promises');
   await mkdir(dataDir, { recursive: true });
   await mkdir(path.join(dataDir, 'backups'), { recursive: true });
-  const seeded = [];
-  try {
-    await readCosts(dataDir);
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-    const saved = await saveCosts(dataDir, SEED_COSTS);
-    if (!saved.ok) throw new Error(`seed owner-costs.json ไม่สำเร็จ: ${saved.errors.join(' | ')}`);
-    seeded.push('owner-costs.json');
-  }
-  const settingsPath = path.join(dataDir, 'owner-settings.json');
-  try {
-    await readFile(settingsPath, 'utf8');
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-    await writeJsonFile(settingsPath, `${JSON.stringify(SEED_SETTINGS, null, 2)}\n`, 'utf8');
-    seeded.push('owner-settings.json');
-  }
-  return seeded;
+  return [];
 }
 
 const files = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/app.mjs', ['app.mjs', 'text/javascript; charset=utf-8']],
-  ['/logic.mjs', ['logic.mjs', 'text/javascript; charset=utf-8']],
-  ['/recommend.mjs', ['recommend.mjs', 'text/javascript; charset=utf-8']],
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
-  ['/cost-planner.mjs', ['cost-planner.mjs', 'text/javascript; charset=utf-8']],
-  ['/bulk-costs-ui.mjs', ['bulk-costs-ui.mjs', 'text/javascript; charset=utf-8']],
   ['/cost-planner.css', ['cost-planner.css', 'text/css; charset=utf-8']],
   ['/menu-central-ui.mjs', ['menu-central-ui.mjs', 'text/javascript; charset=utf-8']],
 ]);
@@ -115,7 +75,7 @@ async function ensureCentral(dataDir) {
   } catch (error) {
     if (error.code !== 'ENOENT' && error.code !== 'ECENTRALINVALID') throw error;
     // First run (or unreadable draft): migrate deterministically from the
-    // published files. Nothing is invented; costs stay in owner-costs.json.
+    // published files. Nothing is invented.
     const menuDataJs = await readFile(path.join(ROOT, 'js/menu-data.js'), 'utf8');
     const overrides = JSON.parse(await readFile(path.join(ROOT, 'data/planner-overrides.json'), 'utf8'));
     const hydrateJs = await readFile(path.join(ROOT, 'js', 'popular-menu-hydrate.js'), 'utf8').catch(() => '');
@@ -131,42 +91,86 @@ async function ensureCentral(dataDir) {
 }
 
 // Admin catalog: ALWAYS from the central draft (latest after "บันทึก"), never
-// from the published files. Whitelist name/ID/category/hidden only: sale
-// prices and toppings are never exposed here (the set builder must not use
-// selling prices as costs).
+// from the published files. Whitelist name/ID/tier/hidden only.
 async function catalog(dataDir) {
   const central = await ensureCentral(dataDir);
   return central.menus.map((item) => ({
-    id: item.id, name: item.name, category: item.category, hidden: item.hidden === true,
+    id: item.id, name: item.name, tier: normalizeTier(item.tier), hidden: item.hidden === true,
   }));
+}
+
+// Sale price feed for the owner's budget matcher. Selling price ONLY: no cost
+// data is read and no cost rule is applied. A menu qualifies when the owner has
+// actually given it a price (price > 0) and has not switched the price off
+// (showPrice === false) nor hidden it. Prices come from the central draft, so
+// they match what "บันทึก" shows before publishing.
+async function sellableMenus(dataDir) {
+  const central = await ensureCentral(dataDir);
+  const menus = central.menus
+    .filter((menu) => menu.hidden !== true && menu.showPrice !== false && Number(menu.price) > 0)
+    .map((menu) => ({
+      id: menu.id,
+      name: menu.name,
+      price: menu.price,
+      tier: normalizeTier(menu.tier),
+      desc: menu.desc || '',
+      image: menu.image || '',
+      minPerMenu: Number(menu.minPerMenu) > 0 ? Number(menu.minPerMenu) : null,
+    }))
+    .sort((a, b) => a.price - b.price || a.id - b.id);
+  const addons = (list) => (Array.isArray(list) ? list : [])
+    .map((item) => ({ name: String(item.name), price: Number(item.price) || 0 }))
+    .filter((item) => item.name && item.price > 0);
+  // Side items travel whole (not through `addons`, which drops unpriced rows):
+  // a side with no confirmed price yet is exactly the state Phase A is in, and
+  // the editor has to be able to show and finish it.
+  const sideItems = (Array.isArray(central.sideItems) ? central.sideItems : [])
+    .map((item) => ({
+      id: String(item.id),
+      nameTh: String(item.nameTh || ''),
+      nameEn: String(item.nameEn || ''),
+      cost: Number.isFinite(Number(item.cost)) ? Number(item.cost) : null,
+      priceAdjustment: Number.isFinite(Number(item.priceAdjustment)) ? Number(item.priceAdjustment) : null,
+      priceStatus: item.priceStatus === 'ready' ? 'ready' : 'pending',
+      active: item.active !== false,
+      public: item.public === true,
+    }));
+  return { menus, toppings: addons(central.toppings), sideItems };
 }
 
 async function publishOverview(dataDir) {
   const central = await ensureCentral(dataDir);
   const published = await loadPublished(ROOT);
   const menuDataMenus = await parseMenuDataJs(published.menuDataJs);
-  // Costs decide the cost gate, so the preview must see them too. Without this
-  // the dialog showed a price for every dish, including ones the ordering API
-  // refuses, and the diff never marked them ask-for-quote.
-  let costs = null;
-  try {
-    costs = await readCosts(dataDir);
-  } catch {
-    costs = null;
-  }
-  const diff = diffPublicChanges(central, { overrides: published.overrides, menuDataMenus }, costs);
+  const diff = diffPublicChanges(central, { overrides: published.overrides, menuDataMenus });
   const state = (await readPublishState(dataDir)) || { file: null, live: null, deploy: null, error: null };
   const status = computePublishStatus({ diff, file: state.file, live: state.live });
-  // The published "starting from" claim must match the cheapest dish a
-  // customer can actually order, otherwise llms.txt / FAQ advertise a price
-  // nobody can buy.
-  let startingPrice = { ok: true, warnings: [] };
-  try {
-    const rules = JSON.parse(await readFile(path.join(ROOT, 'data', 'business-rules.json'), 'utf8'));
-    startingPrice = startingPriceConsistency(rules, publicProjectionOfCentral(central, costs));
-  } catch {
-    startingPrice = { ok: true, warnings: [], declared: null, minOrderable: null, minServed: null, orderableCount: null, servedCount: null };
-  }
+  // The published "starting from" claim must match the cheapest set a customer
+  // can actually order, otherwise llms.txt / FAQ advertise a price nobody can
+  // buy. Tier prices are computed from the draft, never typed in.
+  const rules = await readFile(path.join(ROOT, 'data', 'business-rules.json'), 'utf8')
+    .then((raw) => JSON.parse(raw))
+    .catch(() => null);
+  const tierList = rules ? tierDefinitions(rules) : [];
+  const tierPrices = rules
+    ? tierPriceConsistency(rules, publicProjectionOfCentral(central))
+    : { ok: true, warnings: [], tiers: [], unassigned: [] };
+  // What each tier will show after this publish, next to the tier it shows now.
+  const publishedSets = setsFromPlanner(published.overrides);
+  const draftSets = setsFromProjection(publicProjectionOfCentral(central));
+  const nextFloors = computeTierFloors(draftSets).floors;
+  const liveFloors = computeTierFloors(publishedSets).floors;
+  const tierChanges = tierList.map((tier) => ({
+    id: tier.id,
+    nameTh: tier.nameTh,
+    nameEn: tier.nameEn,
+    boxFormatTh: tier.boxFormatTh,
+    boxFormatEn: tier.boxFormatEn,
+    from: liveFloors[tier.id]?.priceFrom ?? null,
+    to: nextFloors[tier.id]?.priceFrom ?? null,
+    sourceId: nextFloors[tier.id]?.sourceId ?? null,
+    sourceName: nextFloors[tier.id]?.sourceName ?? null,
+  }));
   // Customer preview sample: first visible menus as the website would list
   // them after publish (public fields only, sorted for display). A quote-only
   // dish must never preview a price.
@@ -180,7 +184,7 @@ async function publishOverview(dataDir) {
       return {
         id: menu.id,
         name: menu.name,
-        category: menu.category,
+        tier: normalizeTier(menu.tier),
         image: menu.image,
         price: blocked ? null : menu.price,
         quoteOnly: Boolean(blocked),
@@ -196,12 +200,15 @@ async function publishOverview(dataDir) {
     deploy: state.deploy,
     error: state.error,
     deployEnabled: DEPLOY_ENABLED,
-    startingPrice,
+    tiers: tierList,
+    tierPrices,
+    tierChanges,
     diff: {
       added: diff.added, changed: diff.changed, shown: diff.shown,
       hidden: diff.hidden, removed: diff.removed, costBlocked: diff.costBlocked,
       quoteOnlyChanged: diff.quoteOnlyChanged,
-      toppingsChanged: diff.toppingsChanged, meatsChanged: diff.meatsChanged,
+      toppingsChanged: diff.toppingsChanged,
+      sideItemsChanged: diff.sideItemsChanged,
       popularChanged: diff.popularChanged, hasChanges: diff.hasChanges,
     },
     preview,
@@ -389,14 +396,10 @@ export function createLocalServer({ dataDir = resolveDataDir() } = {}) {
         try {
           const validators = {
             'menu-central.json': validateCentral,
-            'owner-costs.json': validateCosts,
-            'owner-settings.json': (raw) => (raw && typeof raw === 'object'
-              ? { ok: true, errors: [] }
-              : { ok: false, errors: ['ไฟล์ตั้งค่าไม่ถูกต้อง'] }),
           };
           const liveName = liveNameFromBackup(file);
           const validate = validators[liveName];
-          if (!validate) return sendJson(400, { ok: false, error: `กู้คืนได้เฉพาะ menu-central.json / owner-costs.json / owner-settings.json (${liveName})` });
+          if (!validate) return sendJson(400, { ok: false, error: `กู้คืนได้เฉพาะ menu-central.json (${liveName})` });
           const result = await restoreBackup(dataDir, file, validate);
           return sendJson(200, { ok: true, ...result });
         } catch (error) {
@@ -420,18 +423,7 @@ export function createLocalServer({ dataDir = resolveDataDir() } = {}) {
           // Publish the saved central draft (single source), not the request
           // body: the preview the owner confirmed and the release must match.
           const central = await ensureCentral(dataDir);
-          // Costs decide which served menus are orderable vs ask-for-quote
-          // (business rule: data/business-rules.json -> menuPublishing). The
-          // cost store is a separate file the owner may not have touched yet,
-          // so a read failure must not silently publish every menu as
-          // orderable — fall back to "no cost data" (same as the preview).
-          let costs = null;
-          try {
-            costs = await readCosts(dataDir);
-          } catch {
-            costs = null;
-          }
-          const result = await publishCentral({ root: ROOT, dataDir, central, costs });
+          const result = await publishCentral({ root: ROOT, dataDir, central });
           return sendJson(200, { ok: true, record: result.record });
         } catch (error) {
           // Truthful failure only: the previous release is untouched and the
@@ -440,82 +432,9 @@ export function createLocalServer({ dataDir = resolveDataDir() } = {}) {
           return sendJson(500, { ok: false, error: error.message, state });
         }
       }
-      if (pathname === '/owner-costs/bulk' && request.method === 'POST') {
-        const sameOrigin = origin === expectedOrigin ||
-          (!origin && ['same-origin', 'none'].includes(String(fetchSite || '')));
-        if (!sameOrigin) return send(403, 'Local use only');
-        const contentType = String(request.headers['content-type'] || '');
-        if (!contentType.includes('application/json')) return send(415, 'Send application/json');
-        let parsed;
-        try {
-          parsed = JSON.parse(await readJsonBody(request));
-        } catch {
-          return sendJson(400, { ok: false, error: 'JSON ไม่ถูกต้อง' });
-        }
-        const current = await readCosts(dataDir);
-        const result = applyBulkCosts(current, parsed?.rows);
-        if (result.errors.length) return sendJson(400, { ok: false, errors: result.errors });
-        // Refuse to write anything the existing validator rejects, so a bad
-        // batch can never corrupt the owner's cost file.
-        const validated = validateCosts(result.costs);
-        if (!validated.ok) return sendJson(400, { ok: false, errors: validated.errors, skipped: result.skipped });
-        try {
-          await backupBeforeWrite(dataDir, 'owner-costs.json');
-        } catch (error) {
-          return sendJson(500, { ok: false, errors: [error.message] });
-        }
-        const saved = await saveCosts(dataDir, result.costs);
-        if (!saved.ok) return sendJson(400, { ok: false, errors: saved.errors, skipped: result.skipped });
-        return sendJson(200, {
-          ok: true,
-          version: saved.data.version,
-          updatedAt: saved.data.updatedAt,
-          applied: result.applied,
-          skipped: result.skipped,
-        });
-      }
-      if (pathname === '/owner-costs' && request.method === 'POST') {
-        // Saving costs is owner-only: same-origin browser request or an explicit local client.
-        const sameOrigin = origin === expectedOrigin ||
-          (!origin && ['same-origin', 'none'].includes(String(fetchSite || '')));
-        if (!sameOrigin) return send(403, 'Local use only');
-        const contentType = String(request.headers['content-type'] || '');
-        if (!contentType.includes('application/json')) return send(415, 'Send application/json');
-        const body = await readJsonBody(request);
-        let parsed;
-        try {
-          parsed = JSON.parse(body);
-        } catch {
-          return send(400, 'JSON ไม่ถูกต้อง');
-        }
-        // Automatic backup first (same rule as the central draft).
-        try {
-          await backupBeforeWrite(dataDir, 'owner-costs.json');
-        } catch (error) {
-          return sendJson(500, { ok: false, errors: [error.message] });
-        }
-        const saved = await saveCosts(dataDir, parsed);
-        if (!saved.ok) return sendJson(400, { ok: false, errors: saved.errors });
-        return sendJson(200, { ok: true, version: saved.data.version, updatedAt: saved.data.updatedAt });
-      }
       if (request.method === 'POST') return send(405, 'GET only');
       if (pathname === '/readiness') return sendJson(200, { ready: true, app: 'owner-set-builder' });
-      if (pathname === '/owner-costs') return send(200, JSON.stringify(await readCosts(dataDir)), 'application/json; charset=utf-8');
-      if (pathname === '/owner-costs/bulk' && request.method === 'GET') {
-        const costs = await readCosts(dataDir);
-        const catalogue = (await loadCentral(dataDir)).menus
-          .filter((menu) => menu.hidden !== true)
-          .map((menu) => ({
-            id: menu.id,
-            name: menu.name,
-            category: menu.category,
-            image: menu.image,
-            price: menu.price,
-            minPerMenu: menu.minPerMenu,
-          }));
-        return send(200, JSON.stringify({ rows: bulkCostRows(costs, catalogue), boxes: costs.boxes || {} }), 'application/json; charset=utf-8');
-      }
-      if (pathname === '/owner-settings') return send(200, await readFile(path.join(dataDir, 'owner-settings.json')), 'application/json; charset=utf-8');
+      if (pathname === '/sellable-menus') return send(200, JSON.stringify(await sellableMenus(dataDir)), 'application/json; charset=utf-8');
       if (pathname === '/menu-catalog') return send(200, JSON.stringify(await catalog(dataDir)), 'application/json; charset=utf-8');
       const rootFile = rootFiles.get(pathname);
       if (rootFile) return send(200, await readFile(rootFile[0]), rootFile[1]);
@@ -536,8 +455,7 @@ if (isMain) {
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Expected a local port between 1024 and 65535');
   const dataDirFlag = process.argv.find((arg) => arg.startsWith('--data-dir='))?.slice('--data-dir='.length);
   const dataDir = resolveDataDir(dataDirFlag);
-  const seeded = await ensureSeedData(dataDir);
-  if (seeded.length) console.log(`Seeded empty starter data in ${dataDir}: ${seeded.join(', ')} (enter real costs before use)`);
+  await ensureSeedData(dataDir);
   console.log(`Private data dir: ${dataDir} (override with EED_ADMIN_DATA_DIR or --data-dir=)`);
   createLocalServer({ dataDir }).listen(port, '127.0.0.1', () => {
     console.log(`Owner-only admin tools: http://127.0.0.1:${port}/`);

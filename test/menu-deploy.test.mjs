@@ -1,4 +1,4 @@
-// EED HALAL — deploy-via-worktree tests (REAL temp git repos, fake live net).
+﻿// EED HALAL — deploy-via-worktree tests (REAL temp git repos, fake live net).
 //
 // The admin checkout stays dirty throughout: a canary uncommitted change must
 // survive every run byte-identical, and no commit/push ever happens there.
@@ -27,7 +27,7 @@ function seedCatalog() {
     mins: { 1: 5, 2: 5 },
     images: { 1: 'img/a.jpg', 2: 'img/b.jpg' },
     names: { 1: 'เมนู ก', 2: 'เมนู ข' },
-    categories: { 1: 'ข้าว', 2: 'ข้าว' },
+    tiers: { 1: 'classic', 2: 'classic' },
     deleted: [],
   };
 }
@@ -35,11 +35,10 @@ function seedCatalog() {
 function seedMenuJs() {
   return [
     '/* seed */',
-    'var EED_DEFAULT_MEATS = [];',
     'var EED_DEFAULT_TOPPINGS = [];',
     'var EED_MENUS = [',
-    '  { id: 1, name: "เมนู ก", price: 65, category: "ข้าว", image: "img/a.jpg", desc: "", badge: "", minPerMenu: 5 },',
-    '  { id: 2, name: "เมนู ข", price: 70, category: "ข้าว", image: "img/b.jpg", desc: "", badge: "", minPerMenu: 5 }',
+    '  { id: 1, name: "เมนู ก", price: 65, tier: "classic", image: "img/a.jpg", desc: "", badge: "", minPerMenu: 5 },',
+    '  { id: 2, name: "เมนู ข", price: 70, tier: "classic", image: "img/b.jpg", desc: "", badge: "", minPerMenu: 5 }',
     '];',
     '',
   ].join('\n');
@@ -50,11 +49,10 @@ function seedCentral() {
     version: 9,
     updatedAt: '2026-09-27T00:00:00.000Z',
     menus: [
-      { id: 1, name: 'เมนู ก', price: 65, category: 'ข้าว', image: 'img/a.jpg', desc: '', badge: '', minPerMenu: 5, hidden: false, sortOrder: 0, noMeat: false, internalNote: '' },
-      { id: 2, name: 'เมนู ข', price: 70, category: 'ข้าว', image: 'img/b.jpg', desc: '', badge: '', minPerMenu: 5, hidden: false, sortOrder: 1, noMeat: false, internalNote: '' },
+      { id: 1, name: 'เมนู ก', price: 65, tier: 'classic', image: 'img/a.jpg', desc: '', badge: '', minPerMenu: 5, hidden: false, sortOrder: 0, internalNote: '' },
+      { id: 2, name: 'เมนู ข', price: 70, tier: 'classic', image: 'img/b.jpg', desc: '', badge: '', minPerMenu: 5, hidden: false, sortOrder: 1, internalNote: '' },
     ],
     toppings: [],
-    meats: [],
     popular: [1, 2],
   };
 }

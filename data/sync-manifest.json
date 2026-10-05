@@ -12,13 +12,13 @@
   "facts": [
     {
       "id": "mealbox-price",
-      "description": "ราคาข้าวกล่องเริ่มต้น (THB/box)",
-      "source": "services.mealBox.priceFrom",
-      "variants": ["เริ่ม {{services.mealBox.priceFrom}} บาท", "From {{services.mealBox.priceFrom}} THB"],
+      "description": "ราคาเริ่มต้นของระดับ Classic (THB/box) คำนวณจากชุดที่เปิดขายและแสดงบนเว็บ ไม่ได้พิมพ์ไว้ใน business-rules.json",
+      "source": "tier.priceFrom:classic",
+      "variants": ["เริ่ม {{tier.priceFrom:classic}} บาท", "From {{tier.priceFrom:classic}} THB", "เริ่มต้น {{tier.priceFrom:classic}} บาท"],
       "files": [
         "about.html", "catering.html", "contact.html", "corporate.html", "delivery-area.html",
         "donmueang.html", "faq.html", "huaykwang.html", "index.html", "ladprao.html",
-        "latkrabang.html", "rama3.html", "sathorn-silom.html", "sathorn.html",
+        "latkrabang.html", "popular-menu.html", "rama3.html", "sathorn-silom.html", "sathorn.html",
         "silom.html", "sukhumvit.html",
         "en/about.html", "en/catering.html", "en/faq.html", "en/index.html", "en/popular-menu.html",
         "en/sathorn.html", "en/silom.html",
@@ -30,14 +30,15 @@
       ]
     },
     {
-      "id": "premium-set-price",
-      "description": "เซ็ตพรีเมียมเริ่มต้นกี่บาท (ไม่มีเพดาน ราคาจริงขึ้นกับเมนูที่เลือก)",
-      "source": "services.mealBox.premiumPriceFrom",
+      "id": "executive-tier-price",
+      "description": "ราคาเริ่มต้นของระดับ Executive Premium Halal Box (THB/box) คำนวณจากชุดที่เปิดขายและแสดงบนเว็บ ถ้ายังไม่มีชุดที่เปิดขาย เซลล์นี้จะถูกข้ามแทนการคาดเดาราคา",
+      "source": "tier.priceFrom:executive",
       "variants": [
-        "เซ็ตพรีเมียมเริ่ม {{services.mealBox.premiumPriceFrom}} บาท",
-        "premium sets start at {{services.mealBox.premiumPriceFrom}} THB",
-        "premium sets from {{services.mealBox.premiumPriceFrom}} THB",
-        "Premium sets start from {{services.mealBox.premiumPriceFrom}} baht"
+        "Executive Premium Halal Box เริ่ม {{tier.priceFrom:executive}} บาท",
+        "ข้าวกล่องฮาลาลระดับพรีเมียม เริ่ม {{tier.priceFrom:executive}} บาท",
+        "Executive Premium Halal Box from {{tier.priceFrom:executive}} THB",
+        "Executive Premium Halal Box: from {{tier.priceFrom:executive}} THB",
+        "Executive Premium Halal Box starts at {{tier.priceFrom:executive}} THB"
       ],
       "files": [
         "catering.html", "corporate.html", "faq.html", "popular-menu.html",
@@ -52,6 +53,96 @@
         "en/blog/halal-box-100-boxes-price.html", "en/blog/halal-box-100-people-budget.html",
         "en/blog/halal-box-50-people-price.html", "en/blog/halal-box-budget-70-baht.html",
         "en/blog/seminar-200-people-menu.html"
+      ]
+    },
+    {
+      "id": "signature-tier-price",
+      "description": "ราคาเริ่มต้นของระดับ Signature Halal Meal Box (THB/box) คำนวณจากชุด Signature ที่เปิดขายและแสดงบนเว็บ ถ้ายังไม่มีชุดที่เปิดขาย เซลล์นี้จะถูกข้ามแทนการคาดเดาราคา (เพิ่มเมื่อ 4/10/2026 เปิดขาย 2 ชุด)",
+      "source": "tier.priceFrom:signature",
+      "variants": [
+        "Signature Halal Meal Box — ข้าวกล่องฮาลาลระดับซิกเนเจอร์ เริ่ม {{tier.priceFrom:signature}} บาท",
+        "Signature Halal Meal Box from {{tier.priceFrom:signature}} THB",
+        "Signature Halal Meal Box เริ่ม {{tier.priceFrom:signature}} บาท",
+        "Signature เริ่ม {{tier.priceFrom:signature}} บาท",
+        "เริ่ม {{tier.priceFrom:signature}} บาท/กล่อง",
+        "From {{tier.priceFrom:signature}} THB/box"
+      ],
+      "files": [
+        "about.html", "catering.html", "faq.html", "index.html", "popular-menu.html",
+        "en/about.html", "en/catering.html", "en/faq.html", "en/index.html",
+        "llms.txt", "llms-full.md",
+        "line-ai/knowledge-pack.md", "line-ai/rich-menu.json", "line-ai/reply-templates.json",
+        "blog/halal-box-100-people-budget.html", "en/blog/halal-box-100-people-budget.html"
+      ]
+    },
+    {
+      "id": "mealbox-tier-classic-name",
+      "description": "ชื่อระดับ Classic ตามที่ประกาศใน data/business-rules.json (services.mealBox.tiers) ต้องปรากฏในทุกช่องทางที่ลงชื่อระดับ",
+      "source": "services.mealBox.tiers[classic].nameEn",
+      "variants": ["Classic Halal Meal Box"],
+      "files": [
+        "faq.html", "popular-menu.html", "index.html",
+        "en/faq.html", "en/popular-menu.html", "en/index.html",
+        "llms.txt", "llms-full.md",
+        "line-ai/rich-menu.json", "line-ai/knowledge-pack.md"
+      ]
+    },
+    {
+      "id": "mealbox-tier-signature-name",
+      "description": "ชื่อระดับ Signature ตามที่ประกาศใน data/business-rules.json (services.mealBox.tiers) ต้องปรากฏในทุกช่องทางที่ลงชื่อระดับ",
+      "source": "services.mealBox.tiers[signature].nameEn",
+      "variants": ["Signature Halal Meal Box"],
+      "files": [
+        "faq.html", "popular-menu.html", "index.html",
+        "en/faq.html", "en/popular-menu.html", "en/index.html",
+        "llms.txt", "llms-full.md",
+        "line-ai/rich-menu.json", "line-ai/knowledge-pack.md"
+      ]
+    },
+    {
+      "id": "mealbox-tier-executive-name",
+      "description": "ชื่อระดับ Executive Premium ตามที่ประกาศใน data/business-rules.json (services.mealBox.tiers) ต้องปรากฏในทุกช่องทางที่ลงชื่อระดับ",
+      "source": "services.mealBox.tiers[executive].nameEn",
+      "variants": ["Executive Premium Halal Box"],
+      "files": [
+        "faq.html", "popular-menu.html", "index.html",
+        "en/faq.html", "en/popular-menu.html", "en/index.html",
+        "llms.txt", "llms-full.md",
+        "line-ai/rich-menu.json", "line-ai/knowledge-pack.md"
+      ]
+    },
+    {
+      "id": "signature-box-composition",
+      "description": "องค์ประกอบกล่อง Signature ตามที่ประกาศใน data/business-rules.json (services.mealBox.tiers[signature].boxFormat) คือ ข้าว + อาหารหลัก 1 อย่าง + อาหารรอง 1 อย่าง + ผัก ในกล่อง 4 ช่อง ต้องตรงกันทุกช่องทาง",
+      "source": "services.mealBox.tiers[signature].boxFormatTh / boxFormatEn",
+      "variants": [
+        "ข้าว อาหารหลัก 1 อย่าง อาหารรอง 1 อย่าง และผัก ในกล่อง 4 ช่อง",
+        "Rice, one main, one second dish, and vegetables, in a four-compartment box"
+      ],
+      "files": [
+        "popular-menu.html", "en/popular-menu.html",
+        "index.html", "en/index.html",
+        "faq.html", "en/faq.html",
+        "llms.txt", "llms-full.md",
+        "line-ai/knowledge-pack.md"
+      ]
+    },
+    {
+      "id": "signature-side-choice",
+      "description": "กลไกอาหารรองของ Signature: ลูกค้าเลือกอาหารหลัก แล้วเราเสนออาหารรอง 2-3 ตัวเลือกที่เข้ากัน ราคาขึ้นตามคู่เมนูที่เลือก และเราส่งราคารวมทั้งกล่องก่อนเสมอ ห้ามแสดงราคาอาหารรองเป็นบรรทัดแยก",
+      "source": "services.mealBox.tiers[signature].sideChoiceNoteTh / sideChoiceNoteEn",
+      "variants": [
+        "เราจะเสนออาหารรองที่เข้ากันให้ 2-3 ตัวเลือก",
+        "we will offer two or three second dishes that go with it",
+        "ราคาขึ้นตามคู่เมนูที่เลือก",
+        "The price follows the pair you pick"
+      ],
+      "files": [
+        "popular-menu.html", "en/popular-menu.html",
+        "index.html", "en/index.html",
+        "faq.html", "en/faq.html",
+        "llms.txt", "llms-full.md",
+        "line-ai/knowledge-pack.md"
       ]
     },
     {
@@ -226,6 +317,12 @@
       "description": "ราคาเริ่มต้นตระกูลข้าวหมกที่ไม่ใช่ราคาจริง ราคาจริงคือเมนูที่ถูกที่สุดที่เผยแพร่ ดูจาก fact khao-mok-starting-price ซึ่งคำนวณจาก data/planner-overrides.json ทุกครั้ง (เคยตกหล่นเป็น 90 และ 100 บาท) ถ้าเพิ่มหรือลดราคาเมนู ต้องแก้เลขบนหน้าให้ตรง",
       "pattern": "ข้าวหมก[^\\n]{0,60}?(?:ราคา)?เริ่ม(?:ต้น)?\\s*(?:ที่)?\\s*(?!85\\b)\\d[\\d,]*\\s*บาท|(?:ราคา)?เริ่ม(?:ต้น)?\\s*(?:ที่)?\\s*(?!85\\b)\\d[\\d,]*\\s*บาท[^\\n]{0,40}ข้าวหมก|ส่งถึงที่\\s*(?!85\\b)\\d[\\d,]*\\s*บาท",
       "exclude": ["artifacts/", "FACTS.md"]
+    },
+    {
+      "id": "retired-tier-price",
+      "description": "ห้ามอ้างว่าได้ระดับ Signature เริ่ม 90 บาท หรือ Executive Premium เริ่ม 150 บาท จนกว่าจะมีชุดราคานั้นเปิดขายจริง (ราคาเริ่มต้นมาจาก data/planner-overrides.json เท่านั้น)",
+      "pattern": "Signature[^\\n]{0,40}?(?:เริ่ม|from|starting at)?\\s*(?:ที่)?\\s*90\\s*(?:บาท|THB)|Executive[^\\n]{0,60}?(?:เริ่ม|from|starting at)?\\s*(?:ที่)?\\s*150\\s*(?:บาท|THB)|เริ่ม\\s*90\\s*บาท/กล่อง|เริ่ม\\s*150\\s*บาท/กล่อง",
+      "exclude": ["artifacts/", "FACTS.md", "data/sync-manifest.json"]
     },
     {
       "id": "tax-invoice-available",

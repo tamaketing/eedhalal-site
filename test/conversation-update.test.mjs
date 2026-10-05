@@ -1,9 +1,10 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import test from 'node:test';
 import vm from 'node:vm';
 import { buildAiAgentText, buildConversationRouter, conversationRouter, updateConversation } from '../line-ai/conversation-update.mjs';
 import { MENU_FETCH_MODES } from '../line-ai/menu-intent.mjs';
 import { loadSystemData, renderKnowledge } from '../scripts/check-system.mjs';
+import { computeTierFloors, setsFromPlanner, tierDefinitions } from '../scripts/mealbox-tiers.mjs';
 
 function route(text, type = 'text') {
   const input = { body: { events: [{ type: 'message', source: { userId: 'test-user' }, message: { type, text } }] } };
@@ -39,7 +40,7 @@ test('router embeds no draft machinery and never a baked price list', () => {
   const [result] = routeWith(code, 'งบกล่องละ 70 มีอะไรบ้าง');
   assert.equal(result.json.hasSafeAnswer, false);
   assert.deepEqual(JSON.parse(JSON.stringify(result.json.menuPlan)), {
-    menuLookupNeeded: true, mode: 'exact-price', price: 70, maxPrice: null, category: null, query: null,
+    menuLookupNeeded: true, mode: 'exact-price', price: 70, maxPrice: null, tier: null, query: null,
   });
   assert.equal(result.json.menuQueryString, 'price=70&limit=100');
   const [plain] = routeWith(code, 'ขอบคุณ');
@@ -61,7 +62,11 @@ test('generated prompt carries no per-menu price catalog', async () => {
   const knowledge = renderKnowledge(rules, catalog, legacy.menus);
   assert.ok(!/^.+ \| \d+ บาท\/กล่อง/m.test(knowledge), 'no menu price lines in knowledge');
   assert.ok(knowledge.includes('MENU_CONTEXT'), 'menu-context rule present');
-  assert.ok(knowledge.includes(`เริ่ม ${rules.services.mealBox.priceFrom} บาท/กล่อง`), 'starting-price policy retained');
+  const floors = computeTierFloors(setsFromPlanner(catalog)).floors;
+  assert.ok(knowledge.includes(`เริ่ม ${floors.classic.priceFrom} บาท/กล่อง`), 'starting-price policy retained');
+  for (const tier of tierDefinitions(rules)) {
+    assert.ok(knowledge.includes(tier.nameEn), `${tier.id} level must be described`);
+  }
   const changed = structuredClone(catalog);
   const victim = legacy.menus[0];
   changed.deleted = [...(changed.deleted || []), victim.id];

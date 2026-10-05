@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -13,8 +13,8 @@ import {
 } from '../line-ai/menu-intent.mjs';
 import { buildDeterministicMenuDraftNodeCode } from '../line-ai/conversation-update.mjs';
 
-function menu(id, name, price, minPerMenu = 5, category = 'ข้าวผัด') {
-  return { id, name, price, minPerMenu, category };
+function menu(id, name, price, minPerMenu = 5, tier = 'classic') {
+  return { id, name, price, minPerMenu, tier };
 }
 
 function pairsIn(draft, menus) {
@@ -49,12 +49,16 @@ test('max-price draft caps display and notes the remainder', () => {
   assert.deepEqual(unknown, []);
 });
 
-test('category modes label the category in the header', () => {
-  const menus = [menu('2', 'ข้าวผัดกะเพรา', 60)];
-  const exact = buildDeterministicMenuDraft({ mode: 'category-price', price: 60, category: 'ข้าวผัด' }, { ok: true, menus });
-  assert.ok(exact.startsWith('เมนูข้าวผัด งบ 60 บาท/กล่อง มีเมนูดังนี้ค่ะ'));
-  const max = buildDeterministicMenuDraft({ mode: 'category-max', maxPrice: 70, category: 'ข้าวผัด' }, { ok: true, menus });
-  assert.ok(max.startsWith('เมนูข้าวผัด ไม่เกิน 70 บาท/กล่อง มีเมนูดังนี้ค่ะ'));
+test('level modes name the level, and name+budget modes name the dish', () => {
+  const menus = [menu('2', 'ข้าวผัดกะเพรา', 60), menu('3', 'ผัดไทยกุ้งสด', 60)];
+  const tierExact = buildDeterministicMenuDraft({ mode: 'tier-price', price: 60, tier: 'signature' }, { ok: true, menus });
+  assert.ok(tierExact.startsWith('เมนูระดับ Signature งบ 60 บาท/กล่อง มีเมนูดังนี้ค่ะ'), tierExact);
+  const tierMax = buildDeterministicMenuDraft({ mode: 'tier-max', maxPrice: 70, tier: 'executive' }, { ok: true, menus });
+  assert.ok(tierMax.startsWith('เมนูระดับ Executive ไม่เกิน 70 บาท/กล่อง มีเมนูดังนี้ค่ะ'), tierMax);
+  const nameExact = buildDeterministicMenuDraft({ mode: 'name-price', price: 60, query: 'ข้าวผัด' }, { ok: true, menus });
+  assert.ok(nameExact.startsWith('เมนู "ข้าวผัด" งบ 60 บาท/กล่อง มีดังนี้ค่ะ'), nameExact);
+  const nameMax = buildDeterministicMenuDraft({ mode: 'name-max', maxPrice: 70, query: 'ข้าวผัด' }, { ok: true, menus });
+  assert.ok(nameMax.startsWith('เมนู "ข้าวผัด" ไม่เกิน 70 บาท/กล่อง มีดังนี้ค่ะ'), nameMax);
 });
 
 test('name lookup answers a single menu with per-menu minimum', () => {
@@ -109,7 +113,7 @@ test('deterministic drafts keep LINE-safe style', () => {
 });
 
 test('eligible modes cover the deterministic set', () => {
-  assert.deepEqual([...DETERMINISTIC_DRAFT_MODES].sort(), ['category-max', 'category-price', 'clarify', 'exact-price', 'max-price', 'name-lookup'].sort());
+  assert.deepEqual([...DETERMINISTIC_DRAFT_MODES].sort(), ['clarify', 'exact-price', 'max-price', 'name-lookup', 'name-max', 'name-price', 'tier-max', 'tier-price'].sort());
 });
 
 // §10: Gemini 429 must not prevent deterministic menu drafts. This harness
@@ -141,7 +145,7 @@ test('forced Gemini outage still yields WAITING_FOR_HUMAN menu drafts', async ()
     {
       mode: 'name-lookup',
       text: 'ข้าวไก่เทอริยากิ ราคาเท่าไร',
-      fetchJson: { menus: [{ id: '14', name: 'ข้าวไก่เทอริยากิ', price: 75, minPerMenu: 5, category: 'ข้าวราดแกง' }] },
+      fetchJson: { menus: [{ id: '14', name: 'ข้าวไก่เทอริยากิ', price: 75, minPerMenu: 5, tier: 'classic' }] },
       expect: 'ข้าวไก่เทอริยากิ ราคา 75 บาท/กล่องค่ะ',
     },
     {

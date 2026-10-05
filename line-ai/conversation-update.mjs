@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import {
   DETERMINISTIC_DRAFT_MODES,
   DETERMINISTIC_DRAFT_SOURCE,
-  MENU_CATEGORIES,
   MENU_CONTEXT_LIMIT,
   MENU_DRAFT_DISPLAY_LIMIT,
   MENU_FETCH_MODES,
   MENU_NAME_KEYWORDS,
   MENU_SCAFFOLDING,
+  MENU_TIERS,
+  MENU_TIER_LABELS,
   buildDeterministicMenuDraft,
   buildMenuContext,
   buildMenuQueryString,
@@ -18,7 +19,9 @@ import {
   isValidMenuEntry,
   normalizeMenuText,
   parseMenuIntent,
+  parseMenuTier,
   stripMenuScaffolding,
+  stripMenuTierWords,
 } from './menu-intent.mjs';
 
 // Human-approval foundation: nodes that contact a customer directly.
@@ -238,7 +241,8 @@ return [{ json: { draftId: draft.draftId || null, status: draft.status, deduped:
 // The router embeds only parsing (no catalog, no prices, no draft
 // machinery): it turns customer text into a menuPlan for the live lookup.
 const MENU_INTENT_ROUTER_PRELUDE = [
-  `const MENU_CATEGORIES = ${JSON.stringify(MENU_CATEGORIES)};`,
+  `const MENU_TIERS = ${JSON.stringify(MENU_TIERS)};`,
+  `const MENU_TIER_LABELS = ${JSON.stringify(MENU_TIER_LABELS)};`,
   `const MENU_FETCH_MODES = ${JSON.stringify(MENU_FETCH_MODES)};`,
   `const MENU_CONTEXT_LIMIT = ${MENU_CONTEXT_LIMIT};`,
   `const MENU_NAME_KEYWORDS = ${JSON.stringify(MENU_NAME_KEYWORDS)};`,
@@ -246,6 +250,8 @@ const MENU_INTENT_ROUTER_PRELUDE = [
   normalizeMenuText.toString(),
   stripMenuScaffolding.toString(),
   parseMenuIntent.toString(),
+  parseMenuTier.toString(),
+  stripMenuTierWords.toString(),
   buildMenuQueryString.toString(),
 ].join('\n');
 

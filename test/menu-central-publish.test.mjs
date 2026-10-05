@@ -93,7 +93,7 @@ test('1. add menu + save: admin reads it immediately, published web unchanged', 
   const menus = [...draft.menus];
   const maxId = Math.max(...menus.map((menu) => menu.id));
   menus.push({
-    id: maxId + 1, name: 'ข้าวราดผัดหน่อไม้ดอง', price: 65, category: 'ข้าวราดแกง',
+    id: maxId + 1, name: 'ข้าวราดผัดหน่อไม้ดอง', price: 65, tier: 'classic',
     image: 'img/logo.jpg', desc: 'เมนูทดสอบ', badge: 'ใหม่', minPerMenu: 5,
     hidden: false, sortOrder: menus.length, noMeat: false, internalNote: 'ทดสอบภายใน',
   });
@@ -124,7 +124,8 @@ test('2. rename/image edit: preview shows the exact public change', async () => 
   await publishCentral({ root: dir, dataDir, central: draft });
   const published = await loadPublished(dir);
 
-  const menus = draft.menus.map((menu) => menu.id === 1
+  const target = draft.menus[0];
+  const menus = draft.menus.map((menu) => menu.id === target.id
     ? { ...menu, name: 'ข้าวราดกะเพราไก่สับ (ใหม่)', image: 'img/menu-kaprao-nuea.jpg' }
     : menu);
   const saved = await saveCentral(dataDir, { ...draft, menus });
@@ -133,7 +134,7 @@ test('2. rename/image edit: preview shows the exact public change', async () => 
   const diff = diffPublicChanges(saved.data, published);
   assert.equal(diff.added.length, 0);
   assert.equal(diff.changed.length, 1);
-  assert.equal(diff.changed[0].id, 1);
+  assert.equal(diff.changed[0].id, target.id);
   assert.deepEqual([...diff.changed[0].fields].sort(), ['image', 'name']);
 });
 
@@ -145,14 +146,17 @@ test('3. cost-only edit: profit recalculates, no web publish pending', async () 
   const published = await loadPublished(dir);
 
   // Costs live in owner-costs.json (dish.foodCost), never in the central draft.
+  // The cost is expressed relative to the chosen dish's own price so the test
+  // does not depend on which menus the owner currently sells.
+  const menu = draft.menus[0];
+  const baseCost = menu.price - 17;
   const ownerCosts = {
-    dishes: [{ id: 'menu-1', menuId: 1, name: 'ข้าวราดกะเพรา', foodCost: 48, status: 'confirmed' }],
+    dishes: [{ id: `menu-${menu.id}`, menuId: menu.id, name: menu.name, foodCost: baseCost, status: 'confirmed' }],
   };
-  const menu = draft.menus.find((item) => item.id === 1);
   const profitBefore = menu.price - ownerCosts.dishes[0].foodCost;
 
   // Owner edits only the cost.
-  ownerCosts.dishes[0].foodCost = 52;
+  ownerCosts.dishes[0].foodCost = baseCost + 4;
   const profitAfter = menu.price - ownerCosts.dishes[0].foodCost;
   assert.equal(profitBefore, 17);
   assert.equal(profitAfter, 13);
@@ -170,21 +174,22 @@ test('3. cost-only edit: profit recalculates, no web publish pending', async () 
 test('4. test publish: planner + menu-data + API read the same data', async () => {
   const { dir, dataDir, overrides, menuDataJs } = await seedTempRoot();
   const draft = await seedCentral(dataDir, overrides, menuDataJs);
-  const menus = draft.menus.map((menu) => menu.id === 2 ? { ...menu, price: 70 } : menu);
+  const target = draft.menus[1];
+  const menus = draft.menus.map((menu) => menu.id === target.id ? { ...menu, price: 70 } : menu);
   const saved = await saveCentral(dataDir, { ...draft, menus });
 
   const result = await publishCentral({ root: dir, dataDir, central: saved.data });
   assert.equal(result.ok, true);
 
   const published = await loadPublished(dir);
-  assert.equal(published.overrides.prices['2'], 70);
+  assert.equal(published.overrides.prices[String(target.id)], 70);
   const parsed = await parseMenuDataJs(published.menuDataJs);
-  assert.equal(parsed.find((menu) => String(menu.id) === '2').price, 70);
+  assert.equal(parsed.find((menu) => String(menu.id) === String(target.id)).price, 70);
 
   // The deterministic meal-box API (price authority) serves the same release.
   const { getMealboxMenuCatalog } = await import('../services/menus.mjs');
   const catalog = await getMealboxMenuCatalog({ plannerPath: path.join(dir, 'data', 'planner-overrides.json') });
-  assert.equal(catalog.find((menu) => menu.id === '2').price, 70);
+  assert.equal(catalog.find((menu) => String(menu.id) === String(target.id)).price, 70);
 
   // After a clean file build nothing is pending — status is "staged"
   // (files ready, live web NOT yet confirmed).
@@ -476,4 +481,91 @@ test('bulk hide is refused without confirmation, then allowed with it', async ()
   });
   assert.equal(restored.ok, true);
   assert.deepEqual(await onDisk(), []);
+});
+
+// --- The product level is the only grouping -----------------------------------
+// A menu has a tier and nothing else. Publish writes that tier to both
+// published files, and the retired category keys are dropped from the web
+// rather than carried over.
+
+test('publish writes the level to both files and never a category', async () => {
+  const { dir, dataDir, overrides, menuDataJs } = await seedTempRoot();
+  const draft = await seedCentral(dataDir, overrides, menuDataJs);
+  const menus = draft.menus.map((menu, index) => ({ ...menu, tier: index === 0 ? 'executive' : 'classic' }));
+  const saved = await saveCentral(dataDir, { ...draft, menus });
+  assert.equal(saved.ok, true, JSON.stringify(saved.errors));
+  await publishCentral({ root: dir, dataDir, central: saved.data });
+
+  const published = await loadPublished(dir);
+  assert.equal(published.overrides.categories, undefined, 'the retired categories map must not be published');
+  assert.equal(published.overrides.categoryList, undefined, 'the retired category list must not be published');
+  assert.equal(published.overrides.tiers[String(menus[0].id)], 'executive');
+  assert.ok(!/EED_CATEGORIES/.test(published.menuDataJs), 'menu-data.js must not declare a category list');
+  assert.ok(!/category:/.test(published.menuDataJs), 'no menu line may carry a category');
+  const publishedMenus = await parseMenuDataJs(published.menuDataJs);
+  assert.equal(publishedMenus[0].tier, 'executive');
+});
+
+test('a published file still holding the retired keys drops them on publish', async () => {
+  // A repo mid-transition keeps the old keys until the first publish. That
+  // publish must REMOVE them instead of failing or leaving them live.
+  const { dir, dataDir, overrides, menuDataJs } = await seedTempRoot();
+  const draft = await seedCentral(dataDir, overrides, menuDataJs);
+  const saved = await saveCentral(dataDir, draft);
+  assert.equal(saved.ok, true, JSON.stringify(saved.errors));
+  await writeFile(
+    path.join(dir, 'data', 'planner-overrides.json'),
+    `${JSON.stringify({
+      ...overrides,
+      categories: { 1: 'ข้าวราดแกง' },
+      categoryList: [{ key: 'ข้าวราดแกง', label: 'เมนูข้าวราดแกง' }],
+    }, null, 2)}\n`,
+    'utf8',
+  );
+  await publishCentral({ root: dir, dataDir, central: saved.data });
+  const published = await loadPublished(dir);
+  assert.equal(published.overrides.categories, undefined);
+  assert.equal(published.overrides.categoryList, undefined);
+});
+
+test('a draft needs no category to be valid', () => {
+  const result = validateCentral({
+    version: 1,
+    menus: [{ id: 1, name: 'ทดสอบ', price: 65, tier: 'classic', image: 'img/a.jpg', minPerMenu: 10, sortOrder: 0 }],
+  });
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  assert.equal(result.data.menus[0].tier, 'classic');
+});
+
+test('an unknown level is refused instead of silently becoming Classic', () => {
+  const result = validateCentral({
+    version: 1,
+    menus: [{ id: 1, name: 'ทดสอบ', price: 65, tier: 'platinum', image: 'img/a.jpg', minPerMenu: 10, sortOrder: 0 }],
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join(' '), /ระดับสินค้า “platinum” ไม่ถูกต้อง/);
+});
+
+test('deleting a dish for good removes it from both published files', async () => {
+  const { dir, dataDir, overrides, menuDataJs } = await seedTempRoot();
+  const draft = await seedCentral(dataDir, overrides, menuDataJs);
+  const doomed = draft.menus[0];
+  const saved = await saveCentral(dataDir, {
+    ...draft,
+    menus: draft.menus.filter((menu) => menu.id !== doomed.id),
+    popular: (draft.popular || []).filter((id) => Number(id) !== Number(doomed.id)),
+  });
+  assert.equal(saved.ok, true, JSON.stringify(saved.errors));
+  await publishCentral({ root: dir, dataDir, central: saved.data });
+
+  const published = await loadPublished(dir);
+  assert.equal(published.overrides.prices[String(doomed.id)], undefined, 'the price must be gone from the catalog');
+  assert.equal(published.overrides.names[String(doomed.id)], undefined);
+  const publishedMenus = await parseMenuDataJs(published.menuDataJs);
+  assert.ok(!publishedMenus.some((menu) => Number(menu.id) === Number(doomed.id)), 'the dish must be gone from menu-data.js');
+
+  // And the customer catalog the bot reads can no longer see or quote it.
+  const { getMealboxMenuCatalog } = await import('../services/menus.mjs');
+  const catalog = await getMealboxMenuCatalog({ plannerPath: path.join(dir, 'data', 'planner-overrides.json') });
+  assert.ok(!catalog.some((item) => Number(item.id) === Number(doomed.id)), 'the deleted dish must not reach the catalog');
 });

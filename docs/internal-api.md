@@ -49,7 +49,7 @@ never stack traces.
 | POST | `/drafts/:id/approve` | `{ ownerId?, expectedUpdatedAt?, expectedStatus? }` |
 | POST | `/drafts/:id/edit` | `{ finalText, ... }`, AI draft preserved |
 | POST | `/drafts/:id/reject` | `{ ... }` |
-| GET | `/menus/mealbox?price=&maxPrice=&category=&q=&limit=` | planner-backed meal-box catalog (`{ serviceType, source, filters, menus }`); price authority for the LINE menu lookup; default limit 20, max 100 |
+| GET | `/menus/mealbox?price=&maxPrice=&tier=&q=&limit=` | planner-backed meal-box catalog (`{ serviceType, source, filters, menus }`); price authority for the LINE menu lookup; `tier` is `classic` \| `signature` \| `executive` (anything else is a 400); default limit 20, max 100 |
 
 No sender, no regenerate-with-AI, no kitchen, no quotation/order/job/payment.
 

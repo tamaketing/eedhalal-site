@@ -11,11 +11,33 @@
 // Known limitation (by data, not by code): the planner has no structured
 // protein field. A bare word such as "ไก่" is therefore treated ONLY as a
 // menu-name keyword ("menu names containing ไก่"), never as "all chicken
-// dishes". Category is restricted to the five planner labels below.
+// dishes". The tier is the only product level; a dish type such as "ข้าวผัด"
+// is matched as a menu-name keyword instead.
 
-const MENU_CATEGORIES = ['ข้าวราดแกง', 'ข้าวผัด', 'เส้น', 'อาหารอินเดีย', 'พรีเมียม'];
+// Tier ids published per menu (data/business-rules.json -> services.mealBox.tiers).
+// A customer may also say the level by name, so both spellings are recognised.
+const MENU_TIERS = {
+  classic: 'classic',
+  'คลาสสิก': 'classic',
+  signature: 'signature',
+  'ซิกเนเจอร์': 'signature',
+  executive: 'executive',
+  'พรีเมียม': 'executive',
+};
 
-const MENU_FETCH_MODES = ['exact-price', 'max-price', 'name-lookup', 'category-price', 'category-max'];
+const MENU_TIER_LABELS = {
+  classic: 'Classic',
+  signature: 'Signature',
+  executive: 'Executive',
+};
+
+// A name + budget question is the old "category-price" shape ("ข้าวผัดงบ 70"):
+// the dish word is now matched against menu names and composes with the price
+// filter, so no phrasing a customer actually uses is lost.
+const MENU_FETCH_MODES = [
+  'exact-price', 'max-price', 'name-lookup',
+  'name-price', 'name-max', 'tier-price', 'tier-max',
+];
 
 const MENU_CONTEXT_LIMIT = 100;
 
@@ -30,7 +52,7 @@ const DETERMINISTIC_DRAFT_SOURCE = 'deterministic-menu';
 
 // Generic Thai food words used ONLY to decide whether a leftover text
 // fragment looks like a menu-name query. This list classifies nothing:
-// it never labels protein, category, or dish identity.
+// it never labels protein, dish type, or dish identity.
 const MENU_NAME_KEYWORDS = [
   'ข้าว', 'ผัด', 'แกง', 'ทอด', 'ต้ม', 'ยำ', 'หมก', 'เส้น', 'มาม่า',
   'สปาเกตตี', 'ราด', 'คั่ว', 'กลิ้ง', 'เจียว', 'ดาว', 'เนื้อ', 'ไก่',
@@ -62,19 +84,19 @@ function stripMenuScaffolding(text) {
   return out.replace(/\s+/g, ' ').trim();
 }
 
-// Returns { menuLookupNeeded, mode, price, maxPrice, category, query }.
-// price/maxPrice are numbers or null; category/query are strings or null.
-// Modes: exact-price | max-price | name-lookup | category-price |
-// category-max | clarify | none. Only MENU_FETCH_MODES need an HTTP fetch;
-// clarify carries no query (never guess a name); none carries nothing.
+// Returns { menuLookupNeeded, mode, price, maxPrice, tier, query }.
+// price/maxPrice are numbers or null; tier/query are strings or null.
+// Modes: exact-price | max-price | name-lookup | name-price | name-max |
+// tier-price | tier-max | clarify | none. Only MENU_FETCH_MODES need an HTTP
+// fetch; clarify carries no query (never guess a name); none carries nothing.
 //
 // Evidence rules keep non-menu messages out of the lookup:
-// - bare "75 บาท" needs a menu word, category, or food-like remainder;
-// - "ไม่เกิน N" needs a menu-domain cue (บาท/กล่อง/เมนู/งบ/category/food);
+// - bare "75 บาท" needs a menu word, a tier, or food-like remainder;
+// - "ไม่เกิน N" needs a menu-domain cue (บาท/กล่อง/เมนู/งบ/tier/food);
 // - "75 กล่อง" (quantity unit, no price cue) never becomes a price;
 // - delivery-fee questions without menu cues stay with business rules.
 function parseMenuIntent(text) {
-  const empty = { menuLookupNeeded: false, mode: 'none', price: null, maxPrice: null, category: null, query: null };
+  const empty = { menuLookupNeeded: false, mode: 'none', price: null, maxPrice: null, tier: null, query: null };
   const t = normalizeMenuText(text);
   if (!t) return empty;
 
@@ -101,12 +123,12 @@ function parseMenuIntent(text) {
 
   const hasPriceQuestion = /(เท่าไหร่|เท่าไร|กี่บาท|ราคา\?)/.test(t);
   const hasMenuWord = t.includes('เมนู') || t.includes('งบ');
-  const category = MENU_CATEGORIES.find((label) => t.includes(label)) ?? null;
+  const tier = parseMenuTier(t);
 
-  // Remainder-based name keyword. Budget paths strip the category label so
-  // "ข้าวผัด" alone never becomes a redundant query; name questions keep
+  // Remainder-based name keyword. Budget paths strip the tier label so
+  // "Signature" alone never becomes a redundant query; name questions keep
   // the full remainder so "ข้าวผัดปลาทู" stays intact.
-  function remainderFor(stripCategory) {
+  function remainderFor(stripTier) {
     let remainder = t;
     if (maxMatch) remainder = remainder.replace(maxMatch[0], ' ');
     else if (price !== null) {
@@ -120,40 +142,62 @@ function parseMenuIntent(text) {
         if (span) { remainder = remainder.replace(span[0], ' '); break; }
       }
     }
-    if (stripCategory && category) remainder = remainder.split(category).join(' ');
+    if (stripTier) remainder = stripMenuTierWords(remainder);
     return stripMenuScaffolding(remainder);
   }
-  function queryFor(stripCategory) {
-    const remainder = remainderFor(stripCategory);
+  function queryFor(stripTier) {
+    const remainder = remainderFor(stripTier);
     if (!remainder) return null;
     return MENU_NAME_KEYWORDS.some((word) => remainder.includes(word)) ? remainder : null;
   }
 
   if (maxPrice !== null) {
     const query = queryFor(true);
-    const evidenced = /(บาท|฿|THB|กล่อง|เมนู|งบ)/i.test(t) || category !== null || query !== null;
+    const evidenced = /(บาท|฿|THB|กล่อง|เมนู|งบ)/i.test(t) || tier !== null || query !== null;
     if (!evidenced) return empty;
-    const mode = category ? 'category-max' : 'max-price';
-    return { menuLookupNeeded: true, mode, price: null, maxPrice, category, query };
+    const mode = tier ? 'tier-max' : query ? 'name-max' : 'max-price';
+    return { menuLookupNeeded: true, mode, price: null, maxPrice, tier, query };
   }
   if (price !== null) {
     const query = queryFor(true);
-    const evidenced = priceVia !== 'baht' || hasMenuWord || category !== null || query !== null;
+    const evidenced = priceVia !== 'baht' || hasMenuWord || tier !== null || query !== null;
     if (!evidenced) return empty;
-    const mode = category ? 'category-price' : 'exact-price';
-    return { menuLookupNeeded: true, mode, price, maxPrice: null, category, query };
+    const mode = tier ? 'tier-price' : query ? 'name-price' : 'exact-price';
+    return { menuLookupNeeded: true, mode, price, maxPrice: null, tier, query };
   }
   if (hasPriceQuestion) {
     // Delivery-fee questions ("ค่าส่งเท่าไหร่") stay with business rules:
-    // without a menu word, budget word, category, or food-like remainder,
+    // without a menu word, budget word, tier, or food-like remainder,
     // there is nothing deterministic to look up.
     const query = queryFor(false);
-    const deliveryOnly = /(ค่าส่ง|ส่งฟรี|ค่าจัดส่ง)/.test(t) && !hasMenuWord && !category && !query;
+    const deliveryOnly = /(ค่าส่ง|ส่งฟรี|ค่าจัดส่ง)/.test(t) && !hasMenuWord && !tier && !query;
     if (deliveryOnly) return empty;
-    if (query) return { menuLookupNeeded: true, mode: 'name-lookup', price: null, maxPrice: null, category: null, query };
-    return { menuLookupNeeded: false, mode: 'clarify', price: null, maxPrice: null, category: null, query: null };
+    if (query) return { menuLookupNeeded: true, mode: 'name-lookup', price: null, maxPrice: null, tier: null, query };
+    if (tier) return { menuLookupNeeded: true, mode: 'name-lookup', price: null, maxPrice: null, tier, query: null };
+    return { menuLookupNeeded: false, mode: 'clarify', price: null, maxPrice: null, tier: null, query: null };
   }
   return empty;
+}
+
+// The tier a customer named, in either spelling. Longest label first so
+// "ซิกเนเจอร์" is never shadowed by a shorter overlap.
+function parseMenuTier(text) {
+  const lower = text.toLowerCase();
+  const entries = Object.entries(MENU_TIERS).sort((a, b) => b[0].length - a[0].length);
+  for (const [label, id] of entries) {
+    if (lower.includes(label.toLowerCase())) return id;
+  }
+  return null;
+}
+
+function stripMenuTierWords(text) {
+  let out = ` ${text} `;
+  for (const label of Object.keys(MENU_TIERS).sort((a, b) => b.length - a.length)) {
+    out = out.split(label).join(' ');
+    const lower = label.toLowerCase();
+    out = out.split(lower).join(' ');
+  }
+  return out;
 }
 
 // Deterministic query string for GET /api/v1/menus/mealbox. Fixed key
@@ -162,7 +206,7 @@ function buildMenuQueryString(plan) {
   const params = [];
   if (plan && typeof plan.price === 'number') params.push(`price=${encodeURIComponent(String(plan.price))}`);
   if (plan && typeof plan.maxPrice === 'number') params.push(`maxPrice=${encodeURIComponent(String(plan.maxPrice))}`);
-  if (plan && typeof plan.category === 'string' && plan.category) params.push(`category=${encodeURIComponent(plan.category)}`);
+  if (plan && typeof plan.tier === 'string' && plan.tier) params.push(`tier=${encodeURIComponent(plan.tier)}`);
   if (plan && typeof plan.query === 'string' && plan.query) params.push(`q=${encodeURIComponent(plan.query)}`);
   params.push(`limit=${MENU_CONTEXT_LIMIT}`);
   return params.join('&');
@@ -178,8 +222,8 @@ function isValidMenuEntry(entry) {
 
 function formatMenuLine(menu) {
   const min = Number(menu.minPerMenu) > 0 ? Number(menu.minPerMenu) : '?';
-  const category = typeof menu.category === 'string' && menu.category ? menu.category : '?';
-  return `- ${menu.id} | ${menu.name} | ${menu.price} บาท/กล่อง | ขั้นต่ำ ${min} กล่อง/เมนู | ${category}`;
+  const tier = MENU_TIER_LABELS[menu.tier] || menu.tier || '?';
+  return `- ${menu.id} | ${menu.name} | ${menu.price} บาท/กล่อง | ขั้นต่ำ ${min} กล่อง/เมนู | ระดับ ${tier}`;
 }
 
 function formatDraftBullet(menu) {
@@ -211,12 +255,17 @@ function buildDeterministicMenuDraft(plan, apiResult) {
     }
   }
   if (apiResult.menus.length === 0) {
-    if (mode === 'name-lookup') return 'ขออนุญาตเช็กราคาเมนูนี้กับทางทีมก่อนนะคะ';
+    if (mode === 'name-lookup' && plan.query) return 'ขออนุญาตเช็กราคาเมนูนี้กับทางทีมก่อนนะคะ';
     return 'ตอนนี้ยังไม่พบเมนูในช่วงราคานี้จากรายการปัจจุบันค่ะ';
   }
+  // A single named match answers the question outright; a single tier match
+  // needs the level in the sentence so the customer knows what they asked for.
   if (mode === 'name-lookup' && apiResult.menus.length === 1) {
     const menu = apiResult.menus[0];
-    const lines = [`${menu.name} ราคา ${menu.price} บาท/กล่องค่ะ`];
+    const lead = plan.query
+      ? `${menu.name} ราคา ${menu.price} บาท/กล่องค่ะ`
+      : `เมนูระดับ ${MENU_TIER_LABELS[plan.tier] || plan.tier} ที่มีตอนนี้คือ ${menu.name} ราคา ${menu.price} บาท/กล่องค่ะ`;
+    const lines = [lead];
     const minLine = formatMinPerMenuLine(menu);
     if (minLine) lines.push(minLine);
     return lines.join('\n');
@@ -231,11 +280,14 @@ function buildDeterministicMenuDraft(plan, apiResult) {
 
 function draftListHeader(plan, apiResult) {
   const mode = plan.mode;
+  const tierLabel = MENU_TIER_LABELS[plan.tier] || plan.tier || '';
   if (mode === 'exact-price') return `สำหรับงบ ${plan.price} บาท/กล่อง มีเมนูดังนี้ค่ะ`;
   if (mode === 'max-price') return `เมนูไม่เกิน ${plan.maxPrice} บาท/กล่อง มีดังนี้ค่ะ`;
-  if (mode === 'category-price') return `เมนู${plan.category} งบ ${plan.price} บาท/กล่อง มีเมนูดังนี้ค่ะ`;
-  if (mode === 'category-max') return `เมนู${plan.category} ไม่เกิน ${plan.maxPrice} บาท/กล่อง มีเมนูดังนี้ค่ะ`;
-  return `เมนูที่ตรงกับ "${plan.query}" มีดังนี้ค่ะ`;
+  if (mode === 'tier-price') return `เมนูระดับ ${tierLabel} งบ ${plan.price} บาท/กล่อง มีเมนูดังนี้ค่ะ`;
+  if (mode === 'tier-max') return `เมนูระดับ ${tierLabel} ไม่เกิน ${plan.maxPrice} บาท/กล่อง มีเมนูดังนี้ค่ะ`;
+  if (mode === 'name-price') return `เมนู "${plan.query}" งบ ${plan.price} บาท/กล่อง มีดังนี้ค่ะ`;
+  if (mode === 'name-max') return `เมนู "${plan.query}" ไม่เกิน ${plan.maxPrice} บาท/กล่อง มีดังนี้ค่ะ`;
+  return `เมนูที่ตรงกับ "${plan.query || plan.tier}" มีดังนี้ค่ะ`;
 }
 
 // Builds the factual MENU_CONTEXT string. Inputs are ONLY the parser plan
@@ -271,7 +323,7 @@ function buildMenuContext(plan, apiResult) {
     }
   }
   if (apiResult.menus.length === 0) {
-    if (mode === 'name-lookup') {
+    if (mode === 'name-lookup' && plan.query) {
       return [
         ...header,
         `query: ${plan.query}`,
@@ -288,7 +340,9 @@ function buildMenuContext(plan, apiResult) {
   const lines = [...header];
   if (typeof plan.price === 'number') lines.push(`price: ${plan.price}`);
   if (typeof plan.maxPrice === 'number') lines.push(`maxPrice: ${plan.maxPrice}`);
-  if (typeof plan.category === 'string' && plan.category) lines.push(`category: ${plan.category}`);
+  if (typeof plan.tier === 'string' && plan.tier) {
+    lines.push(`tier: ${plan.tier} (${MENU_TIER_LABELS[plan.tier] || plan.tier}; product level, not a dish type)`);
+  }
   if (typeof plan.query === 'string' && plan.query) {
     lines.push(`query: ${plan.query} (menu names containing this text; not a dish classification)`);
   }
@@ -299,7 +353,8 @@ function buildMenuContext(plan, apiResult) {
 }
 
 export {
-  MENU_CATEGORIES,
+  MENU_TIERS,
+  MENU_TIER_LABELS,
   MENU_FETCH_MODES,
   MENU_CONTEXT_LIMIT,
   MENU_NAME_KEYWORDS,
@@ -309,7 +364,9 @@ export {
   DETERMINISTIC_DRAFT_SOURCE,
   normalizeMenuText,
   stripMenuScaffolding,
-  parseMenuIntent,
+parseMenuIntent,
+  parseMenuTier,
+  stripMenuTierWords,
   buildMenuQueryString,
   isValidMenuEntry,
   formatMenuLine,

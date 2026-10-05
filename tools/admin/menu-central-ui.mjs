@@ -1,8 +1,11 @@
-// Owner-only central menu manager (LOCAL ONLY, never deployed).
-// Single screen to add/edit name, image, category, description, selling price,
-// display order, no-meat flag, and visibility per stable menu ID. Costs stay in
-// owner-costs.json: this UI only READS them (joined by menuId) for the profit
-// preview — a cost-only edit never creates a pending web publish.
+﻿// Owner-only central menu manager (LOCAL ONLY, never deployed).
+// Single screen to add/edit name, image, product level, description, selling
+// price, display order and visibility per stable menu ID.
+//
+// A menu has ONE level (classic / signature / executive) declared in
+// data/business-rules.json, and nothing else to file it under. There is no
+// category anywhere: the level is what the customer pages, the calculator, the
+// API and the LINE bot all group and filter by, so the two can never disagree.
 //
 // Two main actions:
 //   บันทึก                  -> POST /menu-central (central draft; admin tools
@@ -17,17 +20,20 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[character]);
 
-const CATEGORIES = ['ข้าวราดแกง', 'ข้าวผัด', 'เส้น', 'อาหารอินเดีย', 'พรีเมียม'];
-
 const state = {
-  saved: null, working: null, costs: null,
+  saved: null, working: null,
   publish: null, busy: false, loadOk: false,
-  filter: { q: '', vis: 'all' },
+  filter: { q: '', tier: '', vis: 'all' },
 };
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
+// Menus, toppings, side items and the popular order are all owner-editable, so
+// "unsaved work" has to look at every one of them. Comparing only menus would
+// leave the save button disabled after a topping, side-item or popular edit.
 const isDirty = () => Boolean(state.saved && state.working)
-  && JSON.stringify(state.working.menus) !== JSON.stringify(state.saved.menus);
+  && ['menus', 'toppings', 'sideItems', 'popular'].some(
+    (key) => JSON.stringify(state.working[key] ?? null) !== JSON.stringify(state.saved[key] ?? null),
+  );
 
 // ---------------------------------------------------------------------------
 // Draft recovery (local only).
@@ -95,22 +101,6 @@ function offerDraftRestore() {
   updateButtons();
   setFormStatus(`กู้คืนร่างที่ยังไม่บันทึกแล้ว (${changed.length} รายการ) — กด "บันทึก" เพื่อเก็บถาวร`, 'ok');
   return true;
-}
-
-function costByMenuId(menuId) {
-  const dish = (state.costs?.dishes || []).find((item) => Number(item.menuId) === Number(menuId));
-  if (!dish) return null;
-  if (dish.status !== 'confirmed') return { label: 'รอยืนยันทุน', confirmed: false };
-  const value = Number(dish.foodCost);
-  if (!Number.isFinite(value) || value <= 0) return { label: 'รอยืนยันทุน', confirmed: false };
-  return { label: `${value} บาท/กล่อง`, confirmed: true, value };
-}
-
-function profitPreview(menu) {
-  const cost = costByMenuId(menu.id);
-  if (!cost || !cost.confirmed) return '<span class="cp-sub">กำไร: รอทุนอาหารยืนยัน</span>';
-  const profit = Math.round((menu.price - cost.value) * 100) / 100;
-  return `<span class="cp-sub">กำไรเบื้องต้น ~${profit} บาท/กล่อง <span title="ราคาขายลบทุนอาหาร ยังไม่รวมกล่อง/ท็อปปิ้ง ดูยอดรวมที่ส่วนต้นทุน">(ขาย ${menu.price} − ทุน ${cost.value})</span></span>`;
 }
 
 function statusPill() {
@@ -235,97 +225,380 @@ async function loadBackups() {
 
 function matchesFilter(menu) {
   const query = state.filter.q.trim().toLowerCase();
-  if (query && !`${menu.name} ${menu.category} ${menu.id}`.toLowerCase().includes(query)) return false;
+  if (query && !`${menu.name} ${menu.tier} ${menu.id}`.toLowerCase().includes(query)) return false;
+  if (state.filter.tier && menu.tier !== state.filter.tier) return false;
   if (state.filter.vis === 'visible') return !menu.hidden;
   if (state.filter.vis === 'hidden') return Boolean(menu.hidden);
   return true;
 }
 
-const MC_TABLE_HEAD = '<thead><tr><th>เมนู (ID/ลำดับ/กำไรเบื้องต้น)</th><th>ชื่อ</th><th>หมวด · ราคาขาย</th><th>รูป · คำอธิบาย</th><th>ขั้นต่ำ · ลำดับ</th><th>ทุน/สถานะเว็บ</th><th>หมายเหตุภายใน</th></tr></thead>';
+// Tier options come from business-rules.json via the release card, so the owner
+// always picks from the levels the website and the bot actually publish.
+const TIER_FALLBACK_LABELS = { classic: 'Classic', signature: 'Signature', executive: 'Executive' };
 
-function rowHtml(menu, index) {
-  const cost = costByMenuId(menu.id);
-  return `<tr data-mc-row="${index}" class="${menu.hidden ? 'wait' : ''}">`
-    + `<td><div style="display:flex;gap:.55rem;align-items:center;min-width:210px"><img src="${esc(menu.image)}" alt="" style="width:38px;height:38px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'"><div><div style="font-weight:800">${esc(menu.name)}${menu.hidden ? ' <span class="cp-tag wait">ซ่อนจากเว็บ</span>' : ''}</div><div class="cp-sub">ID ${esc(menu.id)} · ลำดับ ${esc(menu.sortOrder)}</div>${profitPreview(menu)}</div></div></td>`
-    + `<td><input class="cp-input" type="text" value="${esc(menu.name)}" data-mc="${index}" data-field="name" aria-label="ชื่อเมนู" style="width:150px"></td>`
-    + `<td><select class="cp-input" data-mc="${index}" data-field="category" aria-label="หมวด">${CATEGORIES.map((cat) => `<option value="${esc(cat)}"${cat === menu.category ? ' selected' : ''}>${esc(cat)}</option>`).join('')}</select><input class="cp-input mono" type="number" value="${esc(menu.price)}" min="1" step="1" data-mc="${index}" data-field="price" aria-label="ราคาขาย" style="width:84px;margin-top:.3rem"><div class="cp-sub">บาท/กล่อง</div></td>`
-    + `<td><input class="cp-input" type="text" value="${esc(menu.image)}" data-mc="${index}" data-field="image" aria-label="รูป" style="width:150px" placeholder="img/..."><input class="cp-input" type="text" value="${esc(menu.desc || '')}" data-mc="${index}" data-field="desc" aria-label="คำอธิบาย" style="width:150px;margin-top:.3rem" placeholder="คำอธิบายสั้น"></td>`
-    + `<td style="text-align:center"><input class="cp-input mono" type="number" value="${esc(menu.minPerMenu)}" min="1" step="1" data-mc="${index}" data-field="minPerMenu" aria-label="ขั้นต่ำ" style="width:64px"><div class="cp-sub">กล่อง/เมนู</div><input class="cp-input mono" type="number" value="${esc(menu.sortOrder)}" step="1" data-mc="${index}" data-field="sortOrder" aria-label="ลำดับแสดง" style="width:64px;margin-top:.3rem"><div class="cp-sub">ลำดับแสดง</div></td>`
-    + `<td style="text-align:center"><div class="cp-sub">${cost ? esc(cost.label) : 'ไม่มีทุนผูก ID'}</div><label class="cp-check"><input type="checkbox"${menu.noMeat ? ' checked' : ''} data-mc="${index}" data-field="noMeat">ไม่เลือกเนื้อ</label><label class="cp-check"><input type="checkbox"${menu.hidden ? ' checked' : ''} data-mc="${index}" data-field="hidden">ซ่อนจากเว็บ</label></td>`
-    + `<td><input class="cp-input" type="text" value="${esc(menu.internalNote || '')}" data-mc="${index}" data-field="internalNote" aria-label="หมายเหตุภายใน" style="width:140px" placeholder="ภายในเท่านั้น"></td>`
-    + '</tr>';
+function tierOptions(current) {
+  const known = new Set(Object.keys(TIER_FALLBACK_LABELS));
+  const declared = state.publish?.tiers || [];
+  const options = declared.length
+    ? declared
+      .map((tier) => `<option value="${esc(tier.id)}"${tier.id === current ? ' selected' : ''}>${esc(tier.nameTh || tier.nameEn || tier.id)}</option>`)
+      .join('')
+    : Object.keys(TIER_FALLBACK_LABELS)
+      .map((id) => `<option value="${id}"${id === current ? ' selected' : ''}>${TIER_FALLBACK_LABELS[id]}</option>`)
+      .join('');
+  const extra = current && !known.has(current)
+    ? `<option value="${esc(current)}" selected>${esc(current)} (ไม่อยู่ในระดับที่ประกาศ)</option>`
+    : '';
+  return options + extra;
 }
 
-// Screen-adaptive groups: one collapsible <details> per category (native,
-// works without extra JS). Wide screens start expanded; narrow screens start
-// collapsed; searching forces everything open. Falls back to the flat
-// #mc-tbody table when the grouped container is absent.
-function startExpanded() {
-  if (state.filter.q.trim()) return true;
-  try {
-    if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) return false;
-  } catch { /* default open */ }
-  return true;
+// One card per menu. The common job — editing a price — is the biggest thing on
+// the card; everything else stays tucked behind "รายละเอียด" so a 44-menu
+// catalogue stays scannable on a phone.
+function cardHtml(menu, index) {
+  const flags = [
+    menu.hidden ? '<span class="mc-flag is-off">ซ่อนจากเว็บ</span>' : '<span class="mc-flag is-on">ขึ้นเว็บ</span>',
+    `<span class="mc-flag mc-id">ID ${esc(menu.id)}</span>`,
+  ].join('');
+  return `<article class="mc-card${menu.hidden ? ' is-hidden' : ''}" data-mc-row="${index}">
+    <div class="mc-card-top">
+      <img class="mc-thumb" src="${esc(menu.image)}" alt="" loading="lazy" onerror="this.remove()">
+      <div class="mc-card-id">
+        <label class="mc-label">ชื่อเมนู</label>
+        <input class="cp-input" type="text" value="${esc(menu.name)}" data-mc="${index}" data-field="name" aria-label="ชื่อเมนู">
+        <label class="mc-label mc-tier-label">ระดับสินค้า
+          <select class="cp-input" data-mc="${index}" data-field="tier" aria-label="ระดับสินค้า ${esc(menu.name)}">${tierOptions(menu.tier)}</select>
+        </label>
+        <div class="mc-flags">${flags}</div>
+      </div>
+      <div class="mc-card-price">
+        <label class="mc-label" for="p-${index}">ราคาขาย</label>
+        <input id="p-${index}" class="cp-input mc-price" type="number" min="1" step="1" value="${esc(menu.price)}" data-mc="${index}" data-field="price" aria-label="ราคาขาย ${esc(menu.name)}">
+        <span class="mc-unit">บาท/กล่อง</span>
+      </div>
+    </div>
+    <details class="mc-more">
+      <summary>รายละเอียดอื่น</summary>
+      <div class="mc-grid">
+        <label class="mc-label">ขั้นต่ำ (กล่อง)
+          <input class="cp-input" type="number" min="1" step="1" value="${esc(menu.minPerMenu)}" data-mc="${index}" data-field="minPerMenu" aria-label="ขั้นต่ำ">
+        </label>
+        <label class="mc-label">ลำดับแสดง
+          <input class="cp-input" type="number" step="1" value="${esc(menu.sortOrder)}" data-mc="${index}" data-field="sortOrder" aria-label="ลำดับแสดง">
+        </label>
+        <label class="mc-label">รูป
+          <input class="cp-input" type="text" value="${esc(menu.image)}" data-mc="${index}" data-field="image" aria-label="รูป" placeholder="img/...">
+        </label>
+        <label class="mc-label mc-span">คำอธิบาย (ลูกค้าเห็น)
+          <input class="cp-input" type="text" value="${esc(menu.desc || '')}" data-mc="${index}" data-field="desc" aria-label="คำอธิบาย" placeholder="คำอธิบายสั้น">
+        </label>
+        <label class="mc-label mc-span">หมายเหตุภายใน (ลูกค้าไม่เห็น)
+          <input class="cp-input" type="text" value="${esc(menu.internalNote || '')}" data-mc="${index}" data-field="internalNote" aria-label="หมายเหตุภายใน">
+        </label>
+      </div>
+      <div class="mc-toggles">
+        <label class="cp-check"><input type="checkbox"${menu.hidden ? ' checked' : ''} data-mc="${index}" data-field="hidden">ซ่อนจากเว็บ</label>
+        <button type="button" class="cp-btn danger sm" data-mc-delete="${index}">ลบถาวร</button>
+      </div>
+    </details>
+  </article>`;
+}
+
+// Level chips: "ทั้งหมด" plus one chip per level that actually has menus, in the
+// order data/business-rules.json declares them.
+function renderTierChips() {
+  const box = $('#mc-tiers');
+  if (!box || !state.working) return;
+  const counts = new Map();
+  for (const menu of state.working.menus) {
+    const key = menu.tier || 'classic';
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  const chips = [['all', `ทั้งหมด (${state.working.menus.length})`]];
+  for (const id of Object.keys(TIER_FALLBACK_LABELS)) {
+    if (counts.has(id)) chips.push([id, `${TIER_FALLBACK_LABELS[id]} (${counts.get(id)})`]);
+  }
+  for (const [key, count] of counts) {
+    if (!(key in TIER_FALLBACK_LABELS)) chips.push([key, `${key} (${count})`]);
+  }
+  box.innerHTML = chips
+    .map(([key, label]) => `<button type="button" class="mc-chip${state.filter.tier === key ? ' is-on' : ''}" data-tier="${esc(key)}">${esc(label)}</button>`)
+    .join('');
 }
 
 function updateCountLabel() {
   const count = $('#mc-count');
   if (!count || !state.working) return;
   const hidden = state.working.menus.filter((menu) => menu.hidden).length;
-  count.textContent = `${state.working.menus.length} เมนู · แสดงบนเว็บ ${state.working.menus.length - hidden} · ซ่อน ${hidden}`;
+  count.textContent = `${state.working.menus.length} เมนู · ขึ้นเว็บ ${state.working.menus.length - hidden} · ซ่อน ${hidden}`;
 }
 
-// Checkbox clicks must NOT re-render the table. renderTable() replaces the
-// rows while the browser is still dispatching the click that caused it, so the
-// next click at the same screen position lands on a different menu — on
-// 2026-09-29 that walked owner-hidden from 25 to 39 menus, one per save, and
-// publish v72 put 32 live menus behind `deleted`. Toggling a flag only needs
-// the row's own state and the counter refreshed, so patch those in place.
+// Checkbox clicks must NOT re-render. renderCards() replaces the nodes while the
+// browser is still dispatching the click that caused it, so the next click at the
+// same screen position lands on a different menu — on 2026-09-29 that walked
+// owner-hidden from 25 to 39 menus, one per save, and publish v72 put 32 live
+// menus behind `deleted`. Toggling a flag only needs the card's own state and the
+// counter refreshed, so patch those in place.
 function refreshRowState(target) {
-  const row = target.closest('tr[data-mc-row]');
-  if (row) row.classList.toggle('wait', target.checked);
+  const card = target.closest('[data-mc-row]');
+  if (card) {
+    card.classList.toggle('is-hidden', Boolean(state.working.menus[Number(card.dataset.mcRow)]?.hidden));
+  }
   updateCountLabel();
 }
 
 function renderTable() {
   if (!state.working) return;
+  renderTierChips();
+  renderToppings();
+  renderSideItems();
   const rows = state.working.menus
     .map((menu, index) => ({ menu, index }))
     .filter(({ menu }) => matchesFilter(menu))
     .sort((a, b) => a.menu.sortOrder - b.menu.sortOrder || a.menu.id - b.menu.id);
-  const count = $('#mc-count');
-  if (count) updateCountLabel();
+  updateCountLabel();
   const groups = $('#mc-groups');
-  if (!groups) {
-    const body = $('#mc-tbody');
-    if (!body) return;
-    body.innerHTML = rows.length
-      ? rows.map(({ menu, index }) => rowHtml(menu, index)).join('')
-      : '<tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--text-muted)">ไม่พบเมนูที่ค้นหา</td></tr>';
-    return;
-  }
+  if (!groups) return;
   if (!rows.length) {
-    groups.innerHTML = '<p class="cp-sub" style="padding:1rem 0">ไม่พบเมนูที่ค้นหา</p>';
+    groups.innerHTML = '<p class="cp-empty">ไม่พบเมนูที่ค้นหา — ลองล้างคำค้นหาหรือเลือกระดับอื่น</p>';
     return;
   }
-  const open = startExpanded();
-  const byCat = new Map();
+  // Cards are grouped by level, in the order business-rules.json declares them,
+  // so the screen reads the same way the customer pages do.
+  const byTier = new Map();
   for (const row of rows) {
-    const key = row.menu.category || 'อื่นๆ';
-    if (!byCat.has(key)) byCat.set(key, []);
-    byCat.get(key).push(row);
+    const key = row.menu.tier || 'classic';
+    if (!byTier.has(key)) byTier.set(key, []);
+    byTier.get(key).push(row);
   }
-  const ordered = [...CATEGORIES.filter((cat) => byCat.has(cat)), ...[...byCat.keys()].filter((cat) => !CATEGORIES.includes(cat))];
-  groups.innerHTML = `<div class="cp-actions" style="display:flex;gap:.5rem;margin:.4rem 0"><button type="button" class="cp-btn ghost sm" data-mc-expand-all>ขยายทั้งหมด</button><button type="button" class="cp-btn ghost sm" data-mc-collapse-all>ย่อทั้งหมด</button></div>`
-    + ordered.map((cat) => {
-      const items = byCat.get(cat);
-      const hiddenCount = items.filter(({ menu }) => menu.hidden).length;
-      return `<details class="mc-cat" data-cat="${esc(cat)}"${open ? ' open' : ''}>`
-        + `<summary style="cursor:pointer;font-weight:800;padding:.45rem 0">${esc(cat)} <span class="cp-sub">(${items.length} เมนู${hiddenCount ? ` · ซ่อน ${hiddenCount}` : ''})</span></summary>`
-        + `<div class="cp-table-wrap"><table class="cp-table">${MC_TABLE_HEAD}<tbody>`
-        + items.map(({ menu, index }) => rowHtml(menu, index)).join('')
-        + '</tbody></table></div></details>';
-    }).join('');
+  const ordered = [
+    ...Object.keys(TIER_FALLBACK_LABELS).filter((id) => byTier.has(id)),
+    ...[...byTier.keys()].filter((id) => !(id in TIER_FALLBACK_LABELS)),
+  ];
+  groups.innerHTML = ordered
+    .map((tier) => {
+      const items = byTier.get(tier);
+      const label = TIER_FALLBACK_LABELS[tier] || tier;
+      return `<section class="mc-group">
+        <h3 class="mc-group-head">${esc(label)} <span>${items.length} เมนู</span></h3>
+        <div class="mc-grid-cards">${items.map(({ menu, index }) => cardHtml(menu, index)).join('')}</div>
+      </section>`;
+    })
+    .join('');
+}
+
+// Toppings: the shared add-on list every dish can take. Price 0 is refused on
+// save (the customer menu only offers add-ons with a price), so the warning
+// here is the first place the owner hears about it.
+function renderToppings() {
+  const box = $('#mc-toppings');
+  if (!box || !state.working) return;
+  const list = Array.isArray(state.working.toppings) ? state.working.toppings : [];
+  if (!list.length) {
+    box.innerHTML = '<p class="cp-sub">ยังไม่มีท็อปปิ้ง — เพิ่มได้จากช่องด้านล่าง (ถ้าไม่มีท็อปปิ้ง หน้าเมนูลูกค้าจะไม่มีตัวเลือกเพิ่ม)</p>';
+    return;
+  }
+  box.innerHTML = list.map((item, index) => `
+    <div class="cp-add-row" data-tp-row="${index}">
+      <label class="mc-label">ชื่อ
+        <input class="cp-input" type="text" value="${esc(item.name)}" data-tp="${index}" data-tp-field="name" aria-label="ชื่อท็อปปิ้ง">
+      </label>
+      <label class="mc-label">ราคา (บาท)
+        <input class="cp-input narrow" type="number" min="1" step="1" value="${esc(item.price)}" data-tp="${index}" data-tp-field="price" aria-label="ราคาท็อปปิ้ง ${esc(item.name)}">
+      </label>
+      <button type="button" class="cp-btn danger sm" data-tp-delete="${index}">ลบ</button>
+    </div>`).join('');
+}
+
+function addTopping() {
+  const name = ($('#mc-tp-name')?.value || '').trim();
+  const msg = $('#mc-tp-msg');
+  const list = Array.isArray(state.working?.toppings) ? state.working.toppings : (state.working.toppings = []);
+  if (!name) { if (msg) msg.textContent = 'กรอกชื่อท็อปปิ้งก่อน'; $('#mc-tp-name')?.focus(); return; }
+  if (list.some((item) => item.name === name)) { if (msg) msg.textContent = `มี “${name}” อยู่แล้ว`; return; }
+  const price = Number($('#mc-tp-price')?.value) || 0;
+  list.push({ name, price });
+  if ($('#mc-tp-name')) $('#mc-tp-name').value = '';
+  if (msg) msg.textContent = `เพิ่ม “${name}” แล้ว${price > 0 ? '' : ' — ราคา 0 จะไม่แสดงบนเว็บ ต้องมากกว่า 0'}`;
+  renderToppings();
+  updateButtons();
+  scheduleDraftBackup();
+}
+
+function deleteTopping(index) {
+  const list = state.working?.toppings;
+  const item = list?.[index];
+  if (!item) return;
+  if (!window.confirm(`ลบท็อปปิ้ง “${item.name}” (${item.price} บาท) ออกจากรายการท็อปปิ้ง?\n\nเมนูที่เคยเลือกท็อปปิ้งนี้ไว้ในรายการสั่งซื้อเก่าจะแสดงชื่อท็อปปิ้งที่ไม่มีราคาแล้ว`)) return;
+  list.splice(index, 1);
+  renderToppings();
+  updateButtons();
+  scheduleDraftBackup();
+  setFormStatus(`ลบท็อปปิ้ง “${item.name}” ออกจากฉบับร่างแล้ว — กด “บันทึก” เพื่อเก็บถาวร`, 'ok');
+}
+
+// Side items: the SECOND dish of the Signature box (ข้าว / อาหารหลัก /
+// อาหารเมนูที่ 2 / ผัก). Unlike a topping it is a real dish the guest eats, so
+// it carries a name in two languages, an internal cost that never leaves this
+// machine, and a price adjustment the owner confirms later. Until `priceStatus`
+// is `ready` no renderer may show a number for it.
+//
+// `kind` is not shown to the customer (the page says "อาหารเมนูที่ 2"); it says
+// what kind of dish this is, because cooking type changes cost and packing:
+//   side / soup_curry -> may sit in a Signature box
+//   dessert          -> sweet, needs a corrugated box, so it is an Executive
+//                       item and must not be listed as a Signature choice
+const SIDE_ITEM_KIND_OPTIONS = [
+  { value: 'side', label: 'อาหารรองคาว (ผัด/ทอด)' },
+  { value: 'soup_curry', label: 'ต้ม / แกง' },
+  { value: 'dessert', label: 'ของหวาน (กล่องลูกฟูก / Executive)' },
+];
+
+function renderSideItems() {
+  const box = $('#mc-sideitems');
+  if (!box || !state.working) return;
+  const list = Array.isArray(state.working.sideItems) ? state.working.sideItems : [];
+  if (!list.length) {
+    box.innerHTML = '<p class="cp-sub">ยังไม่มีอาหารรอง — เพิ่มได้จากช่องด้านล่าง (ยังไม่มีรายการ หน้าเว็บจะยังไม่แสดงชื่ออาหารรอง แต่ข้อความวิธีเลือกยังทำงานตามปกติ)</p>';
+    return;
+  }
+  box.innerHTML = list.map((item, index) => {
+    const ready = item.priceStatus === 'ready' && Number.isFinite(Number(item.priceAdjustment));
+    return `
+    <div class="cp-add-row" data-si-row="${index}">
+      <label class="mc-label">id
+        <input class="cp-input narrow" type="text" value="${esc(item.id)}" data-si="${index}" data-si-field="id" aria-label="id อาหารรอง">
+      </label>
+      <label class="mc-label">ชื่อไทย
+        <input class="cp-input" type="text" value="${esc(item.nameTh)}" data-si="${index}" data-si-field="nameTh" aria-label="ชื่ออาหารรองภาษาไทย">
+      </label>
+      <label class="mc-label">ชื่ออังกฤษ
+        <input class="cp-input" type="text" value="${esc(item.nameEn || '')}" data-si="${index}" data-si-field="nameEn" aria-label="ชื่ออาหารรองภาษาอังกฤษ">
+      </label>
+      <label class="mc-label">ประเภท
+        <select class="cp-input narrow" data-si="${index}" data-si-field="kind" aria-label="ประเภทอาหารรอง ${esc(item.nameTh)}">
+          ${SIDE_ITEM_KIND_OPTIONS.map((option) => `<option value="${option.value}"${item.kind === option.value ? ' selected' : ''}>${option.label}</option>`).join('')}
+        </select>
+      </label>
+      <label class="mc-label">ต้นทุน (บาท)
+        <input class="cp-input narrow" type="number" min="0" step="1" value="${item.cost ?? ''}" data-si="${index}" data-si-field="cost" aria-label="ต้นทุนอาหารรอง ${esc(item.nameTh)}">
+      </label>
+      <label class="mc-label">ราคาเพิ่ม (บาท)
+        <input class="cp-input narrow" type="number" min="0" step="1" value="${item.priceAdjustment ?? ''}" data-si="${index}" data-si-field="priceAdjustment" aria-label="ราคาเพิ่มอาหารรอง ${esc(item.nameTh)}">
+      </label>
+      <label class="mc-label">สถานะราคา
+        <select class="cp-input narrow" data-si="${index}" data-si-field="priceStatus" aria-label="สถานะราคาอาหารรอง ${esc(item.nameTh)}">
+          <option value="pending"${ready ? '' : ' selected'}>รอยืนยัน</option>
+          <option value="ready"${ready ? ' selected' : ''}>ยืนยันแล้ว</option>
+        </select>
+      </label>
+      <label class="mc-label" title="แสดงชื่อบนหน้าเว็บได้ไหม">
+        <span class="cp-inline">
+          <input type="checkbox" data-si="${index}" data-si-field="public"${item.public ? ' checked' : ''}> ขึ้นเว็บ
+        </span>
+      </label>
+      <label class="mc-label" title="ยังใช้อยู่ไหม">
+        <span class="cp-inline">
+          <input type="checkbox" data-si="${index}" data-si-field="active"${item.active === false ? '' : ' checked'}> ใช้งาน
+        </span>
+      </label>
+      <button type="button" class="cp-btn danger sm" data-si-delete="${index}">ลบ</button>
+    </div>`;
+  }).join('');
+}
+
+function addSideItem() {
+  const msg = $('#mc-si-msg');
+  const list = Array.isArray(state.working?.sideItems) ? state.working.sideItems : (state.working.sideItems = []);
+  const nameTh = ($('#mc-si-name-th')?.value || '').trim();
+  const nameEn = ($('#mc-si-name-en')?.value || '').trim();
+  if (!nameTh) { if (msg) msg.textContent = 'กรอกชื่ออาหารรองภาษาไทยก่อน'; $('#mc-si-name-th')?.focus(); return; }
+  if (!nameEn) { if (msg) msg.textContent = 'กรอกชื่อภาษาอังกฤษด้วย (หน้าเว็บภาษาอังกฤษใช้ชื่อนี้)'; $('#mc-si-name-en')?.focus(); return; }
+  // Suggest the next free side-NNN id so the owner never has to invent one.
+  let next = 1;
+  while (list.some((item) => item.id === `side-${String(next).padStart(3, '0')}`)) next += 1;
+  const id = `side-${String(next).padStart(3, '0')}`;
+  list.push({
+    id,
+    nameTh,
+    nameEn,
+    kind: 'side',
+    cost: null,
+    priceAdjustment: null,
+    priceStatus: 'pending',
+    active: true,
+    // Visible by default: the owner's job is to decide WHEN a dish goes on the
+    // web, and switching one off is a single checkbox.
+    public: true,
+  });
+  if ($('#mc-si-name-th')) $('#mc-si-name-th').value = '';
+  if ($('#mc-si-name-en')) $('#mc-si-name-en').value = '';
+  if (msg) msg.textContent = `เพิ่ม ${nameTh} (${id}) แล้ว — ชื่อจะขึ้นเว็บทันที ถ้ายังไม่พร้อมให้เอาติ๊ก “ขึ้นเว็บ” ออก`;
+  renderSideItems();
+  updateButtons();
+  scheduleDraftBackup();
+}
+
+function onSideItemEdit(target) {
+  const index = Number(target.dataset.si);
+  const field = target.dataset.siField;
+  const item = state.working?.sideItems?.[index];
+  if (!item || !field) return;
+  const msg = $('#mc-si-msg');
+  if (field === 'cost') {
+    const value = target.value === '' ? null : Number(target.value);
+    item.cost = Number.isFinite(value) && value >= 0 ? value : null;
+  } else if (field === 'priceAdjustment') {
+    const value = target.value === '' ? null : Number(target.value);
+    const next = Number.isFinite(value) && value > 0 ? value : null;
+    item.priceAdjustment = next;
+    // A number without a confirmed status must not reach the web: the publish
+    // guard refuses it, and the owner is told here instead of at publish time.
+    if (next === null) item.priceStatus = 'pending';
+  } else if (field === 'priceStatus') {
+    if (target.value === 'ready' && !Number.isFinite(Number(item.priceAdjustment))) {
+      item.priceStatus = 'pending';
+      if (msg) msg.textContent = 'ยังตั้ง “ยืนยันแล้ว” ไม่ได้ — ต้องมีราคาเพิ่มเป็นตัวเลขก่อน';
+    } else {
+      item.priceStatus = target.value === 'ready' ? 'ready' : 'pending';
+    }
+  } else if (field === 'public' || field === 'active') {
+    item[field] = target.checked === true;
+  } else {
+    item[field] = target.value;
+  }
+  renderSideItems();
+  updateButtons();
+  scheduleDraftBackup();
+  setFormStatus('', '');
+}
+
+function deleteSideItem(index) {
+  const list = state.working?.sideItems;
+  const item = list?.[index];
+  if (!item) return;
+  if (!window.confirm(`ลบอาหารรอง “${item.nameTh}” (${item.id}) ออกจากรายการ?\n\nถ้า business-rules.json ยังอ้าง id นี้อยู่ ตัวตรวจจะแจ้งว่าอ้างไม่ถูกต้อง — ให้เอา id ออกจาก sideChoices ของระดับ Signature ด้วย`)) return;
+  list.splice(index, 1);
+  renderSideItems();
+  updateButtons();
+  scheduleDraftBackup();
+  setFormStatus(`ลบอาหารรอง “${item.nameTh}” ออกจากฉบับร่างแล้ว — กด “บันทึก” เพื่อเก็บถาวร`, 'ok');
+}
+
+function onToppingEdit(target) {
+  const index = Number(target.dataset.tp);
+  const field = target.dataset.tpField;
+  const item = state.working?.toppings?.[index];
+  if (!item || !field) return;
+  if (field === 'price') {
+    const value = target.value === '' ? 0 : Number(target.value);
+    item.price = Number.isFinite(value) ? Math.max(0, value) : 0;
+  } else {
+    item.name = target.value;
+  }
+  updateButtons();
+  scheduleDraftBackup();
+  setFormStatus('', '');
 }
 
 function setFormStatus(text, tone = '') {
@@ -354,14 +627,10 @@ function updateButtons() {
 
 async function load({ silent = false } = {}) {
   try {
-    const [centralResponse, costsResponse] = await Promise.all([
-      fetch('/menu-central', { cache: 'no-store' }),
-      fetch('/owner-costs', { cache: 'no-store' }),
-    ]);
-    if (!centralResponse.ok || !costsResponse.ok) throw new Error(`HTTP ${centralResponse.status}/${costsResponse.status}`);
+    const centralResponse = await fetch('/menu-central', { cache: 'no-store' });
+    if (!centralResponse.ok) throw new Error(`HTTP ${centralResponse.status}`);
     state.saved = await centralResponse.json();
     state.working = clone(state.saved);
-    state.costs = await costsResponse.json();
     state.loadOk = true;
     renderTable();
     updateButtons();
@@ -382,7 +651,7 @@ function onEdit(target) {
   const field = target.dataset.field;
   const menu = state.working?.menus?.[index];
   if (!menu || !field) return;
-  if (field === 'noMeat' || field === 'hidden') menu[field] = target.checked;
+  if (field === 'hidden') menu[field] = target.checked;
   else if (field === 'price' || field === 'minPerMenu' || field === 'sortOrder') {
     const value = target.value === '' ? '' : Number(target.value);
     menu[field] = value;
@@ -450,13 +719,43 @@ function diffList(title, items, suffix = '') {
 // The advertised "starting from" price must equal the cheapest dish a customer
 // can actually order. If it does not, llms.txt / FAQ / JSON-LD will keep
 // advertising a price nobody can buy, so warn before the owner publishes.
-function warningPanel(startingPrice) {
-  if (!startingPrice || startingPrice.ok || !startingPrice.warnings?.length) return '';
+function warningPanel(tierPrices) {
+  if (!tierPrices || tierPrices.ok || !tierPrices.warnings?.length) return '';
   return `<div style="margin:.75rem 0;padding:.7rem .85rem;border:1px solid #E4B768;background:#FFF9EC;border-radius:10px">`
     + '<strong style="color:#8A5A12">ตรวจราคาเริ่มต้นก่อนเผยแพร่</strong>'
     + `<ul style="margin:.35rem 0 0;padding-left:1.2rem;color:#8A5A12">`
-    + startingPrice.warnings.map((w) => `<li>${esc(w)}</li>`).join('')
+    + tierPrices.warnings.map((w) => `<li>${esc(w)}</li>`).join('')
     + '</ul></div>';
+}
+
+function unassignedTierPanel(tierPrices) {
+  const items = tierPrices?.unassigned || [];
+  if (!items.length) return '';
+  return `<div style="margin:.75rem 0;padding:.7rem .85rem;border:1px solid var(--border);border-radius:10px">`
+    + `<strong>เมนูที่ยังไม่ได้จัดระดับ (${items.length})</strong> <span class="cp-sub">· ระดับที่ยังไม่ได้เลือกจะถูกนับเป็น classic · ชุดที่มีอาหารหลัก 1 อย่าง + อาหารรองที่จับคู่ไว้ 1 อย่าง ในกล่อง 4 ช่อง ควรเป็น signature</span>`
+    + `<ul style="margin:.35rem 0 0;padding-left:1.2rem">`
+    + items.map((item) => `<li>${esc(item.name)} (ID ${item.id})</li>`).join('')
+    + '</ul></div>';
+}
+
+function tierPanel(state) {
+  const changes = state?.tierChanges || [];
+  if (!changes.length) return '';
+  const rows = changes.map((tier) => {
+    const price = tier.to === null ? 'ยังไม่มีชุดเปิดขาย' : `${tier.to} บาท`;
+    const source = tier.sourceName ? `${tier.sourceName} (ID ${tier.sourceId})` : '—';
+    const move = tier.from === null && tier.to === null
+      ? 'ไม่เปลี่ยน'
+      : tier.from === tier.to
+        ? 'ไม่เปลี่ยน'
+        : `${tier.from === null ? 'ยังไม่มีราคา' : `${tier.from} บาท`} → ${tier.to === null ? 'ยังไม่มีชุดเปิดขาย' : `${tier.to} บาท`}`;
+    return `<tr><th scope="row">${esc(tier.nameTh)}<br><span class="cp-sub">${esc(tier.nameEn)}</span></th>`
+      + `<td>${esc(price)}</td><td>${esc(source)}</td><td>${esc(move)}</td></tr>`;
+  }).join('');
+  return '<div style="margin:.75rem 0">'
+    + '<strong>ระดับข้าวกล่องที่จะขึ้นเว็บ</strong> <span class="cp-sub">· ราคาเริ่มต้นคำนวณจากชุดที่เปิดขายและแสดงบนเว็บเท่านั้น ระดับที่ยังไม่มีชุดจะขึ้น “สอบถามรายละเอียดชุดอาหาร”</span>'
+    + '<table class="tier-admin-table"><thead><tr><th scope="col">ระดับ</th><th scope="col">ราคาเริ่มต้น</th><th scope="col">ชุดที่เป็นที่มาของราคา</th><th scope="col">เทียบกับที่เผยแพร่อยู่</th></tr></thead>'
+    + `<tbody>${rows}</tbody></table></div>`;
 }
 
 async function openPreview() {
@@ -473,7 +772,7 @@ async function openPreview() {
     statusPill();
     const diff = info.diff;
     if (!diff.hasChanges) {
-      body.innerHTML = `<p><strong>ไม่มีรายการรอเผยแพร่เว็บ</strong></p><p class="cp-sub">ฐานกลางตรงกับฉบับเผยแพร่ล่าสุดแล้ว (เทียบเฉพาะฟิลด์สาธารณะ — การแก้เฉพาะต้นทุนไม่สร้างรายการรอเผยแพร่)</p>`
+      body.innerHTML = `<p><strong>ไม่มีรายการรอเผยแพร่เว็บ</strong></p><p class="cp-sub">ฐานกลางตรงกับฉบับเผยแพร่ล่าสุดแล้ว (เทียบเฉพาะฟิลด์สาธารณะ)</p>`
         + `<div class="cp-editor-actions"><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>`;
       return;
     }
@@ -482,12 +781,18 @@ async function openPreview() {
       + diffList('จะเปลี่ยน', diff.changed)
       + diffList('จะซ่อนจากเว็บ (ยังอยู่ในชุด/ประวัติ)', diff.hidden)
       + diffList('จะกลับมาแสดง', diff.shown)
-      + (diff.removed.length ? `<p style="color:#DC2626;font-weight:800">พบ ${diff.removed.length} รายการหายจากฐานกลาง — ระบบห้ามลบเมนู ให้ใช้ “ซ่อนจากเว็บ” แทน กรุณาตรวจสอบก่อนเผยแพร่</p>` : '')
-      + ((diff.toppingsChanged || diff.meatsChanged || diff.popularChanged) ? '<p class="cp-sub">มีการเปลี่ยนรายการท็อปปิ้ง/เนื้อ/ลำดับยอดนิยมร่วมด้วย</p>' : '')
-      + (diff.costBlocked?.length ? diffList(`รอยืนยันต้นทุน — ระบบจะไม่มีราคาชัดเจนที่จะคิดให้ลูกค้า (${diff.costBlocked.length} รายการ)`, diff.costBlocked.map((item) => ({ id: item.id, name: `${item.name} — ${item.reason}` }))) : '')
-      + warningPanel(info.startingPrice)
+      + (diff.removed.length
+        ? `<p style="color:#DC2626;font-weight:800">${diff.removed.length} รายการจะหายถาวรจากระบบ (ลบถาวรจากฐานกลาง)</p>`
+          + `<div style="color:#DC2626">${diffList('จะหายไปเลย', diff.removed).replace('<ul', '<ul style="color:#DC2626"')}</div>`
+          + '<p class="cp-sub">หลังเผยแพร่ เมนูเหล่านี้จะไม่มีราคาในไฟล์ จะไม่โชว์บนหน้าเว็บและหน้าเมนู และบอทจะไม่อ้างราคาเมนูเหล่านี้อีก กู้คืนได้จากไฟล์สำรองก่อนบันทึกเท่านั้น</p>'
+        : '')
+      + ((diff.toppingsChanged || diff.sideItemsChanged || diff.popularChanged) ? '<p class="cp-sub">มีการเปลี่ยนรายการท็อปปิ้ง/อาหารรอง/ลำดับยอดนิยมร่วมด้วย</p>' : '')
+      + (diff.costBlocked?.length ? diffList(`ปิดราคา — ยังไม่มีราคาที่จะคิดให้ลูกค้า (${diff.costBlocked.length} รายการ)`, diff.costBlocked.map((item) => ({ id: item.id, name: `${item.name} — ${item.reason}` }))) : '')
+      + warningPanel(info.tierPrices)
+      + unassignedTierPanel(info.tierPrices)
+      + tierPanel(info)
       + `<div style="margin:.75rem 0"><strong>ตัวอย่างหน้าเว็บ (8 รายการแรกที่จะแสดง)</strong> <span class="cp-sub">· หน้าเว็บเป็นแค่แคตตาล็อก ไม่มีราคาและไม่มีระบบสั่งออนไลน์ ลูกค้าเลือกเมนูแล้วทัก LINE</span><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.5rem;margin-top:.4rem">`
-      + info.preview.map((item) => `<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden"><img src="${esc(item.image)}" alt="" style="width:100%;height:90px;object-fit:cover;display:block" onerror="this.style.display='none'"><div style="padding:.4rem .55rem"><div style="font-weight:800;font-size:.82rem">${esc(item.name)}</div><div class="cp-sub">${esc(item.category)}</div></div></div>`).join('')
+      + info.preview.map((item) => `<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden"><img src="${esc(item.image)}" alt="" style="width:100%;height:90px;object-fit:cover;display:block" onerror="this.style.display='none'"><div style="padding:.4rem .55rem"><div style="font-weight:800;font-size:.82rem">${esc(item.name)}</div><div class="cp-sub">${esc(TIER_FALLBACK_LABELS[item.tier] || item.tier || '')}</div></div></div>`).join('')
       + '</div></div>'
       + `<p class="cp-sub">กดยืนยัน = สร้างไฟล์ในเครื่องเท่านั้น (สถานะ “เตรียมไฟล์แล้ว — รอขึ้นเว็บไซต์”) · ขึ้นเว็บจริงเป็นอีกขั้นตอนที่การ์ดด้านล่าง · ถ้าสร้างไฟล์ล้มเหลว ฉบับเดิมยังใช้งานได้และสถานะจะขึ้น “เผยแพร่ไม่สำเร็จ”</p>`
       + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-publish-confirm">ยืนยันเผยแพร่</button><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button><span class="cp-form-status" id="mc-publish-status"></span></div>`;
@@ -601,7 +906,9 @@ async function runFullRelease() {
 
   if (!state.publish.deployEnabled) {
     // Deploy is off on this machine: stage only, and be explicit about it.
-    body.innerHTML = warningPanel(state.publish.startingPrice)
+    body.innerHTML = warningPanel(state.publish.tierPrices)
+      + unassignedTierPanel(state.publish.tierPrices)
+      + tierPanel(state.publish)
       + `<p><strong>สร้างไฟล์ได้ แต่ขึ้นเว็บอัตโนมัติยังไม่เปิด</strong></p>`
       + '<p class="cp-sub">เครื่องนี้ยังไม่ได้ตั้ง EED_ALLOW_GIT_DEPLOY=1 — ระบบจะสร้างไฟล์ในเครื่องเท่านั้น ไม่ได้ push ขึ้น GitHub</p>'
       + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-release-stage-only">สร้างไฟล์เท่านั้น</button><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>`;
@@ -612,12 +919,13 @@ async function runFullRelease() {
 
   const diff = state.publish.diff;
   body.innerHTML = `<p><strong>ยืนยันอัปเดตเว็บทั้งหมด</strong> <span class="cp-sub">· สถานะตอนนี้ ${esc(state.publish.statusTh)}</span></p>`
-    + warningPanel(state.publish.startingPrice)
+    + warningPanel(state.publish.tierPrices)
+    + tierPanel(state.publish)
     + diffList('จะเพิ่ม', diff.added)
     + diffList('จะเปลี่ยน', diff.changed)
     + diffList('จะซ่อนจากเว็บ', diff.hidden)
     + diffList('จะกลับมาแสดง', diff.shown)
-    + (diff.costBlocked?.length ? diffList(`รอยืนยันต้นทุน (${diff.costBlocked.length})`, diff.costBlocked.map((item) => ({ id: item.id, name: `${item.name} — ${item.reason}` }))) : '')
+    + (diff.costBlocked?.length ? diffList(`ปิดราคา (${diff.costBlocked.length})`, diff.costBlocked.map((item) => ({ id: item.id, name: `${item.name} — ${item.reason}` }))) : '')
     + '<p class="cp-sub">ระบบจะทำต่อให้จบเอง: สร้างไฟล์ → commit เฉพาะ 2 ไฟล์เผยแพร่ → push → รอเว็บจริง → ตรวจว่าเว็บให้บริการตรงกับฉบับนี้ ถ้าตรวจไม่ได้จะขึ้น “ยังไม่ยืนยัน” ไม่ถือว่าสำเร็จ</p>'
     + '<p class="cp-sub">ห้ามรวมงานอื่นเข้า commit อัตโนมัติ: ถ้ามี commit อื่นรอ push อยู่ ระบบจะหยุดและแจ้งสาเหตุ</p>'
     + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-release-go">ยืนยันและอัปเดตเว็บ</button><button type="button" class="cp-btn ghost" data-mc-close>ยกเลิก</button><span class="cp-form-status" id="mc-release-status"></span></div>`
@@ -701,59 +1009,131 @@ function addMenu() {
   const menus = state.working.menus;
   const maxId = menus.reduce((max, menu) => Math.max(max, menu.id), 0);
   const maxOrder = menus.reduce((max, menu) => Math.max(max, menu.sortOrder), -1);
+  const tier = $('#mc-new-tier')?.value || 'classic';
   menus.push({
     id: maxId + 1,
     name,
     price: Number($('#mc-new-price')?.value) || 65,
-    category: $('#mc-new-cat')?.value || CATEGORIES[0],
+    tier,
     image: ($('#mc-new-img')?.value || '').trim() || 'img/logo.jpg',
     desc: ($('#mc-new-desc')?.value || '').trim(),
     badge: 'ใหม่',
     minPerMenu: Number($('#mc-new-min')?.value) || 5,
     hidden: false,
     sortOrder: maxOrder + 1,
-    noMeat: false,
     internalNote: '',
   });
   if ($('#mc-new-name') ) $('#mc-new-name').value = '';
-  if (msg) msg.textContent = `เพิ่ม “${name}” (ID ${maxId + 1}) แล้ว — กด “บันทึก” เพื่อให้เครื่องมือแอดมินใช้ทันที`;
+  if (msg) msg.textContent = `เพิ่ม “${name}” (ID ${maxId + 1}) ระดับ ${TIER_FALLBACK_LABELS[tier] || tier} แล้ว — กด “บันทึก” เพื่อให้เครื่องมือแอดมินใช้ทันที`;
   renderTable();
   updateButtons();
+}
+
+// ---------------------------------------------------------------------------
+// Delete a menu for good (the owner asked for "no data anywhere in the system").
+//
+// This is the opposite of "ซ่อนจากเว็บ": the row leaves the central draft, so the
+// next publish drops its price/name/image from data/planner-overrides.json and
+// js/menu-data.js, the customer menu stops showing it, and the LINE bot can no
+// longer quote it. Two confirmations (retype the exact name, then confirm)
+// because there is no undo here — the only way back is the pre-write backup the
+// server keeps. A batch above the same runaway threshold as bulk hide asks once
+// more, since a mis-click loop once walked 32 live menus off the site.
+// ---------------------------------------------------------------------------
+const DELETE_BATCH_LIMIT = 5;
+
+function removedIds() {
+  const kept = new Set((state.working?.menus || []).map((menu) => Number(menu.id)));
+  return (state.saved?.menus || []).filter((menu) => !kept.has(Number(menu.id))).map((menu) => Number(menu.id));
+}
+
+async function deleteMenu(index) {
+  const menus = state.working?.menus;
+  const menu = menus?.[index];
+  if (!menu) return;
+  if (menus.length <= 1) {
+    setFormStatus('ลบเมนูสุดท้ายไม่ได้ — ต้องมีเมนูอย่างน้อย 1 รายการ ถ้าจะปิดการขายให้กด “ซ่อนจากเว็บ” แทน', 'bad');
+    return;
+  }
+  const typed = window.prompt(`ลบ “${menu.name}” (ID ${menu.id}) ถาวรใช่ไหม\n\nเมนูนี้จะหายจากฐานกลาง เมื่อเผยแพร่จะหายจากหน้าเว็บและหน้าเมนู และบอทจะไม่อ้างราคาเมนูนี้อีก\nย้อนกลับได้จากไฟล์สำรองที่ระบบเขียนไว้ก่อนบันทึกเท่านั้น\n\nพิมพ์ชื่อเมนูให้ตรงทุกตัวอักษรเพื่อยืนยัน:`);
+  if (typed === null) return;
+  if (typed.trim() !== menu.name) {
+    setFormStatus('ยกเลิกลบ — ชื่อที่พิมพ์ไม่ตรงกับเมนู', 'bad');
+    return;
+  }
+  if (!window.confirm(`ยืนยันลบ “${menu.name}” (ID ${menu.id}) ถาวร\n\nเมนูนี้จะไม่มีอยู่ในระบบอีก`)) return;
+  if (removedIds().length >= DELETE_BATCH_LIMIT
+      && !window.confirm(`คำสั่งนี้ลบเมนูหลายรายการในครั้งเดียว (ทั้งหมด ${removedIds().length + 1} รายการ)\n\nโดยปกติหมายถึงว่ากดผิดแถว ไม่ใช่การตั้งใจลบจริง\nกด “ตกลง” เพื่อลบตามนี้ หรือ “ยกเลิก” เพื่อโหลดข้อมูลกลับเป็นฉบับที่บันทึกไว้`)) {
+    state.busy = false;
+    await load({ silent: true });
+    setFormStatus('ยกเลิกลบแล้ว — โหลดข้อมูลกลับเป็นฉบับที่บันทึกไว้', 'ok');
+    return;
+  }
+  const wasPopular = (state.working.popular || []).some((id) => Number(id) === Number(menu.id));
+  menus.splice(index, 1);
+  if (wasPopular) state.working.popular = state.working.popular.filter((id) => Number(id) !== Number(menu.id));
+  if (state.filter.tier === menu.tier && !menus.some((m) => m.tier === menu.tier)) state.filter.tier = '';
+  if ($('#mc-new-name')?.dataset.targetId === String(menu.id)) delete $('#mc-new-name').dataset.targetId;
+  renderTable();
+  updateButtons();
+  scheduleDraftBackup();
+  setFormStatus(`ลบ “${menu.name}” (ID ${menu.id}) ออกจากฉบับร่างแล้ว${wasPopular ? ' และถอดออกจากรายการยอดนิยมให้อัตโนมัติ' : ''} — กด “บันทึก” เพื่อเก็บถาวร`, 'ok');
 }
 
 function bind() {
   document.addEventListener('input', (event) => {
     const target = event.target;
     if (target.dataset?.mc !== undefined && target.dataset.field) onEdit(target);
+    if (target.dataset?.tp !== undefined && target.dataset.tpField) onToppingEdit(target);
   });
   document.addEventListener('change', (event) => {
     const target = event.target;
     if (target.dataset?.mc !== undefined && target.dataset.field) {
       onEdit(target);
       // Checkbox: patch the row in place (see refreshRowState). Everything else
-      // re-renders, because a sort-order or category edit changes the row list.
+      // re-renders, because a sort-order or level edit changes the row list.
       if (target.type === 'checkbox') refreshRowState(target);
       else renderTable();
     }
+    // A topping price settles on blur/commit: rewriting every menu on each
+    // keystroke would leave half-typed numbers in the draft. Same for a side
+    // item price: an unconfirmed figure must never look confirmed mid-typing.
+    if (target.dataset?.tp !== undefined && target.dataset.tpField) { onToppingEdit(target); renderToppings(); }
+    if (target.dataset?.si !== undefined && target.dataset.siField) onSideItemEdit(target);
     if (target.id === 'mc-search') { state.filter.q = target.value; renderTable(); }
-    if (target.id === 'mc-vis') { state.filter.vis = target.value; renderTable(); }
   });
   document.addEventListener('click', (event) => {
     const closer = event.target.closest('[data-mc-close]');
     if (closer) { $('#mc-modal').hidden = true; return; }
-    if (event.target.closest('[data-mc-expand-all]')) {
-      document.querySelectorAll('#mc-groups details.mc-cat').forEach((el) => { el.open = true; });
+    const tpDelete = event.target.closest('[data-tp-delete]');
+    if (tpDelete) { deleteTopping(Number(tpDelete.dataset.tpDelete)); return; }
+    const siDelete = event.target.closest('[data-si-delete]');
+    if (siDelete) { deleteSideItem(Number(siDelete.dataset.siDelete)); return; }
+    const tierChip = event.target.closest('[data-tier]');
+    if (tierChip) {
+      state.filter.tier = tierChip.dataset.tier || '';
+      renderTable();
       return;
     }
-    if (event.target.closest('[data-mc-collapse-all]')) {
-      document.querySelectorAll('#mc-groups details.mc-cat').forEach((el) => { el.open = false; });
+    const del = event.target.closest('[data-mc-delete]');
+    if (del) {
+      deleteMenu(Number(del.dataset.mcDelete));
+      return;
+    }
+    const visChip = event.target.closest('[data-vis]');
+    if (visChip) {
+      state.filter.vis = visChip.dataset.vis || 'all';
+      document.querySelectorAll('[data-vis]').forEach((el) => el.classList.toggle('is-on', el === visChip));
+      renderTable();
     }
   });
   $('#mc-save')?.addEventListener('click', save);
   $('#mc-publish-open')?.addEventListener('click', openPreview);
   $('#mc-reload')?.addEventListener('click', () => load());
-  $('#mc-refresh-profit')?.addEventListener('click', () => load({ silent: true }));
+  
   $('#mc-add')?.addEventListener('click', addMenu);
+  $('#mc-tp-add')?.addEventListener('click', addTopping);
+  $('#mc-si-add')?.addEventListener('click', addSideItem);
 
   // Last line of defence: flush any pending debounce when the tab goes away.
   window.addEventListener('beforeunload', () => {

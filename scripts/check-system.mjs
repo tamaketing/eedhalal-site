@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { computeTierFloors, setsFromPlanner, sideItemsFromPlanner, sideChoiceSummary } from './mealbox-tiers.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -22,7 +23,6 @@ async function loadLegacyData(root = ROOT) {
   return {
     business: JSON.parse(JSON.stringify(context.EED)),
     menus: JSON.parse(JSON.stringify(context.EED_MENUS)),
-    meats: JSON.parse(JSON.stringify(context.EED_DEFAULT_MEATS || [])),
     toppings: JSON.parse(JSON.stringify(context.EED_DEFAULT_TOPPINGS || [])),
     snackMinimumOrder: context.EED_SNACK_MIN_ORDER,
   };
@@ -45,7 +45,7 @@ export function getEffectiveMenus(menus, catalog) {
       ...menu,
       name: catalog.names?.[menu.id] ?? menu.name,
       price: catalog.prices?.[menu.id] ?? menu.price,
-      category: catalog.categories?.[menu.id] ?? menu.category,
+      tier: catalog.tiers?.[menu.id] ?? menu.tier,
       image: catalog.images?.[menu.id] ?? menu.image,
       minPerMenu: catalog.mins?.[menu.id] ?? menu.minPerMenu,
     }));
@@ -111,6 +111,44 @@ export function renderKnowledge(rules, catalog, menus) {
   const policy = deliveryPolicy(rules);
   const leadTimeLines = rules.leadTimes.map((range) => `- ${formatRange(range)}`).join('\n');
   const guestRange = (minimum, maximum) => maximum === null ? `${minimum}+ คน (จำนวนที่รองรับให้ทีมยืนยันตามงาน)` : `${minimum}–${maximum} คน`;
+  // Tier starting prices are computed from the published catalogue, never typed.
+  const { floors } = computeTierFloors(setsFromPlanner(catalog || {}));
+  const sideItems = sideItemsFromPlanner(catalog || {});
+  const tierLines = (rules.services.mealBox.tiers || []).map((tier) => {
+    const floor = floors[tier.id];
+    const launching = !floor && tier.launchStatus === 'launching';
+    const price = floor
+      ? `เริ่ม ${floor.priceFrom} บาท/กล่อง (เช่น ${floor.sourceName})`
+      : launching
+        ? 'กำลังเตรียมเปิดตัว — ยังสั่งไม่ได้และห้ามเดาราคา ให้ชวนลูกค้าทักทาง LINE ไว้ก่อนแล้วแจ้งเมื่อเปิด'
+        : 'ยังไม่มีชุดในระดับนี้ที่เปิดขาย — ห้ามเดาราคา ให้บอกลูกค้าว่าสอบถามรายละเอียดชุดอาหารทาง LINE';
+    const detail = [
+      launching ? (tier.launchNoteTh || '') : '',
+      tier.boxFormatTh ? `กล่อง: ${tier.boxFormatTh}` : '',
+      sideChoiceSummary(tier, sideItems, false),
+      tier.sideChoiceNoteTh || '',
+    ].filter(Boolean).join(' · ');
+    return `- ระดับ ${tier.nameTh} (${tier.nameEn}): ${price} · เหมาะกับ${tier.bestForTh}`
+      + (detail ? `\n  ${detail}` : '');
+  }).join('\n');
+  const tierFacts = (rules.services.mealBox.tiers || [])
+    .map((tier) => {
+      const floor = floors[tier.id];
+      const launching = !floor && tier.launchStatus === 'launching';
+      const price = floor
+        ? `From ${floor.priceFrom} THB/box (e.g. ${floor.sourceName})`
+        : launching
+          ? 'Launching soon — not orderable yet; never quote a price, invite the customer to message on LINE to be told when it opens'
+          : 'No set in this tier is open for sale yet — never guess a price, offer to quote it on LINE';
+      const detail = [
+        launching ? (tier.launchNoteEn || '') : '',
+        tier.boxFormatEn ? `Box: ${tier.boxFormatEn}.` : '',
+        sideChoiceSummary(tier, sideItems, true),
+        tier.sideChoiceNoteEn || '',
+      ].filter(Boolean).join(' ');
+      return `- ${tier.nameEn}: ${price}. Best for: ${tier.bestForEn}.${detail ? `\n  ${detail}` : ''}`;
+    })
+    .join('\n');
 
   // Meal-box prices are NEVER baked into the prompt: the live Internal Menu
   // API (planner-backed) supplies MENU_CONTEXT per request. This section is
@@ -136,10 +174,12 @@ export function renderKnowledge(rules, catalog, menus) {
 - ฮาลาล: รับรองจากสำนักงานคณะกรรมการอิสลามประจำกรุงเทพมหานคร เลขที่ ${rules.business.halalCertificate} ขอสำเนาในแชทนี้ได้
 
 ## 2. ราคาและขั้นต่ำ
-- ข้าวกล่องมาตรฐาน: เริ่ม ${meal.priceFrom} บาท/กล่อง
-- เซ็ตพรีเมียม: เริ่ม ${meal.premiumPriceFrom} บาท/กล่องขึ้นไป ราคาจริงขึ้นอยู่กับเมนูที่ลูกค้าเลือก
+- ระดับข้าวกล่อง (ราคาเริ่มต้นคำนวณจากชุดที่เปิดขายและแสดงบนเว็บ ห้ามเดาราคาเอง)
+${tierLines}
+- Tier facts (English):
+${tierFacts}
 - Snack Box: เริ่ม ${snack.priceFrom} บาท/กล่อง ขั้นต่ำ ${snack.minimumOrder} กล่อง
-- ข้าวกล่องฮาลาล: เริ่ม ${meal.priceFrom} บาท/กล่อง ขั้นต่ำ ${meal.minimumOrder} กล่อง รองรับ ${meal.minimumOrder}+ กล่อง (จำนวนที่รองรับให้ทีมยืนยันตามงาน) ${meal.halalMaterial} ${meal.packaging} และ${meal.fulfillment}
+- ข้าวกล่องฮาลาล: ขั้นต่ำ ${meal.minimumOrder} กล่อง รองรับ ${meal.minimumOrder}+ กล่อง (จำนวนที่รองรับให้ทีมยืนยันตามงาน) ${meal.halalMaterial} ${meal.packaging} และ${meal.fulfillment}
 - บุฟเฟต์ฮาลาล: เริ่ม ${buffet.priceFrom} บาท/หัว ขั้นต่ำ ${buffet.minimumGuests} คน รองรับ ${guestRange(buffet.minimumGuests, buffet.maximumGuests)} เมนู ${buffet.serviceCategories} หมวด ทีม${buffet.serviceTeam}
 - Live Cooking / ซุ้มปรุงสด: เริ่ม ${liveCooking.priceFrom} บาท/หัว รองรับ ${guestRange(liveCooking.minimumGuests, liveCooking.maximumGuests)} ${liveCooking.serviceStyle} เหมาะกับ${liveCooking.recommendedFor}
 - Cocktail / Finger Food ฮาลาล: เริ่ม ${cocktail.priceFrom} บาท/หัว ขั้นต่ำ ${cocktail.minimumGuests} คน รองรับ ${guestRange(cocktail.minimumGuests, cocktail.maximumGuests)} ${cocktail.serviceStyle} ทีม${cocktail.serviceTeam}
@@ -147,7 +187,7 @@ export function renderKnowledge(rules, catalog, menus) {
 - Set Menu / Sit-down Dinner ฮาลาล: เริ่ม ${setMenu.priceFrom} บาท/หัว ขั้นต่ำ ${setMenu.minimumGuests} คน รองรับ ${guestRange(setMenu.minimumGuests, setMenu.maximumGuests)} ${setMenu.serviceStyle} ${setMenu.courseCountFrom}–${setMenu.courseCountTo} คอร์ส ทีม${setMenu.serviceTeam}
 - ขั้นต่ำออเดอร์องค์กร: ${meal.minimumOrder}+ กล่อง
 - ขั้นต่ำต่อเมนู: เมนูทั่วไปส่วนมาก ${meal.standardMenuMinimum} กล่อง เมนูที่ต้องเตรียมพิเศษ ${meal.specialMenuMinimum} กล่อง ให้ยึดขั้นต่ำรายเมนูจากระบบ
-- เมนูขั้นต่ำ ${meal.specialMenuMinimum} กล่องที่ระบบทราบราคาชัดเจน: ${specialMenus}${quoteOnlyMenus.length ? `\n- อีก ${quoteOnlyMenus.length} เมนู (${quoteOnlyMenus.join(', ')}) ร้านยังไม่ได้ยืนยันต้นทุนของตัวเอง จึงยังไม่มีราคาที่ระบบกล้าวคิดให้ ห้ามเดาราคาเหล่านี้ — บอกลูกค้าว่าจะให้ทีมเช็กราคาและส่งใบเสนอราคาทาง LINE` : ''}
+- เมนูขั้นต่ำ ${meal.specialMenuMinimum} กล่องที่ระบบทราบราคาชัดเจน: ${specialMenus}${quoteOnlyMenus.length ? `\n- อีก ${quoteOnlyMenus.length} เมนู (${quoteOnlyMenus.join(', ')}) เจ้าของปิดราคาไว้ จึงยังไม่มีราคาที่ระบบกล้าวคิดให้ ห้ามเดาราคาเหล่านี้ — บอกลูกค้าว่าจะให้ทีมเช็กราคาและส่งใบเสนอราคาทาง LINE` : ''}
 - สั่ง 1 กล่อง: ไม่รับผ่านเว็บ ให้ไปสั่งผ่าน LINEMAN
 - มี ${meal.menuCountFrom}+ เมนู ปรับเผ็ดและเครื่องได้
 
@@ -240,24 +280,17 @@ function replaceToppingsSegment(line, toppings) {
 
 // Shared with the menu publish pipeline (scripts/menu-central.mjs builds the
 // same content from the central draft): catalog MAY carry descs/badges/
-// sortOrder/popular/noMeatMenus/meats/toppings. When present they are synced
-// into js/menu-data.js; when absent the legacy 5-field behavior is unchanged.
+// sortOrder/popular/toppings. When present they are synced into
+// js/menu-data.js; when absent the legacy behavior is unchanged.
 function syncMenuSource(source, catalog) {
   const seen = new Set();
   let synced = source;
-  // Shared header lists (global for every menu). Publish writes these from the
-  // central draft, so --write must reproduce them from the catalog.
-  if (catalog.meats !== undefined) {
-    assert.match(synced, /var EED_DEFAULT_MEATS = .*?;/, 'cannot find EED_DEFAULT_MEATS in js/menu-data.js');
-    synced = synced.replace(/var EED_DEFAULT_MEATS = .*?;/, `var EED_DEFAULT_MEATS = ${JSON.stringify(catalog.meats)};`);
-  }
+  // Shared header list (global for every menu). Publish writes it from the
+  // central draft, so --write must reproduce it from the catalog.
   if (catalog.toppings !== undefined) {
     assert.match(synced, /var EED_DEFAULT_TOPPINGS = .*?;/, 'cannot find EED_DEFAULT_TOPPINGS in js/menu-data.js');
     synced = synced.replace(/var EED_DEFAULT_TOPPINGS = .*?;/, `var EED_DEFAULT_TOPPINGS = ${JSON.stringify(catalog.toppings)};`);
   }
-  const noMeatIds = catalog.noMeatMenus === undefined
-    ? null
-    : new Set(catalog.noMeatMenus.map((id) => String(id)));
   synced = synced.split(/\r?\n/).map((line) => {
     const idMatch = line.match(/^\s*\{ id: (\d+),/);
     if (!idMatch) return line;
@@ -267,7 +300,7 @@ function syncMenuSource(source, catalog) {
     const values = {
       name: catalog.names?.[id],
       price: catalog.prices?.[id],
-      category: catalog.categories?.[id],
+      tier: catalog.tiers?.[id],
       image: catalog.images?.[id],
       minPerMenu: catalog.mins?.[id],
       desc: catalog.descs?.[id],
@@ -276,7 +309,7 @@ function syncMenuSource(source, catalog) {
     };
     if (values.name !== undefined) next = next.replace(/name: "(?:[^"\\]|\\.)*"/, `name: ${JSON.stringify(values.name)}`);
     if (values.price !== undefined) next = next.replace(/price: \d+(?:\.\d+)?/, `price: ${values.price}`);
-    if (values.category !== undefined) next = next.replace(/category: "(?:[^"\\]|\\.)*"/, `category: ${JSON.stringify(values.category)}`);
+    if (values.tier !== undefined) next = next.replace(/tier: "(?:[^"\\]|\\.)*"/, `tier: ${JSON.stringify(values.tier)}`);
     if (values.image !== undefined) next = next.replace(/image: "(?:[^"\\]|\\.)*"/, `image: ${JSON.stringify(values.image)}`);
     if (values.minPerMenu !== undefined) next = next.replace(/minPerMenu: \d+/, `minPerMenu: ${values.minPerMenu}`);
     if (values.desc !== undefined) next = next.replace(/desc: "(?:[^"\\]|\\.)*"/, `desc: ${JSON.stringify(values.desc)}`);
@@ -286,11 +319,6 @@ function syncMenuSource(source, catalog) {
       else next = next.replace(/minPerMenu: \d+/, (m) => `${m}, sortOrder: ${values.sortOrder}`);
     }
     if (catalog.toppings !== undefined) next = replaceToppingsSegment(next, catalog.toppings);
-    if (noMeatIds !== null) {
-      const hasFlag = /, noMeat: true/.test(next);
-      if (noMeatIds.has(String(id)) && !hasFlag) next = next.replace(/\s*\}(,?)\s*$/, `, noMeat: true }$1`);
-      if (!noMeatIds.has(String(id)) && hasFlag) next = next.replace(/, noMeat: true/, '');
-    }
     return next;
   }).join('\n');
   for (const id of Object.keys(catalog.prices)) assert.ok(seen.has(String(id)), `menu ${id} is missing from js/menu-data.js`);
@@ -308,8 +336,6 @@ function syncBusinessSource(source, rules, catalog) {
     phoneDisplay: rules.business.phone,
     halalCertificate: rules.business.halalCertificate,
     operatingHoursTh: rules.business.operatingDays,
-    startingPrice: String(meal.priceFrom),
-    premiumPriceFrom: String(meal.premiumPriceFrom),
     minOrder: String(meal.minimumOrder),
     thaiMinPerMenu: String(meal.standardMenuMinimum),
     indianMinPerMenu: String(meal.specialMenuMinimum),
@@ -353,10 +379,8 @@ function assertUnique(values, message) {
   assert.equal(new Set(values).size, values.length, message);
 }
 
-// เมนูที่ใช้ "ขั้นต่ำต่อเมนูเตรียมพิเศษ" (อินเดีย / พรีเมียม) แทนค่ามาตรฐาน
-// ตอนนี้ทั้งสองค่าเท่ากัน (10 กล่องทุกเมนู) แต่คงการแยกไว้เผื่อกฎเปลี่ยนอีก
-const SPECIAL_MINIMUM_CATEGORIES = new Set(['อาหารอินเดีย', 'พรีเมียม']);
-
+// ขั้นต่ำต่อเมนูเป็นกฎเดียวทั้งแคตตาล็อก: ทุกเมนูใช้ standardMenuMinimum
+// (specialMenuMinimum คงไว้ใน data/business-rules.json เผื่อกฎเปลี่ยนอีก)
 export function validateData(rules, catalog, legacy) {
   assert.equal(rules.schemaVersion, 1, 'unsupported business rules schema');
   assert.match(rules.revision, /^\d{4}-\d{2}-\d{2}$/, 'revision must use YYYY-MM-DD');
@@ -366,10 +390,14 @@ export function validateData(rules, catalog, legacy) {
   // so every published menu is checked against the rule — a set-level "only
   // these values exist" check let all 44 menus drift to one value unnoticed.
   const standardMinimum = rules.services.mealBox.standardMenuMinimum;
-  const specialMinimum = rules.services.mealBox.specialMenuMinimum;
   for (const [id, minimum] of Object.entries(catalog.mins)) {
-    const expected = SPECIAL_MINIMUM_CATEGORIES.has(catalog.categories[id]) ? specialMinimum : standardMinimum;
-    assert.equal(minimum, expected, `menu ${id} (${catalog.categories[id]}) per-menu minimum must be ${expected}`);
+    assert.equal(minimum, standardMinimum, `menu ${id} per-menu minimum must be ${standardMinimum}`);
+  }
+  // Every published menu declares a level, and it must be a real one: the tier
+  // is the only grouping the customer pages, the calculator and the API use.
+  const TIER_IDS = new Set(['classic', 'signature', 'executive']);
+  for (const [id, tier] of Object.entries(catalog.tiers || {})) {
+    assert.ok(TIER_IDS.has(tier), `menu ${id} has an unknown tier “${tier}”`);
   }
   // The site advertises "more than 30 menus" everywhere, so a publish that
   // silently hides most of the catalog must fail here rather than on the site.
@@ -397,36 +425,27 @@ export function validateData(rules, catalog, legacy) {
     const id = String(menu.id);
     assert.equal(menu.name, catalog.names[id], `menu ${id} name drift`);
     assert.equal(menu.price, catalog.prices[id], `menu ${id} price drift`);
-    assert.equal(menu.category, catalog.categories[id], `menu ${id} category drift`);
+    assert.equal(menu.tier, catalog.tiers?.[id], `menu ${id} tier drift`);
     assert.equal(menu.image, catalog.images[id], `menu ${id} image drift`);
     assert.equal(menu.minPerMenu, catalog.mins[id], `menu ${id} minimum drift`);
-    if (SPECIAL_MINIMUM_CATEGORIES.has(menu.category)) {
-      assert.equal(menu.minPerMenu, specialMinimum, `${menu.category} menu ${id} must use the special minimum`);
-    }
     // Publish-managed maps (written by the menu publish pipeline from the
     // central draft). Asserted only when present so legacy files still pass.
     if (catalog.descs !== undefined) assert.equal(menu.desc ?? '', catalog.descs[id] ?? '', `menu ${id} description drift`);
     if (catalog.badges !== undefined) assert.equal(menu.badge ?? '', catalog.badges[id] ?? '', `menu ${id} badge drift`);
     if (catalog.sortOrder !== undefined) assert.equal(menu.sortOrder ?? null, catalog.sortOrder[id] ?? null, `menu ${id} display-order drift`);
-    if (catalog.noMeatMenus !== undefined) {
-      assert.equal(menu.noMeat === true, catalog.noMeatMenus.map(String).includes(id), `menu ${id} no-meat flag drift`);
-    }
   }
-  // "ไม่เลือกเนื้อ" is a food claim, so it can never sit on a dish whose own name
-  // names meat or seafood. The v72 publish flagged all 16 such dishes (chicken,
-  // beef, shrimp, crab) and none of the 16 that read as meat-free; this catches
-  // the next inversion before it reaches the customer menu list.
-  for (const id of catalog.noMeatMenus ?? []) {
-    const name = catalog.names?.[String(id)] ?? '';
-    const claimed = /ไก่|เนื้อ|หมู|ปลา|กุ้ง|ปู|ทะเล|กั้ง|หอย|แหมง|ไข่|ลูกชิ้น|แพะ/.test(name);
-    assert.ok(!claimed, `menu ${id} is marked no-meat but its name contains meat: ${name}`);
-  }
-  // Shared topping/meat lists must match the published compat headers.
-  if (catalog.meats !== undefined && legacy.meats !== undefined) {
-    assert.deepEqual(legacy.meats, catalog.meats, 'meats list drift between js/menu-data.js and planner catalog');
-  }
+  // The shared topping list must match the published compat header.
   if (catalog.toppings !== undefined && legacy.toppings !== undefined) {
     assert.deepEqual(legacy.toppings, catalog.toppings, 'toppings list drift between js/menu-data.js and planner catalog');
+  }
+  // Every published menu carries a tier, and it is the only grouping axis:
+  // the customer pages, the calculator and the internal API all filter by it,
+  // so a menu without one would be unreachable from every entry path.
+  for (const id of Object.keys(catalog.prices || {})) {
+    assert.ok(
+      TIER_IDS.has(String(catalog.tiers?.[id])),
+      `menu ${id} has no published tier, so no customer page can group or filter it`,
+    );
   }
   if (catalog.popular !== undefined) {
     assert.ok(Array.isArray(catalog.popular), 'popular must be an id list');
@@ -436,8 +455,11 @@ export function validateData(rules, catalog, legacy) {
   }
 
   const eed = legacy.business;
-  assert.equal(Number(eed.startingPrice), rules.services.mealBox.priceFrom, 'starting price drift');
-  assert.equal(Number(eed.premiumPriceFrom), rules.services.mealBox.premiumPriceFrom, 'premium price drift');
+  // Starting prices are no longer published in business-rules.json: the runtime
+  // reads them from the catalogue. js/business-data.js must therefore not bake
+  // a figure either - it loads them at runtime instead.
+  assert.equal(eed.startingPrice, null, 'starting price must be computed at runtime, not baked');
+  assert.equal(eed.tiers, null, 'tier prices must be computed at runtime, not baked');
   assert.equal(Number(eed.minOrder), rules.services.mealBox.minimumOrder, 'minimum order drift');
   assert.equal(Number(eed.thaiMinPerMenu), rules.services.mealBox.standardMenuMinimum, 'standard menu minimum drift');
   assert.equal(Number(eed.indianMinPerMenu), rules.services.mealBox.specialMenuMinimum, 'special menu minimum drift');

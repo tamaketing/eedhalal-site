@@ -1,23 +1,61 @@
-# EED HALAL — เครื่องมือแอดมิน (local only, ไม่ขึ้นเว็บ)
+﻿# EED HALAL — เครื่องมือแอดมิน (local only, ไม่ขึ้นเว็บ)
 
 รันบนเครื่องแอดมินเท่านั้น ผ่าน loopback `127.0.0.1` ไม่มี auth ในตัว —
 การป้องกันคือเปิดได้เฉพาะเครื่องนี้ ห้ามเปิดพอร์ตออกนอกเครื่อง ห้ามส่งต่อ
 
+## สองหน้า
+- `http://127.0.0.1:4185/` — **จับคู่เมนูตามงบ**: ลูกค้าบอกงบต่อกล่องมา ระบบลิสต์
+  เมนูที่ราคาไม่เกินงบ พร้อมตัวเลือกไข่/ผลไม้/เนื้อและราคารวมสด
+  กติกาเดียว: `ราคาเมนู + ตัวเลือกที่เลือก ≤ งบ` — ตัวที่เกินงบไม่ถูกแสดง
+- `http://127.0.0.1:4185/budget-planner.html` — **จัดการเมนู**: แก้ชื่อ รูป
+  **ระดับสินค้า** (Classic / Signature / Executive) คำอธิบาย ราคาขาย ขั้นต่ำ
+  ลำดับแสดงผล การซ่อน และกดเผยแพร่ขึ้นเว็บ
+  เมนูไม่มีหมวดหมู่อีกแล้ว: ระดับสินค้าคือกลุ่มเดียวที่หน้าเว็บ เครื่องคำนวณ
+  API และ LINE bot ใช้ร่วมกัน จึงแก้ได้จากการ์ดเมนูหรือจากชิประดับด้านบน
+
+ทั้งสองหน้าใช้**ราคาขาย**เป็นข้อมูลหลัก ไม่มีต้นทุนและไม่คิดกำไร
+ระบบต้นทุนภายในถูกถอดออกแล้ว
+
 ## โครง (โค้ด vs ข้อมูลแยกกันชัด)
 - `tools/admin/*.mjs|html|css` — **โค้ด** (version control, ไม่มีข้อมูลจริง/ความลับ)
 - `EED_ADMIN_DATA_DIR` (ค่าเริ่มต้น: `demo/owner-set-builder/`) — **ข้อมูลจริง**:
-  `menu-central.json`, `owner-costs.json`, `owner-settings.json`,
-  `menu-publish-state.json`, `backups/` — ทั้งหมด gitignored ห้าม commit
+  `menu-central.json`, `menu-publish-state.json`, `backups/` — gitignored ห้าม commit
 - `scripts/menu-{central,deploy,backups}.mjs` — ตรรกะ pipeline ที่ปุ่มเรียกใช้
+
+## ⚠️ ปุ่ม “เผยแพร่” ไม่ได้ทำให้เว็บขึ้นเอง
+
+ปุ่มเผยแพร่เขียนแค่ไฟล์แคตตาล็อก 2 ไฟล์ (`data/planner-overrides.json` + `js/menu-data.js`) ข้อความที่ลูกค้าเห็นและที่บอท LINE พูด มาจากไฟล์อื่นที่ต้อง generate ต่อ
+
+**ถ้าแก้เมนูธรรมดา** (ชื่อ ราคา รูป หมวด ซ่อน) → รัน `node scripts/popular-menu-page.mjs --write` ก่อน commit
+
+**ถ้าแตะ “ระดับข้าวกล่อง” หรือ “อาหารเมนูที่ 2”** (เพิ่ม/ซ่อนชุด, เปลี่ยนระดับ, เปลี่ยนชื่อหรือราคาอาหารเมนูที่ 2) → ต้องรันครบ **3 ตัว** ไม่งั้นเว็บกับบอทจะยังพูดของเก่า:
+```
+node scripts/sync-catering-content.mjs --write
+node scripts/popular-menu-page.mjs   --write
+node scripts/check-system.mjs        --write
+```
+แล้วตรวจด้วย `node scripts/check-business-sync.mjs --check` กับ `node --test` ก่อน commit
+
+**ราคาเริ่มต้นไม่มีที่ไหนพิมพ์เอง** — คำนวณจากชุดที่เปิดขายและถูกที่สุดของระดับนั้น ถ้าเพิ่มชุดราคา 65 บาทให้ Classic ราคาเริ่มต้นจะเปลี่ยนทันทีทุกช่องทาง
+
+**รูปใหม่ต้อง `git add`** ก่อน deploy ไม่งั้นเว็บขึ้น 404 (ตรวจ `git status --porcelain -- img/`) แนะนำย่อเหลือ ~250 KB ก่อน แบบ `*-opt.jpg`
 
 ## เริ่มระบบ
 ```bat
 tools\admin\start-admin.cmd
 ```
 หรือ `node tools/admin/server.mjs 4185` (กำหนดโฟลเดอร์ข้อมูลด้วย
-`EED_ADMIN_DATA_DIR=<path>` หรือ `--data-dir=<path>`) แล้วเปิด
-`http://127.0.0.1:4185/` (จัดชุด) และ `http://127.0.0.1:4185/budget-planner.html`
-(จัดการเมนู) ครั้งแรกที่รันจะ seed โครงเปล่าให้ (ต้องกรอกทุนจริงก่อนใช้)
+`EED_ADMIN_DATA_DIR=<path>` หรือ `--data-dir=<path>`)
+
+## endpoint ของเครื่องมือ
+| เส้นทาง | ใช้ทำอะไร |
+|---------|----------|
+| `GET /sellable-menus` | เมนูที่มีราคาขายแล้ว + ท็อปปิ้ง + เนื้อ (หน้าจับคู่เมนู) |
+| `GET/POST /menu-central` | อ่าน/บันทึกฐานกลางเมนู (มี backup ก่อนเขียน) |
+| `GET /menu-publish-preview`, `/menu-publish-state` | เทียบร่างกับฉบับที่เผยแพร่ |
+| `POST /menu-publish` | เขียน `data/planner-overrides.json` + `js/menu-data.js` |
+| `GET/POST /menu-backups`, `/menu-restore` | สำรอง/กู้คืนฐานกลาง |
+| `GET /readiness` | ตัวตรวจว่าเซิร์ฟเวอร์นี้คือเครื่องมือนี้จริง |
 
 ## สำรองและกู้คืน
 - ทุกครั้งที่บันทึกผ่านหลังบ้าน ระบบสำรองฉบับก่อนหน้าไว้ที่
@@ -34,9 +72,6 @@ tools\admin\start-admin.cmd
 - deploy อัตโนมัติปิดอยู่ (`EED_ALLOW_GIT_DEPLOY!=1` ปฏิเสธพร้อมเหตุผล)
 
 ## เทส
-- `node --test test/admin-logic.test.mjs test/admin-runtime-clean.test.mjs`
+- `node --test test/admin-runtime-clean.test.mjs test/admin-menu-ui.test.mjs`
   รันใน CI ได้ (fixtures ใช้ชื่อ/ตัวเลขสมมติเท่านั้น — ห้ามฝังชื่อเมนูจริง
-  คู่กับต้นทุนจริง)
-- `demo/` เดิมยังมี `cost-store.test.mjs` / `recommend.test.mjs` ที่ผูกกับ
-  ข้อมูลจริงของเครื่อง จึงรันเฉพาะในเครื่อง (`node --test demo/owner-set-builder/`)
-  ไม่เข้า CI — อย่าย้ายเข้า `test/` ทั้งที่ยังอ้างข้อมูลจริง
+  คู่กับราคาจริง)

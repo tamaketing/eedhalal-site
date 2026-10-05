@@ -9,7 +9,6 @@ const OUTPUT_DIR = path.join(ROOT, '..', 'test', 'consolidated');
 // Test file categories
 const CATEGORIES = {
   unit: [
-    'admin-logic.test.mjs',
     'admin-runtime-clean.test.mjs',
     'business-facts-vat.test.mjs',
     'business-sync-manifest.test.mjs',
@@ -36,7 +35,6 @@ const CATEGORIES = {
   ],
   integration: [
     'admin-menu-ui.test.mjs',
-    'bulk-costs.test.mjs',
     'inbound-api.test.mjs',
     'inbound-postgres.test.mjs',
     'internal-api.test.mjs',

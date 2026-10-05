@@ -1,0 +1,107 @@
+{
+  "_comment": "English menu copy for en/popular-menu.html. The catalogue (data/planner-overrides.json) stores Thai names only, so the English page is generated from this file plus the catalogue: id -> { name, desc }. A live menu missing here fails the build, so the Thai and English menu pages can never list different dishes or different prices.",
+  "3": {
+    "name": "Pad Thai with Fresh Shrimp",
+    "desc": "Soft rice noodles in a balanced tamarind sauce with plump fresh shrimp and egg, plus bean sprouts, chives, peanuts and lime."
+  },
+  "6": {
+    "name": "Chicken with Garlic and Fried Egg",
+    "desc": "Crispy garlic-fried chicken served over jasmine rice with a fried egg and fresh vegetables."
+  },
+  "8": {
+    "name": "Salted Beef Fried Rice with Bird's Eye Chili",
+    "desc": "Tender diced salted beef wok-fried with fragrant rice and Chinese seasoning, lifted with bird's eye chili."
+  },
+  "14": {
+    "name": "Teriyaki Chicken with Fruit",
+    "desc": "Large tender chicken pieces grilled until fragrant, finished with our rich teriyaki glaze and served with fresh fruit."
+  },
+  "16": {
+    "name": "Chicken Thigh Biryani",
+    "desc": "Fragrant spiced biryani rice served with a tender chicken thigh. It looks impressive on the table and still disappears fast."
+  },
+  "17": {
+    "name": "Kua Kling Minced Chicken",
+    "desc": "Southern Thai dry-fried minced chicken with a deep curry-powder heat, makrut lime and lemongrass. Properly fiery."
+  },
+  "20": {
+    "name": "Chicken Drumstick Biryani",
+    "desc": "Fragrant spiced biryani rice served with a large, tender chicken drumstick."
+  },
+  "24": {
+    "name": "Spiced Fried Chicken + Yellow Rice",
+    "desc": "Fragrant basil-spiced fried chicken with turmeric yellow rice."
+  },
+  "29": {
+    "name": "Beef Basil Fried Rice with Fruit",
+    "desc": "Beef stir-fried with holy basil, garlic and chili, served with steamed rice and fresh seasonal fruit."
+  },
+  "114": {
+    "name": "Executive Premium Box: Beef Basil Fried Rice + Fried Egg + Clear Soup + Fruit",
+    "desc": "Our premium box set: beef basil fried rice, fried egg, clear tofu-chicken soup and fresh fruit, in special packaging. Made for VIP tables and important events."
+  },
+  "115": {
+    "name": "Spiced Fried Chicken + Duck Curry + Fruit",
+    "desc": "Crispy fried chicken with a deep, sweet-sour duck curry and chilled fresh fruit to finish."
+  },
+  "116": {
+    "name": "Spiced Fried-Rice Fish with Chicken Soup",
+    "desc": "Pan-fried rice with tender fish and fragrant basil, served with a warm chicken soup in the same box."
+  },
+  "117": {
+    "name": "Crab Fried Rice",
+    "desc": "Fragrant wok-hei rice packed with sweet, succulent crab meat. Hard to stop at one mouthful."
+  },
+  "118": {
+    "name": "Teriyaki Rice with Fried Egg",
+    "desc": "Thai-style fluffy omelette over hot rice with a rich sweet-savoury teriyaki glaze - balanced, lightly sweet and aromatic."
+  },
+  "119": {
+    "name": "Seafood Fried Rice with Fruit",
+    "desc": "Wok-fried rice with shrimp and squid for a deep protein hit, finished with fresh fruit to cleanse the palate."
+  },
+  "120": {
+    "name": "Chicken Basil Rice with Fried Egg + Fruit",
+    "desc": "Hot basil chicken over fragrant rice, with a crisp-edged fried egg and fresh fruit to finish."
+  },
+  "121": {
+    "name": "Beef Basil Rice with Fried Egg + Fruit",
+    "desc": "Fragrant tender beef in a rich basil sauce over hot rice, with a runny fried egg and fresh fruit."
+  },
+  "122": {
+    "name": "Spiced Fried Chicken + Fish Curry + Samosa",
+    "desc": "Crispy fried chicken with fragrant hot-and-sour fish curry and a crisp samosa on the side."
+  },
+  "123": {
+    "name": "Shrimp Curry Stir-Fry with Fried Egg",
+    "desc": "Wok-fried shrimp in a rich curry-powder sauce with a soft omelette, served over hot rice."
+  },
+  "124": {
+    "name": "Crispy Squid with Garlic + Fried Egg",
+    "desc": "Crunchy garlic fried squid with a fluffy omelette - deeply savoury, made for sharing."
+  },
+  "125": {
+    "name": "Vegetarian Mixed Vegetable Stir-Fry",
+    "desc": "Colourful seasonal vegetables wok-fried with garlic and Thai chili, seasoned the vegetarian way, with hot rice."
+  },
+  "126": {
+    "name": "Green Curry Beef + Fried Egg",
+    "desc": "Tender beef in a fragrant green curry with coconut milk, plus a soft omelette. Served with hot rice."
+  },
+  "127": {
+    "name": "Tom Yum Seafood Fried Rice + Boiled Egg",
+    "desc": "Rice fried in a tom yum seafood broth with makrut lime, lemongrass and chili, finished with a soft-boiled egg."
+  },
+  "128": {
+    "name": "Chicken Green Curry Rice with Fried Egg",
+    "desc": "Fragrant chicken green curry with rich coconut milk, over hot rice with a fried egg."
+  },
+  "129": {
+    "name": "Crispy Fried Fish with Garlic",
+    "desc": "Crispy fried fish with plenty of garlic, served with hot rice."
+  },
+  "130": {
+    "name": "Pad Thai with Fresh Shrimp in Egg Wrap",
+    "desc": "Soft noodles and plump shrimp wrapped in a thin egg, crisp outside and tender within, in a sweet-savoury tamarind glaze, finished with bean sprouts and fresh vegetables."
+  }
+}

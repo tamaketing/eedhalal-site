@@ -25,7 +25,7 @@
 //   GET  /api/v1/response-examples?reusable=&intent=&serviceType=&limit=
 //   GET  /api/v1/response-examples/:id
 //   PATCH /api/v1/response-examples/:id { reusable?, styleTags?, intent?, serviceType?, ownerId? }
-//   GET  /api/v1/menus/mealbox?price=&maxPrice=&category=&q=&limit=
+//   GET  /api/v1/menus/mealbox?price=&maxPrice=&tier=&q=&limit=
 //          (deterministic meal-box catalog from data/planner-overrides.json;
 //          price authority. Authenticated only, never on the public gateway.)
 //
@@ -291,8 +291,8 @@ export function createInternalApi({ repos, env = process.env } = {}) {
         };
         const price = parsePriceFilter(url.searchParams.get('price'), 'price');
         const maxPrice = parsePriceFilter(url.searchParams.get('maxPrice'), 'maxPrice');
-        const rawCategory = url.searchParams.get('category');
-        const category = rawCategory === null || rawCategory.trim() === '' ? null : rawCategory.trim();
+        const rawTier = url.searchParams.get('tier');
+        const tier = rawTier === null || rawTier.trim() === '' ? null : rawTier.trim();
         const rawQuery = url.searchParams.get('q');
         const normalizedQuery = rawQuery === null ? '' : rawQuery.replace(/\s+/g, ' ').trim();
         const q = normalizedQuery === '' ? null : normalizedQuery;
@@ -303,7 +303,7 @@ export function createInternalApi({ repos, env = process.env } = {}) {
         const menus = await findMealboxMenus({
           exactPrice: price,
           maxPrice,
-          category,
+          tier,
           query: q,
           limit,
           plannerPath,
@@ -311,7 +311,7 @@ export function createInternalApi({ repos, env = process.env } = {}) {
         send(response, 200, {
           serviceType: MEALBOX_SERVICE_TYPE,
           source: MEALBOX_SOURCE,
-          filters: { price, maxPrice, category, q, limit },
+          filters: { price, maxPrice, tier, q, limit },
           menus,
         });
         return;

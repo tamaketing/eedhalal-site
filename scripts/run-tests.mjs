@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -9,17 +10,11 @@ console.log('DEBUG: import.meta.url:', import.meta.url);
 
 const ROOT = path.resolve(path.dirname(scriptPath), '..');
 const TEST_DIR = path.join(ROOT, 'test');
-console.log('DEBUG: ROOT:', ROOT);
-console.log('DEBUG: TEST_DIR:', TEST_DIR);
-
-import fs from 'node:fs';
-console.log('DEBUG: Exists admin-logic:', fs.existsSync(path.join(TEST_DIR, 'admin-logic.test.mjs')));
 
 const exec = promisify(execFile);
 
 const TEST_CATEGORIES = {
   unit: [
-    'admin-logic.test.mjs',
     'admin-runtime-clean.test.mjs',
     'business-facts-vat.test.mjs',
     'business-sync-manifest.test.mjs',
@@ -46,7 +41,6 @@ const TEST_CATEGORIES = {
   ],
   integration: [
     'admin-menu-ui.test.mjs',
-    'bulk-costs.test.mjs',
     'inbound-api.test.mjs',
     'inbound-postgres.test.mjs',
     'internal-api.test.mjs',

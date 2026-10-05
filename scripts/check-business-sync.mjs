@@ -1,6 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { sideChoiceProblems } from './mealbox-tiers.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -72,11 +73,34 @@ function structuredPriceFigures(html) {
   return [...found];
 }
 
+// Tier starting price, computed from the published catalogue exactly like the
+// website and the LINE bot do. Returns null when no set of that tier is open
+// for sale: a fact that asks for such a price is then skipped instead of
+// forcing an invented figure into the prose.
+export function tierPriceFromPlanner(planner, tierId) {
+  const tiers = planner?.tiers || {};
+  const prices = planner?.prices || {};
+  const deleted = new Set((planner?.deleted || []).map(String));
+  const quoteOnly = new Set((planner?.quoteOnly || []).map(String));
+  const cheapest = Object.keys(prices)
+    .filter((id) => !deleted.has(String(id)) && !quoteOnly.has(String(id)))
+    .filter((id) => (tiers[id] === tierId ? tierId : tiers[id] == null && tierId === 'classic'))
+    .map((id) => Number(prices[id]))
+    .filter((price) => Number.isFinite(price) && price > 0);
+  return cheapest.length ? Math.min(...cheapest) : null;
+}
+
 function resolveVariant(template, rules, planner) {
   return template.replace(/\{\{([^}]+)\}\}/g, (_, raw) => {
     const key = raw.trim();
     const plannerCall = /^planner\.minPriceWhereNameStartsWith:(.+)$/.exec(key);
     if (plannerCall) return String(plannerMinPriceWhereNameStartsWith(planner, plannerCall[1].trim()));
+    const tierCall = /^tier\.priceFrom:([a-z]+)$/.exec(key);
+    if (tierCall) {
+      const price = tierPriceFromPlanner(planner, tierCall[1]);
+      // No open set in that tier: the variant cannot be satisfied by a price.
+      return price === null ? `\u0000tier-without-price:${tierCall[1]}\u0000` : String(price);
+    }
     const value = getPath(rules, key);
     if (value === undefined || value === null || value === false) {
       throw new Error(`sync-manifest references unknown business rule: ${key}`);
@@ -115,9 +139,17 @@ export async function checkBusinessSync(root = ROOT) {
 
   const factFailures = [];
   let checkedCells = 0;
+  let skippedCells = 0;
   for (const fact of manifest.facts) {
     const expected = fact.variants.map((variant) => resolveVariant(variant, rules, planner));
-    const needles = expected.map((text) => text.toLowerCase());
+    // A fact whose only variants ask for a tier price that no open set backs
+    // has nothing to verify yet; it comes back to life on the next publish.
+    const usable = expected.filter((text) => !/^\u0000tier-without-price:/.test(text));
+    if (!usable.length) {
+      skippedCells += fact.files.length;
+      continue;
+    }
+    const needles = usable.map((text) => text.toLowerCase());
     for (const file of fact.files) {
       checkedCells += 1;
       const content = await readFile(path.join(root, file), 'utf8').catch(() => null);
@@ -126,7 +158,7 @@ export async function checkBusinessSync(root = ROOT) {
         continue;
       }
       if (!needles.some((needle) => content.toLowerCase().includes(needle))) {
-        factFailures.push({ fact: fact.id, file, detail: `expected one of: ${expected.join(' | ')}` });
+        factFailures.push({ fact: fact.id, file, detail: `expected one of: ${usable.join(' | ')}` });
       }
     }
   }
@@ -166,7 +198,12 @@ export async function checkBusinessSync(root = ROOT) {
     }
   }
 
-  if (factFailures.length > 0 || forbiddenHits.length > 0 || catalogueFailures.length > 0) {
+  // Cross-file wiring: a tier may only name side items the published catalogue
+  // can answer for. This is checked here rather than in a renderer, because a
+  // dangling id would otherwise just make the web quietly offer fewer sides.
+  const sideFailures = sideChoiceProblems(rules, planner);
+
+  if (factFailures.length > 0 || forbiddenHits.length > 0 || catalogueFailures.length > 0 || sideFailures.length > 0) {
     const byFact = new Map();
     for (const failure of factFailures) {
       if (!byFact.has(failure.fact)) byFact.set(failure.fact, []);
@@ -188,13 +225,20 @@ export async function checkBusinessSync(root = ROOT) {
       for (const hit of catalogueFailures) lines.push(`  - ${hit.file} <- ${hit.rule}: ${hit.detail}`);
       lines.push('');
     }
+    if (sideFailures.length > 0) {
+      lines.push('[sideChoices: อาหารรองที่ระบุไว้ต้องมีอยู่จริงในฐานเมนูกลาง]');
+      for (const problem of sideFailures) lines.push(`  - ${problem}`);
+      lines.push('');
+    }
     throw new Error(lines.join('\n'));
   }
 
   return {
     facts: manifest.facts.length,
     cells: checkedCells,
+    skippedCells,
     scanned: scanFiles.length,
+    sideChoices: sideFailures.length,
     cataloguePages: (manifest.cataloguePrices ?? []).reduce((sum, rule) => sum + rule.files.length, 0),
   };
 }
@@ -206,5 +250,5 @@ if (isCli) {
     throw new Error('Usage: node scripts/check-business-sync.mjs [--check]');
   }
   const summary = await checkBusinessSync();
-  console.log(`Business sync OK: ${summary.facts} facts x ${summary.cells} file cells + ${summary.scanned} files forbidden-scan + ${summary.cataloguePages} catalogue-price pages passed.`);
+  console.log(`Business sync OK: ${summary.facts} facts x ${summary.cells} file cells + ${summary.scanned} files forbidden-scan + ${summary.cataloguePages} catalogue-price pages passed.${summary.skippedCells ? ` (${summary.skippedCells} cell(s) skipped: a tier has no open set yet)` : ''}`);
 }
