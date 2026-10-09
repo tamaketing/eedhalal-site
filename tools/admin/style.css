@@ -40,6 +40,9 @@
 .card-meta{font-size:12.5px;color:#70705f}
 .addons{border-top:1px dashed #e0d7c2;padding-top:9px;display:flex;flex-direction:column;gap:5px}
 .addons-label{font-size:11px;font-weight:800;letter-spacing:.1em;color:#a68039}
+.addons-second{border-top-style:solid;border-top-color:#cfe3d5;background:#f7fcf9;border-radius:8px;padding:9px 10px}
+.addons-second .addons-label{color:#1d6b3e}
+.addon-note{margin:2px 0 0;font-size:11.5px}
 .addon{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;cursor:pointer;color:#414437}
 .addon input{width:16px;height:16px;accent-color:#1d6b3e;flex:none}
 .addon span{flex:1;min-width:0}

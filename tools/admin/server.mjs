@@ -24,7 +24,7 @@ import {
   verifyLiveRelease,
   writePublishState,
 } from '../../scripts/menu-central.mjs';
-import { computeTierFloors, normalizeTier, setsFromPlanner, setsFromProjection, tierDefinitions } from '../../scripts/mealbox-tiers.mjs';
+import { computeTierFloors, normalizeTier, resolveSideChoices, setsFromPlanner, setsFromProjection, sideItemsFromProjection, tierDefinitions } from '../../scripts/mealbox-tiers.mjs';
 import { deployMenuRelease, realDeployDeps } from '../../scripts/menu-deploy.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -121,21 +121,32 @@ async function sellableMenus(dataDir) {
   const addons = (list) => (Array.isArray(list) ? list : [])
     .map((item) => ({ name: String(item.name), price: Number(item.price) || 0 }))
     .filter((item) => item.name && item.price > 0);
-  // Side items travel whole (not through `addons`, which drops unpriced rows):
-  // a side with no confirmed price yet is exactly the state Phase A is in, and
-  // the editor has to be able to show and finish it.
-  const sideItems = (Array.isArray(central.sideItems) ? central.sideItems : [])
-    .map((item) => ({
-      id: String(item.id),
-      nameTh: String(item.nameTh || ''),
-      nameEn: String(item.nameEn || ''),
-      cost: Number.isFinite(Number(item.cost)) ? Number(item.cost) : null,
-      priceAdjustment: Number.isFinite(Number(item.priceAdjustment)) ? Number(item.priceAdjustment) : null,
-      priceStatus: item.priceStatus === 'ready' ? 'ready' : 'pending',
-      active: item.active !== false,
-      public: item.public === true,
-    }));
-  return { menus, toppings: addons(central.toppings), sideItems };
+  return { menus, toppings: addons(central.toppings), secondDish: await secondDishGroups(central) };
+}
+
+// The second dish ("อาหารเมนูที่ 2") a tier may offer: WHICH tier can offer one
+// comes from data/business-rules.json (sideChoices), the name and the extra price
+// come from the central draft. A side whose price the kitchen has not confirmed
+// yet is left out, so the matcher can only quote what the shop may actually
+// charge, and an id business-rules.json points at but the draft cannot answer is
+// simply not offered instead of being invented.
+async function secondDishGroups(central) {
+  const rules = await readFile(path.join(ROOT, 'data', 'business-rules.json'), 'utf8')
+    .then((raw) => JSON.parse(raw))
+    .catch(() => null);
+  if (!rules) return {};
+  const sideItems = sideItemsFromProjection(publicProjectionOfCentral(central));
+  const groups = {};
+  for (const tier of tierDefinitions(rules)) {
+    const items = resolveSideChoices(tier, sideItems)
+      .items
+      .filter((item) => Number(item.priceAdjustment) > 0)
+      .map((item) => ({ id: item.id, name: item.nameTh || item.nameEn, price: Number(item.priceAdjustment) }));
+    if (items.length) {
+      groups[tier.id] = { label: tier.sideChoiceLabelTh || 'อาหารเมนูที่ 2', max: 1, items };
+    }
+  }
+  return groups;
 }
 
 async function publishOverview(dataDir) {

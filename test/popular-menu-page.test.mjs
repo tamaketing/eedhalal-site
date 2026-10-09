@@ -21,7 +21,9 @@ const root = new URL('../', import.meta.url);
 const ROOT_PATH = fileURLToPath(root);
 const page = await readFile(new URL('popular-menu.html', root), 'utf8');
 const overrides = JSON.parse(await readFile(new URL('data/planner-overrides.json', root), 'utf8'));
-const catalogue = await loadCatalogue(ROOT_PATH);
+const loaded = await loadCatalogue(ROOT_PATH);
+const catalogue = loaded.items;
+const toppings = loaded.toppings;
 const rules = JSON.parse(await readFile(new URL('data/business-rules.json', root), 'utf8'));
 
 /** The ItemList node, parsed back out of the generated ld+json block. */
@@ -74,7 +76,7 @@ test('every dish is deep-linkable, before and after JavaScript runs', async () =
   // The renderer builds the attribute by concatenation, so match the literal
   // prefix it actually emits rather than a finished attribute.
   assert.ok(renderer.includes('id="menu-'), 'the renderer must emit the same anchor');
-  assert.equal((renderer.match(/id="menu-/g) || []).length, 2, 'cards and rows both need the anchor');
+  assert.equal((renderer.match(/id="menu-/g) || []).length, 3, 'cards, rows, and name-only all need the anchor');
   const css = await readFile(new URL('css/popular-menu.css', root), 'utf8');
   assert.match(css, /scroll-margin-top/, 'anchors must clear the sticky header');
 });
@@ -230,8 +232,8 @@ test('the photo/row split matches the production renderer', async () => {
 });
 
 test('rendering is idempotent: re-running the generator changes nothing', () => {
-  const once = renderPopularMenuPage(page, catalogue);
-  const twice = renderPopularMenuPage(once, catalogue);
+  const once = renderPopularMenuPage(page, { items: catalogue, toppings });
+  const twice = renderPopularMenuPage(once, { items: catalogue, toppings });
   assert.equal(twice, once, 'generator must be idempotent or CI would flap');
 });
 

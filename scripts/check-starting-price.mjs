@@ -59,7 +59,7 @@ if (drift.length) {
   process.exit(1);
 }
 
-const catalogue = await loadCatalogue(ROOT);
+const { items: catalogue } = await loadCatalogue(ROOT);
 console.log(`catalogue sanity        : ${catalogue.length} menus served, ${catalogue.filter((m) => !m.orderable).length} ask-for-quote`);
 
 // Cross-check against the crawlable page so the two views cannot disagree.

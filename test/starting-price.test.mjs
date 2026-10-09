@@ -45,7 +45,7 @@ const floorsOf = (options) => computeTierFloors(setsFromProjection(projectionFro
 const publishedFloors = computeTierFloors(setsFromPlanner(overrides)).floors;
 
 test('the committed state is consistent: every published tier price comes from the catalogue', async () => {
-  const catalogue = await loadCatalogue(ROOT_PATH);
+  const { items: catalogue } = await loadCatalogue(ROOT_PATH);
   const qo = catalogue.filter((m) => !m.orderable).map((m) => m.id);
   const result = tierPriceConsistency(rules, projectionFrom({ quoteOnly: qo }));
   assert.deepEqual(result.warnings, [], `published state must be consistent: ${result.warnings.join(' | ')}`);

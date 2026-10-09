@@ -175,7 +175,9 @@ var DEFAULT_EMOJI = '🍽';
     var menus = getPopularMenus();
     if(!menus.length) return;
     try{
-      var html = menus.map(function(m){
+      var photoMenus = menus.filter(function(m){ return m.image && !/logo\.(png|jpg|jpeg|webp)$/i.test(m.image); });
+      var nameOnlyMenus = menus.filter(function(m){ return !m.image; });
+      var html = photoMenus.map(function(m){
         var badge = m.badge ? '<span style="background:var(--accent);color:var(--white);font-size:0.65rem;font-weight:700;padding:0.2rem 0.55rem;border-radius:999px;vertical-align:middle">'+escapeHtml(m.badge)+'</span>' : '';
         return '<div style="background:var(--white);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column">'
           + '<div style="aspect-ratio:4/3;overflow:hidden">'
@@ -187,6 +189,11 @@ var DEFAULT_EMOJI = '🍽';
           + '</div>'
           + '</div>';
       }).join('');
+      if (nameOnlyMenus.length) {
+        html += nameOnlyMenus.map(function(m){
+          return '<div class="pm-name-only"><span class="pm-name-only-text">'+escapeHtml(m.name)+'</span></div>';
+        }).join('');
+      }
       grid.innerHTML = html;
       grid.setAttribute('data-hydrated','true');
       try{ document.dispatchEvent(new CustomEvent('popularMenuHydrated', {detail:{count:menus.length}})); }catch(e){}
@@ -213,13 +220,18 @@ var DEFAULT_EMOJI = '🍽';
         }
         if(!items.length) return '';
         var dots = '<span class="menu-item-dots"></span>';
-        var itemHtml = items.map(function(m){
+        var itemsWithImage = items.filter(function(m){ return m.image; });
+        var itemsNameOnly = items.filter(function(m){ return !m.image; });
+        var itemHtml = itemsWithImage.map(function(m){
           return '<div class="menu-item"><span class="menu-item-name">'+escapeHtml(cat.emoji)+' '+escapeHtml(m.name)+'</span>'+dots+'</div>';
+        }).join('');
+        var nameOnlyHtml = itemsNameOnly.map(function(m){
+          return '<div class="menu-item pm-name-only"><span class="pm-name-only-text">'+escapeHtml(m.name)+'</span></div>';
         }).join('');
         return '<div style="margin-bottom:2.5rem">'
           + '<h4 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0 0 1rem">'+escapeHtml(cat.emoji)+' '+escapeHtml(cat.label)+'</h4>'
           + '<div class="menu-item-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:0.35rem 1.25rem">'
-          + itemHtml
+          + itemHtml + (itemHtml && nameOnlyHtml ? '' : '') + nameOnlyHtml
           + '</div></div>';
       }).join('');
       body.innerHTML = html;
@@ -229,23 +241,35 @@ var DEFAULT_EMOJI = '🍽';
     }
   }
 
-  function init(){
-    if(typeof EED_MENUS==='undefined') return;
-    applyOverrides();
-    var rendered = false;
-    function doRender(){
-      if(rendered) return;
-      rendered = true;
-      renderGrid();
-      renderFullMenu();
-    }
-    doRender();
-    loadServerOverrides(function(){
-      doRender();
-      renderGrid();
-      renderFullMenu();
-    });
+  function renderToppingsHydrate(){
+  var toppingsList = document.getElementById('pm-toppings-list');
+  if(!toppingsList) return;
+  if(!Array.isArray(EED_DEFAULT_TOPPINGS) || !EED_DEFAULT_TOPPINGS.length) return;
+  var html = EED_DEFAULT_TOPPINGS.map(function(t){
+    return '<li>' + escapeHtml(t.name) + '</li>';
+  }).join('');
+  toppingsList.innerHTML = html;
+}
+
+function init(){
+  if(typeof EED_MENUS==='undefined') return;
+  applyOverrides();
+  var rendered = false;
+  function doRender(){
+    if(rendered) return;
+    rendered = true;
+    renderGrid();
+    renderFullMenu();
+    renderToppingsHydrate();
   }
+  doRender();
+  loadServerOverrides(function(){
+    doRender();
+    renderGrid();
+    renderFullMenu();
+    renderToppingsHydrate();
+  });
+}
 
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded', init);

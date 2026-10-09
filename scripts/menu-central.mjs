@@ -313,7 +313,7 @@ export function validateCentral(central) {
       errors.push(`${label}: ระดับสินค้า “${tier}” ไม่ถูกต้อง (ต้องเป็น classic, signature หรือ executive)`);
     }
     const image = text(raw.image);
-    if (!image) errors.push(`${label}: ต้องมีรูป`);
+    // Allow empty image: menu will render as name-only on the public page.
     const minPerMenu = Number(raw.minPerMenu);
     if (!Number.isInteger(minPerMenu) || minPerMenu < 1) errors.push(`${label}: ขั้นต่ำต่อเมนูต้องเป็นจำนวนเต็ม ≥ 1`);
     const sortOrder = raw.sortOrder === undefined ? index : Number(raw.sortOrder);

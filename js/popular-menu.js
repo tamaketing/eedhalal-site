@@ -18,8 +18,9 @@
   'use strict';
 
   var LINE_URL = 'https://lin.ee/CfvqJTd'; // Single approved LINE channel.
-  var GRID_ID = 'pm-grid';
-  var LIST_ID = 'pm-list';
+var GRID_ID = 'pm-grid';
+var LIST_ID = 'pm-list';
+var TOPPINGS_ID = 'pm-toppings-list';
   var SEARCH_ID = 'pm-search';
   var FILTER_ID = 'pm-filter';
   var COUNT_ID = 'pm-count';
@@ -110,6 +111,10 @@
           copyButton() +
         '</div>' +
       '</div>';
+  }
+
+  function renderNameOnly(menu) {
+    return '<div class="pm-name-only" id="menu-' + escapeHtml(menu.id) + '" data-menu-id="' + escapeHtml(menu.id) + '" data-tier="' + escapeHtml(menu.tier || 'classic') + '"><span class="pm-name-only-text">' + escapeHtml(menu.name) + '</span></div>';
   }
 
   function copyMenuName(button, nameEl) {
@@ -230,11 +235,13 @@
   function render(menus) {
     var grid = document.getElementById(GRID_ID);
     var list = document.getElementById(LIST_ID);
+    var toppingsList = document.getElementById(TOPPINGS_ID);
     var counts = {};
-    // Display order only: dishes with real photos first, then compact rows.
+    // Display order: photo cards first, then compact rows (logo), then name-only.
     // The central catalog order is never modified — groups keep it stable.
     var photoMenus = menus.filter(hasDishPhoto);
-    var plainMenus = menus.filter(function (menu) { return !hasDishPhoto(menu); });
+    var plainMenus = menus.filter(function (menu) { return !hasDishPhoto(menu) && menu.image; });
+    var nameOnlyMenus = menus.filter(function (menu) { return !menu.image; });
     function count(menu) {
       var id = menu.tier || 'classic';
       counts[id] = (counts[id] || 0) + 1;
@@ -246,14 +253,21 @@
     list.innerHTML = plainMenus.map(function (menu) {
       count(menu);
       return renderRow(menu);
+    }).join('') + (plainMenus.length && nameOnlyMenus.length ? '\n' : '') + nameOnlyMenus.map(function (menu) {
+      count(menu);
+      return renderNameOnly(menu);
     }).join('');
+    
+    // Render toppings list
+    if (toppingsList) {
+      toppingsList.innerHTML = renderToppingsList();
+    }
+    
     bindImageFallbacks(grid);
     bindCopyButtons(grid);
     bindCopyButtons(list);
     buildFilter(counts);
     document.getElementById(SEARCH_ID).addEventListener('input', applyFilter);
-    // The dropdown IS the level filter now, so choosing an option sets the same
-    // activeTier a #tier-<id> deep link would.
     document.getElementById(FILTER_ID).addEventListener('change', function () {
       var value = document.getElementById(FILTER_ID).value;
       activeTier = value && value !== 'all' ? value : null;
@@ -265,17 +279,40 @@
   // Visibility comes from the one published planner file: deleted[] means the
   // owner hid the dish from customers. Nothing else is read here - the price
   // switch is an internal pricing matter and is not rendered.
-  function loadHidden() {
-    return fetch('data/planner-overrides.json', { cache: 'no-store' })
-      .then(function (res) { return res.ok ? res.json() : { deleted: [] }; })
-      .then(function (data) { return new Set(data.deleted || []); })
-      .catch(function () { return new Set(); });
-  }
+var EED_TOPPINGS = [];
 
-  function boot() {
+function loadToppings() {
+  return fetch('data/planner-overrides.json', { cache: 'no-store' })
+    .then(function (res) { return res.ok ? res.json() : { toppings: [] }; })
+    .then(function (data) {
+      EED_TOPPINGS = Array.isArray(data.toppings) ? data.toppings : [];
+      return EED_TOPPINGS;
+    })
+    .catch(function () {
+      EED_TOPPINGS = [];
+      return [];
+    });
+}
+
+function loadHidden() {
+  return fetch('data/planner-overrides.json', { cache: 'no-store' })
+    .then(function (res) { return res.ok ? res.json() : { deleted: [] }; })
+    .then(function (data) { return new Set(data.deleted || []); })
+    .catch(function () { return new Set(); });
+}
+
+function renderToppingsList() {
+  if (!Array.isArray(EED_TOPPINGS) || !EED_TOPPINGS.length) return '';
+  return EED_TOPPINGS.map(function (t) {
+    return '<li>' + escapeHtml(t.name) + '</li>';
+  }).join('');
+}
+
+function boot() {
     var menus = (typeof EED_MENUS !== 'undefined' && Array.isArray(EED_MENUS)) ? EED_MENUS : [];
     activeTier = tierFromHash();
-    loadHidden().then(function (hidden) {
+    Promise.all([loadHidden(), loadToppings()]).then(function (results) {
+      var hidden = results[0];
       var shown = menus.filter(function (menu) {
         return menu && menu.id != null &&
           !hidden.has(Number(menu.id)) && !hidden.has(String(menu.id));

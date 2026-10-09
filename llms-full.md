@@ -15,7 +15,7 @@ EED HALAL รับจัดเลี้ยงฮาลาล กรุงเท
 All services above are halal. Snack Box is an additional service: from 40 THB/box, minimum 30 boxes.
 
 ## Meal-box tiers
-- Classic Halal Meal Box (ข้าวกล่องฮาลาลระดับคลาสสิก): from 65 THB/box (cheapest set: ข้าวคั่วกลิ้งไก่สับ, ID 17). Best for: Company meetings, training days, seminars, and regular staff meals.
+- Classic Halal Meal Box (ข้าวกล่องฮาลาลระดับคลาสสิก): from 65 THB/box (cheapest set: ข้าวไก่กระเทียม, ID 6). Best for: Company meetings, training days, seminars, and regular staff meals.
   Box: Standard rice box.
 - Signature Halal Meal Box (ข้าวกล่องฮาลาลระดับซิกเนเจอร์): from 160 THB/box (cheapest set: ข้าวผัดปลาอินทรีทอดเครื่องเทศ ซุปอิสลามไก่, ID 116). Best for: Client events, product launches, and executive dinners.
   Box: Rice, one main, one second dish, and vegetables, in a four-compartment box.

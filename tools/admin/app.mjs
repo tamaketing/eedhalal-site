@@ -1,8 +1,14 @@
 // Owner-only budget matcher (LOCAL ONLY, never deployed).
-// One input: the customer's budget per box. One rule: a menu is offered only
-// while `menu price + selected add-ons <= budget`. Options that would push the
-// total over the budget are not rendered at all, so an over-budget total can
-// never be shown as a suggestion.
+// One input: the customer's budget per box. One rule: a dish is offered only
+// while `box price + chosen second dish + chosen add-ons <= budget`. Options that
+// would push the total over the budget are not rendered at all, so an over-budget
+// total can never be shown as a suggestion.
+//
+// The second dish ("อาหารเมนูที่ 2") is a dish IN the box and a Signature box
+// takes exactly one, so it is a radio choice (one per box), never a checkbox.
+// Which tier may offer one, and under which name, comes from
+// data/business-rules.json; the name and the confirmed extra price come from the
+// central draft through GET /sellable-menus.
 //
 // Selling price only: this file never reads cost data and never computes profit.
 // Prices come from GET /sellable-menus, which serves the central draft.
@@ -12,13 +18,17 @@ const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (character) =>
 })[character]);
 
 const state = {
-  data: { menus: [], toppings: [] },
+  data: { menus: [], toppings: [], secondDish: {} },
   budgetCents: 0,
   // Menu IDs the owner ticked. Picking a dish never requires a topping: the
   // dish is selected on its own and toppings are opt-in extras on top of it.
   selected: new Set(),
   // menuId -> Set(topping names) ticked for that dish.
   picked: new Map(),
+  // menuId -> side item id. The second dish ("อาหารเมนูที่ 2") is ONE dish per
+  // box — a Signature box holds one main and one second dish — so it is stored as
+  // a single id, never as a set like toppings.
+  sides: new Map(),
 };
 
 function budgetInput() {
@@ -36,6 +46,36 @@ function addonsFor() {
   return state.data.toppings.map((item) => ({ ...item, group: 'topping' }));
 }
 
+// Which tier the dish belongs to decides whether it may carry a second dish:
+// business-rules.json puts sideChoices on the tier (Signature today), and the
+// names/prices come from the central draft through /sellable-menus. A dish of a
+// tier with no second dish simply offers none.
+function secondDishFor(menu) {
+  const group = state.data.secondDish[menu.tier || 'classic'];
+  return Array.isArray(group?.items) && group.items.length ? group : null;
+}
+
+function secondDishOptions(menu) {
+  const group = secondDishFor(menu);
+  if (!group) return [];
+  const base = toCents(menu.price);
+  return group.items.map((item) => ({
+    ...item,
+    totalCents: base + toCents(item.price),
+    fits: base + toCents(item.price) <= state.budgetCents,
+  }));
+}
+
+function secondDishPrice(menu, id) {
+  const group = secondDishFor(menu);
+  const item = Array.isArray(group?.items) ? group.items.find((row) => row.id === id) : null;
+  return item ? toCents(item.price) : 0;
+}
+
+function chosenSideId(menu) {
+  return state.sides.get(String(menu.id)) || '';
+}
+
 // An option is offered only if it still fits on its own.
 function fitsOptions(menu) {
   const base = toCents(menu.price);
@@ -47,16 +87,19 @@ function fitsOptions(menu) {
 }
 
 function currentTotal(menu, chosen) {
-  const selected = chosen || state.picked.get(String(menu.id)) || new Set();
+  const key = String(menu.id);
+  const selected = chosen || state.picked.get(key) || new Set();
   let total = toCents(menu.price);
   for (const option of addonsFor()) {
     if (selected.has(option.name)) total += toCents(option.price);
   }
+  const sideId = chosenSideId(menu);
+  if (sideId) total += secondDishPrice(menu, sideId);
   return total;
 }
 
 // A menu stays in the list while the cheapest useful total still fits: at least
-// the base price, and any ticked add-on must keep the total within budget.
+// the base price, and any ticked extra must keep the total within budget.
 function menuOffered(menu) {
   const base = toCents(menu.price);
   if (base > state.budgetCents) return false;
@@ -65,6 +108,8 @@ function menuOffered(menu) {
     if (!selected.has(option.name)) continue;
     if (base + toCents(option.price) > state.budgetCents) return false;
   }
+  const sideId = chosenSideId(menu);
+  if (sideId && !secondDishOptions(menu).some((item) => item.id === sideId && item.fits)) return false;
   return true;
 }
 
@@ -127,6 +172,26 @@ function cardHtml(menu) {
   const total = currentTotal(menu, chosen);
   const isPicked = state.selected.has(key);
 
+  const sideGroup = secondDishFor(menu);
+  const sideChosen = chosenSideId(menu);
+  const sideOfferable = sideGroup ? secondDishOptions(menu).filter((item) => item.fits) : [];
+  const sideHtml = !sideGroup ? '' : (sideOfferable.length ? `
+    <div class="addons addons-second">
+      <span class="addons-label">${escape(sideGroup.label)}</span>
+      <label class="addon">
+        <input type="radio" name="side-${escape(key)}" data-side="${escape(key)}" data-side-id="" ${sideChosen ? '' : 'checked'}>
+        <span>ไม่เพิ่ม</span>
+      </label>
+      ${sideOfferable.map((item) => `
+        <label class="addon">
+          <input type="radio" name="side-${escape(key)}" data-side="${escape(key)}" data-side-id="${escape(item.id)}" ${sideChosen === item.id ? 'checked' : ''}>
+          <span>${escape(item.name)}</span><b>+${money(toCents(item.price))}</b>
+        </label>
+      `).join('')}
+      <p class="micro addon-note">เลือกได้ 1 อย่างต่อกล่อง</p>
+    </div>
+  ` : `<p class="micro">ราคาเต็มงบแล้ว · เพิ่ม${escape(sideGroup.label)}ไม่ได้</p>`);
+
   const optionHtml = offerable.length ? `
     <div class="addons">
       <span class="addons-label">เพิ่มได้</span>
@@ -148,6 +213,7 @@ function cardHtml(menu) {
           <span class="card-meta">${money(toCents(menu.price))} บาท/กล่อง${menu.minPerMenu ? ` · ขั้นต่ำ ${menu.minPerMenu} กล่อง` : ''}</span>
         </span>
       </label>
+      ${sideHtml}
       ${optionHtml}
       <p class="card-total">รวมที่เลือก <b>${money(total)}</b> บาท</p>
     </article>
@@ -158,26 +224,33 @@ function pickedMenus() {
   return state.data.menus.filter((menu) => state.selected.has(String(menu.id)));
 }
 
-function updateCopyButton() {
-  $('#copy-selected').disabled = pickedMenus().length === 0;
+// What the customer will read back to us: the box, then what was added to it.
+// The second dish is named first because it is a dish in the box, not an extra.
+function chosenExtras(menu) {
+  const key = String(menu.id);
+  const names = [...(state.picked.get(key) || new Set())];
+  const sideId = chosenSideId(menu);
+  const group = secondDishFor(menu);
+  const side = sideId && Array.isArray(group?.items) ? group.items.find((item) => item.id === sideId) : null;
+  if (side) names.unshift(`${group.label}: ${side.name}`);
+  return names;
 }
 
 function quoteText() {
   const budget = money(state.budgetCents);
   const lines = ['เมนูที่แนะนำภายใต้งบ', ''];
   for (const menu of pickedMenus()) {
-    const chosen = [...(state.picked.get(String(menu.id)) || new Set())];
-    const base = toCents(menu.price);
-    const extras = chosen.reduce((sum, name) => {
-      const option = addonsFor().find((item) => item.name === name);
-      return sum + toCents(option ? option.price : 0);
-    }, 0);
-    lines.push(`${menu.name} ${money(base + extras)} บาท/กล่อง`
-      + (chosen.length ? ` (${chosen.join(', ')})` : '')
+    const extras = chosenExtras(menu);
+    lines.push(`${menu.name} ${money(currentTotal(menu))} บาท/กล่อง`
+      + (extras.length ? ` (${extras.join(', ')})` : '')
       + (menu.minPerMenu ? ` · ขั้นต่ำ ${menu.minPerMenu} กล่อง` : ''));
   }
   lines.push('', `งบที่ลูกค้าแจ้ง: ${budget} บาท/กล่อง`);
   return lines.join('\n');
+}
+
+function updateCopyButton() {
+  $('#copy-selected').disabled = pickedMenus().length === 0;
 }
 
 $('#budget').addEventListener('input', () => {
@@ -190,6 +263,20 @@ $('#tier').addEventListener('change', render);
 $('#results').addEventListener('change', (event) => {
   const box = event.target;
   if (!(box instanceof HTMLInputElement)) return;
+  if (box.dataset.sideId !== undefined) {
+    // One second dish per box: the radio group already keeps a single choice,
+    // and "ไม่เพิ่ม" clears it instead of leaving a hidden extra in the total.
+    const key = String(box.dataset.side);
+    const id = String(box.dataset.sideId || '');
+    if (id) {
+      state.sides.set(key, id);
+      state.selected.add(key);
+    } else {
+      state.sides.delete(key);
+    }
+    render();
+    return;
+  }
   if (box.dataset.addon !== undefined) {
     const key = String(box.dataset.menu);
     const chosen = state.picked.get(key) || new Set();
@@ -246,6 +333,7 @@ try {
   state.data = {
     menus: Array.isArray(data.menus) ? data.menus : [],
     toppings: Array.isArray(data.toppings) ? data.toppings : [],
+    secondDish: data.secondDish && typeof data.secondDish === 'object' ? data.secondDish : {},
   };
   fillTiers();
   render();

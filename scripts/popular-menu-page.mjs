@@ -35,6 +35,8 @@ const GRID_START = '<!-- MENU:GRID:START -->';
 const GRID_END = '<!-- MENU:GRID:END -->';
 const LIST_START = '<!-- MENU:LIST:START -->';
 const LIST_END = '<!-- MENU:LIST:END -->';
+const TOPPINGS_START = '<!-- MENU:TOPPINGS:START -->';
+const TOPPINGS_END = '<!-- MENU:TOPPINGS:END -->';
 const JSONLD_START = '<!-- MENU:JSONLD:START -->';
 const JSONLD_END = '<!-- MENU:JSONLD:END -->';
 const PAGE = 'popular-menu.html';
@@ -149,10 +151,15 @@ function rowHtml(item) {
     + '</div>';
 }
 
+function nameOnlyHtml(item) {
+  return `<div class="pm-name-only" id="menu-${escapeHtml(item.id)}" data-menu-id="${escapeHtml(item.id)}" data-tier="${escapeHtml(item.tier || 'classic')}"><span class="pm-name-only-text">${escapeHtml(item.name)}</span></div>`;
+}
+
 export function renderStaticMenu(items) {
   const photos = items.filter(hasDishPhoto).map(cardHtml).join('\n      ');
-  const plain = items.filter((item) => !hasDishPhoto(item)).map(rowHtml).join('\n      ');
-  return { grid: photos, list: plain };
+  const rows = items.filter((item) => !hasDishPhoto(item) && item.image).map(rowHtml).join('\n      ');
+  const nameOnly = items.filter((item) => !item.image).map(nameOnlyHtml).join('\n      ');
+  return { grid: photos, list: rows + (rows && nameOnly ? '\n      ' : '') + nameOnly };
 }
 
 /**
@@ -222,18 +229,28 @@ function replaceBlock(html, start, end, body) {
 }
 
 /** Build the full page with the static block injected from published data. */
-export function renderPopularMenuPage(html, items) {
+export function renderPopularMenuPage(html, { items, toppings }) {
   const { grid, list } = renderStaticMenu(items);
+  const toppingsHtml = renderToppingsList(toppings);
   let out = replaceBlock(html, GRID_START, GRID_END, grid);
   out = replaceBlock(out, LIST_START, LIST_END, list);
+  out = replaceBlock(out, TOPPINGS_START, TOPPINGS_END, toppingsHtml);
   out = replaceBlock(out, JSONLD_START, JSONLD_END, renderItemListJsonLd(items));
   return out;
+}
+
+function renderToppingsList(toppings) {
+  if (!Array.isArray(toppings) || !toppings.length) return '';
+  return toppings.map((t) => `            <li>${escapeHtml(t.name)}</li>`).join('\n');
 }
 
 export async function loadCatalogue(root = ROOT) {
   const overrides = JSON.parse(await readFile(path.join(root, 'data', 'planner-overrides.json'), 'utf8'));
   const menus = await parseMenuDataJs(await readFile(path.join(root, 'js', 'menu-data.js'), 'utf8'));
-  return buildCatalogue(overrides, menus);
+  return {
+    items: buildCatalogue(overrides, menus),
+    toppings: Array.isArray(overrides.toppings) ? overrides.toppings : [],
+  };
 }
 
 /* ───────────────────────── English menu page ─────────────────────────
@@ -304,22 +321,17 @@ function enListRowHtml(item, copy, emoji) {
   return `<div class="menu-item"><span class="menu-item-name">${emoji} ${escapeHtml(copy[item.id].name)}${price}</span><span class="menu-item-dots"></span></div>`;
 }
 
+function enNameOnlyHtml(item, copy) {
+  return `<div class="pm-name-only"><span class="pm-name-only-text">${escapeHtml(copy[item.id].name)}</span></div>`;
+}
+
 export function renderStaticMenuEn(items, copy) {
-  const grid = items.map((item) => enCardHtml(item, copy)).join('\n');
-  const groups = TIER_ORDER.map((tier) => {
-    const list = items.filter((item) => String(item.tier || 'classic') === tier);
-    if (!list.length) return '';
-    const emoji = { classic: '🍚', signature: '✨', executive: '👑' }[tier] || '🍽';
-    const heading = TIER_EN_NAME[tier] || TIER_EN[tier];
-    const rows = list.map((item) => enListRowHtml(item, copy, emoji)).join('\n');
-    return `<div style="margin-bottom:2.5rem">
-<h4 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0 0 1rem">${emoji} ${heading}</h4>
-<div class="menu-item-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:0.35rem 1.25rem">
-${rows}
-</div>
-</div>`;
-  }).filter(Boolean);
-  return { grid, list: groups.join('\n\n') };
+  const photos = items.filter((item) => item.image && !/logo\.(png|jpg|jpeg|webp)$/i.test(item.image)).map((item) => enCardHtml(item, copy)).join('\n');
+  const rows = items.filter((item) => item.image && /logo\.(png|jpg|jpeg|webp)$/i.test(item.image)).map((item) => enListRowHtml(item, copy, { classic: '🍚', signature: '✨', executive: '👑' }[item.tier] || '🍽')).join('\n');
+  const nameOnly = items.filter((item) => !item.image).map((item) => enNameOnlyHtml(item, copy)).join('\n');
+  const grid = photos;
+  const list = rows + (rows && nameOnly ? '\n' : '') + nameOnly;
+  return { grid, list };
 }
 
 /**
@@ -417,23 +429,31 @@ function replaceMainEntity(html, node) {
   return `${html.slice(0, anchor)}${key}: ${rendered}${html.slice(end)}`;
 }
 
-export function renderPopularMenuPageEn(html, items, copy) {
+export function renderPopularMenuPageEn(html, { items, toppings }, copy) {
   const { grid, list } = renderStaticMenuEn(items, copy);
+  const toppingsHtml = renderToppingsListEn(toppings);
   let out = replaceBlock(html, GRID_START, GRID_END, grid);
   out = replaceBlock(out, LIST_START, LIST_END, list);
+  out = replaceBlock(out, TOPPINGS_START, TOPPINGS_END, toppingsHtml);
   out = replaceMainEntity(out, buildEnItemList(items, copy));
   return out;
 }
 
+function renderToppingsListEn(toppings) {
+  if (!Array.isArray(toppings) || !toppings.length) return '';
+  return toppings.map((t) => `            <li>${escapeHtml(t.name)}</li>`).join('\n');
+}
+
 export async function buildPopularMenuPage(root = ROOT) {
   const page = await readFile(path.join(root, PAGE), 'utf8');
-  return renderPopularMenuPage(page, await loadCatalogue(root));
+  const { items, toppings } = await loadCatalogue(root);
+  return renderPopularMenuPage(page, { items, toppings });
 }
 
 export async function buildPopularMenuPageEn(root = ROOT) {
   const page = await readFile(path.join(root, PAGE_EN), 'utf8');
-  const items = await loadCatalogue(root);
-  return renderPopularMenuPageEn(page, items, await loadEnCopy(root, items));
+  const { items, toppings } = await loadCatalogue(root);
+  return renderPopularMenuPageEn(page, { items, toppings }, await loadEnCopy(root, items));
 }
 
 export async function checkPopularMenuPage(root = ROOT) {

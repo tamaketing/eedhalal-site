@@ -24,6 +24,7 @@ const state = {
   saved: null, working: null,
   publish: null, busy: false, loadOk: false,
   filter: { q: '', tier: '', vis: 'all' },
+  editingSideIndex: null,
 };
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -459,50 +460,21 @@ function renderSideItems() {
   if (!box || !state.working) return;
   const list = Array.isArray(state.working.sideItems) ? state.working.sideItems : [];
   if (!list.length) {
-    box.innerHTML = '<p class="cp-sub">ยังไม่มีอาหารรอง — เพิ่มได้จากช่องด้านล่าง (ยังไม่มีรายการ หน้าเว็บจะยังไม่แสดงชื่ออาหารรอง แต่ข้อความวิธีเลือกยังทำงานตามปกติ)</p>';
+    box.innerHTML = '<p class="cp-sub">ยังไม่มีอาหารเมนูที่ 2 — เพิ่มได้จากช่องด้านล่าง (ยังไม่มีรายการ หน้าเว็บจะยังไม่แสดงชื่ออาหารรอง แต่ข้อความวิธีเลือกยังทำงานตามปกติ)</p>';
     return;
   }
   box.innerHTML = list.map((item, index) => {
     const ready = item.priceStatus === 'ready' && Number.isFinite(Number(item.priceAdjustment));
     return `
     <div class="cp-add-row" data-si-row="${index}">
-      <label class="mc-label">id
-        <input class="cp-input narrow" type="text" value="${esc(item.id)}" data-si="${index}" data-si-field="id" aria-label="id อาหารรอง">
+      <label class="mc-label">ชื่อ
+        <input class="cp-input" type="text" value="${esc(item.nameTh)}" data-si="${index}" data-si-field="nameTh" aria-label="ชื่ออาหารเมนูที่ 2">
       </label>
-      <label class="mc-label">ชื่อไทย
-        <input class="cp-input" type="text" value="${esc(item.nameTh)}" data-si="${index}" data-si-field="nameTh" aria-label="ชื่ออาหารรองภาษาไทย">
-      </label>
-      <label class="mc-label">ชื่ออังกฤษ
-        <input class="cp-input" type="text" value="${esc(item.nameEn || '')}" data-si="${index}" data-si-field="nameEn" aria-label="ชื่ออาหารรองภาษาอังกฤษ">
-      </label>
-      <label class="mc-label">ประเภท
-        <select class="cp-input narrow" data-si="${index}" data-si-field="kind" aria-label="ประเภทอาหารรอง ${esc(item.nameTh)}">
-          ${SIDE_ITEM_KIND_OPTIONS.map((option) => `<option value="${option.value}"${item.kind === option.value ? ' selected' : ''}>${option.label}</option>`).join('')}
-        </select>
-      </label>
-      <label class="mc-label">ต้นทุน (บาท)
-        <input class="cp-input narrow" type="number" min="0" step="1" value="${item.cost ?? ''}" data-si="${index}" data-si-field="cost" aria-label="ต้นทุนอาหารรอง ${esc(item.nameTh)}">
-      </label>
-      <label class="mc-label">ราคาเพิ่ม (บาท)
-        <input class="cp-input narrow" type="number" min="0" step="1" value="${item.priceAdjustment ?? ''}" data-si="${index}" data-si-field="priceAdjustment" aria-label="ราคาเพิ่มอาหารรอง ${esc(item.nameTh)}">
-      </label>
-      <label class="mc-label">สถานะราคา
-        <select class="cp-input narrow" data-si="${index}" data-si-field="priceStatus" aria-label="สถานะราคาอาหารรอง ${esc(item.nameTh)}">
-          <option value="pending"${ready ? '' : ' selected'}>รอยืนยัน</option>
-          <option value="ready"${ready ? ' selected' : ''}>ยืนยันแล้ว</option>
-        </select>
-      </label>
-      <label class="mc-label" title="แสดงชื่อบนหน้าเว็บได้ไหม">
-        <span class="cp-inline">
-          <input type="checkbox" data-si="${index}" data-si-field="public"${item.public ? ' checked' : ''}> ขึ้นเว็บ
-        </span>
-      </label>
-      <label class="mc-label" title="ยังใช้อยู่ไหม">
-        <span class="cp-inline">
-          <input type="checkbox" data-si="${index}" data-si-field="active"${item.active === false ? '' : ' checked'}> ใช้งาน
-        </span>
+      <label class="mc-label">ราคาเพิ่ม (บาท/กล่อง)
+        <input class="cp-input narrow" type="number" min="1" step="1" value="${esc(item.priceAdjustment ?? '')}" data-si="${index}" data-si-field="priceAdjustment" aria-label="ราคาเพิ่มอาหารเมนูที่ 2 ${esc(item.nameTh)}">
       </label>
       <button type="button" class="cp-btn danger sm" data-si-delete="${index}">ลบ</button>
+      <button type="button" class="cp-btn ghost sm" data-si-edit="${index}">รายละเอียด</button>
     </div>`;
   }).join('');
 }
@@ -511,9 +483,10 @@ function addSideItem() {
   const msg = $('#mc-si-msg');
   const list = Array.isArray(state.working?.sideItems) ? state.working.sideItems : (state.working.sideItems = []);
   const nameTh = ($('#mc-si-name-th')?.value || '').trim();
-  const nameEn = ($('#mc-si-name-en')?.value || '').trim();
-  if (!nameTh) { if (msg) msg.textContent = 'กรอกชื่ออาหารรองภาษาไทยก่อน'; $('#mc-si-name-th')?.focus(); return; }
-  if (!nameEn) { if (msg) msg.textContent = 'กรอกชื่อภาษาอังกฤษด้วย (หน้าเว็บภาษาอังกฤษใช้ชื่อนี้)'; $('#mc-si-name-en')?.focus(); return; }
+  const price = Number($('#mc-si-price')?.value) || 0;
+  if (!nameTh) { if (msg) msg.textContent = 'กรอกชื่ออาหารเมนูที่ 2 ก่อน'; $('#mc-si-name-th')?.focus(); return; }
+  if (list.some((item) => item.nameTh === nameTh)) { if (msg) msg.textContent = `มี “${nameTh}” อยู่แล้ว`; $('#mc-si-name-th')?.focus(); return; }
+  if (!price || price < 1) { if (msg) msg.textContent = 'ราคาเพิ่มต้องมากกว่า 0'; $('#mc-si-price')?.focus(); return; }
   // Suggest the next free side-NNN id so the owner never has to invent one.
   let next = 1;
   while (list.some((item) => item.id === `side-${String(next).padStart(3, '0')}`)) next += 1;
@@ -521,29 +494,30 @@ function addSideItem() {
   list.push({
     id,
     nameTh,
-    nameEn,
-    kind: 'side',
-    cost: null,
-    priceAdjustment: null,
-    priceStatus: 'pending',
+    nameEn: ($('#mc-si-name-en')?.value || '').trim() || nameTh,
+    kind: $('#mc-si-kind')?.value || 'side',
+    cost: Number($('#mc-si-cost')?.value) || null,
+    priceAdjustment: price,
+    priceStatus: $('#mc-si-priceStatus')?.value || 'pending',
     active: true,
-    // Visible by default: the owner's job is to decide WHEN a dish goes on the
-    // web, and switching one off is a single checkbox.
-    public: true,
+    public: $('#mc-si-public')?.checked !== false,
   });
-  if ($('#mc-si-name-th')) $('#mc-si-name-th').value = '';
-  if ($('#mc-si-name-en')) $('#mc-si-name-en').value = '';
-  if (msg) msg.textContent = `เพิ่ม ${nameTh} (${id}) แล้ว — ชื่อจะขึ้นเว็บทันที ถ้ายังไม่พร้อมให้เอาติ๊ก “ขึ้นเว็บ” ออก`;
+  $('#mc-si-name-th').value = '';
+  $('#mc-si-price').value = '25';
+  // Advanced fields keep their values for convenience
+  if (msg) msg.textContent = `เพิ่ม ${nameTh} (${id}) แล้ว — ชื่อจะขึ้นเว็บทันที ถ้ายังไม่พร้อมให้เอาติ๊ก “ขึ้นเว็บ” ออกในรายละเอียด`;
   renderSideItems();
   updateButtons();
   scheduleDraftBackup();
 }
 
 function onSideItemEdit(target) {
-  const index = Number(target.dataset.si);
   const field = target.dataset.siField;
+  if (!field) return;
+  const index = state.editingSideIndex;
+  if (index === undefined || index === null) return;
   const item = state.working?.sideItems?.[index];
-  if (!item || !field) return;
+  if (!item) return;
   const msg = $('#mc-si-msg');
   if (field === 'cost') {
     const value = target.value === '' ? null : Number(target.value);
@@ -567,6 +541,17 @@ function onSideItemEdit(target) {
   } else {
     item[field] = target.value;
   }
+  // Sync main row fields
+  if (field === 'nameTh') $('#mc-si-name-th').value = item.nameTh;
+  if (field === 'priceAdjustment') $('#mc-si-price').value = item.priceAdjustment || '';
+  // Sync advanced fields in the details panel
+  if (field === 'nameEn') $('#mc-si-name-en').value = item.nameEn || '';
+  if (field === 'kind') $('#mc-si-kind').value = item.kind || 'side';
+  if (field === 'cost') $('#mc-si-cost').value = item.cost || '';
+  if (field === 'priceStatus') $('#mc-si-priceStatus').value = item.priceStatus || 'pending';
+  if (field === 'public') $('#mc-si-public').checked = item.public === true;
+  if (field === 'active') $('#mc-si-active').checked = item.active !== false;
+  
   renderSideItems();
   updateButtons();
   scheduleDraftBackup();
@@ -1015,7 +1000,7 @@ function addMenu() {
     name,
     price: Number($('#mc-new-price')?.value) || 65,
     tier,
-    image: ($('#mc-new-img')?.value || '').trim() || 'img/logo.jpg',
+    image: ($('#mc-new-img')?.value || '').trim(),
     desc: ($('#mc-new-desc')?.value || '').trim(),
     badge: 'ใหม่',
     minPerMenu: Number($('#mc-new-min')?.value) || 5,
@@ -1085,6 +1070,7 @@ function bind() {
     const target = event.target;
     if (target.dataset?.mc !== undefined && target.dataset.field) onEdit(target);
     if (target.dataset?.tp !== undefined && target.dataset.tpField) onToppingEdit(target);
+    if (target.dataset?.si !== undefined && target.dataset.siField) onSideItemEdit(target);
   });
   document.addEventListener('change', (event) => {
     const target = event.target;
@@ -1109,6 +1095,25 @@ function bind() {
     if (tpDelete) { deleteTopping(Number(tpDelete.dataset.tpDelete)); return; }
     const siDelete = event.target.closest('[data-si-delete]');
     if (siDelete) { deleteSideItem(Number(siDelete.dataset.siDelete)); return; }
+    const siEdit = event.target.closest('[data-si-edit]');
+    if (siEdit) {
+      const index = Number(siEdit.dataset.siEdit);
+      const item = state.working?.sideItems?.[index];
+      if (item) {
+        state.editingSideIndex = index;
+        $('#mc-si-name-th').value = item.nameTh || '';
+        $('#mc-si-price').value = item.priceAdjustment || '';
+        $('#mc-si-name-en').value = item.nameEn || '';
+        $('#mc-si-kind').value = item.kind || 'side';
+        $('#mc-si-cost').value = item.cost || '';
+        $('#mc-si-priceStatus').value = item.priceStatus || 'pending';
+        $('#mc-si-public').checked = item.public !== false;
+        $('#mc-si-active').checked = item.active !== false;
+        $('#mc-si-advanced').open = true;
+        $('#mc-si-name-th').focus();
+      }
+      return;
+    }
     const tierChip = event.target.closest('[data-tier]');
     if (tierChip) {
       state.filter.tier = tierChip.dataset.tier || '';
