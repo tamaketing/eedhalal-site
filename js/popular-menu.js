@@ -21,6 +21,9 @@
 var GRID_ID = 'pm-grid';
 var LIST_ID = 'pm-list';
 var TOPPINGS_ID = 'pm-toppings-list';
+  // Set once from the published planner; null until that fetch resolves, so the
+  // list can tell "the owner deleted every topping" from "we never got the data".
+  var PUBLISHED_TOPPINGS = null;
   var SEARCH_ID = 'pm-search';
   var FILTER_ID = 'pm-filter';
   var COUNT_ID = 'pm-count';
@@ -258,10 +261,14 @@ var TOPPINGS_ID = 'pm-toppings-list';
       return renderNameOnly(menu);
     }).join('');
     
-    // Render toppings list
-    if (toppingsList) {
-      toppingsList.innerHTML = renderToppingsList();
+    // The topping list is in the static HTML so crawlers and no-JS visitors
+    // read it. Capture that first: if the fetch fails (offline, blocked,
+    // rate-limited) the list must keep showing what the page already shipped
+    // instead of being wiped to nothing.
+    if (toppingsList && !STATIC_TOPPINGS.length) {
+      STATIC_TOPPINGS = readStaticToppings(toppingsList);
     }
+    renderToppings(toppingsList);
     
     bindImageFallbacks(grid);
     bindCopyButtons(grid);
@@ -276,43 +283,59 @@ var TOPPINGS_ID = 'pm-toppings-list';
     applyFilter();
   }
 
-  // Visibility comes from the one published planner file: deleted[] means the
-  // owner hid the dish from customers. Nothing else is read here - the price
-  // switch is an internal pricing matter and is not rendered.
-var EED_TOPPINGS = [];
+  // Visibility and the topping list both come from the one published planner
+  // file: deleted[] means the owner hid the dish from customers, and
+  // toppings[] is the add-on list the owner edits. Nothing else is read here -
+  // the price switch is an internal pricing matter and is not rendered.
+  //
+  // One request serves both. A failure is not fatal: the page already ships the
+  // topping names in its own HTML, so the list survives a failed fetch.
+  var STATIC_TOPPINGS = [];
 
-function loadToppings() {
-  return fetch('data/planner-overrides.json', { cache: 'no-store' })
-    .then(function (res) { return res.ok ? res.json() : { toppings: [] }; })
-    .then(function (data) {
-      EED_TOPPINGS = Array.isArray(data.toppings) ? data.toppings : [];
-      return EED_TOPPINGS;
-    })
-    .catch(function () {
-      EED_TOPPINGS = [];
-      return [];
-    });
-}
+  function readStaticToppings(list) {
+    return Array.prototype.map.call(list.querySelectorAll('li'), function (li) {
+      return (li.textContent || '').trim();
+    }).filter(Boolean);
+  }
 
-function loadHidden() {
-  return fetch('data/planner-overrides.json', { cache: 'no-store' })
-    .then(function (res) { return res.ok ? res.json() : { deleted: [] }; })
-    .then(function (data) { return new Set(data.deleted || []); })
-    .catch(function () { return new Set(); });
-}
+  function loadPlanner() {
+    return fetch('data/planner-overrides.json', { cache: 'no-store' })
+      .then(function (res) { return res.ok ? res.json() : {}; })
+      .catch(function () { return {}; });
+  }
 
-function renderToppingsList() {
-  if (!Array.isArray(EED_TOPPINGS) || !EED_TOPPINGS.length) return '';
-  return EED_TOPPINGS.map(function (t) {
-    return '<li>' + escapeHtml(t.name) + '</li>';
-  }).join('');
-}
+  function renderToppings(list) {
+    if (!list) return;
+    // null means the fetch never resolved, so fall back to what the page
+    // shipped. An empty array is a real answer: the owner cleared the list, and
+    // falling back there would resurrect toppings they deleted.
+    var names = PUBLISHED_TOPPINGS !== null
+      ? PUBLISHED_TOPPINGS
+      : (STATIC_TOPPINGS.length ? STATIC_TOPPINGS : defaultToppings());
+    list.innerHTML = names.map(function (name) {
+      return '<li>' + escapeHtml(name) + '</li>';
+    }).join('');
+  }
 
-function boot() {
+  // js/menu-data.js already carries the list, so even with no network and no
+  // generated markup the names are available.
+  function defaultToppings() {
+    if (typeof EED_DEFAULT_TOPPINGS === 'undefined' || !Array.isArray(EED_DEFAULT_TOPPINGS)) return [];
+    return EED_DEFAULT_TOPPINGS
+      .map(function (t) { return String(t && t.name || '').trim(); })
+      .filter(Boolean);
+  }
+
+  function boot() {
     var menus = (typeof EED_MENUS !== 'undefined' && Array.isArray(EED_MENUS)) ? EED_MENUS : [];
+    var list = document.getElementById(TOPPINGS_ID);
+    if (list) STATIC_TOPPINGS = readStaticToppings(list);
     activeTier = tierFromHash();
-    Promise.all([loadHidden(), loadToppings()]).then(function (results) {
-      var hidden = results[0];
+    loadPlanner().then(function (data) {
+      var hidden = new Set(data.deleted || []);
+      PUBLISHED_TOPPINGS = Array.isArray(data.toppings)
+        ? data.toppings.map(function (t) { return String(t && t.name || '').trim(); }).filter(Boolean)
+        : null;
       var shown = menus.filter(function (menu) {
         return menu && menu.id != null &&
           !hidden.has(Number(menu.id)) && !hidden.has(String(menu.id));

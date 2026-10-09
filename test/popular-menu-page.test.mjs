@@ -237,6 +237,45 @@ test('rendering is idempotent: re-running the generator changes nothing', () => 
   assert.equal(twice, once, 'generator must be idempotent or CI would flap');
 });
 
+// --- The topping list must survive a failed fetch ------------------------------
+// It shipped in the HTML on purpose, so crawlers and no-JS visitors see it. The
+// renderer used to overwrite that markup with an empty string whenever the
+// planner fetch failed, which silently deleted the section on a bad connection.
+
+const toppingBlock = between(page, '<!-- MENU:TOPPINGS:START -->', '<!-- MENU:TOPPINGS:END -->');
+const shippedToppings = [...toppingBlock.matchAll(/<li>([^<]+)<\/li>/g)].map((m) => m[1]);
+
+test('the page ships every topping name in static HTML', () => {
+  assert.ok(shippedToppings.length, 'the topping list must not be empty in the markup');
+  assert.deepEqual(shippedToppings, toppings.map((t) => t.name));
+});
+
+test('the topping list reads its fallback before it writes over it', async () => {
+  const renderer = await readFile(new URL('js/popular-menu.js', root), 'utf8');
+  // The generated markup is the fallback, so it must be read BEFORE any write.
+  assert.match(renderer, /readStaticToppings/, 'the renderer must keep what the page shipped');
+  const renderBody = renderer.slice(renderer.indexOf('function render(menus)'));
+  assert.ok(
+    renderBody.indexOf('readStaticToppings') !== -1
+      && renderBody.indexOf('readStaticToppings') < renderBody.indexOf('renderToppings('),
+    'capture must happen before the list is replaced',
+  );
+  // A failed fetch leaves PUBLISHED_TOPPINGS null (not []), so the renderer can
+  // tell "no data yet" from "the owner cleared the list".
+  assert.match(renderer, /PUBLISHED_TOPPINGS = null/, 'an unresolved fetch must stay null');
+  assert.match(renderer, /\.catch\(function \(\) \{ return \{\}; \}\)/, 'a failed fetch must not throw');
+  // One request, not two (the header comment names the file too, so count calls).
+  const fetches = (renderer.match(/fetch\('data\/planner-overrides\.json'/g) || []).length;
+  assert.equal(fetches, 1, 'fetch the planner once, not once per concern');
+  // An empty array is a real answer (the owner cleared the list) and must not
+  // fall back to the shipped names, or deleted toppings come back from the dead.
+  assert.match(
+    renderer,
+    /PUBLISHED_TOPPINGS !== null\s*\n\s*\?\s*PUBLISHED_TOPPINGS/,
+    'only an unresolved fetch may fall back; an empty list must stay empty',
+  );
+});
+
 test('buildCatalogue drops hidden menus, marks quote-only ones and keeps the level', () => {
   const fake = [
     { id: 1, name: 'a', tier: 'classic', image: 'img/a.jpg', desc: '' },
