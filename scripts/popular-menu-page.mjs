@@ -239,9 +239,28 @@ export function renderPopularMenuPage(html, { items, toppings }) {
   return out;
 }
 
-function renderToppingsList(toppings) {
+// Toppings are add-ons, so the figure shown is the ADDITION to the box price,
+// never the box price itself. `data-price` lets the client-side renderer read
+// the same figure back out of this markup when it cannot reach the planner, so
+// a failed fetch never drops the amounts.
+function toppingPrice(raw) {
+  const price = Number(raw);
+  return Number.isFinite(price) && price > 0 ? Math.round(price * 100) / 100 : null;
+}
+
+function renderToppingsList(toppings, en = false) {
   if (!Array.isArray(toppings) || !toppings.length) return '';
-  return toppings.map((t) => `            <li>${escapeHtml(t.name)}</li>`).join('\n');
+  const unit = en ? 'THB' : 'บาท';
+  return toppings.map((t) => {
+    const name = escapeHtml(String(t?.name ?? '').trim());
+    if (!name) return '';
+    const price = toppingPrice(t?.price);
+    const amount = price == null
+      ? '<span class="pm-topping-price pm-topping-price-none">สอบถามราคา</span>'
+      : `<span class="pm-topping-price">+${price} ${unit}</span>`;
+    const attr = price == null ? '' : ` data-price="${price}"`;
+    return `            <li class="pm-topping"${attr}><span class="pm-topping-name">${name}</span>${amount}</li>`;
+  }).filter(Boolean).join('\n');
 }
 
 export async function loadCatalogue(root = ROOT) {
@@ -278,7 +297,7 @@ const TIER_EN_NAME = {
   executive: 'Executive Premium Halal Box',
 };
 
-export async function loadEnCopy(root = ROOT, items) {
+export async function loadEnCopy(root = ROOT, items, toppings = []) {
   const copy = JSON.parse(await readFile(path.join(root, EN_COPY_FILE), 'utf8'));
   const usable = (value) => typeof value === 'string' && value.trim() !== '';
   const missing = items
@@ -290,6 +309,17 @@ export async function loadEnCopy(root = ROOT, items) {
   if (missing.length) {
     throw new Error(
       `${EN_COPY_FILE} is missing English copy for ${missing.length} live menu(s): ${missing.join('; ')}`,
+    );
+  }
+  // Same rule for the topping list: a Thai name on the English page reads as a
+  // bug to the customer, so a missing translation fails the build.
+  const toppingCopy = copy.toppings && typeof copy.toppings === 'object' ? copy.toppings : {};
+  const noEnglish = toppings
+    .map((t) => String(t?.name ?? '').trim())
+    .filter((name) => name && !usable(toppingCopy[name]));
+  if (noEnglish.length) {
+    throw new Error(
+      `${EN_COPY_FILE} is missing an English name for ${noEnglish.length} topping(s): ${noEnglish.join('; ')}`,
     );
   }
   return copy;
@@ -431,7 +461,7 @@ function replaceMainEntity(html, node) {
 
 export function renderPopularMenuPageEn(html, { items, toppings }, copy) {
   const { grid, list } = renderStaticMenuEn(items, copy);
-  const toppingsHtml = renderToppingsListEn(toppings);
+  const toppingsHtml = renderToppingsListEn(toppings, copy.toppings);
   let out = replaceBlock(html, GRID_START, GRID_END, grid);
   out = replaceBlock(out, LIST_START, LIST_END, list);
   out = replaceBlock(out, TOPPINGS_START, TOPPINGS_END, toppingsHtml);
@@ -439,9 +469,15 @@ export function renderPopularMenuPageEn(html, { items, toppings }, copy) {
   return out;
 }
 
-function renderToppingsListEn(toppings) {
-  if (!Array.isArray(toppings) || !toppings.length) return '';
-  return toppings.map((t) => `            <li>${escapeHtml(t.name)}</li>`).join('\n');
+// The English page lists the topping by its English name from data/menu-copy-en.json
+// (buildEnCopy refuses to run without it), so a Thai name can never reach it.
+function renderToppingsListEn(toppings, copy = {}) {
+  const names = copy && typeof copy === 'object' ? copy : {};
+  const translated = (Array.isArray(toppings) ? toppings : []).map((t) => ({
+    name: names[String(t?.name ?? '').trim()] || String(t?.name ?? ''),
+    price: t?.price,
+  }));
+  return renderToppingsList(translated, true);
 }
 
 export async function buildPopularMenuPage(root = ROOT) {
@@ -453,7 +489,7 @@ export async function buildPopularMenuPage(root = ROOT) {
 export async function buildPopularMenuPageEn(root = ROOT) {
   const page = await readFile(path.join(root, PAGE_EN), 'utf8');
   const { items, toppings } = await loadCatalogue(root);
-  return renderPopularMenuPageEn(page, { items, toppings }, await loadEnCopy(root, items));
+  return renderPopularMenuPageEn(page, { items, toppings }, await loadEnCopy(root, items, toppings));
 }
 
 export async function checkPopularMenuPage(root = ROOT) {

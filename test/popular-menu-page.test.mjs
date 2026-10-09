@@ -5,8 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { computeTierFloors, isLaunching, setsFromPlanner, tierDefinitions } from '../scripts/mealbox-tiers.mjs';
 import {
   buildCatalogue,
+  buildPopularMenuPageEn,
   checkPopularMenuPage,
   loadCatalogue,
+  loadEnCopy,
   renderItemListJsonLd,
   renderPopularMenuPage,
   renderStaticMenu,
@@ -243,11 +245,52 @@ test('rendering is idempotent: re-running the generator changes nothing', () => 
 // planner fetch failed, which silently deleted the section on a bad connection.
 
 const toppingBlock = between(page, '<!-- MENU:TOPPINGS:START -->', '<!-- MENU:TOPPINGS:END -->');
-const shippedToppings = [...toppingBlock.matchAll(/<li>([^<]+)<\/li>/g)].map((m) => m[1]);
+const shippedToppings = [...toppingBlock.matchAll(/<li[^>]*data-price="([\d.]+)"[^>]*>.*?<span class="pm-topping-name">([^<]+)<\/span>.*?<\/li>/g)]
+  .map(([, price, name]) => ({ price: Number(price), name }));
 
 test('the page ships every topping name in static HTML', () => {
-  assert.ok(shippedToppings.length, 'the topping list must not be empty in the markup');
-  assert.deepEqual(shippedToppings, toppings.map((t) => t.name));
+  assert.equal(shippedToppings.length, toppings.length, 'every topping must be in the markup');
+  assert.deepEqual(shippedToppings.map((t) => t.name), toppings.map((t) => t.name));
+});
+
+test('the topping list shows the add-on price, and only the catalogue one', () => {
+  const catalogPrices = new Map(toppings.map((t) => [t.name, Number(t.price)]));
+  for (const item of shippedToppings) {
+    assert.equal(item.price, catalogPrices.get(item.name), `${item.name} must quote the catalogue price`);
+  }
+  // The figure is an addition to the box price, so it must read that way.
+  assert.match(toppingBlock, /\+10 บาท/, 'the amount must be presented as an addition');
+  assert.match(toppingBlock, /pm-topping-price/, 'the amount needs its own element to align');
+  assert.match(toppingBlock, /data-price="10"/, 'the fallback renderer must be able to read it back');
+  // Nothing may be invented: every amount is a topping price from the catalogue.
+  const known = new Set([...catalogPrices.values()]);
+  for (const [, figure] of toppingBlock.matchAll(/\+([\d.]+) (?:บาท|THB)/g)) {
+    assert.ok(known.has(Number(figure)), `+${figure} is not a published topping price`);
+  }
+});
+
+test('the English topping list never falls back to a Thai name', async () => {
+  const enCopy = JSON.parse(await readFile(new URL('data/menu-copy-en.json', root), 'utf8'));
+  const enPage = await buildPopularMenuPageEn(ROOT_PATH);
+  const enBlock = between(enPage, '<!-- MENU:TOPPINGS:START -->', '<!-- MENU:TOPPINGS:END -->');
+  const names = [...enBlock.matchAll(/<span class="pm-topping-name">([^<]+)<\/span>/g)].map((m) => m[1]);
+  assert.equal(names.length, toppings.length);
+  for (const thai of toppings.map((t) => t.name)) {
+    assert.ok(!enBlock.includes(thai), `the English page must not show the Thai name "${thai}"`);
+    assert.ok(enCopy.toppings[thai], `"${thai}" needs an English name in data/menu-copy-en.json`);
+  }
+  for (const name of names) {
+    assert.ok(Object.values(enCopy.toppings).includes(name), `${name} must come from the English copy file`);
+  }
+  assert.match(enBlock, /\+10 THB/, 'the English page shows the same amount in THB');
+});
+
+test('a topping with no English name fails the build instead of shipping Thai', async () => {
+  // Same guarantee as a dish with no copy: the build stops, nothing goes out.
+  await assert.rejects(
+    loadEnCopy(ROOT_PATH, catalogue, [{ name: 'เมนูที่ไม่มีคำแปล' }, { name: 'ไข่ดาว' }]),
+    /missing an English name/,
+  );
 });
 
 test('the topping list reads its fallback before it writes over it', async () => {
@@ -260,8 +303,8 @@ test('the topping list reads its fallback before it writes over it', async () =>
       && renderBody.indexOf('readStaticToppings') < renderBody.indexOf('renderToppings('),
     'capture must happen before the list is replaced',
   );
-  // A failed fetch leaves PUBLISHED_TOPPINGS null (not []), so the renderer can
-  // tell "no data yet" from "the owner cleared the list".
+  // The fallback must keep the amount too, or a failed fetch would drop it.
+  assert.match(renderer, /data-price/, 'the fallback reads the amount back out of the markup');
   assert.match(renderer, /PUBLISHED_TOPPINGS = null/, 'an unresolved fetch must stay null');
   assert.match(renderer, /\.catch\(function \(\) \{ return \{\}; \}\)/, 'a failed fetch must not throw');
   // One request, not two (the header comment names the file too, so count calls).

@@ -294,8 +294,16 @@ var TOPPINGS_ID = 'pm-toppings-list';
 
   function readStaticToppings(list) {
     return Array.prototype.map.call(list.querySelectorAll('li'), function (li) {
-      return (li.textContent || '').trim();
-    }).filter(Boolean);
+      var name = li.querySelector('.pm-topping-name');
+      var nameText = ((name || li).textContent || '').trim();
+      var price = Number(li.getAttribute('data-price'));
+      return {
+        name: nameText,
+        // A topping the owner never priced carries no number here; the renderer
+        // shows "สอบถามราคา" rather than quoting a figure it cannot stand behind.
+        price: Number.isFinite(price) && price > 0 ? price : null,
+      };
+    }).filter(function (t) { return t.name; });
   }
 
   function loadPlanner() {
@@ -312,18 +320,31 @@ var TOPPINGS_ID = 'pm-toppings-list';
     var names = PUBLISHED_TOPPINGS !== null
       ? PUBLISHED_TOPPINGS
       : (STATIC_TOPPINGS.length ? STATIC_TOPPINGS : defaultToppings());
-    list.innerHTML = names.map(function (name) {
-      return '<li>' + escapeHtml(name) + '</li>';
+    list.innerHTML = names.map(function (t) {
+      var name = escapeHtml(String(t.name || '').trim());
+      if (!name) return '';
+      var price = Number(t.price);
+      var amount = Number.isFinite(price) && price > 0
+        ? '<span class="pm-topping-price">+' + price + ' บาท</span>'
+        : '<span class="pm-topping-price pm-topping-price-none">สอบถามราคา</span>';
+      var attr = (Number.isFinite(price) && price > 0) ? ' data-price="' + price + '"' : '';
+      return '<li class="pm-topping"' + attr + '><span class="pm-topping-name">' + name + '</span>' + amount + '</li>';
     }).join('');
   }
 
   // js/menu-data.js already carries the list, so even with no network and no
-  // generated markup the names are available.
+  // generated markup the names and amounts are available.
   function defaultToppings() {
     if (typeof EED_DEFAULT_TOPPINGS === 'undefined' || !Array.isArray(EED_DEFAULT_TOPPINGS)) return [];
     return EED_DEFAULT_TOPPINGS
-      .map(function (t) { return String(t && t.name || '').trim(); })
-      .filter(Boolean);
+      .map(function (t) {
+        var price = Number(t && t.price);
+        return {
+          name: String(t && t.name || '').trim(),
+          price: Number.isFinite(price) && price > 0 ? price : null,
+        };
+      })
+      .filter(function (t) { return t.name; });
   }
 
   function boot() {
@@ -334,7 +355,13 @@ var TOPPINGS_ID = 'pm-toppings-list';
     loadPlanner().then(function (data) {
       var hidden = new Set(data.deleted || []);
       PUBLISHED_TOPPINGS = Array.isArray(data.toppings)
-        ? data.toppings.map(function (t) { return String(t && t.name || '').trim(); }).filter(Boolean)
+        ? data.toppings.map(function (t) {
+          var price = Number(t && t.price);
+          return {
+            name: String(t && t.name || '').trim(),
+            price: Number.isFinite(price) && price > 0 ? price : null,
+          };
+        }).filter(function (t) { return t.name; })
         : null;
       var shown = menus.filter(function (menu) {
         return menu && menu.id != null &&

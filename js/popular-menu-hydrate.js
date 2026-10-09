@@ -17,6 +17,9 @@
   var LS_DELETED = 'eed_deleted_v1';
   var LS_NEW_MENUS = 'eed_new_menus_v1';
   var LS_TOPPINGS = 'eed_toppings_v1';
+  // Set from the published planner so the list follows the owner's edits; falls
+  // back to EED_DEFAULT_TOPPINGS (js/menu-data.js) when the fetch fails.
+  var PUBLISHED_TOPPINGS = null;
 
   // Popular menu IDs in order — edit here to control what shows on popular-menu.html.
   // The menu publish pipeline may override this via data/planner-overrides.json
@@ -94,7 +97,10 @@ var DEFAULT_EMOJI = '🍽';
         }
       });
     });
-    if(Array.isArray(data.toppings)) EED_MENUS.forEach(function(menu){ menu.toppings=data.toppings.map(function(t){ return {name:String(t.name),price:parseInt(t.price,10)||0}; }); });
+    if(Array.isArray(data.toppings)){
+      PUBLISHED_TOPPINGS = data.toppings.map(function(t){ return {name:String(t && t.name || '').trim(),price:Number(t && t.price)}; }).filter(function(t){ return t.name; });
+      EED_MENUS.forEach(function(menu){ menu.toppings=data.toppings.map(function(t){ return {name:String(t.name),price:parseInt(t.price,10)||0}; }); });
+    }
     if(Array.isArray(data.deleted)) EED_MENUS=EED_MENUS.filter(function(menu){ return data.deleted.indexOf(menu.id)===-1 && data.deleted.indexOf(String(menu.id))===-1; });
     if(Array.isArray(data.popular) && data.popular.length) PUBLISHED_POPULAR = data.popular.map(String);
     if(data.sortOrder && typeof data.sortOrder==='object'){
@@ -244,11 +250,21 @@ var DEFAULT_EMOJI = '🍽';
   function renderToppingsHydrate(){
   var toppingsList = document.getElementById('pm-toppings-list');
   if(!toppingsList) return;
-  if(!Array.isArray(EED_DEFAULT_TOPPINGS) || !EED_DEFAULT_TOPPINGS.length) return;
-  var html = EED_DEFAULT_TOPPINGS.map(function(t){
-    return '<li>' + escapeHtml(t.name) + '</li>';
+  var source = Array.isArray(PUBLISHED_TOPPINGS) && PUBLISHED_TOPPINGS.length
+    ? PUBLISHED_TOPPINGS
+    : (typeof EED_DEFAULT_TOPPINGS !== 'undefined' ? EED_DEFAULT_TOPPINGS : []);
+  var en = isEnPath();
+  toppingsList.innerHTML = source.map(function(t){
+    var name = escapeHtml(String(t && t.name || '').trim());
+    if(!name) return '';
+    var price = Number(t && t.price);
+    var has = isFinite(price) && price > 0;
+    return '<li class="pm-topping"' + (has ? ' data-price="'+price+'"' : '') + '>'
+      + '<span class="pm-topping-name">'+name+'</span>'
+      + '<span class="pm-topping-price' + (has ? '' : ' pm-topping-price-none') + '">'
+      + (has ? (en ? '+'+price+' THB' : '+'+price+' บาท') : (en ? 'Ask us' : 'สอบถามราคา'))
+      + '</span></li>';
   }).join('');
-  toppingsList.innerHTML = html;
 }
 
 function init(){

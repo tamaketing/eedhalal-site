@@ -103,5 +103,14 @@
   "130": {
     "name": "Pad Thai with Fresh Shrimp in Egg Wrap",
     "desc": "Soft noodles and plump shrimp wrapped in a thin egg, crisp outside and tender within, in a sweet-savoury tamarind glaze, finished with bean sprouts and fresh vegetables."
+  },
+  "toppings": {
+    "_comment": "English names for the topping list on the menu page. Keyed by the Thai name in data/planner-overrides.json so a topping cannot drift between the two language pages. A published topping with no entry here fails the build, exactly like a dish with no copy: an English visitor must never be handed a Thai name.",
+    "ไข่ดาว": "Fried egg",
+    "ไข่เจียว": "Omelette",
+    "ไข่ต้ม": "Boiled egg",
+    "ผลไม้": "Fresh fruit",
+    "ซาโมซ่าไก่": "Chicken samosa",
+    "ซาโมซ่าเนื้อ": "Beef samosa"
   }
 }
