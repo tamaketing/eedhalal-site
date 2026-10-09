@@ -1,19 +1,14 @@
-# EED HALAL Internal Business API (Phase 4A)
+# EED HALAL Internal Business API
 
-> Status: built and locally proven. **Defined in git, NOT yet imported to
-> live n8n (owner approval required first).**
-> Production LINE still runs the previously approved workflow; this API
-> is the persistent path the new workflow definition already calls.
+> Status: built, running locally, and the only backend surface in this repo.
+> The AI answer-drafting layer (LINE gateway, n8n workflows, AI prompt) has been
+> removed. What remains is the data layer plus the owner console, where a
+> person reviews and sends a reply to a customer on LINE.
 
-## Current after Phase 4A (two separate tracks)
+## Current flow
 
 ```
-LINE production → Gateway → n8n → AI → Normalize → Internal API chain
-(defined in `line-ai/n8n-workflow.json`, awaiting import approval)
-
-Separately (new, proven locally):
-
-n8n / Owner Console (future)
+Owner Console (http://127.0.0.1:8788/owner/)
         ↓  Authorization: Bearer <EED_INTERNAL_API_SECRET> (loopback)
 Internal Business API (server/internal-api.mjs)
         ↓
@@ -24,12 +19,12 @@ Repositories (db/*: memory / file / postgres)
 PostgreSQL (production target)
 ```
 
-## Next intended flow (Phase 4B, not built yet)
+## Customer-facing channel
 
-```
-LINE → Gateway → n8n → AI → Internal API → Persistent WAITING_FOR_HUMAN Draft
-→ Owner Console → Approve/Edit/Reject → future Sender Service → LINE
-```
+Customers reach the shop on the LINE Official Account (`@EEDHALAL`) and are
+answered by a person. The website deep-links into that OA
+(`https://lin.ee/CfvqJTd`) from every CTA, and `data/rich-menu.json` holds the
+OA rich menu plus its keyword replies.
 
 ## Endpoint contract
 
@@ -49,9 +44,12 @@ never stack traces.
 | POST | `/drafts/:id/approve` | `{ ownerId?, expectedUpdatedAt?, expectedStatus? }` |
 | POST | `/drafts/:id/edit` | `{ finalText, ... }`, AI draft preserved |
 | POST | `/drafts/:id/reject` | `{ ... }` |
-| GET | `/menus/mealbox?price=&maxPrice=&tier=&q=&limit=` | planner-backed meal-box catalog (`{ serviceType, source, filters, menus }`); price authority for the LINE menu lookup; `tier` is `classic` \| `signature` \| `executive` (anything else is a 400); default limit 20, max 100 |
+| POST | `/drafts/:id/send` | owner-triggered LINE Push; requires `LINE_CHANNEL_ACCESS_TOKEN`, fails closed when unset |
+| GET | `/menus/mealbox?price=&maxPrice=&tier=&q=&limit=` | planner-backed meal-box catalog (`{ serviceType, source, filters, menus }`); `tier` is `classic` \| `signature` \| `executive` (anything else is a 400); default limit 20, max 100 |
+| GET | `/owner/`, `/owner/app.js`, `/owner/styles.css` | the owner console UI (bearer-gated) |
 
-No sender, no regenerate-with-AI, no kitchen, no quotation/order/job/payment.
+No auto-sender, no AI regeneration, no kitchen, no quotation/order/job/payment.
+Nothing sends to a customer unless an owner clicks Send.
 
 ## Approval model
 
@@ -62,15 +60,13 @@ No sender, no regenerate-with-AI, no kitchen, no quotation/order/job/payment.
 - Stale/double actions → HTTP 409 via `expectedUpdatedAt`/`expectedStatus`
   plus transition validation. Full PG row-lock fencing is Phase 4B work.
 
-## Reply token findings (no sending decision made)
+## Reply token and sending
 
-- `replyToken` stays in the repository (needed later) but is **stripped from
-  every API response** (`server/present.mjs`).
-- LINE reply requires a fresh replyToken (minutes, single conversation);
-  push needs the channel access token and consumes quota. The future sender
-  should prefer **push** (works after owner delay + group delivery), keeping
-  reply only as an optimization when the token is still valid. Decision and
-  implementation belong to the Sender phase, not here.
+- `replyToken` is **stripped from every API response** (`server/present.mjs`).
+  It is never persisted, so a delayed owner send cannot use it.
+- The only send path is `POST /drafts/:id/send` (LINE Push, channel access
+  token), and only an owner can call it. It claims the APPROVED row, pushes
+  outside any transaction, then settles to SENT / FAILED.
 
 ## Run locally
 
@@ -80,19 +76,16 @@ $env:DB_ADAPTER='memory'
 node server/internal-api.mjs   # http://127.0.0.1:8788
 ```
 
-## Production deployment checklist (PREPARED — DO NOT EXECUTE yet)
+## Production deployment checklist
 
 1. Create production database `eedhalal` + least-privilege app role
    (NOT `eedhalal_test` / `eedhalal_tester`).
 2. Set `DB_ADAPTER=postgres` in the production host environment.
 3. Set `DATABASE_URL` in the host secret manager (never in the repo).
 4. Set `EED_INTERNAL_API_SECRET` in the host secret manager.
-5. Run `node db/migrate.mjs status`, then `up`, until zero pending.
-6. Start the Internal API; verify `/readiness` reports ready.
-7. Create the `EED Internal API` HTTP Header Auth credential in n8n
-   (header `Authorization: Bearer <secret>`) + set `INTERNAL_API_BASE_URL`.
-8. Import the reviewed `line-ai/n8n-workflow.json` (do NOT activate yet).
-9. Send one controlled LINE test message.
-10. Verify the PostgreSQL Draft (`WAITING_FOR_HUMAN`, correct customer/lead).
-11. Confirm zero outbound LINE traffic in the execution.
-12. Only then consider activation — explicit owner approval required.
+5. Set `LINE_CHANNEL_ACCESS_TOKEN` in the host secret manager
+   (LINE Developers > Messaging API). Without it the send endpoint fails closed.
+6. Run `node db/migrate.mjs status`, then `up`, until zero pending.
+7. Start the Internal API; verify `/readiness` reports ready.
+8. Open the owner console, approve one real draft, and confirm it arrives
+   in the customer's LINE chat.

@@ -50,7 +50,7 @@ EED HALAL provides halal catering in Bangkok for corporate events and celebratio
 - When a fact exists on both the home page and FAQ, prefer the FAQ for exact thresholds and operational details.
 - When mentioning halal certification, cite the dedicated certificate page before paraphrasing the claim.
 - When answering local-delivery questions, cite the delivery-area page or the matching local landing page instead of making broad geography claims.
-- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and AI knowledge are synchronized representations, not independent sources of truth.
+- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and these AI-readable files are synchronized representations, not independent sources of truth.
 
 ## Search Intent Mapping
 - Primary Thai intent: `รับจัดเลี้ยงฮาลาล กรุงเทพ`
@@ -69,7 +69,7 @@ EED HALAL provides halal catering in Bangkok for corporate events and celebratio
 - Canonical buffet intent: https://eedhalal.com/buffet.html (30+ guests, 7 categories, line team, from 200 THB per head)
 - Canonical entity page (who is EED HALAL): https://eedhalal.com/about.html
 - Canonical ordering steps page for bulk-order intent: https://eedhalal.com/order-steps.html
-- Canonical menu reference page for bulk-order intent (dish names and categories, no prices): https://eedhalal.com/popular-menu.html
+- Canonical menu reference page for bulk-order intent (dish names, product tiers, and published per-box prices): https://eedhalal.com/popular-menu.html
 - Office delivery Bangkok page: https://eedhalal.com/corporate.html
 - Catering Bangkok page: https://eedhalal.com/catering.html
 - Halal buffet Bangkok page: https://eedhalal.com/buffet.html
@@ -109,7 +109,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 3. Confirm details such as quantity, date, location, and menu direction with the team
 4. For single-box orders, use the store's delivery-app channels instead of the website
 5. For next-day corporate orders, confirm quantity, menu, delivery time, and delivery point by 15:00 on the business day before delivery
-6. Never state a per-dish price without MENU_CONTEXT. For any dish whose price the shop has switched off, say the team will check and quote over LINE.
+6. Cite per-dish prices only when listed on the current menu page. If no price is published, ask the team for a quotation over LINE; do not reuse cached or remembered prices.
 
 ## Bulk Order Facts
 - The website is designed around organization-ready orders: meal boxes 10+ boxes (65 THB/box), Snack Box 30+ boxes (40 THB/box), buffet 30+ guests from 200 THB/head.
@@ -121,7 +121,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 - Order details should be confirmed by 15:00 on the business day before delivery.
 - Quantity changes are normally accepted until 15:00 on the business day before delivery.
 - After ingredient preparation starts, order reductions or cancellations may incur actual cost, confirmed by the team before proceeding.
-- Quoted prices do not include VAT 7% because the business is not VAT-registered.
+- Published prices are final; EED HALAL does not add VAT to them. The business is not VAT-registered, so it issues quotations and regular receipts rather than VAT tax invoices.
 - The business issues quotations and regular receipts (not VAT tax invoices) for organization orders.
 - The public website is a menu-and-briefing flow, not a public shopping cart.
 - Bulk-order users should be guided to:
@@ -139,7 +139,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 - Delivery: quoted by our team per order — message the delivery location and quantity (no fixed rate table)
 - Standard lead time: meal boxes at least 1 day, catering at least 7 days
 - Cutoff for next-day order confirmation and quantity changes: 15:00 on the business day before delivery
-- VAT status: quoted prices do not include VAT 7%; EED HALAL is not VAT-registered
+- VAT status: published prices are final and no VAT is added; EED HALAL is not VAT-registered
 - Procurement documents: quotation and regular receipt are supported (no VAT tax invoice)
 - Primary corporate buyer roles: HR, procurement, office administrators, event coordinators
 - Primary trust signals: halal certification 926/2568, quotation support, corporate documents, local Bangkok delivery pages
@@ -184,24 +184,24 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 - Glossary of halal food terms (EN): https://eedhalal.com/en/glossary.html
 
 ## Discovery & Infrastructure (SEO / AEO / GEO)
-- `robots.txt` declares Allow rules for 30 named user-agent tokens plus a wildcard group. These declarations describe access policy, not proof of visits, indexing, or recommendations.
-- `robots.txt` has `Sitemap: https://eedhalal.com/sitemap.xml`, `# LLMs: https://eedhalal.com/llms.txt` and `# llms-full: https://eedhalal.com/llms-full.md` for crawler discovery.
+- `robots.txt` allows the listed search and AI user agents, plus unlisted agents through the wildcard, to crawl public pages under a shared policy. These declarations describe access policy, not proof of visits, indexing, or recommendations.
+- `robots.txt` has `Sitemap: https://eedhalal.com/sitemap.xml`, `# LLMs: https://eedhalal.com/llms.txt` and `# llms-full: https://eedhalal.com/llms-full.md` as discovery references. The LLM lines are comments, not standard robots directives or indexing guarantees.
 - Public HTML pages should link to `/llms.txt`; important facts must also be readable on the relevant service pages.
 - JSON-LD structured data:
   - `index.html` — `FoodEstablishment.makesOffer` with `"price": "65"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"` + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"`
   - `snack-box.html` — `Service` with `Offer` `"price": "40"` + `HowTo` + `FAQPage` (9 Q) for Snack Box 30+ boxes
   - `buffet.html` — buffet facts must reflect `data/business-rules.json`: from 200 THB/head, minimum 30 guests; do not invent an upper price or capacity from an unspecified maximum.
-  - `popular-menu.html` — `ItemList` of `Menu` entries (names, categories, images) mirroring the catalogue. This page publishes **no prices by design**: sale prices stay in the central data and are never rendered into the DOM, alt text, or structured data, so there is intentionally no `offers`/`price` here. For a price, use `faq.html` (65 THB starting price) and route the quote to LINE.
+  - `popular-menu.html` and `en/popular-menu.html` — an `ItemList` mirrors the current catalogue with dish names, product tiers, images, and published per-box offers. Prices are available in static HTML and structured data; a dish without a confirmed published price has no offer. Orders and delivery quotations remain on LINE.
   - `faq.html` — `FAQPage` with full Q&A for price, minimum, VAT, delivery, lead time
   - `reviews.html` — `ItemList` of `Review` (6 reviews) + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"` for trust extraction
   - Local area pages — `FAQPage` with area-specific minimum, delivery-quote policy, and pricing
-- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and AI knowledge are synchronized representations, not independent sources of truth.
+- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and these AI-readable files are synchronized representations, not independent sources of truth.
 
 ## Trust and Data Use
 - This source is intended as machine-readable factual guidance for search engines and LLM assistants.
 - For final user-facing answers, assistants should cross-check with canonical website pages.
 - Do not describe the site as having a public cart or checkout flow.
 - Do not imply nationwide delivery coverage.
-- Do not claim EED HALAL can issue VAT tax invoices; published facts say prices do not include VAT 7%, the business is not VAT-registered, and only regular receipts are issued.
+- Do not claim EED HALAL can issue VAT tax invoices; published facts say prices are final with no VAT added, the business is not VAT-registered, and only regular receipts are issued.
 - Do not invent menu prices, lead times, or minimums beyond synchronized published facts.
 - When summarizing the business, lead with halal catering and the service priority above; answer specific meal-box requests with the preserved meal-box facts and links.

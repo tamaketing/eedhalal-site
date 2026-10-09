@@ -40,6 +40,11 @@ const CHECKS = [
     args: [],
   },
   {
+    name: 'catering-content',
+    script: 'scripts/sync-catering-content.mjs',
+    args: ['--check'],
+  },
+  {
     name: 'public-site',
     script: 'scripts/check-public-site.mjs',
     args: [],

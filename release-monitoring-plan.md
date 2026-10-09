@@ -9,16 +9,16 @@
 ## Pre-release checks
 - Desktop and mobile: navigation, CTA, images, service links, catering form, calculator, and LINE handoff.
 - Confirm the form message includes service, quantity, date, time, venue, budget, and notes.
-- Import and publish the generated n8n workflow; send one controlled LINE test and confirm the brief reaches the admin chat.
+- Send one controlled LINE message to the Official Account and confirm it reaches the team's chat and gets answered.
 - Verify noindex,nofollow,noarchive on preview.html.
 
 ## Review schedule
 - Week 1: Search Console indexing/errors; form and LINE delivery; admin reply issues.
 - Week 2: impressions and clicks split between meal-box and catering queries; inquiries and quotations by service.
-- Week 4: compare engagement and conversion by service; correct weak copy, links, or AI answers.
+- Week 4: compare engagement and conversion by service; correct weak copy, links, or unanswered questions.
 - Week 8: review indexed coverage, query trends, leads, quote outcomes, and decide next content pages.
 
 ## Metrics
 - Google Search Console: indexed pages, crawl/index errors, impressions, clicks, and queries grouped as meal-box vs catering.
 - Lead log: source page, service, inquiry count, quotation count, confirmed order count, and issue notes.
-- Admin QA: incorrect AI answer, missing required brief field, delayed handoff, and customer friction.
+- Admin QA: incorrect reply, missing required brief field, delayed response, and customer friction.

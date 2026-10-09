@@ -11,8 +11,8 @@ async function checkLineEndings() {
 }
 
 // A CRLF blob reaches Linux CI as CRLF, which breaks every LF-based generator.
-// That has bitten this repository three times (n8n JSON, popular-menu-page,
-// the HTML blobs), so the committed tree is now guarded.
+// That has bitten this repository three times (a generated JSON file,
+// popular-menu-page, the HTML blobs), so the committed tree is now guarded.
 test('no tracked text file carries CRLF', async () => {
   const out = await checkLineEndings();
   assert.match(out, /all LF in the index/, out);

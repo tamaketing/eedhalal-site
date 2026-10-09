@@ -38,7 +38,7 @@
 // Fail-closed: DB_ADAPTER=postgres without DATABASE_URL throws immediately —
 // the API must never silently fall back to memory/file/static staging.
 //
-// No AI agent, n8n node, or frontend code may import db/* adapters directly
+// No workflow node, script, or frontend code may import db/* adapters directly
 // for SQL — all business access goes through services/*.
 
 import { createFileAdapter, isUniqueViolation } from './file.mjs';

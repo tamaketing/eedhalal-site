@@ -1,116 +1,97 @@
 User-agent: *
-Allow: /
 
-# Internal tools — noindex via meta too, belt-and-braces
+# OpenAI
+User-agent: GPTBot
+
+User-agent: ChatGPT-User
+
+User-agent: OAI-SearchBot
+
+# Google
+User-agent: Googlebot
+User-agent: Google-Extended
+
+User-agent: Google-CloudVertexBot
+
+# Anthropic
+User-agent: ClaudeBot
+
+User-agent: Claude-SearchBot
+
+User-agent: Claude-User
+
+User-agent: anthropic-ai
+
+# Meta
+User-agent: Meta-ExternalAgent
+
+User-agent: FacebookBot
+
+# Perplexity
+User-agent: PerplexityBot
+
+User-agent: Perplexity-User
+
+# xAI
+User-agent: GrokBot
+
+User-agent: xAI-Grok
+
+# Microsoft
+User-agent: bingbot
+User-agent: CopilotBot
+
+# Mistral
+User-agent: MistralAI-User
+
+# Amazon
+User-agent: Amazonbot
+
+# Apple
+User-agent: Applebot
+User-agent: Applebot-Extended
+
+# ByteDance
+User-agent: Bytespider
+
+# Cohere
+User-agent: cohere-ai
+
+# Common Crawl
+User-agent: CCBot
+
+# AI search engines
+User-agent: YouBot
+
+User-agent: DuckAssistBot
+
+User-agent: iaskspider
+
+User-agent: KagiBot
+
+# Data aggregators
+User-agent: Diffbot
+
+User-agent: omgili
+
+User-agent: omgilibot
+
+User-agent: img2dataset
+
+# All named agents and the wildcard share this policy.
+# Robots rules are crawl guidance, not access control; internal tools are not deployed.
+Allow: /
 Disallow: /budget-planner.html
 Disallow: /kitchen-order.html
 Disallow: /en.html
 Disallow: /data/
-
-# OpenAI
-User-agent: GPTBot
-Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: OAI-SearchBot
-Allow: /
-
-# Google
-User-agent: Google-Extended
-Allow: /
-
-User-agent: Google-CloudVertexBot
-Allow: /
-
-# Anthropic
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: Claude-SearchBot
-Allow: /
-
-User-agent: Claude-User
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-# Meta
-User-agent: Meta-ExternalAgent
-Allow: /
-
-User-agent: FacebookBot
-Allow: /
-
-# Perplexity
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: Perplexity-User
-Allow: /
-
-# xAI
-User-agent: GrokBot
-Allow: /
-
-User-agent: xAI-Grok
-Allow: /
-
-# Microsoft
-User-agent: CopilotBot
-Allow: /
-
-# Mistral
-User-agent: MistralAI-User
-Allow: /
-
-# Amazon
-User-agent: Amazonbot
-Allow: /
-
-# Apple
-User-agent: Applebot-Extended
-Allow: /
-
-# ByteDance
-User-agent: Bytespider
-Allow: /
-
-# Cohere
-User-agent: cohere-ai
-Allow: /
-
-# Common Crawl
-User-agent: CCBot
-Allow: /
-
-# AI search engines
-User-agent: YouBot
-Allow: /
-
-User-agent: DuckAssistBot
-Allow: /
-
-User-agent: iaskspider
-Allow: /
-
-User-agent: KagiBot
-Allow: /
-
-# Data aggregators
-User-agent: Diffbot
-Allow: /
-
-User-agent: omgili
-Allow: /
-
-User-agent: omgilibot
-Allow: /
-
-User-agent: img2dataset
-Allow: /
+# Public data used to render the menu must remain fetchable.
+Allow: /data/planner-overrides.json$
+Allow: /data/planner-overrides.json?
+Allow: /data/business-rules.json$
+Allow: /data/business-rules.json?
+Allow: /data/menu-copy-en.json$
+Allow: /data/menu-copy-en.json?
 
 Sitemap: https://eedhalal.com/sitemap.xml
 # LLMs: https://eedhalal.com/llms.txt

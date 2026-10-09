@@ -50,7 +50,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Corporate website and LINE flow are designed for 10+ box orders (meal boxes) and 30+ box orders (Snack Box, 30 boxes per menu).
 - Per-menu minimums apply: 10 boxes per menu (both Thai and Indian menus).
 - Meal boxes come in three tiers: Classic Halal Meal Box from 65 THB per box, Signature Halal Meal Box from 160 THB per box, and Executive Premium Halal Box from 230 THB per box; Snack Box starts at 40 THB per box (minimum 30 boxes).
-- Halal buffet starts at 200 THB per head for 30–1000+ guests, with 7 menu categories and an on-site line, refill, and service team. Live Cooking and Cocktail / Finger Food start at 200 THB per head; Chinese / Thai table service starts at 3,000 THB per table; Set Menu starts at 350 THB per head.
+- Halal buffet starts at 200 THB per head for 30+ guests, with capacity confirmed for each event, with 7 menu categories and an on-site line, refill, and service team. Live Cooking and Cocktail / Finger Food start at 200 THB per head; Chinese / Thai table service starts at 3,000 THB per table; Set Menu starts at 350 THB per head.
 - Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; buffet, Live Cooking, Cocktail, Chinese / Thai table service, and Set Menu should be booked at least 7 days ahead.
 - Payment terms: 50% deposit confirms a booking. The catering balance is due 7 days before the event; the meal-box balance is due 1 day before delivery.
@@ -64,15 +64,14 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 ## Ordering Model (read this first)
 - EED HALAL has NO online ordering and NO cart or checkout. popular-menu.html is a catalogue to browse and pick from; every order is placed over LINE.
 - How to order: pick the dish names on popular-menu.html, message LINE with the dish names, box count, date, delivery area and budget, and the team replies with a quotation (normally within 15 minutes during business hours).
-- The site publishes no per-dish prices. Never quote a per-dish price from memory or from a cached answer — send it to LINE.
+- The menu page publishes per-box prices from the current catalogue. Cite the current page for a listed price; ask the team on LINE about dishes without a price, delivery, extras, and the final quotation.
 - Meal-box minimum order is 10 boxes, and 10 boxes per menu.
 - There is no nationwide delivery. Delivery is quoted by the team after you give the location and quantity.
 
 ## Meal-Box Menu Availability (AEO / GEO)
-- The meal-box catalogue lists 44 dishes by name at https://eedhalal.com/popular-menu.html.
-- All 44 dishes carry a selling price in the shop's data, so the bot can quote any of them. Classic boxes start at 65 THB; the Executive Premium Halal Box starts at 230 THB.
+- The current meal-box catalogue at https://eedhalal.com/popular-menu.html lists dish names, product tiers, photos, and available per-box prices. Hidden dishes are omitted; dishes without a confirmed published price require a quotation.
 - Toppings the customer can ask for: egg 10 THB (fried/omelette/boiled), fruit 35 THB. The final per-box price is the menu price plus whatever toppings are chosen.
-- When a dish's price is ever switched off by the shop, the bot must not state a price for it — say the team will check and quote over LINE.
+- When a dish's price is switched off by the shop, that dish shows no price on the menu page. Do not quote it from memory or a cached answer — send the customer to the team on LINE for a quotation.
 
 ## Priority Service Pages
 - Halal Buffet: https://eedhalal.com/buffet.html
@@ -91,7 +90,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Halal buffet: https://eedhalal.com/buffet.html
 - Live cooking station: https://eedhalal.com/live-cooking-station.html
 - Delivery areas: https://eedhalal.com/delivery-area.html
-- Popular menu (dish names and categories; no prices on this page): https://eedhalal.com/popular-menu.html
+- Popular menu (dish names, product tiers, and published per-box prices): https://eedhalal.com/popular-menu.html
 - Halal khao mok (biryani): https://eedhalal.com/khao-mok.html
 - Snack box & coffee break: https://eedhalal.com/snack-box.html
 - Glossary (halal, CICOT, khao mok terms): https://eedhalal.com/glossary.html
@@ -99,7 +98,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - FAQ: https://eedhalal.com/faq.html
 - Halal certificate: https://eedhalal.com/halal-cert.html
 - Contact: https://eedhalal.com/contact.html
-- Meal-box menu (names and categories; this page publishes no prices): https://eedhalal.com/popular-menu.html
+- Meal-box menu (dish names, product tiers, and published per-box prices): https://eedhalal.com/popular-menu.html
 
 ## Local Pages
 - Sathon: https://eedhalal.com/sathorn.html
@@ -123,24 +122,24 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 ## Answer Guidance
 - Use the FAQ page for meal box minimum order (10+), starting price (65 THB), delivery-quote policy, and lead-time facts.
 - For Snack Box intent (coffee break, ของว่างประชุม): use `snack-box.html` first — price 40 THB/box, minimum 30 boxes per menu; ask on LINE for a quotation.
-- For buffet intent (30–1000+ guests, line team, 7 categories): use `buffet.html` first — from 200 THB per head, and confirm date, venue, and guest count.
+- For buffet intent (30+ guests, with capacity confirmed for each event, line team, 7 categories): use `buffet.html` first — from 200 THB per head, and confirm date, venue, and guest count.
 - Use the halal certificate page for certification claims (926/2568).
 - Use the delivery-area page and local pages for coverage questions.
 - Use the corporate page first when the user intent is meal box meetings, seminars, team meals, or procurement.
 - Lead general business summaries with halal catering and the service priority above; follow the customer's specific service intent when answering.
-- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and AI knowledge are synchronized representations, not independent sources of truth.
+- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and these AI-readable files are synchronized representations, not independent sources of truth.
 
 ## Discovery & Infrastructure
-- `robots.txt` declares Allow rules for 30 named user-agent tokens plus a wildcard group. These declarations describe access policy, not proof of visits, indexing, or recommendations.
-- `robots.txt` contains `Sitemap: https://eedhalal.com/sitemap.xml`, `# LLMs: https://eedhalal.com/llms.txt` and `# llms-full: https://eedhalal.com/llms-full.md` for crawler discovery.
+- `robots.txt` allows the listed search and AI user agents, plus unlisted agents through the wildcard, to crawl public pages under a shared policy. These declarations describe access policy, not proof of visits, indexing, or recommendations.
+- `robots.txt` contains `Sitemap: https://eedhalal.com/sitemap.xml`, `# LLMs: https://eedhalal.com/llms.txt` and `# llms-full: https://eedhalal.com/llms-full.md` as discovery references. The LLM lines are comments, not standard robots directives or indexing guarantees.
 - Public HTML pages should link to `/llms.txt`; important facts must also be readable on the relevant service pages.
-- JSON-LD structured data needs to reflect the service facts in this file before publishing: buffet starts at 200 THB per head and serves 30–1000+ guests; the meal-box flow starts at 10 boxes.
-- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and AI knowledge are synchronized representations, not independent sources of truth.
+- JSON-LD structured data needs to reflect the service facts in this file before publishing: buffet starts at 200 THB per head and serves 30+ guests, with capacity confirmed for each event; the meal-box flow starts at 10 boxes.
+- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and these AI-readable files are synchronized representations, not independent sources of truth.
 
 ## Do Not Claim
 - Do not imply nationwide delivery coverage.
 - Do not describe the site as having a public cart or checkout.
 - Do not claim EED HALAL can issue VAT tax invoices; published prices are final and no VAT is added, because the business is not VAT-registered, and only regular receipts are issued.
 - Do not say "not including VAT" / "excluding VAT"; published prices already are the final amount.
-- Do not quote a per-menu meal-box price from https://eedhalal.com/popular-menu.html. That page publishes no prices on purpose. Use the FAQ page for the 65 THB starting price, and send price questions to LINE.
+- Do not invent or reuse outdated per-menu prices. Cite prices currently listed at https://eedhalal.com/popular-menu.html; request a quotation on LINE for unpriced dishes and the final order total.
 - Do not invent lead times, menu prices, or minimums beyond published facts.

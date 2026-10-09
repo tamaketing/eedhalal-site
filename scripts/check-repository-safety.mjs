@@ -11,9 +11,10 @@ const FORBIDDEN_PATHS = [
   /^tmp-chrome-profile\//,
   /^tmp-.*\.png$/,
   /^leads\/(?!\.gitkeep$)/,
-  /^line-ai\/execution-[^/]+\.json$/,
-  /^line-ai\/[^/]*workflow-export[^/]*\.json$/,
-  /^line-ai\/.*\.(?:sqlite|db|log)$/,
+  // Runtime dumps and process logs must never be committed, wherever they land.
+  /[^/]*workflow-export[^/]*\.json$/,
+  /execution-[^/]+\.json$/,
+  /.*\.(?:sqlite|db|log)$/,
   /^\.env(?!\.example$)(?:\..+)?$/,
 ];
 

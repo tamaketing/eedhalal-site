@@ -19,9 +19,7 @@
   - Calculators and their formulas, labels, and outputs
   - `llms.txt`
   - `llms-full.md`
-  - AI Knowledge content and datasets
-  - LINE bot messages, flows, prompts, and data
-  - n8n workflows, nodes, prompts, and data mappings
+  - LINE Official Account messages, keyword replies, and rich menu (`data/rich-menu.json`)
   - All other data files, generated content, integrations, and channel-specific copies
 
 ## Change Process
@@ -44,7 +42,7 @@ EED HALAL — HUMAN SALES PAGE RULES
 
 เป้าหมาย: หน้าเว็บทุกหน้าต้องอ่านเหมือน “พนักงาน EED ที่เข้าใจลูกค้ากำลังแนะนำบริการ” ไม่ใช่ฐานข้อมูล คู่มือ หรือข้อความที่ AI สร้างเพื่อ SEO
 
-These rules govern every customer-facing string in Thai and English: hero copy, section copy, tier/menu descriptions, CTAs, FAQ answers, page titles and meta descriptions, and any LINE bot or ad copy a customer reads. They never change business facts — `data/business-rules.json` and the menu central remain the source of truth, and rule 13 governs how database values reach the page.
+These rules govern every customer-facing string in Thai and English: hero copy, section copy, tier/menu descriptions, CTAs, FAQ answers, page titles and meta descriptions, and any LINE Official Account or ad copy a customer reads. They never change business facts — `data/business-rules.json` and the menu central remain the source of truth, and rule 13 governs how database values reach the page.
 
 ### 1. Customer First
 

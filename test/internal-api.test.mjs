@@ -216,8 +216,8 @@ async function runSuite(files) {
   return result;
 }
 
-test('S: human approval suite stays green', async () => {
-  await runSuite(['test/line-human-approval.test.mjs']);
+test('S: owner-approved send suite stays green', async () => {
+  await runSuite(['test/draft-send.test.mjs']);
 });
 
 test('T: central database suite stays green', async () => {

@@ -1,12 +1,12 @@
 # EED HALAL — Canonical Facts & Sync Checklist
 
-**ตั้งแต่ 10/9/2026:** กฎธุรกิจทั้งหมดอยู่ที่ `data/business-rules.json`; `data/planner-overrides.json` เก็บเฉพาะ catalog/UI override ไม่รวมค่าส่งหรือเกณฑ์ส่งฟรี ส่วน `js/business-data.js` และฐานความรู้ AI เป็นไฟล์ที่ต้องสร้างและตรวจให้ตรงด้วย `node scripts/check-system.mjs --write`
+**ตั้งแต่ 10/9/2026:** กฎธุรกิจทั้งหมดอยู่ที่ `data/business-rules.json`; `data/planner-overrides.json` เก็บเฉพาะ catalog/UI override ไม่รวมค่าส่งหรือเกณฑ์ส่งฟรี ส่วน `js/business-data.js` และ `js/menu-data.js` เป็นไฟล์ที่ต้องสร้างและตรวจให้ตรงด้วย `node scripts/check-system.mjs --write`
 
 ---
 
 ## 1. ระดับข้าวกล่องและราคาเริ่มต้น (Meal-box tiers)
 
-**ตั้งแต่ 3/10/2026:** ไม่มีตัวเลขราคาเริ่มต้นที่ไหนใน `data/business-rules.json` แล้ว ราคาเริ่มต้นของแต่ละระดับคือ **ราคาต่ำสุดของชุดในระดับนั้นที่เปิดขายและแสดงบนเว็บ** คำนวณสดจาก `data/planner-overrides.json` โดย `scripts/mealbox-tiers.mjs` หน้าเว็บ บอท LINE llms.txt และ JSON-LD ใช้ฟังก์ชันเดียวกัน ถ้าระดับไหนยังไม่มีชุดที่เปิดขาย จะได้ `null` และทุกจุดขอใบเสนอราคาแทนการเดาราคา (ห้าม fallback)
+**ตั้งแต่ 3/10/2026:** ไม่มีตัวเลขราคาเริ่มต้นที่ไหนใน `data/business-rules.json` แล้ว ราคาเริ่มต้นของแต่ละระดับคือ **ราคาต่ำสุดของชุดในระดับนั้นที่เปิดขายและแสดงบนเว็บ** คำนวณสดจาก `data/planner-overrides.json` โดย `scripts/mealbox-tiers.mjs` หน้าเว็บ llms.txt และ JSON-LD ใช้ฟังก์ชันเดียวกัน ถ้าระดับไหนยังไม่มีชุดที่เปิดขาย จะได้ `null` และทุกจุดขอใบเสนอราคาแทนการเดาราคา (ห้าม fallback)
 
 | ระดับ | ราคาเริ่มต้น (คำนวณจากแคตตาล็อก) | ชุดที่เป็นที่มา |
 |-------|----------------------------------------|----------------|
@@ -27,19 +27,19 @@
 | ตารางระดับเต็ม (หน้าเมนู) | `popular-menu.html`, `en/popular-menu.html` — บล็อก `BUSINESS-RULES:MEALBOX-TIERS:*` |
 | การ์ด 3 ระดับ (หน้าแรก) | `index.html`, `en/index.html` — บล็อก `BUSINESS-RULES:MEALBOX-TIER-CARDS:*` |
 | ตัวอย่างก่อนเผยแพร่ | `tools/admin` → “ดูตัวอย่างและเผยแพร่” (แสดงราคาเริ่มต้น + ชื่อชุด + ID + เดิม → ใหม่) |
-| FAQ / บล็อก / llms / LINE | `faq.html`, `en/faq.html`, บทความ 14 บท, `llms.txt`, `llms-full.md`, `line-ai/rich-menu.json`, `line-ai/knowledge-pack.md` |
+| FAQ / บล็อก / llms / LINE OA | `faq.html`, `en/faq.html`, บทความ 14 บท, `llms.txt`, `llms-full.md`, `data/rich-menu.json` |
 | structured data | `index.html`/`en/index.html`/`en/popular-menu.html` (AggregateOffer), `about.html`/`en/about.html` (priceRange) — generate จากช่วงราคาแคตตาล็อก |
 
 **Checklist เมื่อเพิ่มหรือซ่อนชุดที่เปลี่ยนราคาเริ่มต้น:**
 - [ ] จัด `tier` ของชุดในหน้าแอดมิน (“จัดการเมนู”) แล้วกดบันทึก
 - [ ] กด “ดูตัวอย่างและเผยแพร่” ตรวจราคาเริ่มต้นรายระดับกับชื่อชุด/ID ที่เป็นที่มา
 - [ ] ถ้าเปลี่ยน **รูป** ของชุด ต้อง `git add` ไฟล์รูปใหม่ด้วย ไม่งั้นขึ้น 404 ตอน deploy
-- [ ] **รัน generator ครบ 3 ตัว** (ข้ามไม่ได้ — publish เขียนแค่ไฟล์แคตตาล็อก เว็บกับบอทยังพูดของเก่าถ้าไม่รัน)
+- [ ] **รัน generator ครบ 3 ตัว** (ข้ามไม่ได้ — publish เขียนแค่ไฟล์แคตตาล็อก เว็บยังพูดของเก่าถ้าไม่รัน)
   - [ ] `node scripts/sync-catering-content.mjs --write` (ตาราง + การ์ด + JSON-LD + llms)
   - [ ] `node scripts/popular-menu-page.mjs --write` (รายการเมนู + ItemList — **เมนูใหม่จะไม่โผล่ถ้าข้ามขั้นนี้**)
-  - [ ] `node scripts/check-system.mjs --write` (knowledge pack + n8n)
+  - [ ] `node scripts/check-system.mjs --write` (ข้อมูลธุรกิจฝั่งเว็บ)
 - [ ] ตัวตรวจให้ผ่าน: `check-business-sync.mjs --check` · `check-starting-price.mjs` · `check-public-site.mjs` · `popular-menu-page.mjs --check` · `sync-catering-content.mjs --check` · `node --test`
-- [ ] แก้ข้อความที่พิมพ์ราคาไว้เองใน FAQ/บทความ/ข้อความ LINE ให้ตรงกับราคาใหม่
+- [ ] แก้ข้อความที่พิมพ์ราคาไว้เองใน FAQ/บทความ/คำตอบอัตโนมัติของ LINE OA ให้ตรงกับราคาใหม่
 
 ---
 
@@ -270,7 +270,7 @@
 0. **ข้อมูลกลางแบบ machine-readable** — กฎธุรกิจอยู่ที่ `data/business-rules.json` และเมนู/ราคา/ค่าส่งอยู่ที่ `data/planner-overrides.json` จากนั้นรัน `node scripts/check-system.mjs --write` และ `node --test` ทุกครั้ง
 - **ทะเบียนไฟล์ที่ต้องแก้ครบ (`data/sync-manifest.json`)** — 17 facts (ราคาเริ่มต้น/องค์ประกอบกล่อง/อาหารเมนูที่ 2/ชื่อระดับ/ขั้นต่ำข้าวกล่อง/เลขฮาลาล/คำสัญญา 15 นาที/cutoff/VAT/มัดจำ/ขั้นต่ำ Snack Box) ผูกกับไฟล์ที่ต้องมีข้อความนั้นรวม 355 จุด — ตัวเลขนี้ดูจากผลของ `node scripts/check-business-sync.mjs --check` เสมอ + สแกนข้อความต้องห้าม (เลขฮาลาลเก่า, อ้างออกเอกสารภาษีที่ออกไม่ได้, อ้างราคารวมภาษีแล้ว) — `node scripts/check-business-sync.mjs --check` จะลิสต์ไฟล์ที่แก้ไม่ครบให้ทั้งหมด เพิ่มไฟล์ใหม่เข้าเว็บต้องเพิ่มชื่อไฟล์ลง manifest ด้วย
 
-1. **business-rules.json = source of truth** — แก้ `data/business-rules.json` ก่อน แล้วซิงก์ FAQ เว็บ และฐานความรู้ AI ให้ตรงกัน
+1. **business-rules.json = source of truth** — แก้ `data/business-rules.json` ก่อน แล้วซิงก์ FAQ เว็บ และเอกสารสำหรับ AI (`llms.txt` / `llms-full.md`) ให้ตรงกัน
 2. **llms files** — ตัวเลขใน `llms.txt` และ `llms-full.md` ต้องตรงกับ FAQ ทุกประการ
 3. **Schema JSON-LD** — ราคาใน `makesOffer`, `MenuItem.offers`, `FAQPage` ต้องตรงกับ FAQ
 4. **EN vs TH** — หน้า `en/` ทุกหน้าต้อง sync พร้อมกันกับฝั่งไทยเสมอ

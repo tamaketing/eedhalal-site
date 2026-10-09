@@ -246,25 +246,8 @@ test('unauthenticated menu queries are rejected', async () => {
   assert.equal(wrong.status, 401);
 });
 
-test('public LINE gateway exposes no menu route', () => {
-  const gateway = readFileSync(path.resolve('line-ai', 'webhook-gateway.mjs'), 'utf8');
-  assert.ok(!gateway.includes('menus/mealbox'));
-  assert.ok(!gateway.includes('/api/v1/'));
-  assert.ok(gateway.includes('/line-webhook'));
-});
-
-test('menu endpoint wiring lives only where the 2B design puts it', () => {
-  // Builders own the fetch URL; the candidate carries the generated node.
-  // Prompts, knowledge, and the legacy main workflow must not reference it.
-  const builder = readFileSync(path.resolve('line-ai', 'conversation-update.mjs'), 'utf8');
-  assert.ok(builder.includes('/api/v1/menus/mealbox'), 'fetch builder targets the catalog path');
-  for (const file of [
-    path.resolve('line-ai', 'system-prompt.md'),
-    path.resolve('line-ai', 'knowledge-pack.md'),
-    path.resolve('line-ai', 'system-message-node.txt'),
-    path.resolve('line-ai', 'n8n-workflow.json'),
-  ]) {
-    const source = readFileSync(file, 'utf8');
-    assert.ok(!source.includes('menus/mealbox'), `${path.basename(file)} must not reference the menu endpoint`);
-  }
+test('the menu catalogue stays a local file read, never a baked copy', () => {
+  const service = readFileSync(path.resolve('services', 'menus.mjs'), 'utf8');
+  assert.ok(service.includes('planner-overrides.json'), 'the catalogue is read from the central planner file');
+  assert.ok(!service.includes('menus/mealbox'), 'the service is not self-referential');
 });

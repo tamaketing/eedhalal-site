@@ -7,14 +7,12 @@ import { createFileAdapter } from '../db/file.mjs';
 import { createMemoryAdapter } from '../db/memory.mjs';
 import { createPostgresAdapter } from '../db/postgres.mjs';
 import { migrateStatus, migrateUp } from '../db/migrate.mjs';
-import { findCustomerSenders, findKitchenAutoPush } from '../line-ai/conversation-update.mjs';
 import { checkSystem } from '../scripts/check-system.mjs';
 import { recordAudit } from '../services/audit.mjs';
 import { changeDraftStatus, persistDraft } from '../services/drafts.mjs';
 import { extractLeadSignals, maybeCreateLead, setLeadStatus, shouldCreateLead } from '../services/leads.mjs';
 import { resolveCustomer } from '../services/customers.mjs';
 import { sanitizeMetadata } from '../services/sanitize.mjs';
-import { readFile } from 'node:fs/promises';
 import { createFakePg } from '../test-helpers/fake-pg.mjs';
 
 async function fileRepos() {
@@ -206,17 +204,6 @@ test('K: draft persists with null lead', async () => {
   const draft = await persistDraft(repos, { customerId: customer.id, incomingMessage: 'สวัสดี', draftResponse: 'สวัสดีค่ะ' });
   assert.equal(draft.leadId, null);
   assert.equal((await repos.drafts.findById(draft.id)).leadId, null);
-});
-
-// L+M. Human approval still holds: no auto-send, no kitchen push.
-test('L: workflow still has no customer auto-send path', async () => {
-  const workflow = JSON.parse(await readFile(new URL('../line-ai/n8n-workflow.json', import.meta.url), 'utf8'));
-  assert.deepEqual(findCustomerSenders(workflow), []);
-});
-
-test('M: workflow still has no kitchen auto-push', async () => {
-  const workflow = JSON.parse(await readFile(new URL('../line-ai/n8n-workflow.json', import.meta.url), 'utf8'));
-  assert.deepEqual(findKitchenAutoPush(workflow), []);
 });
 
 // N. Business-rules sync still green.

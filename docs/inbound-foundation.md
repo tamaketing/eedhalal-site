@@ -1,7 +1,8 @@
-# B2.5 Step 1 — inbound receipt foundation
+# Inbound receipt foundation
 
-Code and test database only. The Gate B2 n8n workflow is unchanged. These
-endpoints do not dispatch AI, schedule retries, or send messages.
+Code and test database only. These endpoints do not dispatch AI, schedule
+retries, or send messages. The rows they write are retained; no processor
+consumes them now that the answer-drafting layer has been removed.
 
 ## Schema and privacy
 
@@ -82,7 +83,5 @@ failure. File multi-table commits remain non-crash-atomic and single-process;
 only PostgreSQL is the production durability target. Fake PG covers SQL shapes,
 constraints and CAS, not real transaction rollback; real-PG tests are mandatory.
 
-No production migration, API restart or workflow cutover is part of Step 1.
-No historical receipts are fabricated for Gate B2 execution evidence. The
-acknowledgement-before-persistence window and interrupted PROCESSING recovery
-remain future cutover design items, not reliability guarantees of these routes.
+The acknowledgement-before-persistence window and interrupted PROCESSING
+recovery are design items, not reliability guarantees of these routes.

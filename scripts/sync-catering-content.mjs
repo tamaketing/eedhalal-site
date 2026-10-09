@@ -52,7 +52,7 @@ function tierPriceLine(rules, floors, en) {
 }
 
 // nameTh carries its English name for the first mention on a Thai page, so the
-// AI knowledge files print the English name once instead of twice.
+// llms.txt / llms-full.md print the English name once instead of twice.
 function tierBothNames(tier) {
   const th = tier.nameTh.startsWith(tier.nameEn)
     ? tier.nameTh.slice(tier.nameEn.length).replace(/^[\s—–-]+/, '')
@@ -157,6 +157,30 @@ export async function syncCateringContent({ write = false } = {}) {
       const re = /<!-- BUSINESS-RULES:MEALBOX-TIER-CARDS:(?:TH|EN) -->[\s\S]*?<!-- \/BUSINESS-RULES:MEALBOX-TIER-CARDS:(?:TH|EN) -->/;
       if (html.includes('<!-- BUSINESS-RULES:MEALBOX-TIER-CARDS:')) html = html.replace(re, block);
       else throw new Error(`${file}: place <!-- BUSINESS-RULES:MEALBOX-TIER-CARDS:${en ? 'EN' : 'TH'} --> where the tier cards belong`);
+    }
+    // These service pages previously had no structured data. Keep their graph
+    // generated from the same facts as the visible service details, in both languages.
+    if (['cocktail.html', 'table-service.html', 'set-menu.html'].includes(base)) {
+      const url = `${new URL(rules.urls[details[base]]).origin}/${file}`;
+      const title = /<title>([^<]*)<\/title>/.exec(html)?.[1];
+      const description = /<meta\b[^>]*name="description"[^>]*content="([^"]*)"/.exec(html)?.[1];
+      const serviceName = names(en)[rules.positioning.servicePriority.indexOf(details[base])];
+      const provider = { '@id': 'https://eedhalal.com/#organization' };
+      const graph = {
+        '@context': 'https://schema.org',
+        '@graph': [
+          { '@type': 'Organization', ...provider, name: rules.business.name, url: 'https://eedhalal.com/', description: summary },
+          { '@type': 'WebPage', '@id': `${url}#webpage`, url, name: title, description, inLanguage: en ? 'en' : 'th', mainEntity: { '@id': `${url}#service` } },
+          { '@type': 'Service', '@id': `${url}#service`, url, name: serviceName, description: serviceFacts(rules, details[base], en, floors), provider },
+          { '@type': 'BreadcrumbList', itemListElement: [
+            { '@type': 'ListItem', position: 1, name: en ? 'Home' : 'หน้าแรก', item: en ? 'https://eedhalal.com/en/index.html' : 'https://eedhalal.com/' },
+            { '@type': 'ListItem', position: 2, name: serviceName, item: url },
+          ] },
+        ],
+      };
+      const block = `<!-- BUSINESS-RULES:SERVICE-SCHEMA -->\n<script type="application/ld+json">\n${JSON.stringify(graph, null, 2)}\n</script>\n<!-- /BUSINESS-RULES:SERVICE-SCHEMA -->`;
+      const marker = /<!-- BUSINESS-RULES:SERVICE-SCHEMA -->[\s\S]*?<!-- \/BUSINESS-RULES:SERVICE-SCHEMA -->/;
+      html = marker.test(html) ? html.replace(marker, block) : html.replace('</head>', `${block}\n</head>`);
     }
     // Provider identity belongs to the business; retain page-specific Service and article descriptions.
     html = html.replace(/(<script\b[^>]*type=["']application\/ld\+json["'][^>]*>)([\s\S]*?)(<\/script>)/gi, (all, open, body, close) => {

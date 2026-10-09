@@ -3,6 +3,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { computeTierFloors, setsFromPlanner } from './mealbox-tiers.mjs';
+import { checkSearchDiscovery } from './check-search-discovery.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ORIGIN = 'https://eedhalal.com';
@@ -274,7 +275,7 @@ export async function checkPublicSite(root = ROOT) {
     readFile(path.join(ROOT, 'faq.html'), 'utf8'),
     readFile(path.join(ROOT, 'en/faq.html'), 'utf8'),
     readFile(path.join(ROOT, 'llms.txt'), 'utf8'),
-    readFile(path.join(ROOT, 'line-ai/rich-menu.json'), 'utf8'),
+    readFile(path.join(ROOT, 'data/rich-menu.json'), 'utf8'),
   ]);
   const rules = JSON.parse(await readFile(path.join(ROOT, 'data/business-rules.json'), 'utf8'));
   const thaiDeliveryPolicy = rules.delivery.messageTh;
@@ -292,14 +293,14 @@ export async function checkPublicSite(root = ROOT) {
   if (classicFrom === null) failures.push('catalogue: the classic tier has no open set, so its starting price cannot be published');
   else if (!thaiFaq.includes(`เริ่ม ${classicFrom} บาท`)) failures.push(`FAQ: meal boxes must state the classic starting price ${classicFrom} THB`);
   if (premiumFrom !== null) {
-    // The FAQ and the LINE quick reply must name the tier, not a retired
+    // The FAQ and the LINE OA keyword reply must name the tier, not a retired
     // product word, whenever they quote its price.
     if (!thaiFaq.includes(tierNameTh('executive'))) failures.push('FAQ: the executive tier must be named on first use (TH)');
     if (!englishFaq.includes(tierNameEn('executive'))) failures.push('en FAQ: the executive tier must be named (EN)');
     if (!llms.includes(tierNameEn('executive'))) failures.push('llms.txt: the executive tier must be named');
     if (!llms.includes(`premium sets start at ${premiumFrom} THB`) && !llms.includes(`${tierNameEn('executive')} from ${premiumFrom} THB`)) failures.push(`llms.txt: executive tier price is stale (catalogue says ${premiumFrom})`);
     const richNamesTheTier = [tierNameTh('executive'), tierNameEn('executive')].some((label) => richMenu.includes(label));
-    if (!richNamesTheTier || !richMenu.includes(String(premiumFrom))) failures.push(`line-ai/rich-menu.json: the executive tier reply must name the tier and match the catalogue (${premiumFrom} THB)`);
+    if (!richNamesTheTier || !richMenu.includes(String(premiumFrom))) failures.push(`data/rich-menu.json: the executive tier reply must name the tier and match the catalogue (${premiumFrom} THB)`);
     if (retiredPremiumBand.test(thaiFaq) || retiredPremiumBand.test(englishFaq) || retiredPremiumBand.test(richMenu)) failures.push('a retired premium price band is still published');
   }
   const llmsFull = await readFile(path.join(ROOT, 'llms-full.md'), 'utf8');
@@ -327,6 +328,7 @@ export async function checkPublicSite(root = ROOT) {
 
   assert.deepEqual(failures, [], `Public site validation failed:\n${failures.join('\n')}`);
   console.log(`Public site validation passed for ${publicFiles.length} indexable pages.`);
+  await checkSearchDiscovery(root);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

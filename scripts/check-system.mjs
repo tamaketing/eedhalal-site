@@ -3,7 +3,6 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { computeTierFloors, setsFromPlanner, sideItemsFromPlanner, sideChoiceSummary } from './mealbox-tiers.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -86,180 +85,7 @@ export function getLeadTime(rules, quantity) {
   ) || null;
 }
 
-function formatRange(range) {
-  if (range.maxQuantity === null && range.minimumBusinessDays) return `${range.minQuantity}+ กล่อง: แนะนำสั่งล่วงหน้าอย่างน้อย ${range.minimumBusinessDays} วัน`;
-  if (range.maxQuantity === null) return `${range.minQuantity}+ กล่อง: ล่วงหน้า ${range.minimumWeeks}-${range.maximumWeeks} สัปดาห์`;
-  return `${range.minQuantity}-${range.maxQuantity} กล่อง: ล่วงหน้า ${range.minimumBusinessDays}-${range.maximumBusinessDays} วันทำการ`;
-}
 
-export function renderKnowledge(rules, catalog, menus) {
-  const meal = rules.services.mealBox;
-  const snack = rules.services.snackBox;
-  const buffet = rules.services.buffet;
-  const liveCooking = rules.services.liveCooking;
-  const cocktail = rules.services.cocktail;
-  const tableService = rules.services.tableService;
-  const setMenu = rules.services.setMenu;
-  const payment = rules.paymentTerms;
-  const specialMenus = getOrderableMenus(menus, catalog)
-    .filter((menu) => menu.minPerMenu === meal.specialMenuMinimum)
-    .map((menu) => menu.name)
-    .join(', ');
-  const quoteOnlyMenus = getEffectiveMenus(menus, catalog)
-    .filter((menu) => (catalog.quoteOnly || []).includes(menu.id))
-    .map((menu) => menu.name);
-  const policy = deliveryPolicy(rules);
-  const leadTimeLines = rules.leadTimes.map((range) => `- ${formatRange(range)}`).join('\n');
-  const guestRange = (minimum, maximum) => maximum === null ? `${minimum}+ คน (จำนวนที่รองรับให้ทีมยืนยันตามงาน)` : `${minimum}–${maximum} คน`;
-  // Tier starting prices are computed from the published catalogue, never typed.
-  const { floors } = computeTierFloors(setsFromPlanner(catalog || {}));
-  const sideItems = sideItemsFromPlanner(catalog || {});
-  const tierLines = (rules.services.mealBox.tiers || []).map((tier) => {
-    const floor = floors[tier.id];
-    const launching = !floor && tier.launchStatus === 'launching';
-    const price = floor
-      ? `เริ่ม ${floor.priceFrom} บาท/กล่อง (เช่น ${floor.sourceName})`
-      : launching
-        ? 'กำลังเตรียมเปิดตัว — ยังสั่งไม่ได้และห้ามเดาราคา ให้ชวนลูกค้าทักทาง LINE ไว้ก่อนแล้วแจ้งเมื่อเปิด'
-        : 'ยังไม่มีชุดในระดับนี้ที่เปิดขาย — ห้ามเดาราคา ให้บอกลูกค้าว่าสอบถามรายละเอียดชุดอาหารทาง LINE';
-    const detail = [
-      launching ? (tier.launchNoteTh || '') : '',
-      tier.boxFormatTh ? `กล่อง: ${tier.boxFormatTh}` : '',
-      sideChoiceSummary(tier, sideItems, false),
-      tier.sideChoiceNoteTh || '',
-    ].filter(Boolean).join(' · ');
-    return `- ระดับ ${tier.nameTh} (${tier.nameEn}): ${price} · เหมาะกับ${tier.bestForTh}`
-      + (detail ? `\n  ${detail}` : '');
-  }).join('\n');
-  const tierFacts = (rules.services.mealBox.tiers || [])
-    .map((tier) => {
-      const floor = floors[tier.id];
-      const launching = !floor && tier.launchStatus === 'launching';
-      const price = floor
-        ? `From ${floor.priceFrom} THB/box (e.g. ${floor.sourceName})`
-        : launching
-          ? 'Launching soon — not orderable yet; never quote a price, invite the customer to message on LINE to be told when it opens'
-          : 'No set in this tier is open for sale yet — never guess a price, offer to quote it on LINE';
-      const detail = [
-        launching ? (tier.launchNoteEn || '') : '',
-        tier.boxFormatEn ? `Box: ${tier.boxFormatEn}.` : '',
-        sideChoiceSummary(tier, sideItems, true),
-        tier.sideChoiceNoteEn || '',
-      ].filter(Boolean).join(' ');
-      return `- ${tier.nameEn}: ${price}. Best for: ${tier.bestForEn}.${detail ? `\n  ${detail}` : ''}`;
-    })
-    .join('\n');
-
-  // Meal-box prices are NEVER baked into the prompt: the live Internal Menu
-  // API (planner-backed) supplies MENU_CONTEXT per request. This section is
-  // a strict runtime rule, not a catalog.
-
-  return `# EED HALAL - Knowledge Pack สำหรับ LINE AI
-> GENERATED FILE: สร้างจาก data/business-rules.json + data/planner-overrides.json (catalog only)
-> Business rules revision: ${rules.revision} (schema ${rules.schemaVersion})
-> ห้ามแก้ไฟล์นี้โดยตรง ให้แก้ข้อมูลต้นทางแล้วรัน node scripts/check-system.mjs --write
-
-## 1. ตัวตนร้าน
-- ชื่อ: ${rules.business.name} (ดำเนินงานในนาม ${rules.business.name})
-- คำอธิบายธุรกิจ: ${rules.positioning.descriptionTh}
-- Business description: ${rules.positioning.descriptionEn}
-- ลำดับบริการหลัก (ฮาลาลทั้งหมด): ${rules.positioning.serviceNamesTh.join(" > ")}
-- ใช้ลำดับนี้เมื่อแนะนำภาพรวมร้าน; หากลูกค้าระบุบริการแล้ว ให้ตอบบริการนั้นก่อน Snack Box / Coffee Break เป็นบริการเสริม
-- เจ้าของ: ${rules.business.owner} สูตรครัวครอบครัว ${rules.business.experienceYears}+ ปี (ไทย+อินเดีย)
-- ที่อยู่: ${rules.business.address}
-- เวลาทำการ: ${rules.business.operatingDays} ${rules.business.operatingHours} (อาทิตย์ปิด)
-- โทร: ${rules.business.phone}
-- ช่องทางติดต่อ: แชท LINE นี้เลย ลูกค้าอยู่ในแชทนี้แล้ว ไม่ต้องแนะนำลิงก์ LINE ซ้ำ
-- เว็บ: ${rules.urls.home}
-- ฮาลาล: รับรองจากสำนักงานคณะกรรมการอิสลามประจำกรุงเทพมหานคร เลขที่ ${rules.business.halalCertificate} ขอสำเนาในแชทนี้ได้
-
-## 2. ราคาและขั้นต่ำ
-- ระดับข้าวกล่อง (ราคาเริ่มต้นคำนวณจากชุดที่เปิดขายและแสดงบนเว็บ ห้ามเดาราคาเอง)
-${tierLines}
-- Tier facts (English):
-${tierFacts}
-- Snack Box: เริ่ม ${snack.priceFrom} บาท/กล่อง ขั้นต่ำ ${snack.minimumOrder} กล่อง
-- ข้าวกล่องฮาลาล: ขั้นต่ำ ${meal.minimumOrder} กล่อง รองรับ ${meal.minimumOrder}+ กล่อง (จำนวนที่รองรับให้ทีมยืนยันตามงาน) ${meal.halalMaterial} ${meal.packaging} และ${meal.fulfillment}
-- บุฟเฟต์ฮาลาล: เริ่ม ${buffet.priceFrom} บาท/หัว ขั้นต่ำ ${buffet.minimumGuests} คน รองรับ ${guestRange(buffet.minimumGuests, buffet.maximumGuests)} เมนู ${buffet.serviceCategories} หมวด ทีม${buffet.serviceTeam}
-- Live Cooking / ซุ้มปรุงสด: เริ่ม ${liveCooking.priceFrom} บาท/หัว รองรับ ${guestRange(liveCooking.minimumGuests, liveCooking.maximumGuests)} ${liveCooking.serviceStyle} เหมาะกับ${liveCooking.recommendedFor}
-- Cocktail / Finger Food ฮาลาล: เริ่ม ${cocktail.priceFrom} บาท/หัว ขั้นต่ำ ${cocktail.minimumGuests} คน รองรับ ${guestRange(cocktail.minimumGuests, cocktail.maximumGuests)} ${cocktail.serviceStyle} ทีม${cocktail.serviceTeam}
-- โต๊ะจีน / โต๊ะไทย ฮาลาล: เริ่ม ${tableService.priceFromPerTable.toLocaleString('en-US')} บาท/โต๊ะ (${tableService.seatsFrom}–${tableService.seatsTo} ท่าน) ขั้นต่ำ ${tableService.minimumTables} โต๊ะ รองรับ ${tableService.minimumTables}+ โต๊ะ (จำนวนที่รองรับให้ทีมยืนยันตามงาน) เมนูคาว-หวาน ${tableService.courseCountFrom}–${tableService.courseCountTo} รายการ ทีม${tableService.serviceTeam}
-- Set Menu / Sit-down Dinner ฮาลาล: เริ่ม ${setMenu.priceFrom} บาท/หัว ขั้นต่ำ ${setMenu.minimumGuests} คน รองรับ ${guestRange(setMenu.minimumGuests, setMenu.maximumGuests)} ${setMenu.serviceStyle} ${setMenu.courseCountFrom}–${setMenu.courseCountTo} คอร์ส ทีม${setMenu.serviceTeam}
-- ขั้นต่ำออเดอร์องค์กร: ${meal.minimumOrder}+ กล่อง
-- ขั้นต่ำต่อเมนู: เมนูทั่วไปส่วนมาก ${meal.standardMenuMinimum} กล่อง เมนูที่ต้องเตรียมพิเศษ ${meal.specialMenuMinimum} กล่อง ให้ยึดขั้นต่ำรายเมนูจากระบบ
-- เมนูขั้นต่ำ ${meal.specialMenuMinimum} กล่องที่ระบบทราบราคาชัดเจน: ${specialMenus}${quoteOnlyMenus.length ? `\n- อีก ${quoteOnlyMenus.length} เมนู (${quoteOnlyMenus.join(', ')}) เจ้าของปิดราคาไว้ จึงยังไม่มีราคาที่ระบบกล้าวคิดให้ ห้ามเดาราคาเหล่านี้ — บอกลูกค้าว่าจะให้ทีมเช็กราคาและส่งใบเสนอราคาทาง LINE` : ''}
-- สั่ง 1 กล่อง: ไม่รับผ่านเว็บ ให้ไปสั่งผ่าน LINEMAN
-- มี ${meal.menuCountFrom}+ เมนู ปรับเผ็ดและเครื่องได้
-
-## 3. ค่าจัดส่ง (ถามแอดมินทุกกรณี ไม่มีเรทตายตัว)
-- ${policy.messageTh}
-- ${policy.coverageTh} นอกกรุงเทพ: ${rules.delivery.outsideBangkok}
-- ${policy.pendingTh}: อย่าเดาค่าส่ง อย่าอ้างตารางเรท/โซน/เงื่อนไขเดิม อย่าใช้ 0 บาทแทนค่าที่ยังไม่ทราบ
-
-## 4. เวลาสั่งล่วงหน้าและ cutoff
-${leadTimeLines}
-- งานบุฟเฟต์ ซุ้มปรุงสด Cocktail โต๊ะจีน/โต๊ะไทย และ Set Menu: แนะนำจองอย่างน้อย ${buffet.leadTimeDays} วัน
-- ยืนยันจำนวน เมนู เวลา และจุดส่งภายใน ${rules.cutoff.time} น. ของ${rules.cutoff.description}
-- ใบเสนอราคา: ปกติภายใน ${rules.documents.quoteWithinMinutes} นาทีหลังติดต่อเข้ามาในเวลาทำการ
-- งานเร่งด่วนต้องส่งให้ทีมตรวจคิว ห้ามรับปากแทนครัว
-
-## 5. VAT และเอกสาร
-${rules.documents.vatCharge
-  ? '- ราคาที่แจ้งเป็นไปตามเงื่อนไข VAT ในกฎธุรกิจปัจจุบัน ให้ยึดกฎธุรกิจเป็นหลักเท่านั้น'
-  : `- ราคาที่แจ้งเป็นราคาสุทธิสุดท้าย ไม่บวก VAT เพิ่ม เพราะ EED ไม่ได้จดทะเบียน VAT และไม่เรียกเก็บ VAT จากลูกค้า
-- ห้ามพูดว่า "ไม่รวม VAT" / "ยังไม่รวม VAT" / "excluding VAT" / "VAT excluded" / "บวก VAT เพิ่ม" — ประโยคเหล่านี้ทำให้ลูกค้าเข้าใจผิดว่าจะมี VAT เพิ่มภายหลัง
-- ถ้าลูกค้าถามเรื่อง VAT โดยตรง: ตอบว่า EED ไม่ได้จดทะเบียน VAT ราคาที่แจ้งจึงไม่มี VAT เพิ่ม ออกได้แค่ใบเสนอราคา + ใบเสร็จรับเงินแบบธรรมดา และออกใบกำกับภาษี / Tax Invoice ไม่ได้ทุกกรณี
-- VAT กับภาษีหัก ณ ที่จ่ายเป็นคนละเรื่องกัน ห้ามอนุมานเรื่องหัก ณ ที่จ่ายจากสถานะ VAT
-- ถ้าลูกค้าถามเรื่องหัก ณ ที่จ่าย: ห้ามเดา ห้ามระบุอัตรา ห้ามบอกว่ามีหรือไม่มี ให้ตอบว่า "ขออนุญาตตรวจสอบเรื่องหัก ณ ที่จ่ายกับทางทีมก่อนนะคะ" แล้วส่งต่อให้ทีม`}
-- ออกได้: ${rules.documents.available.join(' + ')}
-- ออกใบกำกับภาษี / Tax Invoice ไม่ได้ทุกกรณี
-- ฝ่ายจัดซื้อแจ้งชื่อบริษัทและที่อยู่ในแชทนี้เพื่อออกเอกสาร
-- เงื่อนไขชำระเงิน: ชำระมัดจำ ${payment.bookingDepositPercent}% เพื่อยืนยันวันจอง; งานจัดเลี้ยงชำระส่วนที่เหลือก่อนวันงาน ${payment.cateringBalanceDaysBeforeEvent} วัน; ข้าวกล่องชำระส่วนที่เหลือก่อนส่งมอบ ${payment.mealBoxBalanceDaysBeforeDelivery} วัน
-
-## 6. วิธีสั่งและปิดการขาย
-1. ดูเมนูที่ ${rules.urls.menu}, ${rules.urls.catering} หรือ ${rules.urls.corporate}
-2. แจ้งจำนวน งบต่อหัว วัน เวลา และสถานที่ในแชทนี้
-3. AI ช่วยตรวจข้อมูล คำนวณเบื้องต้น และสรุป brief
-4. ทีมงานตรวจราคา ค่าส่ง และคิวครัวก่อนยืนยันออเดอร์
-
-## 7. กฎกันข้อมูลผิด
-- ห้ามเดาราคา ขั้นต่ำ ค่าส่ง lead time VAT หรือข้อมูลฮาลาล
-- ห้ามบอกว่าส่งทั่วประเทศ มีตะกร้าชำระเงินบนเว็บ หรือออก VAT ได้
-- ถ้าข้อมูลธุรกิจ (เช่น ระยะเวลายืนราคา ค่าบริการเพิ่มเติม วิธีชำระเงินที่นอกเหนือจากที่ระบุ หรือภาษีหัก ณ ที่จ่าย) ไม่มีในกฎธุรกิจปัจจุบัน ห้ามเดาหรือสร้างนโยบายขึ้นเอง ให้ขอให้ทีมยืนยัน
-- ถ้าไม่พบข้อมูล ให้ตอบส่วนที่ทราบและระบุส่วนที่ต้องให้ทีมตรวจสอบในแชทนี้ ขอเบอร์เฉพาะเมื่อลูกค้าต้องการให้โทรกลับ
-- เรื่องราคา ส่ง และสั่งซื้อ ต้องแนบลิงก์อ้างอิงจากหัวข้อถัดไป
-
-## 8. ลิงก์อ้างอิง
-- ราคา/ขั้นต่ำ: ${rules.urls.faq}
-- ข้าวกล่ององค์กร: ${rules.urls.corporate}
-- Snack Box: ${rules.urls.snackBox}
-- บุฟเฟต์: ${rules.urls.buffet}
-- ค็อกเทล: ${rules.urls.cocktail}
-- โต๊ะจีน / โต๊ะไทย: ${rules.urls.tableService}
-- อาหารชุด: ${rules.urls.setMenu}
-- ซุ้มปรุงสด: ${rules.urls.liveCooking}
-- จัดเลี้ยงฮาลาล: ${rules.urls.catering}
-- พื้นที่ส่ง: ${rules.urls.delivery}
-- ฮาลาล: ${rules.urls.halal}
-- ติดต่อ: ${rules.urls.contact}
-- เกี่ยวกับร้าน: ${rules.urls.about}
-
-## 9. ข้อเท็จจริงเมนูข้าวกล่อง (ใช้ MENU_CONTEXT รอบนั้นเท่านั้น)
-ราคาและชื่อเมนูข้าวกล่องรายเมนูไม่ได้อยู่ใน system message นี้ ราคาขายปัจจุบันมาจาก Internal Menu API (planner-backed) ผ่าน MENU_CONTEXT ที่แนบมากับข้อความลูกค้าเท่านั้น
-- เมื่อมี MENU_CONTEXT: ใช้เฉพาะชื่อ ราคา และขั้นต่ำรายเมนูที่ระบุในนั้น ห้ามเปลี่ยนราคา ห้ามเพิ่มเมนูที่ไม่มีในนั้น ห้ามใช้ราคาที่จำได้จากประวัติหรือเว็บ
-- กฎความถูกต้องราคา: ทุกคู่ชื่อเมนู+ราคาที่ระบุในร่างคำตอบ ต้องมีอยู่ตรงกันใน MENU_CONTEXT ปัจจุบัน ถ้าไม่มีคู่ใดในนั้น ห้ามระบุราคาเมนูนั้น
-- เมื่อลูกค้าถามราคาเมนูแต่ไม่มี MENU_CONTEXT ที่ใช้ได้: ห้ามเดา ให้แจ้งว่าขอเช็กราคากับทางทีมก่อน ห้ามใช้ "ราคาเริ่มต้น" แทนราคาเมนูที่ไม่ทราบ
-- นโยบายธุรกิจ (ขั้นต่ำรวม จัดส่ง มัดจำ VAT ระยะเวลา) มาจากกฎธุรกิจข้างต้น ไม่ใช่จาก MENU_CONTEXT ชื่อเมนูไม่ใช่ข้อมูลส่วนผสมหรือสารก่อภูมิแพ้
-`;
-}
-
-function getPromptBody(markdown) {
-  const lines = markdown.trim().split(/\r?\n/);
-  const firstFence = lines.indexOf('```');
-  const lastFence = lines.lastIndexOf('```');
-  if (firstFence === -1 || lastFence <= firstFence) return markdown.trim();
-  return lines.slice(firstFence + 1, lastFence).join('\n').trim();
-}
 
 function replaceToppingsSegment(line, toppings) {
   const marker = ', toppings: ';
@@ -482,13 +308,6 @@ export function validateData(rules, catalog, legacy) {
   assert.equal(eed.shippingAutoNote, undefined, 'retired shippingAutoNote must stay removed');
 }
 
-function assertNoBakedMenuCatalog(jsCode, owner) {
-  const code = String(jsCode || '');
-  assert.ok(!code.includes('const menus ='), `${owner} must not embed a menu catalog`);
-  assert.ok(!code.includes('budgetContext'), `${owner} must not carry the retired budget candidate list`);
-  assert.ok(!/"price"\s*:\s*\d+/.test(code), `${owner} must not embed menu prices`);
-  assert.ok(!/\|\s*\d+\s*บาท\/กล่อง/.test(code), `${owner} must not embed menu price lines`);
-}
 
 // js/main.js renders on every page, so a price or minimum typed straight into
 // its copy becomes a customer-facing claim that no business rule can correct.
@@ -500,180 +319,10 @@ function assertNoBakedBusinessNumbersInMainJs(mainJs) {
   assert.ok(!found, `js/main.js must read prices from EED (business-rules.json), not hardcode: ${found?.join(' / ')}`);
 }
 
-function parseRevision(jsCode, nodeName) {
-  const match = String(jsCode || '').match(/const RULE_REVISION = ("(?:[^"\\]|\\.)*");/);
-  assert.ok(match, `${nodeName} node must embed RULE_REVISION`);
-  return JSON.parse(match[1]);
-}
-
-export async function checkWorkflowFoundation(workflow, rules, catalog, legacy) {
-  // Dynamic import: conversation-update.mjs imports this module, so a static
-  // import here would create a module cycle.
-  const {
-    buildAiAgentText,
-    buildConversationRouter,
-    buildNormalizeNodeCode,
-    buildPersistDraftJsonBody,
-    buildVerifyDraftNodeCode,
-    findCustomerSenders,
-    findKitchenAutoPush,
-    findPersistenceMisconfigurations,
-    findStaticDraftStores,
-  } = await import('../line-ai/conversation-update.mjs');
-  const byId = new Map(workflow.nodes.map((node) => [node.id, node]));
-  const router = byId.get('deterministic-faq');
-  const normalize = byId.get('normalize-event');
-  const verify = byId.get('verify-draft');
-  const agent = byId.get('ai-agent');
-  const persist = byId.get('persist-draft');
-  assert.ok(router && normalize && verify && agent && persist, 'workflow must contain the persistence chain (Deterministic FAQ, Normalize Event, Verify Draft, AI Agent, Persist Draft)');
-  assert.ok(!byId.get('build-draft'), 'legacy Build Draft node must be removed (PostgreSQL is the Draft store)');
-  assertNoBakedMenuCatalog(router.parameters.jsCode, 'Deterministic FAQ');
-  assert.equal(
-    router.parameters.jsCode,
-    buildConversationRouter(),
-    'Deterministic FAQ code is stale; run with --write',
-  );
-  assert.equal(
-    agent.parameters.text,
-    buildAiAgentText(),
-    'AI Agent input is stale; run with --write',
-  );
-  assert.ok(
-    normalize.parameters.jsCode.includes('menuContext'),
-    'Normalize Event must pass MENU_CONTEXT; run with --write',
-  );
-  assert.ok(
-    !normalize.parameters.jsCode.includes('budgetContext'),
-    'Normalize Event must not carry the retired budget candidate list',
-  );
-  assert.equal(
-    persist.parameters.jsonBody,
-    buildPersistDraftJsonBody('Normalize Event'),
-    'Persist Draft body is stale; run with --write',
-  );
-  assert.equal(parseRevision(normalize.parameters.jsCode, 'Normalize Event'), rules.revision, 'Normalize Event RULE_REVISION is stale; run with --write');
-  assert.equal(
-    normalize.parameters.jsCode,
-    buildNormalizeNodeCode(rules.revision),
-    'Normalize Event code is stale; run with --write',
-  );
-  assert.equal(
-    verify.parameters.jsCode,
-    buildVerifyDraftNodeCode(),
-    'Verify Draft code is stale; run with --write',
-  );
-  const chain = workflow.connections;
-  assert.equal(chain['AI Agent']?.main?.[0]?.[0]?.node, 'Normalize Event', 'AI output must enter normalization');
-  assert.equal(chain['Normalize Event']?.main?.[0]?.[0]?.node, 'Resolve Customer', 'normalization must resolve the customer first');
-  assert.equal(chain['Resolve Customer']?.main?.[0]?.[0]?.node, 'Evaluate Lead', 'customer must precede lead evaluation');
-  assert.equal(chain['Evaluate Lead']?.main?.[0]?.[0]?.node, 'Persist Draft', 'lead evaluation must precede draft persistence');
-  assert.equal(chain['Persist Draft']?.main?.[0]?.[0]?.node, 'Verify Draft', 'persistence must end at the Verify Draft guard');
-  assert.deepEqual(findCustomerSenders(workflow), [], 'workflow must not contain customer auto-send nodes');
-  assert.deepEqual(findKitchenAutoPush(workflow), [], 'workflow must not contain kitchen auto-push nodes');
-  assert.deepEqual(findStaticDraftStores(workflow), [], 'workflow must not stage Drafts in static data');
-  assert.deepEqual(
-    findPersistenceMisconfigurations(workflow),
-    [],
-    `persistence nodes misconfigured:\n${findPersistenceMisconfigurations(workflow).join('\n')}`,
-  );
-}
-
-export async function checkCandidateMenuLookup(candidate, rules) {
-  const {
-    buildAiAgentText,
-    buildConversationRouter,
-    buildDeterministicMenuDraftNodeCode,
-    buildMenuContextNodeCode,
-    buildPersistDraftJsonBody,
-    findMenuLookupMisconfigurations,
-  } = await import('../line-ai/conversation-update.mjs');
-  const byId = new Map(candidate.nodes.map((node) => [node.id, node]));
-  for (const id of ['deterministic-faq', 'menu-lookup-needed', 'fetch-menu-catalog', 'build-menu-context', 'deterministic-draft-eligible', 'build-deterministic-menu-draft', 'ai-agent']) {
-    assert.ok(byId.get(id), `candidate must contain the menu branch node: ${id}`);
-  }
-  assert.equal(candidate.nodes.length, 27, 'candidate topology is stale; run with --write');
-  assertNoBakedMenuCatalog(byId.get('deterministic-faq').parameters.jsCode, 'candidate Deterministic FAQ');
-  assert.equal(
-    byId.get('deterministic-faq').parameters.jsCode,
-    buildConversationRouter(),
-    'candidate Deterministic FAQ code is stale; run with --write',
-  );
-  assert.equal(
-    byId.get('ai-agent').parameters.text,
-    buildAiAgentText(),
-    'candidate AI Agent input is stale; run with --write',
-  );
-  assert.equal(
-    byId.get('build-menu-context').parameters.jsCode,
-    buildMenuContextNodeCode(),
-    'candidate Build Menu Context code is stale; run with --write',
-  );
-  assert.equal(
-    byId.get('build-deterministic-menu-draft').parameters.jsCode,
-    buildDeterministicMenuDraftNodeCode(),
-    'candidate deterministic draft code is stale; run with --write',
-  );
-  assertNoBakedMenuCatalog(byId.get('build-deterministic-menu-draft').parameters.jsCode, 'deterministic draft');
-  assertNoBakedMenuCatalog(JSON.stringify(candidate), 'candidate workflow');
-  assert.ok(!JSON.stringify(candidate).includes('budgetContext'), 'candidate must not carry the retired budget candidate list');
-  assert.ok(
-    byId.get('normalize-response').parameters.jsCode.includes("incoming.draftSource === 'deterministic-menu' ? null"),
-    'candidate Normalize Response must null the model for deterministic drafts',
-  );
-  assert.equal(
-    byId.get('persist-draft').parameters.jsonBody,
-    buildPersistDraftJsonBody('Normalize Response', { includeReplyToken: false }),
-    'candidate Persist Draft body is stale; run with --write',
-  );
-  const chain = candidate.connections;
-  const edge = (node) => chain[node]?.main;
-  assert.equal(edge('Has Safe Answer?')?.[1]?.[0]?.node, 'Menu Lookup Needed?', 'menu branch must start at the AI fallback');
-  assert.equal(edge('Menu Lookup Needed?')?.[0]?.[0]?.node, 'Fetch Menu Catalog', 'fetch branch wiring is stale');
-  assert.equal(edge('Menu Lookup Needed?')?.[1]?.[0]?.node, 'Build Menu Context', 'skip branch wiring is stale');
-  assert.equal(edge('Fetch Menu Catalog')?.[0]?.[0]?.node, 'Build Menu Context', 'fetch must feed context builder');
-  assert.equal(edge('Build Menu Context')?.[0]?.[0]?.node, 'Deterministic Draft Eligible?', 'context must feed the eligibility gate');
-  assert.equal(edge('Deterministic Draft Eligible?')?.[0]?.[0]?.node, 'Build Deterministic Menu Draft', 'eligible branch wiring is stale');
-  assert.equal(edge('Deterministic Draft Eligible?')?.[1]?.[0]?.node, 'AI Agent', 'general branch wiring is stale');
-  assert.equal(edge('Build Deterministic Menu Draft')?.[0]?.[0]?.node, 'Normalize Response', 'deterministic draft must feed persistence');
-  // Persist-first: the whole menu branch runs after inbound persistence.
-  const seen = new Set();
-  const queue = ['Persist Inbound'];
-  while (queue.length) {
-    const name = queue.shift();
-    if (seen.has(name)) continue;
-    seen.add(name);
-    for (const group of chain[name]?.main || []) for (const e of group || []) queue.push(e.node);
-  }
-  for (const name of ['Menu Lookup Needed?', 'Fetch Menu Catalog', 'Build Menu Context', 'Deterministic Draft Eligible?', 'Build Deterministic Menu Draft', 'AI Agent']) {
-    assert.ok(seen.has(name), `persist-first violated: ${name} unreachable after Persist Inbound`);
-  }
-  assert.deepEqual(
-    findMenuLookupMisconfigurations(candidate),
-    [],
-    `menu lookup nodes misconfigured:\n${findMenuLookupMisconfigurations(candidate).join('\n')}`,
-  );
-}
-
 export async function checkSystem(root = ROOT) {
   const data = await loadSystemData(root);
   validateData(data.rules, data.catalog, data.legacy);
   assertNoBakedBusinessNumbersInMainJs(await readFile(path.join(root, 'js/main.js'), 'utf8'));
-  const expectedKnowledge = renderKnowledge(data.rules, data.catalog, data.legacy.menus);
-  const actualKnowledge = await readFile(path.join(root, 'line-ai/knowledge-pack.md'), 'utf8');
-  assert.equal(actualKnowledge.replace(/\r\n/g, '\n'), expectedKnowledge, 'AI knowledge is stale; run with --write');
-  const prompt = getPromptBody(await readFile(path.join(root, 'line-ai/system-prompt.md'), 'utf8'));
-  const expectedNodeMessage = `${expectedKnowledge.trim()}\n\n${prompt}\n`;
-  const actualNodeMessage = await readFile(path.join(root, 'line-ai/system-message-node.txt'), 'utf8');
-  assert.equal(actualNodeMessage.replace(/\r\n/g, '\n'), expectedNodeMessage, 'combined n8n system message is stale; run with --write');
-  const workflow = await readJson(root, 'line-ai/n8n-workflow.json');
-  assert.equal(workflow.nodes.find((node) => node.id === 'ai-agent')?.parameters.options.systemMessage, expectedNodeMessage,
-    'workflow system message is stale; run with --write');
-  const candidate = await readJson(root, 'line-ai/n8n-workflow-b25-persist-first.json');
-  assert.equal(candidate.nodes.find((node) => node.id === 'ai-agent')?.parameters.options.systemMessage, expectedNodeMessage,
-    'candidate workflow system message is stale; run with --write');
-  await checkWorkflowFoundation(workflow, data.rules, data.catalog, data.legacy);
-  await checkCandidateMenuLookup(candidate, data.rules);
   return data;
 }
 
@@ -687,41 +336,11 @@ async function writeGeneratedFiles(root = ROOT) {
   await writeFile(menuPath, syncedMenuSource, 'utf8');
   const snackPath = path.join(root, 'js/snack-data.js');
   await writeFile(snackPath, syncSnackSource(await readFile(snackPath, 'utf8'), rules), 'utf8');
-  const { legacy } = await loadSystemData(root);
-  const knowledge = renderKnowledge(rules, catalog, legacy.menus);
-  await writeFile(path.join(root, 'line-ai/knowledge-pack.md'), knowledge, 'utf8');
-  const prompt = getPromptBody(await readFile(path.join(root, 'line-ai/system-prompt.md'), 'utf8'));
-  await writeFile(path.join(root, 'line-ai/system-message-node.txt'), `${knowledge.trim()}\n\n${prompt}\n`, 'utf8');
-  const { buildAiAgentText, buildConversationRouter, buildNormalizeNodeCode, buildPersistDraftJsonBody, buildVerifyDraftNodeCode, ensureCandidateMenuLookup } = await import('../line-ai/conversation-update.mjs');
-  const workflow = await readJson(root, 'line-ai/n8n-workflow.json');
-  workflow.nodes.find((node) => node.id === 'ai-agent').parameters.options.systemMessage = `${knowledge.trim()}\n\n${prompt}\n`;
-  workflow.nodes.find((node) => node.id === 'ai-agent').parameters.text = buildAiAgentText();
-  workflow.nodes.find((node) => node.id === 'deterministic-faq').parameters.jsCode =
-    buildConversationRouter();
-  workflow.nodes.find((node) => node.id === 'persist-draft').parameters.jsonBody =
-    buildPersistDraftJsonBody('Normalize Event');
-  workflow.nodes.find((node) => node.id === 'deterministic-faq').parameters.jsCode =
-    buildConversationRouter();
-  workflow.nodes.find((node) => node.id === 'normalize-event').parameters.jsCode =
-    buildNormalizeNodeCode(rules.revision);
-  workflow.nodes.find((node) => node.id === 'verify-draft').parameters.jsCode = buildVerifyDraftNodeCode();
-  await writeFile(path.join(root, 'line-ai/n8n-workflow.json'), `${JSON.stringify(workflow, null, 2)}\n`, 'utf8');
-  // The B2.5 persist-first candidate carries the same generated system prompt
-  // plus the generator-owned deterministic menu branch, AI input, and
-  // Persist Draft body (parameterized by normalize node name). B2.5-specific
-  // node logic (Normalize Inbound/Response, lead/inbound handling) stays
-  // hand-maintained and is guarded by tests, never rewritten here.
-  let candidate = await readJson(root, 'line-ai/n8n-workflow-b25-persist-first.json');
-  candidate.nodes.find((node) => node.id === 'ai-agent').parameters.options.systemMessage = `${knowledge.trim()}\n\n${prompt}\n`;
-  candidate.nodes.find((node) => node.id === 'deterministic-faq').parameters.jsCode =
-    buildConversationRouter();
-  candidate = ensureCandidateMenuLookup(candidate);
-  await writeFile(path.join(root, 'line-ai/n8n-workflow-b25-persist-first.json'), `${JSON.stringify(candidate, null, 2)}\n`, 'utf8');
 }
 
 const isCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isCli) {
   if (process.argv.includes('--write')) await writeGeneratedFiles();
   await checkSystem();
-  console.log('System data, calculator catalog, and AI knowledge are consistent.');
+  console.log('System data and calculator catalog are consistent.');
 }

@@ -6,7 +6,10 @@
       "id": "khao-mok",
       "prefix": "ข้าวหมก",
       "description": "หน้า landing ข้าวหมก: ตัวเลขราคาทุกจุด (ทั้งข้อความและ JSON-LD) ต้องเป็นราคาที่แคตตาล็อกขายจริง เคยมีหน้าเดียวที่พูด 4 ตัวเลขขัดกัน (85 ในเนื้อความ, 90 ใน price, 90 ใน low/highPrice, 100 ในชื่อ offer)",
-      "files": ["khao-mok.html", "en/khao-mok.html"]
+      "files": [
+        "khao-mok.html",
+        "en/khao-mok.html"
+      ]
     }
   ],
   "facts": [
@@ -14,18 +17,44 @@
       "id": "mealbox-price",
       "description": "ราคาเริ่มต้นของระดับ Classic (THB/box) คำนวณจากชุดที่เปิดขายและแสดงบนเว็บ ไม่ได้พิมพ์ไว้ใน business-rules.json",
       "source": "tier.priceFrom:classic",
-      "variants": ["เริ่ม {{tier.priceFrom:classic}} บาท", "From {{tier.priceFrom:classic}} THB", "เริ่มต้น {{tier.priceFrom:classic}} บาท"],
+      "variants": [
+        "เริ่ม {{tier.priceFrom:classic}} บาท",
+        "From {{tier.priceFrom:classic}} THB",
+        "เริ่มต้น {{tier.priceFrom:classic}} บาท"
+      ],
       "files": [
-        "about.html", "catering.html", "contact.html", "corporate.html", "delivery-area.html",
-        "donmueang.html", "faq.html", "huaykwang.html", "index.html", "ladprao.html",
-        "latkrabang.html", "popular-menu.html", "rama3.html", "sathorn-silom.html", "sathorn.html",
-        "silom.html", "sukhumvit.html",
-        "en/about.html", "en/catering.html", "en/faq.html", "en/index.html", "en/popular-menu.html",
-        "en/sathorn.html", "en/silom.html",
-        "llms.txt", "llms-full.md",
-        "blog/corporate-meeting-100-people-checklist.html", "blog/corporate-meeting-50-people-checklist.html",
-        "blog/halal-box-100-boxes-price.html", "blog/halal-box-100-people-budget.html",
-        "blog/halal-box-50-people-price.html", "blog/halal-box-budget-70-baht.html",
+        "about.html",
+        "catering.html",
+        "contact.html",
+        "corporate.html",
+        "delivery-area.html",
+        "donmueang.html",
+        "faq.html",
+        "huaykwang.html",
+        "index.html",
+        "ladprao.html",
+        "latkrabang.html",
+        "popular-menu.html",
+        "rama3.html",
+        "sathorn-silom.html",
+        "sathorn.html",
+        "silom.html",
+        "sukhumvit.html",
+        "en/about.html",
+        "en/catering.html",
+        "en/faq.html",
+        "en/index.html",
+        "en/popular-menu.html",
+        "en/sathorn.html",
+        "en/silom.html",
+        "llms.txt",
+        "llms-full.md",
+        "blog/corporate-meeting-100-people-checklist.html",
+        "blog/corporate-meeting-50-people-checklist.html",
+        "blog/halal-box-100-boxes-price.html",
+        "blog/halal-box-100-people-budget.html",
+        "blog/halal-box-50-people-price.html",
+        "blog/halal-box-budget-70-baht.html",
         "blog/seminar-200-people-menu.html"
       ]
     },
@@ -41,17 +70,28 @@
         "Executive Premium Halal Box starts at {{tier.priceFrom:executive}} THB"
       ],
       "files": [
-        "catering.html", "corporate.html", "faq.html", "popular-menu.html",
-        "en/catering.html", "en/faq.html",
-        "llms.txt", "llms-full.md",
-        "line-ai/rich-menu.json", "line-ai/test-10-questions.md",
-        "blog/corporate-meeting-100-people-checklist.html", "blog/corporate-meeting-50-people-checklist.html",
-        "blog/halal-box-100-boxes-price.html", "blog/halal-box-100-people-budget.html",
-        "blog/halal-box-50-people-price.html", "blog/halal-box-budget-70-baht.html",
+        "catering.html",
+        "corporate.html",
+        "faq.html",
+        "popular-menu.html",
+        "en/catering.html",
+        "en/faq.html",
+        "llms.txt",
+        "llms-full.md",
+        "data/rich-menu.json",
+        "blog/corporate-meeting-100-people-checklist.html",
+        "blog/corporate-meeting-50-people-checklist.html",
+        "blog/halal-box-100-boxes-price.html",
+        "blog/halal-box-100-people-budget.html",
+        "blog/halal-box-50-people-price.html",
+        "blog/halal-box-budget-70-baht.html",
         "blog/seminar-200-people-menu.html",
-        "en/blog/corporate-meeting-100-people-checklist.html", "en/blog/corporate-meeting-50-people-checklist.html",
-        "en/blog/halal-box-100-boxes-price.html", "en/blog/halal-box-100-people-budget.html",
-        "en/blog/halal-box-50-people-price.html", "en/blog/halal-box-budget-70-baht.html",
+        "en/blog/corporate-meeting-100-people-checklist.html",
+        "en/blog/corporate-meeting-50-people-checklist.html",
+        "en/blog/halal-box-100-boxes-price.html",
+        "en/blog/halal-box-100-people-budget.html",
+        "en/blog/halal-box-50-people-price.html",
+        "en/blog/halal-box-budget-70-baht.html",
         "en/blog/seminar-200-people-menu.html"
       ]
     },
@@ -68,47 +108,77 @@
         "From {{tier.priceFrom:signature}} THB/box"
       ],
       "files": [
-        "about.html", "catering.html", "faq.html", "index.html", "popular-menu.html",
-        "en/about.html", "en/catering.html", "en/faq.html", "en/index.html",
-        "llms.txt", "llms-full.md",
-        "line-ai/knowledge-pack.md", "line-ai/rich-menu.json", "line-ai/reply-templates.json",
-        "blog/halal-box-100-people-budget.html", "en/blog/halal-box-100-people-budget.html"
+        "about.html",
+        "catering.html",
+        "faq.html",
+        "index.html",
+        "popular-menu.html",
+        "en/about.html",
+        "en/catering.html",
+        "en/faq.html",
+        "en/index.html",
+        "llms.txt",
+        "llms-full.md",
+        "data/rich-menu.json",
+        "blog/halal-box-100-people-budget.html",
+        "en/blog/halal-box-100-people-budget.html"
       ]
     },
     {
       "id": "mealbox-tier-classic-name",
       "description": "ชื่อระดับ Classic ตามที่ประกาศใน data/business-rules.json (services.mealBox.tiers) ต้องปรากฏในทุกช่องทางที่ลงชื่อระดับ",
       "source": "services.mealBox.tiers[classic].nameEn",
-      "variants": ["Classic Halal Meal Box"],
+      "variants": [
+        "Classic Halal Meal Box"
+      ],
       "files": [
-        "faq.html", "popular-menu.html", "index.html",
-        "en/faq.html", "en/popular-menu.html", "en/index.html",
-        "llms.txt", "llms-full.md",
-        "line-ai/rich-menu.json", "line-ai/knowledge-pack.md"
+        "faq.html",
+        "popular-menu.html",
+        "index.html",
+        "en/faq.html",
+        "en/popular-menu.html",
+        "en/index.html",
+        "llms.txt",
+        "llms-full.md",
+        "data/rich-menu.json"
       ]
     },
     {
       "id": "mealbox-tier-signature-name",
       "description": "ชื่อระดับ Signature ตามที่ประกาศใน data/business-rules.json (services.mealBox.tiers) ต้องปรากฏในทุกช่องทางที่ลงชื่อระดับ",
       "source": "services.mealBox.tiers[signature].nameEn",
-      "variants": ["Signature Halal Meal Box"],
+      "variants": [
+        "Signature Halal Meal Box"
+      ],
       "files": [
-        "faq.html", "popular-menu.html", "index.html",
-        "en/faq.html", "en/popular-menu.html", "en/index.html",
-        "llms.txt", "llms-full.md",
-        "line-ai/rich-menu.json", "line-ai/knowledge-pack.md"
+        "faq.html",
+        "popular-menu.html",
+        "index.html",
+        "en/faq.html",
+        "en/popular-menu.html",
+        "en/index.html",
+        "llms.txt",
+        "llms-full.md",
+        "data/rich-menu.json"
       ]
     },
     {
       "id": "mealbox-tier-executive-name",
       "description": "ชื่อระดับ Executive Premium ตามที่ประกาศใน data/business-rules.json (services.mealBox.tiers) ต้องปรากฏในทุกช่องทางที่ลงชื่อระดับ",
       "source": "services.mealBox.tiers[executive].nameEn",
-      "variants": ["Executive Premium Halal Box"],
+      "variants": [
+        "Executive Premium Halal Box"
+      ],
       "files": [
-        "faq.html", "popular-menu.html", "index.html",
-        "en/faq.html", "en/popular-menu.html", "en/index.html",
-        "llms.txt", "llms-full.md",
-        "line-ai/rich-menu.json", "line-ai/knowledge-pack.md"
+        "faq.html",
+        "popular-menu.html",
+        "index.html",
+        "en/faq.html",
+        "en/popular-menu.html",
+        "en/index.html",
+        "llms.txt",
+        "llms-full.md",
+        "data/rich-menu.json"
       ]
     },
     {
@@ -120,11 +190,14 @@
         "Rice, one main, one second dish, and vegetables, in a four-compartment box"
       ],
       "files": [
-        "popular-menu.html", "en/popular-menu.html",
-        "index.html", "en/index.html",
-        "faq.html", "en/faq.html",
-        "llms.txt", "llms-full.md",
-        "line-ai/knowledge-pack.md"
+        "popular-menu.html",
+        "en/popular-menu.html",
+        "index.html",
+        "en/index.html",
+        "faq.html",
+        "en/faq.html",
+        "llms.txt",
+        "llms-full.md"
       ]
     },
     {
@@ -138,29 +211,60 @@
         "The price follows the pair you pick"
       ],
       "files": [
-        "popular-menu.html", "en/popular-menu.html",
-        "index.html", "en/index.html",
-        "faq.html", "en/faq.html",
-        "llms.txt", "llms-full.md",
-        "line-ai/knowledge-pack.md"
+        "popular-menu.html",
+        "en/popular-menu.html",
+        "index.html",
+        "en/index.html",
+        "faq.html",
+        "en/faq.html",
+        "llms.txt",
+        "llms-full.md"
       ]
     },
     {
       "id": "mealbox-minimum",
       "description": "ขั้นต่ำออเดอร์องค์กร (boxes)",
       "source": "services.mealBox.minimumOrder",
-      "variants": ["ขั้นต่ำ {{services.mealBox.minimumOrder}} กล่อง", "minimum {{services.mealBox.minimumOrder}} boxes"],
+      "variants": [
+        "ขั้นต่ำ {{services.mealBox.minimumOrder}} กล่อง",
+        "minimum {{services.mealBox.minimumOrder}} boxes"
+      ],
       "files": [
-        "about.html", "catering.html", "contact.html", "corporate.html",
-        "delivery-area.html", "donmueang.html", "faq.html", "huaykwang.html", "index.html",
-        "khao-mok.html", "ladprao.html", "latkrabang.html", "popular-menu.html", "rama3.html",
-        "sathorn-silom.html", "sathorn.html", "silom.html", "sukhumvit.html",
-        "en/about.html", "en/catering.html", "en/corporate.html", "en/delivery-area.html",
-        "en/faq.html", "en/index.html", "en/khao-mok.html", "en/popular-menu.html", "en/sathorn-silom.html",
-        "llms.txt", "llms-full.md",
-        "blog/corporate-meeting-100-people-checklist.html", "blog/corporate-meeting-50-people-checklist.html",
-        "blog/halal-box-100-people-budget.html", "blog/halal-box-100-people-lead-time.html",
-        "blog/halal-box-50-people-price.html", "blog/halal-box-bangkok-corporate-vendors.html",
+        "about.html",
+        "catering.html",
+        "contact.html",
+        "corporate.html",
+        "delivery-area.html",
+        "donmueang.html",
+        "faq.html",
+        "huaykwang.html",
+        "index.html",
+        "khao-mok.html",
+        "ladprao.html",
+        "latkrabang.html",
+        "popular-menu.html",
+        "rama3.html",
+        "sathorn-silom.html",
+        "sathorn.html",
+        "silom.html",
+        "sukhumvit.html",
+        "en/about.html",
+        "en/catering.html",
+        "en/corporate.html",
+        "en/delivery-area.html",
+        "en/faq.html",
+        "en/index.html",
+        "en/khao-mok.html",
+        "en/popular-menu.html",
+        "en/sathorn-silom.html",
+        "llms.txt",
+        "llms-full.md",
+        "blog/corporate-meeting-100-people-checklist.html",
+        "blog/corporate-meeting-50-people-checklist.html",
+        "blog/halal-box-100-people-budget.html",
+        "blog/halal-box-100-people-lead-time.html",
+        "blog/halal-box-50-people-price.html",
+        "blog/halal-box-bangkok-corporate-vendors.html",
         "blog/khao-mok-halal-explained.html"
       ]
     },
@@ -175,9 +279,13 @@
         "Per-menu minimums apply: {{services.mealBox.standardMenuMinimum}} boxes per menu"
       ],
       "files": [
-        "faq.html", "corporate.html", "budget-planner.html",
-        "en/faq.html", "en/corporate.html",
-        "llms.txt", "llms-full.md"
+        "faq.html",
+        "corporate.html",
+        "budget-planner.html",
+        "en/faq.html",
+        "en/corporate.html",
+        "llms.txt",
+        "llms-full.md"
       ]
     },
     {
@@ -202,24 +310,63 @@
       "id": "halal-certificate",
       "description": "เลขรับรองฮาลาล CICOT (เลขเดียวทั้งเว็บ)",
       "source": "business.halalCertificate",
-      "variants": ["{{business.halalCertificate}}"],
+      "variants": [
+        "{{business.halalCertificate}}"
+      ],
       "files": [
-        "about.html", "buffet.html", "catering.html", "contact.html",
-        "corporate.html", "delivery-area.html", "donmueang.html", "faq.html", "glossary.html",
-        "halal-cert.html", "huaykwang.html", "index.html", "khao-mok.html", "ladprao.html",
-        "latkrabang.html", "live-cooking-station.html", "popular-menu.html", "rama3.html",
-        "sathorn-silom.html", "silom.html", "snack-box.html", "sukhumvit.html",
-        "en/about.html", "en/buffet.html", "en/catering.html", "en/donmueang.html", "en/faq.html",
-        "en/glossary.html", "en/halal-cert.html", "en/huaykwang.html", "en/index.html", "en/khao-mok.html",
-        "en/ladprao.html", "en/latkrabang.html", "en/rama3.html", "en/silom.html", "en/snack-box.html",
+        "about.html",
+        "buffet.html",
+        "catering.html",
+        "contact.html",
+        "corporate.html",
+        "delivery-area.html",
+        "donmueang.html",
+        "faq.html",
+        "glossary.html",
+        "halal-cert.html",
+        "huaykwang.html",
+        "index.html",
+        "khao-mok.html",
+        "ladprao.html",
+        "latkrabang.html",
+        "live-cooking-station.html",
+        "popular-menu.html",
+        "rama3.html",
+        "sathorn-silom.html",
+        "silom.html",
+        "snack-box.html",
+        "sukhumvit.html",
+        "en/about.html",
+        "en/buffet.html",
+        "en/catering.html",
+        "en/donmueang.html",
+        "en/faq.html",
+        "en/glossary.html",
+        "en/halal-cert.html",
+        "en/huaykwang.html",
+        "en/index.html",
+        "en/khao-mok.html",
+        "en/ladprao.html",
+        "en/latkrabang.html",
+        "en/rama3.html",
+        "en/silom.html",
+        "en/snack-box.html",
         "en/sukhumvit.html",
-        "llms.txt", "llms-full.md",
-        "blog/buffet-100-people-price.html", "blog/cicot-explained.html",
-        "blog/corporate-meeting-100-people-checklist.html", "blog/corporate-meeting-50-people-checklist.html",
-        "blog/halal-box-100-boxes-price.html", "blog/halal-box-100-people-budget.html",
-        "blog/halal-box-100-people-lead-time.html", "blog/halal-box-50-people-price.html",
-        "blog/halal-box-bangkok-corporate-vendors.html", "blog/halal-box-budget-70-baht.html",
-        "blog/halal-vs-normal.html", "blog/how-to-choose.html", "blog/seminar-200-people-menu.html",
+        "llms.txt",
+        "llms-full.md",
+        "blog/buffet-100-people-price.html",
+        "blog/cicot-explained.html",
+        "blog/corporate-meeting-100-people-checklist.html",
+        "blog/corporate-meeting-50-people-checklist.html",
+        "blog/halal-box-100-boxes-price.html",
+        "blog/halal-box-100-people-budget.html",
+        "blog/halal-box-100-people-lead-time.html",
+        "blog/halal-box-50-people-price.html",
+        "blog/halal-box-bangkok-corporate-vendors.html",
+        "blog/halal-box-budget-70-baht.html",
+        "blog/halal-vs-normal.html",
+        "blog/how-to-choose.html",
+        "blog/seminar-200-people-menu.html",
         "blog/snack-box-50-people-40-baht.html"
       ]
     },
@@ -227,22 +374,61 @@
       "id": "quote-time",
       "description": "คำสัญญาใบเสนอราคา (นาทีหลังทัก LINE ในเวลาทำการ)",
       "source": "documents.quoteWithinMinutes",
-      "variants": ["{{documents.quoteWithinMinutes}} นาที", "{{documents.quoteWithinMinutes}} minutes"],
+      "variants": [
+        "{{documents.quoteWithinMinutes}} นาที",
+        "{{documents.quoteWithinMinutes}} minutes"
+      ],
       "files": [
-        "about.html", "buffet.html", "catering.html", "contact.html",
-        "corporate.html", "donmueang.html", "faq.html", "halal-cert.html", "huaykwang.html",
-        "index.html", "khao-mok.html", "ladprao.html", "latkrabang.html", "live-cooking-station.html",
-        "popular-menu.html", "rama3.html", "sathorn-silom.html", "sathorn.html", "silom.html",
-        "snack-box.html", "sukhumvit.html",
-        "en/about.html", "en/buffet.html", "en/catering.html", "en/corporate.html", "en/donmueang.html",
-        "en/faq.html", "en/halal-cert.html", "en/huaykwang.html", "en/index.html", "en/khao-mok.html",
-        "en/ladprao.html", "en/latkrabang.html", "en/live-cooking-station.html", "en/rama3.html",
-        "en/sathorn-silom.html", "en/sathorn.html", "en/silom.html", "en/snack-box.html", "en/sukhumvit.html",
-        "blog/buffet-100-people-price.html", "blog/corporate-meeting-100-people-checklist.html",
-        "blog/corporate-meeting-50-people-checklist.html", "blog/halal-box-100-boxes-price.html",
-        "blog/halal-box-100-people-budget.html", "blog/halal-box-100-people-lead-time.html",
-        "blog/halal-box-50-people-price.html", "blog/halal-box-bangkok-corporate-vendors.html",
-        "blog/halal-box-budget-70-baht.html", "blog/seminar-200-people-menu.html",
+        "about.html",
+        "buffet.html",
+        "catering.html",
+        "contact.html",
+        "corporate.html",
+        "donmueang.html",
+        "faq.html",
+        "halal-cert.html",
+        "huaykwang.html",
+        "index.html",
+        "khao-mok.html",
+        "ladprao.html",
+        "latkrabang.html",
+        "live-cooking-station.html",
+        "popular-menu.html",
+        "rama3.html",
+        "sathorn-silom.html",
+        "sathorn.html",
+        "silom.html",
+        "snack-box.html",
+        "sukhumvit.html",
+        "en/about.html",
+        "en/buffet.html",
+        "en/catering.html",
+        "en/corporate.html",
+        "en/donmueang.html",
+        "en/faq.html",
+        "en/halal-cert.html",
+        "en/huaykwang.html",
+        "en/index.html",
+        "en/khao-mok.html",
+        "en/ladprao.html",
+        "en/latkrabang.html",
+        "en/live-cooking-station.html",
+        "en/rama3.html",
+        "en/sathorn-silom.html",
+        "en/sathorn.html",
+        "en/silom.html",
+        "en/snack-box.html",
+        "en/sukhumvit.html",
+        "blog/buffet-100-people-price.html",
+        "blog/corporate-meeting-100-people-checklist.html",
+        "blog/corporate-meeting-50-people-checklist.html",
+        "blog/halal-box-100-boxes-price.html",
+        "blog/halal-box-100-people-budget.html",
+        "blog/halal-box-100-people-lead-time.html",
+        "blog/halal-box-50-people-price.html",
+        "blog/halal-box-bangkok-corporate-vendors.html",
+        "blog/halal-box-budget-70-baht.html",
+        "blog/seminar-200-people-menu.html",
         "blog/snack-box-50-people-40-baht.html"
       ]
     },
@@ -250,58 +436,126 @@
       "id": "cutoff-time",
       "description": "เส้นตายยืนยันรายละเอียด (เวลาของวันทำการก่อนส่ง)",
       "source": "cutoff.time",
-      "variants": ["{{cutoff.time}}"],
+      "variants": [
+        "{{cutoff.time}}"
+      ],
       "files": [
-        "contact.html", "corporate.html", "delivery-area.html", "donmueang.html", "faq.html",
-        "huaykwang.html", "index.html", "ladprao.html", "latkrabang.html", "order-steps.html",
-        "popular-menu.html", "rama3.html", "sathorn-silom.html", "silom.html", "sukhumvit.html",
-        "en/index.html", "en/order-steps.html",
-        "llms.txt", "llms-full.md",
-        "blog/corporate-meeting-100-people-checklist.html", "blog/corporate-meeting-50-people-checklist.html",
-        "blog/halal-box-100-boxes-price.html", "blog/halal-box-100-people-budget.html",
-        "blog/halal-box-100-people-lead-time.html", "blog/halal-box-50-people-price.html",
-        "blog/halal-box-bangkok-corporate-vendors.html", "blog/seminar-200-people-menu.html"
+        "contact.html",
+        "corporate.html",
+        "delivery-area.html",
+        "donmueang.html",
+        "faq.html",
+        "huaykwang.html",
+        "index.html",
+        "ladprao.html",
+        "latkrabang.html",
+        "order-steps.html",
+        "popular-menu.html",
+        "rama3.html",
+        "sathorn-silom.html",
+        "silom.html",
+        "sukhumvit.html",
+        "en/index.html",
+        "en/order-steps.html",
+        "llms.txt",
+        "llms-full.md",
+        "blog/corporate-meeting-100-people-checklist.html",
+        "blog/corporate-meeting-50-people-checklist.html",
+        "blog/halal-box-100-boxes-price.html",
+        "blog/halal-box-100-people-budget.html",
+        "blog/halal-box-100-people-lead-time.html",
+        "blog/halal-box-50-people-price.html",
+        "blog/halal-box-bangkok-corporate-vendors.html",
+        "blog/seminar-200-people-menu.html"
       ]
     },
     {
       "id": "vat-status",
       "description": "สถานะ VAT (ไม่ได้จดทะเบียน ออกได้แค่ใบเสนอราคา+ใบเสร็จธรรมดา)",
       "source": "documents.vatRegistered=false",
-      "variants": ["ยังไม่ได้จดทะเบียน", "not VAT-registered"],
+      "variants": [
+        "ยังไม่ได้จดทะเบียน",
+        "not VAT-registered"
+      ],
       "files": [
-        "about.html", "corporate.html", "faq.html", "index.html",
-        "en/about.html", "en/faq.html", "en/index.html",
-        "llms.txt", "llms-full.md",
-        "blog/corporate-meeting-100-people-checklist.html", "blog/halal-box-100-boxes-price.html",
-        "blog/halal-box-100-people-budget.html", "blog/halal-box-50-people-price.html",
-        "blog/halal-box-budget-70-baht.html", "blog/seminar-200-people-menu.html"
+        "about.html",
+        "corporate.html",
+        "faq.html",
+        "index.html",
+        "en/about.html",
+        "en/faq.html",
+        "en/index.html",
+        "llms.txt",
+        "llms-full.md",
+        "blog/corporate-meeting-100-people-checklist.html",
+        "blog/halal-box-100-boxes-price.html",
+        "blog/halal-box-100-people-budget.html",
+        "blog/halal-box-50-people-price.html",
+        "blog/halal-box-budget-70-baht.html",
+        "blog/seminar-200-people-menu.html"
       ]
     },
     {
       "id": "booking-deposit",
       "description": "มัดจำยืนยันวันจอง (เปอร์เซ็นต์)",
       "source": "paymentTerms.bookingDepositPercent",
-      "variants": ["มัดจำ {{paymentTerms.bookingDepositPercent}}%", "Deposit {{paymentTerms.bookingDepositPercent}}%"],
+      "variants": [
+        "มัดจำ {{paymentTerms.bookingDepositPercent}}%",
+        "Deposit {{paymentTerms.bookingDepositPercent}}%"
+      ],
       "files": [
-        "about.html", "buffet.html", "catering.html", "cocktail.html", "faq.html", "index.html",
-        "live-cooking-station.html", "set-menu.html", "table-service.html",
-        "en/about.html", "en/buffet.html", "en/catering.html", "en/cocktail.html", "en/faq.html",
-        "en/index.html", "en/live-cooking-station.html", "en/set-menu.html", "en/table-service.html"
+        "about.html",
+        "buffet.html",
+        "catering.html",
+        "cocktail.html",
+        "faq.html",
+        "index.html",
+        "live-cooking-station.html",
+        "set-menu.html",
+        "table-service.html",
+        "en/about.html",
+        "en/buffet.html",
+        "en/catering.html",
+        "en/cocktail.html",
+        "en/faq.html",
+        "en/index.html",
+        "en/live-cooking-station.html",
+        "en/set-menu.html",
+        "en/table-service.html"
       ]
     },
     {
       "id": "snackbox-minimum",
       "description": "ขั้นต่ำ Snack Box (boxes)",
       "source": "services.snackBox.minimumOrder",
-      "variants": ["ขั้นต่ำ {{services.snackBox.minimumOrder}} กล่อง", "minimum {{services.snackBox.minimumOrder}} boxes"],
+      "variants": [
+        "ขั้นต่ำ {{services.snackBox.minimumOrder}} กล่อง",
+        "minimum {{services.snackBox.minimumOrder}} boxes"
+      ],
       "files": [
-        "about.html", "budget-planner.html", "buffet.html", "catering.html", "cocktail.html",
-        "faq.html", "index.html", "live-cooking-station.html", "set-menu.html", "snack-box.html",
+        "about.html",
+        "budget-planner.html",
+        "buffet.html",
+        "catering.html",
+        "cocktail.html",
+        "faq.html",
+        "index.html",
+        "live-cooking-station.html",
+        "set-menu.html",
+        "snack-box.html",
         "table-service.html",
-        "en/about.html", "en/buffet.html", "en/catering.html", "en/cocktail.html", "en/faq.html",
-        "en/index.html", "en/live-cooking-station.html", "en/set-menu.html", "en/snack-box.html",
+        "en/about.html",
+        "en/buffet.html",
+        "en/catering.html",
+        "en/cocktail.html",
+        "en/faq.html",
+        "en/index.html",
+        "en/live-cooking-station.html",
+        "en/set-menu.html",
+        "en/snack-box.html",
         "en/table-service.html",
-        "llms.txt", "llms-full.md"
+        "llms.txt",
+        "llms-full.md"
       ]
     }
   ],
@@ -310,43 +564,63 @@
       "id": "old-halal-cert",
       "description": "เลขฮาลาลเก่าที่เลิกใช้แล้ว (เหลือได้เฉพาะบันทึกประวัติใน FACTS.md และไฟล์ snapshot ใน artifacts/)",
       "pattern": "926/2566|HL 926",
-      "exclude": ["FACTS.md", "artifacts/"]
+      "exclude": [
+        "FACTS.md",
+        "artifacts/"
+      ]
     },
     {
       "id": "stale-khao-mok-starting-price",
       "description": "ราคาเริ่มต้นตระกูลข้าวหมกที่ไม่ใช่ราคาจริง ราคาจริงคือเมนูที่ถูกที่สุดที่เผยแพร่ ดูจาก fact khao-mok-starting-price ซึ่งคำนวณจาก data/planner-overrides.json ทุกครั้ง (เคยตกหล่นเป็น 90 และ 100 บาท) ถ้าเพิ่มหรือลดราคาเมนู ต้องแก้เลขบนหน้าให้ตรง",
       "pattern": "ข้าวหมก[^\\n]{0,60}?(?:ราคา)?เริ่ม(?:ต้น)?\\s*(?:ที่)?\\s*(?!85\\b)\\d[\\d,]*\\s*บาท|(?:ราคา)?เริ่ม(?:ต้น)?\\s*(?:ที่)?\\s*(?!85\\b)\\d[\\d,]*\\s*บาท[^\\n]{0,40}ข้าวหมก|ส่งถึงที่\\s*(?!85\\b)\\d[\\d,]*\\s*บาท",
-      "exclude": ["artifacts/", "FACTS.md"]
+      "exclude": [
+        "artifacts/",
+        "FACTS.md"
+      ]
     },
     {
       "id": "retired-tier-price",
       "description": "ห้ามอ้างว่าได้ระดับ Signature เริ่ม 90 บาท หรือ Executive Premium เริ่ม 150 บาท จนกว่าจะมีชุดราคานั้นเปิดขายจริง (ราคาเริ่มต้นมาจาก data/planner-overrides.json เท่านั้น)",
       "pattern": "Signature[^\\n]{0,40}?(?:เริ่ม|from|starting at)?\\s*(?:ที่)?\\s*90\\s*(?:บาท|THB)|Executive[^\\n]{0,60}?(?:เริ่ม|from|starting at)?\\s*(?:ที่)?\\s*150\\s*(?:บาท|THB)|เริ่ม\\s*90\\s*บาท/กล่อง|เริ่ม\\s*150\\s*บาท/กล่อง",
-      "exclude": ["artifacts/", "FACTS.md", "data/sync-manifest.json"]
+      "exclude": [
+        "artifacts/",
+        "FACTS.md",
+        "data/sync-manifest.json"
+      ]
     },
     {
       "id": "tax-invoice-available",
       "description": "ห้ามอ้างว่าออกใบกำกับภาษีได้ (ออกได้แค่ใบเสนอราคา+ใบเสร็จธรรมดา; ยกเว้นบันทึกประวัติการแก้ใน FACTS.md ที่อ้างข้อความเก่าเพื่อบอกว่าลบแล้ว)",
       "pattern": "Tax Invoice Available",
-      "exclude": ["artifacts/", "FACTS.md"]
+      "exclude": [
+        "artifacts/",
+        "FACTS.md"
+      ]
     },
     {
       "id": "positive-tax-invoice-th",
-      "description": "ห้ามอ้างภาษาไทยว่าออกใบกำกับภาษีได้ (ข้อความที่ถูกคือ ไม่สามารถออก...ได้; ยกเว้น FACTS.md และแบบทดสอบ line-ai ที่อ้างข้อความผิดเพื่อสั่งห้าม)",
+      "description": "ห้ามอ้างภาษาไทยว่าออกใบกำกับภาษีได้ (ข้อความที่ถูกคือ ไม่สามารถออก...ได้; ยกเว้น FACTS.md ที่อ้างข้อความเก่าเพื่อบอกว่าลบแล้ว)",
       "pattern": "(?<!ไม่)(?<!สามารถ)ออกใบกำกับภาษีได้",
-      "exclude": ["artifacts/", "FACTS.md", "line-ai/test-10-questions.md"]
+      "exclude": [
+        "artifacts/",
+        "FACTS.md"
+      ]
     },
     {
       "id": "positive-vat-included-en",
       "description": "ห้ามอ้างภาษาอังกฤษว่าราคารวม VAT แล้ว (ข้อความที่ถูกคือ do not include VAT; ยกเว้นป้ายคำถาม FAQ ที่ลงท้ายด้วย ? ซึ่งคำตอบต้องยืนยันว่าไม่รวม VAT)",
       "pattern": "(?<!do not )(?<!not )include VAT(?!\\?)",
-      "exclude": ["artifacts/"]
+      "exclude": [
+        "artifacts/"
+      ]
     },
     {
       "id": "positive-vat-included-th",
       "description": "ห้ามอ้างภาษาไทยว่าราคารวม VAT แล้ว (ราคาสุทธิ ไม่รวม VAT)",
       "pattern": "ราคารวม VAT|รวม VAT แล้ว|ราคารวมภาษีมูลค่าเพิ่ม",
-      "exclude": ["artifacts/"]
+      "exclude": [
+        "artifacts/"
+      ]
     }
   ]
 }

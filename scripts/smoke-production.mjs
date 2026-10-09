@@ -1,9 +1,7 @@
 const siteUrl = process.env.SITE_URL;
-const botHealthUrl = process.env.BOT_MONITORING_ENABLED === 'true' ? process.env.BOT_HEALTH_URL : '';
 const alertWebhookUrl = process.env.ALERT_WEBHOOK_URL;
 
 if (!siteUrl) throw new Error('SITE_URL is required.');
-if (process.env.BOT_MONITORING_ENABLED === 'true' && !botHealthUrl) throw new Error('BOT_HEALTH_URL is required when BOT_MONITORING_ENABLED=true.');
 
 function url(path) {
   return new URL(path, siteUrl).toString();
@@ -30,7 +28,6 @@ try {
   const checks = await Promise.all([
     check('site_home', url('/')),
     check('site_menu', url('/popular-menu.html')),
-    ...(botHealthUrl ? [check('bot_health', botHealthUrl)] : []),
   ]);
   console.log(JSON.stringify({ status: 'ok', checks }));
 } catch (error) {

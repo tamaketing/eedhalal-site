@@ -1,5 +1,5 @@
 // EED HALAL — draft persistence service.
-// line-ai/draft-schema.mjs stays the single domain contract: this service
+// services/draft-schema.mjs stays the single domain contract: this service
 // builds domain drafts with createDraft(), validates them, maps them 1:1 to
 // repository rows (id UUID PK + draftId human reference), and persists them
 // through the configured repository. Business code never writes SQL.
@@ -15,7 +15,7 @@ import {
   DRAFT_STATUSES,
   transitionDraft,
   validateDraft,
-} from '../line-ai/draft-schema.mjs';
+} from './draft-schema.mjs';
 import { isUniqueViolation } from '../db/index.mjs';
 import { recordAudit } from './audit.mjs';
 import { ConflictError, NotFoundError, ValidationError } from './errors.mjs';
@@ -254,7 +254,7 @@ export function rejectDraft(repos, id, { ownerId = '', expectedUpdatedAt, expect
 }
 
 // Owner-approved LINE send (Phase 4B-3A). The owner console is the ONLY
-// caller: no n8n sender, no scheduler, no auto-send exists anywhere.
+// caller: no scheduled sender, no auto-send exists anywhere.
 // Flow: CAS-claim APPROVED with a frozen attempt (one DB tx) -> LINE Push
 // OUTSIDE any transaction -> settle to SENT / FAILED / stay APPROVED.
 // The retry key is generated ONCE at freeze and reused for every retry of

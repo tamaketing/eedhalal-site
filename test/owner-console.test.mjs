@@ -148,10 +148,7 @@ test('pending flag disables double click in UI', () => {
   assert.ok(appJs.includes('setButtonsDisabled(true)') || appJs.includes('pending = true'), 'buttons disabled while pending');
 });
 
-test('gateway only exposes health and LINE webhook (tunnel isolation)', async () => {
-  const gateway = await readFile(new URL('line-ai/webhook-gateway.mjs', root), 'utf8');
-  assert.ok(!/owner/i.test(gateway), 'no owner route in gateway');
-  assert.ok(!/proxy|pipe\(|forward\(.*url/i.test(gateway), 'no generic proxy');
+test('the owner console is served only by the local internal API', async () => {
   const local = await get('/owner/', null);
   assert.equal(local.status, 200);
 });

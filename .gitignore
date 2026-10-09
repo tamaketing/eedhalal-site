@@ -9,19 +9,19 @@ tmp-preview/
 tmp-chrome-profile/
 tmp-*.png
 
-# Never commit credentials, n8n execution payloads, or customer leads.
+# Never commit credentials, runtime payloads, or customer leads.
 .env
 .env.*
 !.env.example
 leads/*
 !leads/.gitkeep
-line-ai/execution-*.json
-line-ai/*workflow-export*.json
-line-ai/*.sqlite
-line-ai/*.sqlite-*
-line-ai/*.db
-line-ai/*.db-*
-line-ai/*.log
+*workflow-export*.json
+execution-*.json
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.log
 
 # Owner-only menu data. The central draft is the private editable catalogue and
 # the publish state is the local build stamp; both are written by the admin tool

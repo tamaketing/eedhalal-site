@@ -3,7 +3,7 @@ import { promisify } from 'node:util';
 
 // CRLF must never reach a committed file.
 //
-// This has bitten the build three times: n8n workflow JSON failed the CI
+// This has bitten the build three times: a generated JSON file failed the CI
 // comparison, popular-menu-page failed its own check, and the HTML blobs came
 // out CRLF so a Linux checkout served CRLF markup. Every one of them came from
 // generating or editing on a Windows working copy.

@@ -124,10 +124,8 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Smoke test deployed site and bot
+      - name: Smoke test deployed site
         env:
           SITE_URL: ${{ needs.deploy.outputs.page_url }}
-          BOT_HEALTH_URL: ${{ secrets.BOT_HEALTH_URL }}
-          BOT_MONITORING_ENABLED: ${{ vars.BOT_MONITORING_ENABLED }}
           ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
         run: node scripts/smoke-production.mjs

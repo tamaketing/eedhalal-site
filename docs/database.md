@@ -50,23 +50,17 @@ Accounting      (NOT IMPLEMENTED)
 New phases add `002_*.sql` migrations — never edit `001_core.sql` after it
 has run in production, never alter production schema by hand.
 
-## n8n integration boundary
+## Integration boundary
 
 ```
-n8n ──X direct SQL (forbidden; CI fails on direct LINE calls/lineMessaging senders)
-n8n Normalize Event ──> Internal API chain ──> PostgreSQL   (SOURCE OF TRUTH)
+Owner Console ──X direct SQL (forbidden)
+Owner Console ──> Internal API chain ──> PostgreSQL   (SOURCE OF TRUTH)
 ```
 
-Phase 3 builds the service boundary + contract first (this is allowed by the
-phase spec). **Implementation path to Phase 4:** add a localhost-only
-Internal API (same shared-secret pattern as `webhook-gateway.mjs`) exposing
-`POST /internal/drafts` (AI/owner actors only, never a LINE sender); n8n
-replaces the static-data write with a call to it. The service functions and
-their tests do not change — only the transport does.
-
-> Phase 4A update: the Internal API now exists (`server/internal-api.mjs`,
-> see `docs/internal-api.md`) and is proven locally, but production n8n is
-> intentionally NOT connected to it yet.
+Only `server/internal-api.mjs` may import the `db/*` adapters. It is
+localhost-only and bearer-gated by `EED_INTERNAL_API_SECRET`
+(see `docs/internal-api.md`). Nothing outside the API reaches PostgreSQL, and
+nothing reaches a customer without an owner action.
 
 ## Development setup
 
