@@ -125,3 +125,51 @@ test('migrations apply in order and rerun safely', async () => {
   assert.deepEqual(after.pending, []);
   assert.deepEqual(after.applied, expected);
 });
+
+function createPinnedMigrationPool({ failOn = null } = {}) {
+  const fake = createFakePg();
+  const calls = [];
+  let released = false;
+  let ended = false;
+  const client = {
+    id: 'migration-client',
+    async query(text, params = []) {
+      calls.push({ connection: this.id, statement: String(text).slice(0, 48) });
+      if (failOn && String(text).includes(failOn)) throw new Error(`fake migration failure: ${failOn}`);
+      return fake.query(text, params);
+    },
+    async release() { released = true; },
+  };
+  const pool = {
+    async connect() { return client; },
+    async end() { ended = true; },
+  };
+  const state = () => ({ calls, released: () => released, ended: () => ended });
+  return { pool, state };
+}
+
+test('postgres migrations keep BEGIN/COMMIT on one checked-out connection', async () => {
+  const harness = createPinnedMigrationPool();
+  const applied = await migrateUp({ DB_ADAPTER: 'postgres' }, undefined, async () => harness.pool);
+  assert.ok(applied.applied.length > 0);
+  const { calls } = harness.state();
+  assert.deepEqual([...new Set(calls.map((call) => call.connection))], ['migration-client']);
+  const statements = calls.map((call) => call.statement);
+  assert.ok(statements.some((statement) => statement.startsWith('BEGIN')));
+  assert.ok(statements.some((statement) => statement.startsWith('COMMIT')));
+  assert.equal(harness.state().released(), true, 'the checked-out connection must be released');
+  assert.equal(harness.state().ended(), true, 'the migration pool must be closed');
+});
+
+test('a failed migration rolls back on the same connection before releasing it', async () => {
+  const harness = createPinnedMigrationPool({ failOn: 'CREATE TABLE IF NOT EXISTS response_examples' });
+  await assert.rejects(
+    migrateUp({ DB_ADAPTER: 'postgres' }, undefined, async () => harness.pool),
+    /fake migration failure/,
+  );
+  const { calls } = harness.state();
+  assert.deepEqual([...new Set(calls.map((call) => call.connection))], ['migration-client']);
+  assert.ok(calls.some((call) => call.statement.startsWith('ROLLBACK')), 'the failed migration must roll back');
+  assert.equal(harness.state().released(), true);
+  assert.equal(harness.state().ended(), true);
+});

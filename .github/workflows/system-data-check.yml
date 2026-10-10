@@ -33,4 +33,4 @@ jobs:
           node scripts/check-public-site.mjs
 
       - name: Run business rule tests
-        run: node --test
+        run: node --test --test-concurrency=1

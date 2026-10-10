@@ -2,15 +2,24 @@
 
 ## Business Data Source of Truth
 
-- `business-rules.json` is the single source of truth for all business rules and business data.
+- `data/business-rules.json` is the source of truth for business rules and business facts. Menu names, images, prices, tiers, and availability are maintained in the menu central through the admin tools; see FACTS.md for the source map.
 - Do not treat copied, rendered, translated, generated, or channel-specific content as the canonical source.
-- Update `business-rules.json` first when changing any business rule or business data.
+- Update `data/business-rules.json` first when changing a business rule or business fact. For menu changes, update the menu central first. Tier starting prices are computed from the published catalogue, not maintained as a separate business value.
+
+## Document Responsibilities
+
+- `AGENTS.md` owns project rules, editing safeguards, and the Human Sales Page Rules. Keep writing rules here rather than copying them into other documents.
+- `AGENTS.md` is the single source of project rules. Do not create tool-specific copies such as CLAUDE.md, GEMINI.md, .cursorrules, or copilot instructions containing the same rules; point the tool at this file instead.
+- [FACTS.md](FACTS.md) maps each kind of data to its source and synchronization targets. It must not store a second table of business values or a deployment checklist.
+- [DEPLOY.md](DEPLOY.md) owns the generation, verification, and website release procedure. Link to it rather than duplicating command lists.
+- [tools/admin/README.md](tools/admin/README.md) owns local admin setup, operation, backup, restore, and migration instructions.
+- `llms.txt` and `llms-full.md` are public business references for external AI readers. Keep customer facts and citation guidance there; keep internal editing/deployment instructions in the documents above.
 
 ## Required Synchronization
 
 - Never change business data in only one location.
 - Before making a business-data change, search the entire repository for all related values, terms, identifiers, calculations, claims, and translations.
-- Synchronize every affected representation so it remains consistent with `business-rules.json`.
+- Synchronize every affected representation so it remains consistent with `data/business-rules.json` and the published menu catalogue.
 - This requirement includes, but is not limited to:
   - Thai and English website content
   - JSON-LD structured data
@@ -58,6 +67,8 @@ These rules govern every customer-facing string in Thai and English: hero copy, 
 ### 2. Human Language
 
 ข้อความที่ลูกค้าเห็นต้องเป็นภาษาพูดธรรมชาติ สุภาพ เป็นกันเอง เหมือนเจ้าของร้านหรือพนักงานขายที่มีประสบการณ์กำลังคุยกับลูกค้า
+
+พูดกับลูกค้าคนเดียว ใช้ “คุณ” และ “เรา/ทีม” แทน “ทางร้าน” และลงท้าย “ครับ” ตามบริบท ภาษาอังกฤษใช้ประโยคสั้น สุภาพ และเป็นกันเอง
 
 หลีกเลี่ยงภาษาระบบ เช่น:
 
@@ -127,6 +138,8 @@ CTA ต้องบอกว่ากดแล้วลูกค้าจะไ�
 
 เมื่อพูดว่า “เหมาะกับองค์กร”, “รับงานจำนวนมาก”, “มืออาชีพ”, “พรีเมียม” ควรมีหลักฐานรองรับใกล้ข้อความนั้น เช่น ภาพงานจริง / ลูกค้าองค์กร / รีวิว / ใบรับรองฮาลาล / ตัวอย่างแพ็กเกจ / ประสบการณ์จริง — และหลักฐานนั้นต้องมีอยู่จริง ห้ามสร้างขึ้น
 
+ห้ามใช้คำโฆษณาเกินจริง เช่น “No.1”, “อันดับหนึ่ง”, “ดีที่สุด” หรือ “ราคาถูกที่สุด” ทั้งไทยและอังกฤษ
+
 ### 9. One Section = One Job
 
 แต่ละ Section มีหน้าที่เดียว เช่น:
@@ -144,6 +157,8 @@ CTA ต้องบอกว่ากดแล้วลูกค้าจะไ�
 ### 10. SEO / AEO / GEO Support Sales — Not Control Sales Copy
 
 ต้องรักษา SEO, Schema, Entity, Internal Links, AEO/GEO, Business Facts, Structured Data — แต่ห้ามทำให้ข้อความที่มนุษย์อ่านแข็งหรือซ้ำ keyword
+
+กำหนด keyword หลักหนึ่งหัวข้อต่อหน้า ใช้คำแปรผันตามธรรมชาติ และไม่ยัด keyword ซ้ำทุกประโยค
 
 ข้อความบนหน้าต้อง Human First ข้อมูลสำหรับ Machine สามารถอยู่ใน metadata / schema / JSON-LD / semantic markup
 

@@ -40,7 +40,7 @@ jobs:
           node scripts/popular-menu-page.mjs --check
           node scripts/check-starting-price.mjs
           node scripts/check-public-site.mjs
-          node --test
+          node --test --test-concurrency=1
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

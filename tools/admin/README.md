@@ -1,5 +1,7 @@
 ﻿# EED HALAL — เครื่องมือแอดมิน (local only, ไม่ขึ้นเว็บ)
 
+คู่มือนี้ดูแลการเปิดเครื่องมือและข้อมูลในเครื่อง ขั้นตอนสร้างไฟล์ ตรวจ และขึ้นเว็บอยู่ที่ [DEPLOY.md](../../DEPLOY.md) ส่วนแผนที่ต้นทางข้อมูลอยู่ที่ [FACTS.md](../../FACTS.md)
+
 รันบนเครื่องแอดมินเท่านั้น ผ่าน loopback `127.0.0.1` ไม่มี auth ในตัว —
 การป้องกันคือเปิดได้เฉพาะเครื่องนี้ ห้ามเปิดพอร์ตออกนอกเครื่อง ห้ามส่งต่อ
 
@@ -24,30 +26,23 @@
   `menu-central.json`, `menu-publish-state.json`, `backups/` — gitignored ห้าม commit
 - `scripts/menu-{central,deploy,backups}.mjs` — ตรรกะ pipeline ที่ปุ่มเรียกใช้
 
-## ⚠️ ปุ่ม “เผยแพร่” ไม่ได้ทำให้เว็บขึ้นเอง
+## หลังบันทึกเมนู
 
-ปุ่มเผยแพร่เขียนแค่ไฟล์แคตตาล็อก 2 ไฟล์ (`data/planner-overrides.json` + `js/menu-data.js`) ข้อความที่ลูกค้าเห็นบนเว็บและใน `llms.txt`/`llms-full.md` มาจากไฟล์อื่นที่ต้อง generate ต่อ
+“ดูตัวอย่างและเผยแพร่” เตรียมแคตตาล็อกในเครื่อง ส่วน “เผยแพร่ขึ้นเว็บจริง” เป็นอีกขั้นตอนหนึ่ง ให้ทำตาม [DEPLOY.md](../../DEPLOY.md) สำหรับการสร้างหน้าเว็บ ตรวจไฟล์ และเลือกวิธีเผยแพร่ให้ครบทั้งงาน
 
-**ถ้าแก้เมนูธรรมดา** (ชื่อ ราคา รูป หมวด ซ่อน) → รัน `node scripts/popular-menu-page.mjs --write` ก่อน commit
-
-**ถ้าแตะ “ระดับข้าวกล่อง” หรือ “อาหารเมนูที่ 2”** (เพิ่ม/ซ่อนชุด, เปลี่ยนระดับ, เปลี่ยนชื่อหรือราคาอาหารเมนูที่ 2) → ต้องรันครบ **3 ตัว** ไม่งั้นเว็บจะยังพูดของเก่า:
-```
-node scripts/sync-catering-content.mjs --write
-node scripts/popular-menu-page.mjs   --write
-node scripts/check-system.mjs        --write
-```
-แล้วตรวจด้วย `node scripts/check-business-sync.mjs --check` กับ `node --test` ก่อน commit
-
-**ราคาเริ่มต้นไม่มีที่ไหนพิมพ์เอง** — คำนวณจากชุดที่เปิดขายและถูกที่สุดของระดับนั้น ถ้าเพิ่มชุดราคา 65 บาทให้ Classic ราคาเริ่มต้นจะเปลี่ยนทันทีทุกช่องทาง
-
-**รูปใหม่ต้อง `git add`** ก่อน deploy ไม่งั้นเว็บขึ้น 404 (ตรวจ `git status --porcelain -- img/`) แนะนำย่อเหลือ ~250 KB ก่อน แบบ `*-opt.jpg`
+เอกสารนั้นระบุขอบเขตของปุ่มขึ้นเว็บจริงด้วย ปุ่มนั้นสร้างไฟล์เว็บไซต์ครบชุดจากฐานกลางก่อน แล้ว commit เฉพาะไฟล์ที่ build สร้างหรือรูปที่ฐานกลางอ้างอิง ไม่รวมงานที่แก้ค้างใน working checkout
 
 ## เริ่มระบบ
 ```bat
-tools\admin\start-admin.cmd
+start-server.bat
 ```
 หรือ `node tools/admin/server.mjs 4185` (กำหนดโฟลเดอร์ข้อมูลด้วย
 `EED_ADMIN_DATA_DIR=<path>` หรือ `--data-dir=<path>`)
+
+`start-server.bat` และ `start-server.ps1` เรียก `tools\admin\start-admin.cmd`
+และเปิดเฉพาะ `http://127.0.0.1:4185/` เท่านั้น ถ้าต้องการดูตัวอย่างเว็บไซต์
+สาธารณะโดยไม่มี API ให้ใช้ `preview-public.bat` หรือ `preview-public.ps1`
+ซึ่งเปิด `http://127.0.0.1:8000/` แบบ loopback เท่านั้น
 
 ## endpoint ของเครื่องมือ
 | เส้นทาง | ใช้ทำอะไร |
@@ -56,6 +51,7 @@ tools\admin\start-admin.cmd
 | `GET/POST /menu-central` | อ่าน/บันทึกฐานกลางเมนู (มี backup ก่อนเขียน) |
 | `GET /menu-publish-preview`, `/menu-publish-state` | เทียบร่างกับฉบับที่เผยแพร่ |
 | `POST /menu-publish` | เขียน `data/planner-overrides.json` + `js/menu-data.js` |
+| `POST /menu-deploy` | สร้างไฟล์เว็บไซต์ครบชุดจากฐานกลาง รวมรูปที่อ้างอิง แล้ว commit/push เฉพาะไฟล์เผยแพร่พร้อมตรวจเว็บจริง (ต้องมี `EED_ALLOW_GIT_DEPLOY=1` และ `confirm:true`) |
 | `GET/POST /menu-backups`, `/menu-restore` | สำรอง/กู้คืนฐานกลาง |
 | `GET /readiness` | ตัวตรวจว่าเซิร์ฟเวอร์นี้คือเครื่องมือนี้จริง |
 
@@ -74,6 +70,6 @@ tools\admin\start-admin.cmd
 - deploy อัตโนมัติปิดอยู่ (`EED_ALLOW_GIT_DEPLOY!=1` ปฏิเสธพร้อมเหตุผล)
 
 ## เทส
-- `node --test test/admin-runtime-clean.test.mjs test/admin-menu-ui.test.mjs test/admin-budget-matcher.test.mjs`
+- `node --test --test-concurrency=1 test/admin-runtime-clean.test.mjs test/admin-menu-ui.test.mjs test/admin-tier-preview.test.mjs`
   รันใน CI ได้ (fixtures ใช้ชื่อ/ตัวเลขสมมติเท่านั้น — ห้ามฝังชื่อเมนูจริง
   คู่กับราคาจริง)

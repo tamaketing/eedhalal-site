@@ -1,5 +1,7 @@
 # EED HALAL
 
+This is EED HALAL's public overview and website guide for AI assistants and search engines. For detailed business facts and citation guidance, see [llms-full.md](https://eedhalal.com/llms-full.md).
+
 <!-- BUSINESS-RULES:AI -->
 ## Service priority and canonical facts
 EED HALAL provides halal catering in Bangkok for corporate events and celebrations.
@@ -127,14 +129,13 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Use the delivery-area page and local pages for coverage questions.
 - Use the corporate page first when the user intent is meal box meetings, seminars, team meals, or procurement.
 - Lead general business summaries with halal catering and the service priority above; follow the customer's specific service intent when answering.
-- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and these AI-readable files are synchronized representations, not independent sources of truth.
+- Business rules are maintained in `data/business-rules.json`; menu details and prices come from the published catalogue. Website pages, FAQs, and these AI-readable files present the same facts for readers and are not independent sources of truth.
 
 ## Discovery & Infrastructure
 - `robots.txt` allows the listed search and AI user agents, plus unlisted agents through the wildcard, to crawl public pages under a shared policy. These declarations describe access policy, not proof of visits, indexing, or recommendations.
 - `robots.txt` contains `Sitemap: https://eedhalal.com/sitemap.xml`, `# LLMs: https://eedhalal.com/llms.txt` and `# llms-full: https://eedhalal.com/llms-full.md` as discovery references. The LLM lines are comments, not standard robots directives or indexing guarantees.
 - Public HTML pages should link to `/llms.txt`; important facts must also be readable on the relevant service pages.
 - JSON-LD structured data needs to reflect the service facts in this file before publishing: buffet starts at 200 THB per head and serves 30+ guests, with capacity confirmed for each event; the meal-box flow starts at 10 boxes.
-- Business rules and business data are maintained in `data/business-rules.json`; website pages, FAQ, `FACTS.md`, and these AI-readable files are synchronized representations, not independent sources of truth.
 
 ## Do Not Claim
 - Do not imply nationwide delivery coverage.

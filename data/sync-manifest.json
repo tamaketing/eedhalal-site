@@ -1,5 +1,5 @@
 {
-  "_comment": "REGISTRY (machine-readable checklist): ทะเบียนกลางว่า business fact แต่ละข้อต้องปรากฏในไฟล์ไหนบ้าง แก้ business-rules.json แล้วต้องแก้ไฟล์ในลิสต์ให้ครบ ไม่เช่นนั้น node --test จะแดง ดูวิธีตรวจที่ scripts/check-business-sync.mjs และสรุปภาษาคนที่ FACTS.md",
+  "_comment": "REGISTRY (machine-readable checklist): ทะเบียนกลางว่า business fact แต่ละข้อต้องปรากฏในไฟล์ไหนบ้าง แก้ต้นทางแล้วต้องแก้ไฟล์ในลิสต์ให้ครบ ไม่เช่นนั้น node --test จะแดง ดูแผนที่ต้นทางที่ FACTS.md ขั้นตอนตรวจและเผยแพร่ที่ DEPLOY.md และตัวตรวจที่ scripts/check-business-sync.mjs",
   "version": 1,
   "cataloguePrices": [
     {
@@ -562,10 +562,9 @@
   "forbidden": [
     {
       "id": "old-halal-cert",
-      "description": "เลขฮาลาลเก่าที่เลิกใช้แล้ว (เหลือได้เฉพาะบันทึกประวัติใน FACTS.md และไฟล์ snapshot ใน artifacts/)",
+      "description": "เลขฮาลาลเก่าที่เลิกใช้แล้ว (เหลือได้เฉพาะไฟล์ snapshot ใน artifacts/)",
       "pattern": "926/2566|HL 926",
       "exclude": [
-        "FACTS.md",
         "artifacts/"
       ]
     },
@@ -574,8 +573,7 @@
       "description": "ราคาเริ่มต้นตระกูลข้าวหมกที่ไม่ใช่ราคาจริง ราคาจริงคือเมนูที่ถูกที่สุดที่เผยแพร่ ดูจาก fact khao-mok-starting-price ซึ่งคำนวณจาก data/planner-overrides.json ทุกครั้ง (เคยตกหล่นเป็น 90 และ 100 บาท) ถ้าเพิ่มหรือลดราคาเมนู ต้องแก้เลขบนหน้าให้ตรง",
       "pattern": "ข้าวหมก[^\\n]{0,60}?(?:ราคา)?เริ่ม(?:ต้น)?\\s*(?:ที่)?\\s*(?!85\\b)\\d[\\d,]*\\s*บาท|(?:ราคา)?เริ่ม(?:ต้น)?\\s*(?:ที่)?\\s*(?!85\\b)\\d[\\d,]*\\s*บาท[^\\n]{0,40}ข้าวหมก|ส่งถึงที่\\s*(?!85\\b)\\d[\\d,]*\\s*บาท",
       "exclude": [
-        "artifacts/",
-        "FACTS.md"
+        "artifacts/"
       ]
     },
     {
@@ -584,26 +582,23 @@
       "pattern": "Signature[^\\n]{0,40}?(?:เริ่ม|from|starting at)?\\s*(?:ที่)?\\s*90\\s*(?:บาท|THB)|Executive[^\\n]{0,60}?(?:เริ่ม|from|starting at)?\\s*(?:ที่)?\\s*150\\s*(?:บาท|THB)|เริ่ม\\s*90\\s*บาท/กล่อง|เริ่ม\\s*150\\s*บาท/กล่อง",
       "exclude": [
         "artifacts/",
-        "FACTS.md",
         "data/sync-manifest.json"
       ]
     },
     {
       "id": "tax-invoice-available",
-      "description": "ห้ามอ้างว่าออกใบกำกับภาษีได้ (ออกได้แค่ใบเสนอราคา+ใบเสร็จธรรมดา; ยกเว้นบันทึกประวัติการแก้ใน FACTS.md ที่อ้างข้อความเก่าเพื่อบอกว่าลบแล้ว)",
+      "description": "ห้ามอ้างว่าออกใบกำกับภาษีได้ (ออกได้แค่ใบเสนอราคา+ใบเสร็จธรรมดา; ยกเว้นไฟล์ snapshot ใน artifacts/)",
       "pattern": "Tax Invoice Available",
       "exclude": [
-        "artifacts/",
-        "FACTS.md"
+        "artifacts/"
       ]
     },
     {
       "id": "positive-tax-invoice-th",
-      "description": "ห้ามอ้างภาษาไทยว่าออกใบกำกับภาษีได้ (ข้อความที่ถูกคือ ไม่สามารถออก...ได้; ยกเว้น FACTS.md ที่อ้างข้อความเก่าเพื่อบอกว่าลบแล้ว)",
+      "description": "ห้ามอ้างภาษาไทยว่าออกใบกำกับภาษีได้ (ข้อความที่ถูกคือ ไม่สามารถออก...ได้; ยกเว้นไฟล์ snapshot ใน artifacts/)",
       "pattern": "(?<!ไม่)(?<!สามารถ)ออกใบกำกับภาษีได้",
       "exclude": [
-        "artifacts/",
-        "FACTS.md"
+        "artifacts/"
       ]
     },
     {

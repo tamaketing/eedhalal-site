@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { constants } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
@@ -46,6 +47,19 @@ async function main() {
   console.log('Repository safety check passed.');
 }
 
-if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
+// process.argv[1] is a filesystem path, while import.meta.url is a file URL.
+// Comparing them as strings only works when both already use the same
+// platform's separators. Resolve through pathToFileURL so direct execution is
+// detected on Windows, macOS and Linux when this module is imported by tests.
+export function isMainModule(invokedPath = process.argv[1]) {
+  if (!invokedPath) return false;
+  try {
+    return pathToFileURL(path.resolve(invokedPath)).href === import.meta.url;
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
   await main();
 }

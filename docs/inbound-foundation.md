@@ -72,7 +72,7 @@ Provision `EED_TEST_DATABASE_URL` for the test migration role and
 loopback `eedhalal_test`. Do not derive these from production configuration.
 Run PG suites serially (they explicitly clear test tables):
 
-    node --test --test-concurrency=1 test/inbound-postgres.test.mjs test/postgres-integration.test.mjs test/persist-e2e.test.mjs
+    node --test --test-concurrency=1 test/postgres-integration.test.mjs test/inbound-postgres.test.mjs test/response-examples-postgres.test.mjs
 
 The new suite refuses any other database before executing SQL and uses a pinned
 connection for migration transactions. Runtime permission tests always roll

@@ -845,9 +845,12 @@ export function assertPublishSafe({ overrides, menuDataJs, root }) {
     }
   }
   // Actionable image errors first (which menu, what path), generic leak scan
-  // second as a backstop.
+  // second as a backstop. A menu the owner has not photographed yet may go live
+  // without a picture — the menu pages render it as a name row — so only a ref
+  // that was actually filled in has to resolve to a real file or https URL.
   const imageErrors = [];
   for (const id of priceIds) {
+    if (!text(images[id])) continue;
     const problem = validateImageRef(images[id], root);
     if (problem) imageErrors.push(`id ${id}: ${problem}`);
   }
@@ -1020,6 +1023,10 @@ export async function publishCentral({ root, dataDir, central, now = new Date(),
 // Confirm what GitHub Pages actually serves (public read, no token).
 // Returns {state:'live'|'outdated'|'unverified', liveVersion, checkedAt, reason}.
 export async function verifyLiveRelease({ root, file, liveBaseUrl = 'https://eedhalal.com', fetchImpl = fetch, timeoutMs = 15000 }) {
+  return verifyCatalogRelease({ root, file, liveBaseUrl, fetchImpl, timeoutMs });
+}
+
+async function verifyCatalogRelease({ root, file, liveBaseUrl = 'https://eedhalal.com', fetchImpl = fetch, timeoutMs = 15000 }) {
   const checkedAt = new Date().toISOString();
   if (!file || file.status !== 'staged') {
     return { state: 'unverified', liveVersion: null, checkedAt, reason: 'ยังไม่มีฉบับไฟล์ให้เทียบ (สร้างไฟล์ก่อน)' };
@@ -1067,6 +1074,67 @@ export async function verifyLiveRelease({ root, file, liveBaseUrl = 'https://eed
     return { state: 'outdated', liveVersion, checkedAt, reason: `เว็บจริงเป็นฉบับ v${liveVersion} ส่วนฉบับไฟล์คือ v${file.fileVersion} และเนื้อหาไม่ตรงกัน` };
   }
   return { state: 'outdated', liveVersion, checkedAt, reason: `ฉบับตรงกัน (v${liveVersion}) แต่เนื้อหาไม่ตรงทั้งหมด — ตรวจเพิ่มก่อนถือว่าสำเร็จ` };
+}
+
+const WEBSITE_TEXT_EXTENSIONS = new Set(['.html', '.js', '.mjs', '.css', '.json', '.txt', '.md', '.xml']);
+
+export function hashWebsiteFileBytes(file, bytes) {
+  const digest = normalizeWebsiteBytes(file, bytes);
+  return sha256Hex(digest);
+}
+
+function normalizeWebsiteBytes(file, bytes) {
+  const buffer = Buffer.from(bytes);
+  if (!WEBSITE_TEXT_EXTENSIONS.has(String(file).slice(String(file).lastIndexOf('.')).toLowerCase())) return buffer;
+  return Buffer.from(buffer.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+}
+
+// A catalog-only live check can call a release "live" while generated HTML,
+// llms data or a new image is still stale. When a deploy supplies the exact
+// release manifest, every file in that manifest is fetched and hashed as well.
+export async function verifyWebsiteRelease({ root, file, expectedRelease, liveBaseUrl = 'https://eedhalal.com', fetchImpl = fetch, timeoutMs = 30000 }) {
+  const checkedAt = new Date().toISOString();
+  const centralVersion = Number(expectedRelease?.centralVersion ?? NaN);
+  const files = Array.isArray(expectedRelease?.files) ? expectedRelease.files : null;
+  if (!file || file.status !== 'staged' || !Number.isFinite(centralVersion) || !files || !files.length) {
+    return { state: 'unverified', liveVersion: null, checkedAt, reason: 'ไม่มีรายการไฟล์ฉบับเผยแพร่ให้เทียบ (สร้างและรวบรวมไฟล์ก่อน)' };
+  }
+  const catalog = await verifyCatalogRelease({ root, file, liveBaseUrl, fetchImpl, timeoutMs });
+  if (catalog.state !== 'live') return catalog;
+  if (centralVersion !== Number(file.fileVersion)) {
+    return { state: 'unverified', liveVersion: catalog.liveVersion, checkedAt, reason: 'รายการไฟล์ไม่ตรงกับฉบับไฟล์ที่กำลังตรวจ' };
+  }
+  const base = liveBaseUrl.endsWith('/') ? liveBaseUrl : `${liveBaseUrl}/`;
+  const mismatched = [];
+  for (const entry of files) {
+    const relative = String(entry?.path || '').replace(/\\/g, '/');
+    if (!relative || relative.startsWith('/') || relative.includes('..')) {
+      return { state: 'unverified', liveVersion: catalog.liveVersion, checkedAt, reason: `รายการไฟล์เผยแพร่ไม่ปลอดภัย: ${entry?.path}` };
+    }
+    const url = new URL(`${relative}?t=${Date.now()}`, base);
+    let response;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        response = await fetchImpl(url, { cache: 'no-store', signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+    } catch (error) {
+      return { state: 'unverified', liveVersion: catalog.liveVersion, checkedAt, reason: `ติดต่อไฟล์ ${relative} บนเว็บจริงไม่ได้ (${error.message}) — ห้ามถือว่าเผยแพร่แล้ว` };
+    }
+    if (!response.ok) {
+      mismatched.push(`${relative} (HTTP ${response.status})`);
+      continue;
+    }
+    const liveHash = hashWebsiteFileBytes(relative, Buffer.from(await response.arrayBuffer()));
+    if (liveHash !== entry.sha256) mismatched.push(relative);
+  }
+  if (mismatched.length) {
+    return { state: 'outdated', liveVersion: catalog.liveVersion, checkedAt, reason: `เว็บจริงมีแคตตาล็อกใหม่แล้ว แต่ไฟล์เหล่านี้ยังไม่ตรง: ${mismatched.slice(0, 8).join(', ')}${mismatched.length > 8 ? ` และอีก ${mismatched.length - 8} ไฟล์` : ''}` };
+  }
+  return { state: 'live', liveVersion: catalog.liveVersion, checkedAt, reason: 'เว็บจริงให้บริการไฟล์เผยแพร่ครบชุดตรงกับฉบับนี้แล้ว' };
 }
 
 // Parse js/menu-data.js EED_MENUS without executing page scripts. The result

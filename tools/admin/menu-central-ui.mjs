@@ -178,7 +178,7 @@ function openDeployConfirm() {
     return;
   }
   body.innerHTML = '<p><strong>ยืนยันขึ้นเว็บจริง</strong></p>'
-    + '<p class="cp-sub">ระบบจะทำจากเครื่องนี้: ตรวจไฟล์อีกรอบ → commit <strong>เฉพาะ</strong> data/planner-overrides.json + js/menu-data.js (งานค้างอื่นไม่รวม) → push → รอตรวจว่าเว็บจริงให้บริการฉบับนี้แล้ว ถ้าตรวจไม่ได้จะขึ้น “ยังไม่ยืนยัน” ไม่ถือว่าสำเร็จ</p>'
+    + '<p class="cp-sub">ระบบจะทำจากเครื่องนี้: สร้างไฟล์เว็บไซต์ครบชุดจากฐานกลาง → ตรวจไฟล์อีกรอบ → commit <strong>เฉพาะ</strong> ไฟล์ที่ build สร้างหรือรูปที่ฐานกลางอ้างอิง (งานค้างอื่นไม่รวม) → push → รอตรวจว่าเว็บจริงให้บริการไฟล์ครบชุดตรงกับฉบับนี้ ถ้าตรวจไม่ได้จะขึ้น “ยังไม่ยืนยัน” ไม่ถือว่าสำเร็จ</p>'
     + '<p class="cp-sub">ห้ามรวมงานอื่นเข้า commit อัตโนมัติ: ถ้ามี commit อื่นรอ push อยู่ ระบบจะหยุดและแจ้งสาเหตุ</p>'
     + '<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-deploy-confirm">ยืนยันขึ้นเว็บจริง</button><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button><span class="cp-form-status" id="mc-deploy-confirm-status"></span></div>';
   modal.hidden = false;
@@ -447,78 +447,59 @@ function deleteTopping(index) {
 // `kind` is not shown to the customer (the page says "อาหารเมนูที่ 2"); it says
 // what kind of dish this is, because cooking type changes cost and packing:
 //   side / soup_curry -> may sit in a Signature box
-//   dessert          -> sweet, needs a corrugated box, so it is an Executive
-//                       item and must not be listed as a Signature choice
+//   dessert          -> sweet, needs a corrugated box, so it is NOT a Signature
+//                       choice and gets its own section on the owner page
 const SIDE_ITEM_KIND_OPTIONS = [
   { value: 'side', label: 'อาหารรองคาว (ผัด/ทอด)' },
   { value: 'soup_curry', label: 'ต้ม / แกง' },
-  { value: 'dessert', label: 'ของหวาน (กล่องลูกฟูก / Executive)' },
 ];
 
-function renderSideItems() {
-  const box = $('#mc-sideitems');
-  if (!box || !state.working) return;
-  const list = Array.isArray(state.working.sideItems) ? state.working.sideItems : [];
-  if (!list.length) {
-    box.innerHTML = '<p class="cp-sub">ยังไม่มีอาหารเมนูที่ 2 — เพิ่มได้จากช่องด้านล่าง (ยังไม่มีรายการ หน้าเว็บจะยังไม่แสดงชื่ออาหารรอง แต่ข้อความวิธีเลือกยังทำงานตามปกติ)</p>';
-    return;
-  }
-  box.innerHTML = list.map((item, index) => {
-    const ready = item.priceStatus === 'ready' && Number.isFinite(Number(item.priceAdjustment));
-    return `
-    <div class="cp-add-row" data-si-row="${index}">
+// The two lists are two views of the same `sideItems` array, so every row
+// carries the index it really has in that array. That is what lets the owner
+// edit a name or a price straight from the list without opening its details.
+const isDessert = (item) => item?.kind === 'dessert';
+
+function sideEntries(filter) {
+  const list = Array.isArray(state.working?.sideItems) ? state.working.sideItems : [];
+  return list.map((item, index) => ({ item, index })).filter(({ item }) => filter(item));
+}
+
+function sideRows(entries, prefix, label) {
+  return entries.map(({ item, index }) => `
+    <div class="cp-add-row" data-${prefix}-row="${index}">
       <label class="mc-label">ชื่อ
-        <input class="cp-input" type="text" value="${esc(item.nameTh)}" data-si="${index}" data-si-field="nameTh" aria-label="ชื่ออาหารเมนูที่ 2">
+        <input class="cp-input" type="text" value="${esc(item.nameTh)}" data-${prefix}="${index}" data-${prefix}-field="nameTh" aria-label="ชื่อ${esc(label)} ${esc(item.nameTh)}">
       </label>
       <label class="mc-label">ราคาเพิ่ม (บาท/กล่อง)
-        <input class="cp-input narrow" type="number" min="1" step="1" value="${esc(item.priceAdjustment ?? '')}" data-si="${index}" data-si-field="priceAdjustment" aria-label="ราคาเพิ่มอาหารเมนูที่ 2 ${esc(item.nameTh)}">
+        <input class="cp-input narrow" type="number" min="1" step="1" value="${esc(item.priceAdjustment ?? '')}" data-${prefix}="${index}" data-${prefix}-field="priceAdjustment" aria-label="ราคาเพิ่ม${esc(label)} ${esc(item.nameTh)}">
       </label>
-      <button type="button" class="cp-btn danger sm" data-si-delete="${index}">ลบ</button>
-      <button type="button" class="cp-btn ghost sm" data-si-edit="${index}">รายละเอียด</button>
-    </div>`;
-  }).join('');
+      <button type="button" class="cp-btn danger sm" data-${prefix}-delete="${index}">ลบ</button>
+      <button type="button" class="cp-btn ghost sm" data-${prefix}-edit="${index}">รายละเอียด</button>
+    </div>`).join('');
 }
 
-function addSideItem() {
-  const msg = $('#mc-si-msg');
-  const list = Array.isArray(state.working?.sideItems) ? state.working.sideItems : (state.working.sideItems = []);
-  const nameTh = ($('#mc-si-name-th')?.value || '').trim();
-  const price = Number($('#mc-si-price')?.value) || 0;
-  if (!nameTh) { if (msg) msg.textContent = 'กรอกชื่ออาหารเมนูที่ 2 ก่อน'; $('#mc-si-name-th')?.focus(); return; }
-  if (list.some((item) => item.nameTh === nameTh)) { if (msg) msg.textContent = `มี “${nameTh}” อยู่แล้ว`; $('#mc-si-name-th')?.focus(); return; }
-  if (!price || price < 1) { if (msg) msg.textContent = 'ราคาเพิ่มต้องมากกว่า 0'; $('#mc-si-price')?.focus(); return; }
-  // Suggest the next free side-NNN id so the owner never has to invent one.
-  let next = 1;
-  while (list.some((item) => item.id === `side-${String(next).padStart(3, '0')}`)) next += 1;
-  const id = `side-${String(next).padStart(3, '0')}`;
-  list.push({
-    id,
-    nameTh,
-    nameEn: ($('#mc-si-name-en')?.value || '').trim() || nameTh,
-    kind: $('#mc-si-kind')?.value || 'side',
-    cost: Number($('#mc-si-cost')?.value) || null,
-    priceAdjustment: price,
-    priceStatus: $('#mc-si-priceStatus')?.value || 'pending',
-    active: true,
-    public: $('#mc-si-public')?.checked !== false,
-  });
-  $('#mc-si-name-th').value = '';
-  $('#mc-si-price').value = '25';
-  // Advanced fields keep their values for convenience
-  if (msg) msg.textContent = `เพิ่ม ${nameTh} (${id}) แล้ว — ชื่อจะขึ้นเว็บทันที ถ้ายังไม่พร้อมให้เอาติ๊ก “ขึ้นเว็บ” ออกในรายละเอียด`;
-  renderSideItems();
-  updateButtons();
-  scheduleDraftBackup();
+function renderSideItems() {
+  const sideBox = $('#mc-sideitems');
+  const dessertBox = $('#mc-desserts');
+  if (!state.working) return;
+  if (sideBox) {
+    const entries = sideEntries((item) => !isDessert(item));
+    sideBox.innerHTML = entries.length
+      ? sideRows(entries, 'si', 'อาหารเมนูที่ 2')
+      : '<p class="cp-sub">ยังไม่มีอาหารเมนูที่ 2 — เพิ่มได้จากช่องด้านล่าง (ยังไม่มีรายการ หน้าเว็บจะยังไม่แสดงชื่ออาหารรอง แต่ข้อความวิธีเลือกยังทำงานตามปกติ)</p>';
+  }
+  if (dessertBox) {
+    const entries = sideEntries(isDessert);
+    dessertBox.innerHTML = entries.length
+      ? sideRows(entries, 'ds', 'ขนมหวาน')
+      : '<p class="cp-sub">ยังไม่มีขนมหวาน — เพิ่มได้จากช่องด้านล่าง (ขนมหวานใช้กล่องลูกฟูก จึงไม่ใช่อาหารเมนูที่ 2 ของ Signature)</p>';
+  }
 }
 
-function onSideItemEdit(target) {
-  const field = target.dataset.siField;
-  if (!field) return;
-  const index = state.editingSideIndex;
-  if (index === undefined || index === null) return;
-  const item = state.working?.sideItems?.[index];
-  if (!item) return;
-  const msg = $('#mc-si-msg');
+// A price that is only typed, not confirmed, must never look confirmed, and a
+// blank price drops the item back to "รอยืนยัน" so the web cannot show a
+// number the kitchen has not agreed to.
+function applySideField(item, field, target, msg) {
   if (field === 'cost') {
     const value = target.value === '' ? null : Number(target.value);
     item.cost = Number.isFinite(value) && value >= 0 ? value : null;
@@ -526,8 +507,6 @@ function onSideItemEdit(target) {
     const value = target.value === '' ? null : Number(target.value);
     const next = Number.isFinite(value) && value > 0 ? value : null;
     item.priceAdjustment = next;
-    // A number without a confirmed status must not reach the web: the publish
-    // guard refuses it, and the owner is told here instead of at publish time.
     if (next === null) item.priceStatus = 'pending';
   } else if (field === 'priceStatus') {
     if (target.value === 'ready' && !Number.isFinite(Number(item.priceAdjustment))) {
@@ -541,33 +520,118 @@ function onSideItemEdit(target) {
   } else {
     item[field] = target.value;
   }
-  // Sync main row fields
-  if (field === 'nameTh') $('#mc-si-name-th').value = item.nameTh;
-  if (field === 'priceAdjustment') $('#mc-si-price').value = item.priceAdjustment || '';
-  // Sync advanced fields in the details panel
-  if (field === 'nameEn') $('#mc-si-name-en').value = item.nameEn || '';
-  if (field === 'kind') $('#mc-si-kind').value = item.kind || 'side';
-  if (field === 'cost') $('#mc-si-cost').value = item.cost || '';
-  if (field === 'priceStatus') $('#mc-si-priceStatus').value = item.priceStatus || 'pending';
-  if (field === 'public') $('#mc-si-public').checked = item.public === true;
-  if (field === 'active') $('#mc-si-active').checked = item.active !== false;
-  
+}
+
+// A field inside a row knows its own item; a field inside a details panel
+// belongs to the row the owner opened. Reading only the panel state used to let
+// a keystroke in one row rewrite a different dish.
+function sideEditIndex(target) {
+  const row = target.dataset.si ?? target.dataset.ds;
+  return row !== undefined ? Number(row) : state.editingSideIndex;
+}
+
+function onSideItemEdit(target) {
+  const field = target.dataset.siField ?? target.dataset.dsField;
+  if (!field) return;
+  const index = sideEditIndex(target);
+  if (index === undefined || index === null || Number.isNaN(index)) return;
+  const item = state.working?.sideItems?.[index];
+  if (!item) return;
+  const dessert = isDessert(item);
+  const msg = $(dessert ? '#mc-ds-msg' : '#mc-si-msg');
+  applySideField(item, field, target, msg);
+
+  // Keep the row's own add-form and details panel in step with the list.
+  const prefix = dessert ? 'ds' : 'si';
+  $(`#mc-${prefix}-name-th`).value = item.nameTh || '';
+  $(`#mc-${prefix}-price`).value = item.priceAdjustment || '';
+  $(`#mc-${prefix}-name-en`).value = item.nameEn || '';
+  if (!dessert) $('#mc-si-kind').value = item.kind || 'side';
+  $(`#mc-${prefix}-cost`).value = item.cost || '';
+  $(`#mc-${prefix}-priceStatus`).value = item.priceStatus || 'pending';
+  $(`#mc-${prefix}-public`).checked = item.public !== false;
+  $(`#mc-${prefix}-active`).checked = item.active !== false;
+
   renderSideItems();
   updateButtons();
   scheduleDraftBackup();
   setFormStatus('', '');
 }
 
+function addSideItem() {
+  addSideEntry({ prefix: 'si', kind: $('#mc-si-kind')?.value || 'side', label: 'อาหารเมนูที่ 2' });
+}
+
+// Desserts are added from their own section, so the owner never has to pick a
+// kind to end up in the wrong list. The id prefix matches the kind so a future
+// reader of the JSON can tell them apart at a glance.
+function addDessert() {
+  addSideEntry({ prefix: 'ds', kind: 'dessert', label: 'ขนมหวาน' });
+}
+
+function addSideEntry({ prefix, kind, label }) {
+  const msg = $(`#mc-${prefix}-msg`);
+  const list = Array.isArray(state.working?.sideItems) ? state.working.sideItems : (state.working.sideItems = []);
+  const nameTh = ($(`#mc-${prefix}-name-th`)?.value || '').trim();
+  const price = Number($(`#mc-${prefix}-price`)?.value) || 0;
+  if (!nameTh) { if (msg) msg.textContent = `กรอกชื่อ${label}ก่อน`; $(`#mc-${prefix}-name-th`)?.focus(); return; }
+  if (list.some((item) => item.nameTh === nameTh)) { if (msg) msg.textContent = `มี “${nameTh}” อยู่แล้ว`; $(`#mc-${prefix}-name-th`)?.focus(); return; }
+  if (!price || price < 1) { if (msg) msg.textContent = 'ราคาเพิ่มต้องมากกว่า 0'; $(`#mc-${prefix}-price`)?.focus(); return; }
+  // Suggest the next free <kind>-NNN id so the owner never has to invent one.
+  const stem = kind === 'dessert' ? 'dessert' : 'side';
+  let next = 1;
+  while (list.some((item) => item.id === `${stem}-${String(next).padStart(3, '0')}`)) next += 1;
+  const id = `${stem}-${String(next).padStart(3, '0')}`;
+  list.push({
+    id,
+    nameTh,
+    nameEn: ($(`#mc-${prefix}-name-en`)?.value || '').trim() || nameTh,
+    kind,
+    cost: Number($(`#mc-${prefix}-cost`)?.value) || null,
+    priceAdjustment: price,
+    priceStatus: $(`#mc-${prefix}-priceStatus`)?.value || 'pending',
+    active: true,
+    public: $(`#mc-${prefix}-public`)?.checked !== false,
+  });
+  $(`#mc-${prefix}-name-th`).value = '';
+  $(`#mc-${prefix}-price`).value = '25';
+  if (msg) msg.textContent = `เพิ่ม ${nameTh} (${id}) แล้ว — ชื่อจะขึ้นเว็บทันที ถ้ายังไม่พร้อมให้เอาติ๊ก “ขึ้นเว็บ” ออกในรายละเอียด`;
+  renderSideItems();
+  updateButtons();
+  scheduleDraftBackup();
+}
+
+function openSideDetails(prefix, index) {
+  const item = state.working?.sideItems?.[index];
+  if (!item) return;
+  state.editingSideIndex = index;
+  $(`#mc-${prefix}-name-th`).value = item.nameTh || '';
+  $(`#mc-${prefix}-price`).value = item.priceAdjustment || '';
+  $(`#mc-${prefix}-name-en`).value = item.nameEn || '';
+  if (prefix === 'si') $('#mc-si-kind').value = item.kind || 'side';
+  $(`#mc-${prefix}-cost`).value = item.cost || '';
+  $(`#mc-${prefix}-priceStatus`).value = item.priceStatus || 'pending';
+  $(`#mc-${prefix}-public`).checked = item.public !== false;
+  $(`#mc-${prefix}-active`).checked = item.active !== false;
+  $(`#mc-${prefix}-advanced`).open = true;
+  $(`#mc-${prefix}-name-th`).focus();
+}
+
 function deleteSideItem(index) {
   const list = state.working?.sideItems;
   const item = list?.[index];
   if (!item) return;
-  if (!window.confirm(`ลบอาหารรอง “${item.nameTh}” (${item.id}) ออกจากรายการ?\n\nถ้า business-rules.json ยังอ้าง id นี้อยู่ ตัวตรวจจะแจ้งว่าอ้างไม่ถูกต้อง — ให้เอา id ออกจาก sideChoices ของระดับ Signature ด้วย`)) return;
+  const dessert = isDessert(item);
+  const tail = dessert
+    ? 'ขนมหวานไม่ได้อยู่ใน sideChoices ของ Signature จึงไม่ต้องแก้ business-rules.json'
+    : 'ถ้า business-rules.json ยังอ้าง id นี้อยู่ ตัวตรวจจะแจ้งว่าอ้างไม่ถูกต้อง — ให้เอา id ออกจาก sideChoices ของระดับ Signature ด้วย';
+  if (!window.confirm(`ลบ${dessert ? 'ขนมหวาน' : 'อาหารเมนูที่ 2'} “${item.nameTh}” (${item.id}) ออกจากรายการ?\n\n${tail}`)) return;
   list.splice(index, 1);
+  if (state.editingSideIndex === index) state.editingSideIndex = null;
   renderSideItems();
   updateButtons();
   scheduleDraftBackup();
-  setFormStatus(`ลบอาหารรอง “${item.nameTh}” ออกจากฉบับร่างแล้ว — กด “บันทึก” เพื่อเก็บถาวร`, 'ok');
+  setFormStatus(`ลบ${dessert ? 'ขนมหวาน' : 'อาหารเมนูที่ 2'} “${item.nameTh}” ออกจากฉบับร่างแล้ว — กด “บันทึก” เพื่อเก็บถาวร`, 'ok');
 }
 
 function onToppingEdit(target) {
@@ -911,7 +975,7 @@ async function runFullRelease() {
     + diffList('จะซ่อนจากเว็บ', diff.hidden)
     + diffList('จะกลับมาแสดง', diff.shown)
     + (diff.costBlocked?.length ? diffList(`ปิดราคา (${diff.costBlocked.length})`, diff.costBlocked.map((item) => ({ id: item.id, name: `${item.name} — ${item.reason}` }))) : '')
-    + '<p class="cp-sub">ระบบจะทำต่อให้จบเอง: สร้างไฟล์ → commit เฉพาะ 2 ไฟล์เผยแพร่ → push → รอเว็บจริง → ตรวจว่าเว็บให้บริการตรงกับฉบับนี้ ถ้าตรวจไม่ได้จะขึ้น “ยังไม่ยืนยัน” ไม่ถือว่าสำเร็จ</p>'
+    + '<p class="cp-sub">ระบบจะทำต่อให้จบเอง: สร้างไฟล์เว็บไซต์ครบชุด → commit เฉพาะไฟล์เผยแพร่ที่ build สร้างหรือรูปที่ฐานกลางอ้างอิง → push → รอเว็บจริง → ตรวจว่าเว็บให้บริการไฟล์ครบชุดตรงกับฉบับนี้ ถ้าตรวจไม่ได้จะขึ้น “ยังไม่ยืนยัน” ไม่ถือว่าสำเร็จ</p>'
     + '<p class="cp-sub">ห้ามรวมงานอื่นเข้า commit อัตโนมัติ: ถ้ามี commit อื่นรอ push อยู่ ระบบจะหยุดและแจ้งสาเหตุ</p>'
     + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-release-go">ยืนยันและอัปเดตเว็บ</button><button type="button" class="cp-btn ghost" data-mc-close>ยกเลิก</button><span class="cp-form-status" id="mc-release-status"></span></div>`
     + '<div id="mc-release-progress"></div>';
@@ -1071,6 +1135,7 @@ function bind() {
     if (target.dataset?.mc !== undefined && target.dataset.field) onEdit(target);
     if (target.dataset?.tp !== undefined && target.dataset.tpField) onToppingEdit(target);
     if (target.dataset?.si !== undefined && target.dataset.siField) onSideItemEdit(target);
+    if (target.dataset?.ds !== undefined && target.dataset.dsField) onSideItemEdit(target);
   });
   document.addEventListener('change', (event) => {
     const target = event.target;
@@ -1086,6 +1151,7 @@ function bind() {
     // item price: an unconfirmed figure must never look confirmed mid-typing.
     if (target.dataset?.tp !== undefined && target.dataset.tpField) { onToppingEdit(target); renderToppings(); }
     if (target.dataset?.si !== undefined && target.dataset.siField) onSideItemEdit(target);
+    if (target.dataset?.ds !== undefined && target.dataset.dsField) onSideItemEdit(target);
     if (target.id === 'mc-search') { state.filter.q = target.value; renderTable(); }
   });
   document.addEventListener('click', (event) => {
@@ -1095,23 +1161,13 @@ function bind() {
     if (tpDelete) { deleteTopping(Number(tpDelete.dataset.tpDelete)); return; }
     const siDelete = event.target.closest('[data-si-delete]');
     if (siDelete) { deleteSideItem(Number(siDelete.dataset.siDelete)); return; }
+    const dsDelete = event.target.closest('[data-ds-delete]');
+    if (dsDelete) { deleteSideItem(Number(dsDelete.dataset.dsDelete)); return; }
+    const dsEdit = event.target.closest('[data-ds-edit]');
+    if (dsEdit) { openSideDetails('ds', Number(dsEdit.dataset.dsEdit)); return; }
     const siEdit = event.target.closest('[data-si-edit]');
     if (siEdit) {
-      const index = Number(siEdit.dataset.siEdit);
-      const item = state.working?.sideItems?.[index];
-      if (item) {
-        state.editingSideIndex = index;
-        $('#mc-si-name-th').value = item.nameTh || '';
-        $('#mc-si-price').value = item.priceAdjustment || '';
-        $('#mc-si-name-en').value = item.nameEn || '';
-        $('#mc-si-kind').value = item.kind || 'side';
-        $('#mc-si-cost').value = item.cost || '';
-        $('#mc-si-priceStatus').value = item.priceStatus || 'pending';
-        $('#mc-si-public').checked = item.public !== false;
-        $('#mc-si-active').checked = item.active !== false;
-        $('#mc-si-advanced').open = true;
-        $('#mc-si-name-th').focus();
-      }
+      openSideDetails('si', Number(siEdit.dataset.siEdit));
       return;
     }
     const tierChip = event.target.closest('[data-tier]');
@@ -1139,6 +1195,7 @@ function bind() {
   $('#mc-add')?.addEventListener('click', addMenu);
   $('#mc-tp-add')?.addEventListener('click', addTopping);
   $('#mc-si-add')?.addEventListener('click', addSideItem);
+  $('#mc-ds-add')?.addEventListener('click', addDessert);
 
   // Last line of defence: flush any pending debounce when the tab goes away.
   window.addEventListener('beforeunload', () => {

@@ -33,8 +33,10 @@ import {
   publicProjectionOfPublished,
   publishCentral,
   readPublishState,
+  hashWebsiteFileBytes,
   saveCentral,
   validateCentral,
+  verifyWebsiteRelease,
 } from '../scripts/menu-central.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -437,6 +439,81 @@ test('publish rejects machine-local image paths before anything is written', asy
   await assert.rejects(() => publishCentral({ root: dir, dataDir, central: saved.data }), /เผยแพร่บนเว็บไม่ได้/);
   const after = await loadPublished(dir);
   assert.equal(after.menuDataJs, before.menuDataJs);
+});
+
+test('a dish the owner has not photographed yet still publishes', async () => {
+  // A blank image field means "no photo yet", not "broken ref". The menu pages
+  // render such a dish as a name row, so refusing to publish would strand the
+  // dish in the admin forever. A ref that WAS filled in must still resolve.
+  const { dir, dataDir, overrides, menuDataJs } = await seedTempRoot();
+  const draft = await seedCentral(dataDir, overrides, menuDataJs);
+  const noPhoto = draft.menus.map((menu, index) => (index === 0 ? { ...menu, image: '', desc: '' } : menu));
+  const saved = await saveCentral(dataDir, { ...draft, menus: noPhoto });
+  await publishCentral({ root: dir, dataDir, central: saved.data });
+  const published = await loadPublished(dir);
+  const [first] = (await parseMenuDataJs(published.menuDataJs)).map((menu) => ({ id: String(menu.id), image: menu.image }));
+  assert.equal(first.image, '', 'the dish ships with no photo, not a broken path');
+  const listed = (await parseMenuDataJs(published.menuDataJs)).map((menu) => String(menu.id));
+  assert.ok(listed.includes(String(draft.menus[0].id)), 'the dish is still in the catalogue');
+
+  // The leniency is only for a blank field: a real path that does not exist is
+  // still refused, so a typo cannot reach the web as a broken image.
+  const missing = draft.menus.map((menu, index) => (index === 1 ? { ...menu, image: 'img/not-here.jpg' } : menu));
+  const badSaved = await saveCentral(dataDir, { ...draft, menus: missing });
+  await assert.rejects(
+    () => publishCentral({ root: dir, dataDir, central: badSaved.data }),
+    /ไม่พบไฟล์รูปใน repo/,
+  );
+});
+
+test('a website release is live only when every release file matches', async (t) => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'eed-website-live-'));
+  t.after(async () => {
+    const { rm } = await import('node:fs/promises');
+    await rm(dir, { recursive: true, force: true });
+  });
+  await mkdir(path.join(dir, 'data'), { recursive: true });
+  const planner = {
+    prices: { 1: 65 },
+    mins: { 1: 5 },
+    images: { 1: '' },
+    names: { 1: 'เมนู ก' },
+    tiers: { 1: 'classic' },
+    release: { centralVersion: 9, builtAt: '2026-10-10T00:00:00.000Z' },
+  };
+  await writeFile(path.join(dir, 'data', 'planner-overrides.json'), JSON.stringify(planner, null, 2), 'utf8');
+  const page = '<h1>เมนู</h1>\n';
+  const expectedRelease = {
+    centralVersion: 9,
+    files: [{ path: 'index.html', sha256: hashWebsiteFileBytes('index.html', Buffer.from(page, 'utf8')) }],
+  };
+  const fetchImpl = async (url, livePage = page) => {
+    const pathname = new URL(String(url)).pathname;
+    if (pathname.endsWith('/data/planner-overrides.json')) {
+      return { ok: true, json: async () => ({ ...planner, exportedAt: 'live', release: { ...planner.release, builtAt: 'live' } }) };
+    }
+    if (pathname.endsWith('/index.html')) {
+      return { ok: true, arrayBuffer: async () => Buffer.from(livePage, 'utf8') };
+    }
+    return { ok: false, status: 404 };
+  };
+  const live = await verifyWebsiteRelease({
+    root: dir,
+    file: { status: 'staged', fileVersion: 9 },
+    expectedRelease,
+    liveBaseUrl: 'https://example.test',
+    fetchImpl: (url) => fetchImpl(url),
+  });
+  assert.equal(live.state, 'live');
+  const stale = await verifyWebsiteRelease({
+    root: dir,
+    file: { status: 'staged', fileVersion: 9 },
+    expectedRelease,
+    liveBaseUrl: 'https://example.test',
+    fetchImpl: (url) => fetchImpl(url, '<h1>เก่า</h1>\n'),
+  });
+  assert.equal(stale.state, 'outdated');
+  assert.match(stale.reason, /index\.html/);
 });
 
 test('bulk hide is refused without confirmation, then allowed with it', async () => {

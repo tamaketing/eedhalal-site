@@ -16,7 +16,8 @@ Round 1 rule:
 - `HR / Procurement / Office Admin / Event Coordinator` (Supporting)
   - LP: [`corporate.html`](./corporate.html)
   - Angle: quotation-ready corporate meal boxes, 10+ boxes, document support, on-time delivery
-  - Dedicated LP (Round 2): [`lp-corporate-meeting.html`](./lp-corporate-meeting.html)
+  - Dedicated LP (Round 2, planned only — `lp-corporate-meeting.html` does not exist yet)
+  - Until that page is created, keep using [`corporate.html`](./corporate.html) for this audience.
   - Angle: hyper-targeted to HR/procurement pain points — quotation, procurement documents, on-time delivery, budget control, menu variety. No catering/no single-order noise.
 
 - `Menu Browsers / Price Comparers / Warm Leads`

@@ -4,13 +4,13 @@
 
 - **PostgreSQL is the production target** (UUID PKs, UNIQUE constraints for
   race safety, JSONB for metadata/history, transactional migrations).
-- **The repo stays zero-dependency:** no `package.json`, `node --test` keeps
-  working everywhere. Business logic never touches SQL — everything goes
-  through `services/*` → repository interfaces in `db/index.mjs`.
+- **Dependencies are explicit:** `package.json` declares the `pg` PostgreSQL
+  driver. Business logic never touches SQL — everything goes through
+  `services/*` → repository interfaces in `db/index.mjs`.
 - Three adapters implement one contract (conformance-tested):
   `memory` (tests/CI), `file` (local JSON docs, atomic tmp+rename writes),
   `postgres` (production; `pg` is lazily imported only on hosts with
-  `DB_ADAPTER=postgres`, installed there — never in this repo).
+  `DB_ADAPTER=postgres`).
 
 ## Current (Phase 3 — implemented)
 
@@ -70,17 +70,21 @@ node db/migrate.mjs status
 # local persistence
 $env:DB_ADAPTER='file'; $env:DB_DIR='D:\eedhalal-data\db'
 node db/migrate.mjs status
-node --test test/central-database.test.mjs
+node --test --test-concurrency=1 test/central-database.test.mjs
 ```
 
 ## Production setup (PostgreSQL host)
 
-1. Install PostgreSQL + `npm install pg` **on that host only**.
+1. Install PostgreSQL and the repository dependencies (`npm ci`) on that host.
 2. `CREATE DATABASE eedhalal;` + least-privilege role (no superuser).
-3. Set `DB_ADAPTER=postgres` and `DATABASE_URL` in the host secret manager
+3. Grant the runtime role `SELECT, INSERT, UPDATE` — but not `DELETE`,
+   `TRUNCATE`, or DDL — on the application tables it manages (`customers`,
+   `leads`, `drafts`, `audit_logs`, `inbound_messages`, `response_examples`).
+   Run schema changes only with the migration role.
+4. Set `DB_ADAPTER=postgres` and `DATABASE_URL` in the host secret manager
    (never in the repo; `.env.example` holds placeholders only).
-4. `node db/migrate.mjs status` → `node db/migrate.mjs up`.
-5. Schedule `pg_dump` backups (below) and test a restore quarterly.
+5. `node db/migrate.mjs status` → `node db/migrate.mjs up`.
+6. Schedule `pg_dump` backups (below) and test a restore quarterly.
 
 ## PostgreSQL runtime rules (Phase 4B-1)
 
@@ -96,8 +100,9 @@ node --test test/central-database.test.mjs
 - **Atomicity:** draft state change + audit records commit in one transaction.
 - **TLS:** set `PGSSLMODE=require` (or `?sslmode=require` in the URL) to
   verify the server certificate. Verification is never disabled by this repo.
-- **Migrations:** versioned, transactional per migration, recorded in
-  `schema_migrations`, guarded by an advisory lock, safe to rerun.
+- **Migrations:** versioned, transactional per migration on one checked-out
+  database connection, recorded in `schema_migrations`, guarded by an advisory
+  lock, safe to rerun.
 - **Known driver behavior:** `NUMERIC` (e.g. `budget_per_person`) reads back
   as string from real `pg` — coerce with `Number()` at use sites.
 
@@ -107,19 +112,19 @@ node --test test/central-database.test.mjs
 # Password via PGPASSWORD (from the setup step) or .pgpass — never in the repo.
 $env:PGPASSWORD = '<from-step-2>'
 $env:EED_TEST_DATABASE_URL = 'postgres://eedhalal_tester@localhost:5432/eedhalal_test'
-node --test test/postgres-integration.test.mjs
+node --test --test-concurrency=1 test/postgres-integration.test.mjs
 ```
 
 Guardrails: without the variable the test SKIPS (never fails, never touches
 anything); with it, the target is refused unless the database name contains
 `test` or the host is loopback, production-like names are blocked even on
-loopback, and cleanup truncates only the 4 known tables.
+loopback, and cleanup truncates only the 6 known tables.
 Run PostgreSQL-backed suites serialized
-(`node --test --test-concurrency=1 test/persist-e2e.test.mjs test/postgres-integration.test.mjs`):
+(`node --test --test-concurrency=1 test/postgres-integration.test.mjs test/inbound-postgres.test.mjs test/response-examples-postgres.test.mjs`):
 parallel files share one test database and their truncate hooks overlap.
-Status 2026-09-17: ran green (9/9) against local PostgreSQL 17 test database
-`eedhalal_test` — REAL PG VERIFIED on this host. Re-run on any new host
-before trusting it there.
+Status 2026-10-10: ran green (36/36) against an isolated local PostgreSQL 17
+test database `eedhalal_test` — REAL PG VERIFIED on this host. Re-run on any
+new host before trusting it there.
 
 ## Backup / restore (no passwords in repo — pass via env/prompts)
 

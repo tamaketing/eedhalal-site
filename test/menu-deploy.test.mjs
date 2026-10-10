@@ -6,7 +6,7 @@
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -134,7 +134,76 @@ function makeDeps(world, { liveQueue = [], gateHook = null, gateFail = null } = 
   };
 }
 
-test('happy path: dirty workspace untouched, remote gets exactly the 2 files', async () => {
+test('worktree gates run serial tests and reference only existing files', async () => {
+  const { WORKTREE_GATES } = await import('../scripts/menu-deploy.mjs');
+  const { existsSync } = await import('node:fs');
+  assert.ok(WORKTREE_GATES.length > 0);
+  for (const gate of WORKTREE_GATES) {
+    if (gate.cmd === '--test') {
+      assert.ok(gate.args.includes('--test-concurrency=1'), 'worktree tests must run serially');
+      for (const arg of gate.args.filter((item) => item.endsWith('.test.mjs'))) {
+        assert.ok(existsSync(path.join(HERE, '..', arg)), `worktree gate references a missing test: ${arg}`);
+      }
+    } else {
+      assert.ok(existsSync(path.join(HERE, '..', gate.cmd)), `worktree gate references a missing checker: ${gate.cmd}`);
+    }
+  }
+  assert.ok(!WORKTREE_GATES.some((gate) => gate.args.includes('test/admin-logic.test.mjs')), 'the retired admin-logic test must not gate a deploy');
+});
+
+test('new menu images move from the working checkout into the clean worktree', async (t) => {
+  const { syncWebsiteImages, websiteImageRefs } = await import('../scripts/menu-deploy.mjs');
+  const base = await mkdtemp(path.join(tmpdir(), 'eed-deploy-images-'));
+  t.after(async () => {
+    const { rm } = await import('node:fs/promises');
+    await rm(base, { recursive: true, force: true });
+  });
+  const sourceRoot = path.join(base, 'workspace');
+  const worktreeDir = path.join(base, 'worktree');
+  await mkdir(path.join(sourceRoot, 'img'), { recursive: true });
+  await mkdir(path.join(worktreeDir, 'img'), { recursive: true });
+  await writeFile(path.join(sourceRoot, 'img', 'new-dish.jpg'), 'new-bytes', 'utf8');
+  const central = { menus: [{ id: 1, image: 'img/new-dish.jpg' }, { id: 2, image: '' }] };
+  assert.deepEqual(websiteImageRefs(central), ['img/new-dish.jpg']);
+  assert.deepEqual(await syncWebsiteImages({ sourceRoot, worktreeDir, refs: websiteImageRefs(central) }), ['img/new-dish.jpg']);
+  assert.equal(await readFile(path.join(worktreeDir, 'img', 'new-dish.jpg'), 'utf8'), 'new-bytes');
+  assert.deepEqual(await syncWebsiteImages({ sourceRoot, worktreeDir, refs: websiteImageRefs(central) }), []);
+  await assert.rejects(
+    syncWebsiteImages({ sourceRoot, worktreeDir, refs: ['../outside.jpg'] }),
+    /ไม่พบรูปใหม่/,
+  );
+});
+
+test('unsafe image paths are rejected before any file is copied', async () => {
+  const { websiteImageRefs } = await import('../scripts/menu-deploy.mjs');
+  assert.throws(
+    () => websiteImageRefs({ menus: [{ id: 1, image: '../outside.jpg' }] }),
+    /พาธไม่ปลอดภัย/,
+  );
+});
+
+test('website release collection hashes the exact changed files and rejects strays', async (t) => {
+  const { collectWebsiteRelease, websiteReleaseDigest } = await import('../scripts/menu-deploy.mjs');
+  const worktreeDir = await mkdtemp(path.join(tmpdir(), 'eed-deploy-release-'));
+  t.after(async () => {
+    const { rm } = await import('node:fs/promises');
+    await rm(worktreeDir, { recursive: true, force: true });
+  });
+  await mkdir(path.join(worktreeDir, 'img'), { recursive: true });
+  await writeFile(path.join(worktreeDir, 'popular-menu.html'), '<p>a</p>\r\n', 'utf8');
+  await writeFile(path.join(worktreeDir, 'img', 'new-dish.jpg'), Buffer.from([1, 2, 3]));
+  const status = ' M popular-menu.html\0?? img/new-dish.jpg\0?? .eed-publish-worktree\0';
+  const runGit = async () => status;
+  const release = await collectWebsiteRelease({ worktreeDir, runGit, files: ['popular-menu.html', 'img/new-dish.jpg'] });
+  assert.deepEqual(release.files.map((file) => file.path), ['popular-menu.html', 'img/new-dish.jpg']);
+  assert.equal(release.contentHash, websiteReleaseDigest(release.files));
+  await assert.rejects(
+    collectWebsiteRelease({ worktreeDir, runGit, files: ['popular-menu.html', 'img/new-dish.jpg', 'stray.txt'] }),
+    /ไม่ตรงกับรายการเผยแพร่/,
+  );
+});
+
+test('happy path: dirty workspace untouched, remote gets exactly the website-release files', async () => {
   const { deployMenuRelease } = await import('../scripts/menu-deploy.mjs');
   const { readPublishState } = await import('../scripts/menu-central.mjs');
   const world = await makeWorld();
@@ -157,6 +226,9 @@ test('happy path: dirty workspace untouched, remote gets exactly the 2 files', a
   const state = await readPublishState(world.dataDir);
   assert.equal(state.deploy.phase, 'live');
   assert.equal(state.live.state, 'live');
+  assert.deepEqual(state.file.files.sort(), ['data/planner-overrides.json', 'js/menu-data.js']);
+  assert.equal(state.file.hashes.websiteFiles.length, 2);
+  assert.equal(typeof state.file.hashes.websiteContent, 'string');
 });
 
 test('remote moves mid-run: abort before commit, their commit stands alone', async () => {
@@ -213,7 +285,7 @@ test('stray file in worktree aborts the commit', async () => {
     await writeFile(path.join(cwd, 'stray.txt'), 'not ours\n', 'utf8');
   };
   const { deps } = makeDeps(world, { gateHook });
-  await assert.rejects(() => deployMenuRelease({ root: world.workspace, dataDir: world.dataDir, deps }), /ไฟล์อื่นปน/);
+  await assert.rejects(() => deployMenuRelease({ root: world.workspace, dataDir: world.dataDir, deps }), /ไฟล์นอกขอบเขต/);
   const count = (await execFileAsync('git', ['--git-dir', world.remote, 'rev-list', '--count', 'main'], { timeout: 30000 })).stdout.trim();
   assert.equal(count, '1');
 });

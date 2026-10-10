@@ -1,68 +1,78 @@
-﻿# Deploy แบบไม่ต้องมีหลังบ้าน (ข้อมูลกลางจาก GitHub)
+# EED HALAL — เตรียมไฟล์ ตรวจ และเผยแพร่เว็บไซต์
 
-## วิธีใช้ (เจ้าของ)
-1. แก้ข้อมูลธุรกิจทั้งหมด รวมถึงราคาเริ่มต้น ขั้นต่ำ เอกสาร lead time พื้นที่ส่ง และนโยบายค่าส่ง (ถามแอดมิน ไม่มีเรท/โซน/ยอดส่งฟรี) ที่ `data/business-rules.json`
-2. จัดการเมนูที่หน้า **จัดการเมนู** (`budget-planner.html` ผ่าน local server ของแอดมิน):
-   - กด **บันทึก** เพื่อเก็บฐานกลางในเครื่อง (สำรองอัตโนมัติก่อนทุกครั้ง เครื่องมือแอดมินใช้ทันที เว็บลูกค้ายังใช้ฉบับเดิม)
-   - กด **ดูตัวอย่างและเผยแพร่** เพื่อเทียบกับฉบับไฟล์ก่อนยืนยัน — ขั้นนี้สร้างไฟล์ในเครื่องเท่านั้น สถานะคือ “เตรียมไฟล์แล้ว — รอขึ้นเว็บไซต์” **ยังไม่ถือว่าเผยแพร่แล้ว**
-   - กด **เผยแพร่ขึ้นเว็บจริง** (การ์ด “ขึ้นเว็บจริง”) ระบบจะตรวจไฟล์อีกรอบ → commit **เฉพาะ** `data/planner-overrides.json` + `js/menu-data.js` → push → รอตรวจว่าเว็บจริงให้บริการฉบับนี้แล้ว ขึ้น “เผยแพร่แล้ว” ต่อเมื่อตรวจพบจริงเท่านั้น ถ้าตรวจไม่ได้จะขึ้น “ยังไม่ยืนยัน”
-   - ห้ามแก้ `data/planner-overrides.json` หรือ `js/menu-data.js` ด้วยมือ ทั้งสองไฟล์สร้างจากฐานกลางเท่านั้น (deploy จะหยุดถ้าพบว่าไฟล์ถูกแก้ด้วยมือ หรือมี commit อื่นรอ push รวมอยู่)
-3. **ซิงก์ไฟล์ที่ generate จากฐานกลาง — ห้ามข้ามขั้นนี้** กด publish เสร็จแล้วเว็บยังไม่ขึ้นข้อมูลใหม่จนกว่าจะรันครบทั้ง 3 คำสั่ง:
-   ```
-   node scripts/sync-catering-content.mjs --write   # ตาราง/การ์ดระดับ + การ์ดบริการ + JSON-LD + llms.txt/llms-full.md
-   node scripts/popular-menu-page.mjs   --write   # รายการเมนู + ItemList บนหน้าเมนู (เมนูใหม่จะไม่โผล่ถ้าข้าม)
-   node scripts/check-system.mjs        --write   # Calculator + ข้อมูลธุรกิจฝั่งเว็บ
-   ```
-   > **publish ≠ ขึ้นเว็บ** — ปุ่มเผยแพร่เขียนแค่ `data/planner-overrides.json` + `js/menu-data.js` เท่านั้น ถ้าแก้ **ระดับข้าวกล่อง** (เพิ่ม/ซ่อนชุด เปลี่ยนราคา เปลี่ยนชื่อ หรือเพิ่ม/เปลี่ยนราคา**อาหารเมนูที่ 2**) ต้องรัน 3 คำสั่งข้างบนด้วย ไม่งั้นหน้าเว็บจะยังพูดของเก่า
-4. รันตัวตรวจให้ผ่านทั้งหมดก่อน commit:
-   ```
-   node scripts/sync-catering-content.mjs --check
-   node scripts/check-system.mjs --check
-   node scripts/popular-menu-page.mjs --check
-   node scripts/check-starting-price.mjs
-   node scripts/check-business-sync.mjs --check
-   node scripts/check-public-site.mjs
-   node --test
-   ```
-5. **รูปที่เพิ่มใหม่ต้อง `git add` ก่อน deploy** — ถ้าไฟล์รูปยังไม่ถูกติด git เว็บจะขึ้น 404 (ตรวจด้วย `git status --porcelain -- img/`)
-6. การขึ้นเว็บอัตโนมัติจากหลังบ้านยัง**ปิดอยู่โดยค่าเริ่มต้น** (ต้องตั้ง `EED_ALLOW_GIT_DEPLOY=1` แล้วเริ่ม server ใหม่) — เปิดแล้วปุ่ม “เผยแพร่ขึ้นเว็บจริง” จะ commit เฉพาะไฟล์เผยแพร่ + push ด้วย git ของเครื่องแอดมินเอง (ไม่ใช้ token ในเบราว์เซอร์) แล้วตรวจเว็บจริงต่อ ถ้ายังไม่เปิด ให้ commit/push เองตามปกติ (push คือขั้นตอนที่ขึ้น GitHub Pages จริง)
+ไฟล์นี้ดูแลลำดับสร้างไฟล์และคำสั่งตรวจ/ขึ้นเว็บ ข้อมูลว่าแก้ต้นทางที่ไหนอยู่ที่ [FACTS.md](FACTS.md) กฎการทำงานและการเขียนอยู่ที่ [AGENTS.md](AGENTS.md) ส่วนวิธีเปิดเครื่องมือและสำรองข้อมูลอยู่ที่ [คู่มือแอดมิน](tools/admin/README.md)
 
-## การทำงาน
-- `data/business-rules.json` เป็นข้อมูลกลางของกฎธุรกิจที่เว็บ เครื่องคำนวณ API และเอกสารสำหรับ AI (`llms.txt` / `llms-full.md`) ต้องใช้ร่วมกัน
-- ฐานกลางเมนู (`menu-central.json` ในโฟลเดอร์ข้อมูลแอดมิน, local only, gitignored) เป็นต้นทางของเมนูทั้งหมด: ชื่อ รูป **ระดับสินค้า (Classic / Signature / Executive)** คำอธิบาย ราคาขาย ขั้นต่ำ ลำดับแสดงผล และการซ่อน — อ้างอิงด้วย ID เมนูเดิม ส่วนราคาขายคือข้อมูลหลักของหน้านี้เท่านั้น **เมนูไม่มีหมวดหมู่อีกแล้ว: ระดับสินค้าใน `data/business-rules.json` คือกลุ่มเดียวที่ทั้งเว็บ เครื่องคำนวณ API และข้อความตอบแทนบน LINE ใช้ร่วมกัน**
-- โค้ดหลังบ้านอยู่ใน `tools/admin/` (version control) ส่วนข้อมูลจริงอยู่ในโฟลเดอร์ข้อมูล (`EED_ADMIN_DATA_DIR`, ค่าเริ่มต้น `demo/owner-set-builder/`, gitignored) — เริ่มระบบด้วย `tools/admin/start-admin.cmd` ดูวิธีติดตั้ง/ย้ายเครื่องที่ `tools/admin/README.md`
-- `data/planner-overrides.json` + `js/menu-data.js` เป็น**ฉบับเผยแพร่** (public, allowlist เฉพาะ ID/ชื่อ/รูป/ระดับสินค้า/คำอธิบาย/ราคาขาย/ขั้นต่ำ/ลำดับแสดงผล) สร้างจากฐานกลางด้วยปุ่มเผยแพร่เท่านั้น ห้ามมีข้อมูลภายในหรือหมายเหตุภายใน (คีย์ `categories`/`categoryList` เป็นของเก่า — publish แรกหลังเลิกหมวดจะตัดทิ้งให้เอง)
-- `js/business-data.js` เป็น compatibility file สำหรับกฎธุรกิจบนหน้าเว็บ และต้องตรงกับข้อมูลกลาง
-- `data/rich-menu.json` คือข้อมูล rich menu + keyword reply ของ LINE Official Account (ไม่ใช่บอทอัตโนมัติ) ราคาในไฟล์นี้ต้องตรงกับแคตตาล็อกที่เผยแพร่แล้วเสมอ
-- ระดับข้าวกล่อง (Classic / Signature / Executive) และ**อาหารเมนูที่ 2** ถูกสร้างจาก `data/business-rules.json` + แคตตาล็อกที่เผยแพร่แล้ว ตัวเลขราคาเริ่มต้นไม่มีที่ไหนพิมพ์เอง — คำนวณจากชุดที่เปิดขายและถูกที่สุดของระดับนั้นเสมอ
-- Calculator ยังรองรับ localStorage สำหรับ preview ในเครื่อง แต่ข้อมูลที่ deploy ให้ลูกค้าใช้มาจากไฟล์ใน repository
-- CI จะหยุด deployment เมื่อข้อมูลธุรกิจและ Calculator ไม่ตรงกัน หรือเมื่อข้อเท็จจริงใน `data/sync-manifest.json` ตกหล่นจากไฟล์ใดไฟล์หนึ่ง
-- `budget-planner.html`, `kitchen-order.html` และเครื่องมือหลังบ้านเป็นของภายใน จึงไม่ถูก deploy ไป GitHub Pages
+## 1. แก้ต้นทางและเตรียมแคตตาล็อก
 
-## ทดสอบ
-- รัน `node scripts/check-system.mjs`
-- รัน `node --test`
-- เปิดผ่าน GitHub Pages หรือใช้ `start-server.bat` แล้วเปิด `http://localhost:8000/popular-menu.html`
+- กฎธุรกิจแก้ที่ `data/business-rules.json` ก่อน แล้วดูจุดซิงก์จาก `data/sync-manifest.json` และค้นหาสำเนาเพิ่มเติม
+- เมนู ราคา รูป ระดับ ขั้นต่ำรายเมนู และอาหารเมนูที่ 2 แก้ผ่านหน้า **จัดการเมนู** ปุ่ม **บันทึก** เก็บฐานกลางในเครื่องและสำรองฉบับก่อนหน้า
+- กด **ดูตัวอย่างและเผยแพร่** เพื่อตรวจรายการเปลี่ยนแปลงก่อนยืนยัน ขั้นนี้สร้าง `data/planner-overrides.json` และ `js/menu-data.js` ในเครื่อง สถานะ “เตรียมไฟล์แล้ว — รอขึ้นเว็บไซต์” ยังไม่ใช่การขึ้นเว็บจริง
+- ห้ามแก้ไฟล์แคตตาล็อกทั้งสองด้วยมือ ราคาเริ่มต้นของระดับข้าวกล่องคำนวณจากชุดที่ขายได้ในแคตตาล็อก ไม่พิมพ์ตัวเลขราคาเริ่มต้นลงในกฎธุรกิจ
+- ถ้าแก้เฉพาะเอกสารหรือข้อความที่ไม่กระทบข้อมูลกลาง ไม่ต้องเผยแพร่ฐานเมนูใหม่
 
-## การสำรองและกู้คืน (ข้อมูลภายใน)
-- ทุกครั้งที่บันทึก `menu-central.json` ผ่านหลังบ้าน ระบบสำรองฉบับก่อนหน้าไว้ที่ `<data-dir>/backups/` อัตโนมัติ (เก็บ 20 ฉบับต่อข้อมูล ชื่อมีวันเวลาถึงมิลลิวินาที) ถ้าสำรองไม่สำเร็จจะ**ไม่บันทึก**ต่อ
-- กู้คืนที่การ์ด “ขึ้นเว็บจริง” (รายการสำรอง → กู้คืน) ระบบจะสำรองฉบับปัจจุบันไว้ก่อนกู้เสมอ
-- **ข้อจำกัด:** สำรองในเครื่องเดียวกันกันแก้พลาด/เผยแพร่พลาดเท่านั้น **ไม่กันเครื่องเสียหรือเครื่องหาย** — คัดลอก `<data-dir>/backups/<วันที่>-*` ออกนอกเครื่องเป็นระยะ (ไดรฟ์ภายนอก/ที่เก็บส่วนตัว)
-- ห้ามนำข้อมูลภายในเข้า public repository หรือไฟล์ deploy: ไฟล์สำรอง/ฐานกลางอยู่ในโฟลเดอร์ข้อมูล (gitignored, ไม่ขึ้น Pages) เท่านั้น มี CI guard (`checkPublishSafety`) ห้ามไฟล์เหล่านี้โผล่ใน `data/` `js/` `tools/` หรือ artifact
+## 2. สร้างไฟล์ที่ใช้ข้อมูลกลาง
 
-## ไฟล์ที่เกี่ยวข้อง
-- `data/business-rules.json` — ต้นทางกฎธุรกิจทั้งหมด รวมนโยบายค่าส่งแบบถามแอดมิน
-- `menu-central.json` (ในโฟลเดอร์ข้อมูลแอดมิน, local only, ไม่ commit) — ฐานกลางเมนู บันทึกจากหน้า “จัดการเมนู”
-- `scripts/menu-central.mjs` — migrate/ตรวจ/diff/เผยแพร่เมนูจากฐานกลาง (ตรรกะเดียวกับปุ่มเผยแพร่; มีเทสที่ `test/menu-central-publish.test.mjs`)
-- `data/planner-overrides.json` — ฉบับเผยแพร่ catalog (public allowlist) สร้างจากฐานกลางเท่านั้น ห้ามแก้ด้วยมือ
-- `scripts/menu-central.mjs` — ฐานข้อมูลกลางทั้งเมนูและ `sideItems` (อาหารเมนูที่ 2) + migrate/ตรวจ/diff/เผยแพร่
-- `scripts/mealbox-tiers.mjs` — กติการะดับข้าวกล่องทั้งหมด: ราคาเริ่มต้น, กล่อง, อาหารเมนูที่ 2, สถานะเปิดขาย (ทุกหน้า render จากที่นี่ที่เดียว)
-- `scripts/sync-catering-content.mjs` — generate ตาราง/การ์ดระดับ + การ์ดบริการ + JSON-LD + `llms.txt`/`llms-full.md` จาก `business-rules.json`
-- `scripts/popular-menu-page.mjs` — generate รายการเมนูและ ItemList บนหน้าเมนู (เมนูใหม่จะไม่โผล่บนเว็บถ้าไม่รัน)
-- `data/sync-manifest.json` — ทะเบียนบอกว่าข้อเท็จจริงแต่ละข้อต้องอยู่ในไฟล์ไหนบ้าง ตัวตรวจจะแดงถ้าตกหล่น
-- `js/business-data.js` — generated compatibility data สำหรับกฎธุรกิจบนหน้าเว็บ
-- `js/menu-data.js` — generated compatibility data สำหรับเมนูบนหน้าเว็บ
-- `js/popular-menu-hydrate.js` — แสดงข้อมูลจาก `menu-data.js` แบบ static (หน้า `budget-calculator.html` และ `js/budget-calculator.js` ถูกถอดออกแล้ว)
-- `js/budget-planner.js` — เครื่องมือช่วยแก้/ส่งออกข้อมูลเมนูในเครื่อง
-- `scripts/check-system.mjs` — สร้างไฟล์ข้อมูลฝั่งเว็บ และตรวจกฎธุรกิจกับแคตตาล็อกทุกส่วน
-- `test/system-rules.test.mjs` — regression tests ของกฎธุรกิจ
+เมื่อเปลี่ยนกฎธุรกิจหรือแคตตาล็อก ให้รันจาก root ของโปรเจกต์ตามลำดับ:
+
+```powershell
+node scripts/sync-catering-content.mjs --write
+node scripts/popular-menu-page.mjs --write
+node scripts/check-system.mjs --write
+```
+
+| คำสั่ง | ผลลัพธ์ |
+|---|---|
+| `sync-catering-content.mjs --write` | ตาราง/การ์ดระดับ การ์ดบริการ structured data และบล็อกข้อมูลกลางใน llms |
+| `popular-menu-page.mjs --write` | รายการเมนูและ ItemList บนหน้าเมนูไทย–อังกฤษ |
+| `check-system.mjs --write` | ซิงก์ข้อมูลธุรกิจ เมนู และ Snack Box ที่หน้าเว็บใช้ |
+
+ตรวจ diff หลังสร้างไฟล์ และแก้ข้อความนอกบล็อกอัตโนมัติให้ตรงด้วย เช่น FAQ บทความ และ LINE OA ตัวตรวจ `check-business-sync.mjs` ไม่มีโหมด `--write` เพราะต้องรักษาความหมายและน้ำเสียงของข้อความเหล่านี้ด้วยมือ
+
+## 3. ตรวจงานก่อนขึ้นเว็บ
+
+```powershell
+node scripts/check-repository-safety.mjs
+node scripts/check-line-endings.mjs
+node scripts/check-docs.mjs
+node scripts/sync-business-content.mjs --check
+node scripts/sync-catering-content.mjs --check
+node scripts/check-system.mjs --check
+node scripts/popular-menu-page.mjs --check
+node scripts/check-starting-price.mjs
+node scripts/check-business-sync.mjs --check
+node scripts/check-public-site.mjs
+node scripts/check-search-discovery.mjs
+node --test --test-concurrency=1
+```
+
+ใช้ `--test-concurrency=1` เพราะบางชุดทดสอบแก้ข้อความในไฟล์จริงชั่วคราวเพื่อพิสูจน์ว่าตัวตรวจจับข้อมูลผิดได้ หากรันพร้อมกัน ตัวตรวจอีกชุดอาจอ่านจังหวะที่ไฟล์ยังไม่ถูกคืนค่า
+
+- ตรวจ `git diff` และเลือกเฉพาะไฟล์ที่เกี่ยวกับงาน รวมไฟล์ที่สร้างจากข้อมูลกลาง
+- รูปใหม่ต้องเข้า Git พร้อมงาน ตรวจด้วย `git status --porcelain -- img/` และเพิ่มไฟล์รูปที่ใช้จริงก่อน commit
+- งานที่เปลี่ยนหน้าลูกค้า: เปิด `start-server.bat` แล้วใช้เครื่องมือแอดมินที่ `http://127.0.0.1:4185/budget-planner.html` หรือดูตัวอย่างเว็บไซต์สาธารณะด้วย `preview-public.bat` ที่ `http://127.0.0.1:8000/` ตรวจมือถือ ลิงก์ CTA ข้อความไทย–อังกฤษ และอ่านทวนตาม Naturalness Test ใน AGENTS
+- CI ตรวจอีกครั้งก่อนสร้างเว็บไซต์ ดูคำสั่งที่ใช้งานจริงใน [.github/workflows/pages.yml](.github/workflows/pages.yml)
+
+## 4. เผยแพร่และยืนยันผล
+
+### งานที่มีหน้าเว็บ ข้อความ หรือไฟล์ที่สร้างใหม่
+
+หลังข้อ 3 ผ่าน ให้ commit ไฟล์ที่เกี่ยวข้องครบชุดแล้ว push ไปสาขาที่ตั้งให้เผยแพร่ใน GitHub Pages workflow จากนั้นรอ build/deploy และ smoke test ผ่าน ตรวจหน้าเว็บจริงที่แก้ก่อนถือว่างานขึ้นครบแล้ว การ push สำเร็จอย่างเดียวยังไม่ยืนยันผลบนเว็บ
+
+### ปุ่ม “เผยแพร่ขึ้นเว็บจริง” ของแอดมิน
+
+ปุ่มนี้ปิดโดยค่าเริ่มต้น เปิดได้ด้วย `EED_ALLOW_GIT_DEPLOY=1` แล้วเริ่ม server ใหม่ การทำงานอยู่ใน [scripts/menu-deploy.mjs](scripts/menu-deploy.mjs):
+
+ปุ่ม **อัปเดตเว็บทั้งหมด** รวมการดูตัวอย่าง เตรียมแคตตาล็อก สร้างไฟล์เว็บไซต์ และเรียกขั้นตอนขึ้นเว็บเดียวกันไว้ในครั้งเดียว ชื่อปุ่มไม่ได้หมายความว่าจะรวมงานที่แก้ค้างใน working checkout เข้าไปด้วย
+
+- สร้าง worktree แยกจาก remote แล้วสร้างแคตตาล็อกก่อน
+- คัดลอกรูปเมนูใหม่ที่ฐานกลางอ้างอิงจาก working checkout เข้า worktree ก่อนตรวจรูป โดยอ่านอย่างเดียว ไม่เขียน working checkout
+- รันตัวสร้างเว็บไซต์ใน worktree ตามลำดับข้อ 2 ให้ครบ ได้แก่ หน้า HTML ไทย–อังกฤษ structured data ไฟล์ llms และข้อมูลเว็บที่ต้องสร้าง
+- ตรวจราคา ข้อความ และคำแปลให้ตรงกันก่อน commit ถ้าไม่ตรงให้หยุดพร้อมระบุไฟล์
+- รวบรวมรายการไฟล์เผยแพร่จาก diff พร้อม hash แล้ว commit/push เฉพาะไฟล์เหล่านั้น โดยใช้ Git ของเครื่องแอดมิน ไม่มี token ในเบราว์เซอร์
+- รอตรวจไฟล์เผยแพร่ครบชุดที่เว็บจริงให้บริการ ถ้ายืนยันไม่ได้จะแสดง “ยังไม่ยืนยัน”
+
+## ขอบเขตไฟล์สาธารณะ
+
+- `llms.txt` และ `llms-full.md` ขึ้นเว็บไซต์สำหรับ AI อ่าน ส่วน AGENTS, FACTS และ DEPLOY เป็นคู่มือใน repository
+- `budget-planner.html`, `kitchen-order.html` และ `tools/admin/` เป็นเครื่องมือภายใน ไม่เข้า GitHub Pages
+- ฐานเมนูกลาง ไฟล์สำรอง และข้อมูลภายในไม่เข้า public repository หรือไฟล์ deploy; ดูวิธีสำรอง กู้คืน และย้ายเครื่องที่ [คู่มือแอดมิน](tools/admin/README.md)

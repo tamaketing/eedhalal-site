@@ -24,18 +24,27 @@ async function appliedVersions(query) {
   return new Set(result.rows.map((row) => row.version));
 }
 
-export async function migrateUp(env = process.env, query) {
+export async function migrateUp(env = process.env, query, createPool = null) {
   if ((env.DB_ADAPTER || 'memory').toLowerCase() !== 'postgres') {
     return { adapter: env.DB_ADAPTER || 'memory', applied: [], note: 'schemaless adapter: no SQL migrations required' };
   }
-  const adapter = query ? { query } : null;
   let run = query;
   let close = async () => {};
   if (!run) {
     const { default: pg } = await import('pg');
-    const pool = new pg.Pool({ connectionString: env.DATABASE_URL });
-    run = (text, params) => pool.query(text, params);
-    close = async () => pool.end();
+    const pool = createPool ? await createPool(env) : new pg.Pool({ connectionString: env.DATABASE_URL });
+    // A pool's query() method may use a different server connection for each
+    // call. BEGIN/COMMIT is meaningless across connections, so check out one
+    // client and keep it for the whole migration transaction.
+    const client = await pool.connect();
+    run = (text, params) => client.query(text, params);
+    close = async () => {
+      try {
+        client.release();
+      } finally {
+        await pool.end();
+      }
+    };
   }
   try {
     const applied = await appliedVersions(run);
