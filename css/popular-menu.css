@@ -64,6 +64,11 @@
 .pm-topping-price{flex-shrink:0;color:#1d6b3e;font-weight:700;font-size:15px;white-space:nowrap}
 .pm-topping-price-none{color:#807e72;font-weight:500;font-size:13px}
 .pm-toppings-list[hidden]{display:none}
+.pm-second-dish{margin:2.5rem 0 0}
+.pm-note{margin:4px 0 14px;color:#66675f;font-size:14px;line-height:1.8;max-width:44rem}
+.pm-pick-lead{margin:0 0 8px;font-size:14px;font-weight:700;color:#24251f}
+.pm-pick-list{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px;padding:0;list-style:none}
+.pm-pick{background:#faf8f3;border:1px solid #e4e0d6;border-radius:999px;padding:8px 16px;font-size:15px;color:#24251f}
 .pm-empty{margin:8px auto 0;max-width:560px;text-align:center;padding:48px 24px;border:1px dashed #e4e0d6;border-radius:10px;background:#fff}
 .pm-empty p{margin:0 0 10px;color:#66675f}
 .pm-empty p strong{color:#24251f;font-size:18px}

@@ -28,6 +28,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseMenuDataJs } from './menu-central.mjs';
+import { resolveSideChoices, sideItemsFromPlanner, tierDefinitions } from './mealbox-tiers.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -37,6 +38,10 @@ const LIST_START = '<!-- MENU:LIST:START -->';
 const LIST_END = '<!-- MENU:LIST:END -->';
 const TOPPINGS_START = '<!-- MENU:TOPPINGS:START -->';
 const TOPPINGS_END = '<!-- MENU:TOPPINGS:END -->';
+const SECOND_DISH_START = '<!-- MENU:SECOND-DISH:START -->';
+const SECOND_DISH_END = '<!-- MENU:SECOND-DISH:END -->';
+const DESSERTS_START = '<!-- MENU:DESSERTS:START -->';
+const DESSERTS_END = '<!-- MENU:DESSERTS:END -->';
 const JSONLD_START = '<!-- MENU:JSONLD:START -->';
 const JSONLD_END = '<!-- MENU:JSONLD:END -->';
 const PAGE = 'popular-menu.html';
@@ -229,14 +234,97 @@ function replaceBlock(html, start, end, body) {
 }
 
 /** Build the full page with the static block injected from published data. */
-export function renderPopularMenuPage(html, { items, toppings }) {
+export function renderPopularMenuPage(html, { items, toppings, secondDish, desserts }) {
   const { grid, list } = renderStaticMenu(items);
   const toppingsHtml = renderToppingsList(toppings);
   let out = replaceBlock(html, GRID_START, GRID_END, grid);
   out = replaceBlock(out, LIST_START, LIST_END, list);
   out = replaceBlock(out, TOPPINGS_START, TOPPINGS_END, toppingsHtml);
+  out = replaceBlock(out, SECOND_DISH_START, SECOND_DISH_END, renderSecondDishList(secondDish, false));
+  out = replaceBlock(out, DESSERTS_START, DESSERTS_END, renderDessertsList(desserts, false));
   out = replaceBlock(out, JSONLD_START, JSONLD_END, renderItemListJsonLd(items));
   return out;
+}
+
+// The names a guest can pick as their second dish. Empty output removes the
+// section: a promise with no dishes behind it is worse than no section.
+//
+// The whole block is generated on purpose. A hand-written section would sit on
+// the page with an empty list whenever the owner clears sideChoices, which is
+// the one state where this promise must not be made. Copy lives here so the
+// Thai and English versions can be read side by side; keep them equivalent in
+// meaning and tone, not word for word.
+const SECOND_DISH_COPY = {
+  th: {
+    head: 'เลือกอาหารเมนูที่ 2 ให้ชุด Signature ถูกใจแขก',
+    sub: 'แขกได้สองอย่างในกล่องเดียว คุณจึงไม่ต้องเดาว่าใครชอบอะไร',
+    body: 'ชุด Signature คือข้าว อาหารหลัก 1 อย่าง อาหารเมนูที่ 2 อีก 1 อย่าง และผัก ในกล่อง 4 ช่อง บอกอาหารหลักที่ชอบมาได้เลยครับ แล้วเลือกอีกจานจากรายการนี้ เราจะจับคู่ให้เข้ากันและส่งราคารวมทั้งกล่องให้ก่อนยืนยันออเดอร์ ไม่มีบรรทัดค่าเพิ่มทีหลัง',
+    lead: 'อาหารเมนูที่ 2 ที่เลือกได้',
+    cta: 'ให้ EED ช่วยจับคู่เมนู',
+  },
+  en: {
+    head: 'Pick the second dish so your Signature box suits every guest',
+    sub: 'Two dishes in one box, so you never have to guess what they will like',
+    body: 'A Signature box is rice, one main dish, a second dish and vegetables in four compartments. Tell us the main you like, then pick the second dish from the list below. We will pair them for you and send the full box price before you confirm — no extra line afterwards.',
+    lead: 'Second dishes you can choose',
+    cta: 'Let EED pair the dishes for me',
+  },
+};
+
+function renderSecondDishList(secondDish, en) {
+  const names = (Array.isArray(secondDish) ? secondDish : [])
+    .map((item) => escapeHtml(String((en ? item?.nameEn : item?.nameTh) ?? '').trim()))
+    .filter(Boolean);
+  if (!names.length) return '';
+  const copy = en ? SECOND_DISH_COPY.en : SECOND_DISH_COPY.th;
+  const picks = names.map((name) => `              <li class="pm-pick">${name}</li>`).join('\n');
+  return `        <div class="pm-second-dish" id="pm-second-dish">
+          <h2 class="pm-subhead">${copy.head} <span>${copy.sub}</span></h2>
+          <p class="pm-note">${copy.body}</p>
+          <p class="pm-pick-lead">${copy.lead}</p>
+          <ul class="pm-pick-list">
+${picks}
+          </ul>
+          <a class="pm-btn pm-btn-green" href="${LINE_URL}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_second_dish">${copy.cta}</a>
+        </div>`;
+}
+
+// Desserts are add-ons priced like toppings: the figure shown is the ADDITION
+// to the box price, and an unconfirmed price says so instead of guessing.
+const DESSERT_COPY = {
+  th: {
+    head: 'ขนมหวานปิดท้ายมื้อ',
+    sub: 'ใส่กล่องลูกฟูกแยก ไม่ใช่อาหารเมนูที่ 2 ของชุด Signature',
+    note: 'เลือกเพิ่มได้กับทุกกล่อง ราคาบวกเพิ่มจากราคากล่อง แจ้งทีมงานตอนสั่งได้เลย',
+  },
+  en: {
+    head: 'Something sweet to finish',
+    sub: 'Packed in its own corned box, not as the Signature second dish',
+    note: 'Add to any box. The amount sits on top of the box price — tell us on LINE when you order.',
+  },
+};
+
+function renderDessertsList(desserts, en) {
+  const unit = en ? 'THB' : 'บาท';
+  const rows = (Array.isArray(desserts) ? desserts : []).map((item) => {
+    const name = escapeHtml(String((en ? item?.nameEn : item?.nameTh) ?? '').trim());
+    if (!name) return '';
+    const price = toppingPrice(item?.priceAdjustment);
+    const amount = price == null
+      ? `<span class="pm-topping-price pm-topping-price-none">${en ? 'Ask for the price' : 'สอบถามราคา'}</span>`
+      : `<span class="pm-topping-price">+${price} ${unit}</span>`;
+    const attr = price == null ? '' : ` data-price="${price}"`;
+    return `            <li class="pm-topping"${attr}><span class="pm-topping-name">${name}</span>${amount}</li>`;
+  }).filter(Boolean);
+  if (!rows.length) return '';
+  const copy = en ? DESSERT_COPY.en : DESSERT_COPY.th;
+  return `        <div class="pm-toppings-section" id="pm-desserts">
+          <h2 class="pm-subhead">${copy.head} <span>${copy.sub}</span></h2>
+          <p class="pm-toppings-note">${copy.note}</p>
+          <ul class="pm-toppings-list">
+${rows.join('\n')}
+          </ul>
+        </div>`;
 }
 
 // Toppings are add-ons, so the figure shown is the ADDITION to the box price,
@@ -266,10 +354,38 @@ function renderToppingsList(toppings, en = false) {
 export async function loadCatalogue(root = ROOT) {
   const overrides = JSON.parse(await readFile(path.join(root, 'data', 'planner-overrides.json'), 'utf8'));
   const menus = await parseMenuDataJs(await readFile(path.join(root, 'js', 'menu-data.js'), 'utf8'));
+  const sideItems = sideItemsFromPlanner(overrides);
+  // The Signature second dish is the one list the tier copy promises, so it is
+  // read through the same resolver the pricing and the tier table use: an id in
+  // business-rules.json can never name a dish the catalogue cannot answer for.
+  const rules = await readRules(root);
+  const signature = tierDefinitions(rules).find((tier) => tier.id === 'signature');
+  const secondDish = signature
+    ? resolveSideChoices(signature, sideItems).items
+        .filter((item) => item.public)
+        .map((item) => ({ nameTh: item.nameTh, nameEn: item.nameEn }))
+    : [];
   return {
     items: buildCatalogue(overrides, menus),
     toppings: Array.isArray(overrides.toppings) ? overrides.toppings : [],
+    secondDish,
+    // Desserts live in the same sideItems array, tagged `kind: "dessert"`. They
+    // are split out because they are a corned-box add-on, not a Signature dish.
+    desserts: Array.isArray(overrides.sideItems)
+      ? overrides.sideItems.filter((item) => item?.kind === 'dessert' && item.public !== false)
+      : [],
   };
+}
+
+// business-rules.json is the source of truth for which dishes may sit in the
+// Signature box. A missing or unreadable file must not empty the page: the
+// section is simply left out, and the sync gate reports the real problem.
+async function readRules(root) {
+  try {
+    return JSON.parse(await readFile(path.join(root, 'data', 'business-rules.json'), 'utf8'));
+  } catch {
+    return {};
+  }
 }
 
 /* ───────────────────────── English menu page ─────────────────────────
@@ -297,13 +413,16 @@ const TIER_EN_NAME = {
   executive: 'Executive Premium Halal Box',
 };
 
-export async function loadEnCopy(root = ROOT, items, toppings = []) {
+export async function loadEnCopy(root = ROOT, items, toppings = [], desserts = []) {
   const copy = JSON.parse(await readFile(path.join(root, EN_COPY_FILE), 'utf8'));
   const usable = (value) => typeof value === 'string' && value.trim() !== '';
+  // A name is required: an English visitor must never be handed a Thai dish
+  // name. A description is not — the owner may publish the dish before writing
+  // one, and the card simply omits the paragraph in both languages.
   const missing = items
     .filter((item) => {
       const entry = copy[item.id];
-      return !entry || !usable(entry.name) || !usable(entry.desc);
+      return !entry || !usable(entry.name);
     })
     .map((item) => `${item.id} ${item.name}`);
   if (missing.length) {
@@ -320,6 +439,18 @@ export async function loadEnCopy(root = ROOT, items, toppings = []) {
   if (noEnglish.length) {
     throw new Error(
       `${EN_COPY_FILE} is missing an English name for ${noEnglish.length} topping(s): ${noEnglish.join('; ')}`,
+    );
+  }
+  // Desserts carry their own English name in the published catalogue, for the
+  // same reason as the topping list: a Thai dessert name on an English menu
+  // reads as a bug to the customer.
+  const noEnglishDessert = (Array.isArray(desserts) ? desserts : [])
+    .filter((item) => item?.public !== false)
+    .filter((item) => !usable(item?.nameEn))
+    .map((item) => `${item?.id} ${String(item?.nameTh ?? '').trim()}`.trim());
+  if (noEnglishDessert.length) {
+    throw new Error(
+      `sideItems is missing an English name for ${noEnglishDessert.length} dessert(s): ${noEnglishDessert.join('; ')}`,
     );
   }
   return copy;
@@ -459,12 +590,14 @@ function replaceMainEntity(html, node) {
   return `${html.slice(0, anchor)}${key}: ${rendered}${html.slice(end)}`;
 }
 
-export function renderPopularMenuPageEn(html, { items, toppings }, copy) {
+export function renderPopularMenuPageEn(html, { items, toppings, secondDish, desserts }, copy) {
   const { grid, list } = renderStaticMenuEn(items, copy);
   const toppingsHtml = renderToppingsListEn(toppings, copy.toppings);
   let out = replaceBlock(html, GRID_START, GRID_END, grid);
   out = replaceBlock(out, LIST_START, LIST_END, list);
   out = replaceBlock(out, TOPPINGS_START, TOPPINGS_END, toppingsHtml);
+  out = replaceBlock(out, SECOND_DISH_START, SECOND_DISH_END, renderSecondDishList(secondDish, true));
+  out = replaceBlock(out, DESSERTS_START, DESSERTS_END, renderDessertsList(desserts, true));
   out = replaceMainEntity(out, buildEnItemList(items, copy));
   return out;
 }
@@ -482,14 +615,13 @@ function renderToppingsListEn(toppings, copy = {}) {
 
 export async function buildPopularMenuPage(root = ROOT) {
   const page = await readFile(path.join(root, PAGE), 'utf8');
-  const { items, toppings } = await loadCatalogue(root);
-  return renderPopularMenuPage(page, { items, toppings });
+  return renderPopularMenuPage(page, await loadCatalogue(root));
 }
 
 export async function buildPopularMenuPageEn(root = ROOT) {
   const page = await readFile(path.join(root, PAGE_EN), 'utf8');
-  const { items, toppings } = await loadCatalogue(root);
-  return renderPopularMenuPageEn(page, { items, toppings }, await loadEnCopy(root, items, toppings));
+  const catalogue = await loadCatalogue(root);
+  return renderPopularMenuPageEn(page, catalogue, await loadEnCopy(root, catalogue.items, catalogue.toppings, catalogue.desserts));
 }
 
 export async function checkPopularMenuPage(root = ROOT) {

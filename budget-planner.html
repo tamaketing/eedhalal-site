@@ -107,7 +107,7 @@
       <div class="cp-card-head">
         <h2>อาหารเมนูที่ 2 ของ Signature</h2>
       </div>
-      <p class="cp-note">อาหารเมนูที่ 2 คือจานที่แขกเลือกกินคู่กับอาหารหลัก · ราคาเพิ่มจะขึ้นเว็บเมื่อตั้งสถานะเป็น “ยืนยันแล้ว” · <strong>ของหวานใช้กล่องลูกฟูก จึงไม่ใช่ของ Signature</strong> (เป็นของ Executive) · เพิ่มชื่อแล้วขึ้นเว็บทันที (เอาติ๊ก “ขึ้นเว็บ” ออกถ้ายังไม่พร้อม) · ให้เอา id ไปใส่ใน <code>sideChoices</code> ของ Signature ใน <code>data/business-rules.json</code></p>
+      <p class="cp-note">อาหารเมนูที่ 2 คือจานที่แขกเลือกกินคู่กับอาหารหลัก · ราคาเพิ่มจะขึ้นเว็บเมื่อตั้งสถานะเป็น “ยืนยันแล้ว” · ของหวานอยู่ในส่วน <strong>ขนมหวาน</strong> ด้านล่าง (ใช้กล่องลูกฟูก จึงไม่ใช่ของ Signature) · เพิ่มชื่อแล้วขึ้นเว็บทันที (เอาติ๊ก “ขึ้นเว็บ” ออกถ้ายังไม่พร้อม) · ให้เอา id ไปใส่ใน <code>sideChoices</code> ของ Signature ใน <code>data/business-rules.json</code></p>
       <div id="mc-sideitems" class="cp-dish-topping"><p class="cp-sub">กำลังโหลด…</p></div>
       <div class="cp-add-row">
         <label class="cp-field">ชื่ออาหารเมนูที่ 2<input class="cp-input" type="text" id="mc-si-name-th" placeholder="เช่น ไก่ทอด"></label>
@@ -119,7 +119,7 @@
         <summary>รายละเอียดเพิ่มเติม</summary>
         <div class="cp-advanced-grid">
           <label class="cp-field">ชื่อภาษาอังกฤษ<input class="cp-input" type="text" id="mc-si-name-en" placeholder="เช่น Fried Chicken" data-si-field="nameEn"></label>
-          <label class="cp-field">ประเภท<select class="cp-input narrow" id="mc-si-kind" data-si-field="kind"><option value="side">อาหารรองคาว (ผัด/ทอด)</option><option value="soup_curry">ต้ม / แกง</option><option value="dessert">ของหวาน (กล่องลูกฟูก / Executive)</option></select></label>
+          <label class="cp-field">ประเภท<select class="cp-input narrow" id="mc-si-kind" data-si-field="kind"><option value="side">อาหารรองคาว (ผัด/ทอด)</option><option value="soup_curry">ต้ม / แกง</option></select></label>
           <label class="cp-field">ต้นทุน (บาท)<input class="cp-input narrow" type="number" id="mc-si-cost" min="0" step="1" placeholder="ไม่บังคับ" data-si-field="cost"></label>
           <label class="cp-field">สถานะราคา<select class="cp-input narrow" id="mc-si-priceStatus" data-si-field="priceStatus"><option value="pending">รอยืนยัน</option><option value="ready">ยืนยันแล้ว</option></select></label>
           <label class="cp-field" title="แสดงชื่อบนหน้าเว็บได้ไหม">
@@ -127,6 +127,34 @@
           </label>
           <label class="cp-field" title="ยังใช้อยู่ไหม">
             <span class="cp-inline"><input type="checkbox" id="mc-si-active" data-si-field="active" checked> ใช้งาน</span>
+          </label>
+        </div>
+      </details>
+    </section>
+
+    <section class="cp-card" aria-label="ขนมหวาน">
+      <div class="cp-card-head">
+        <h2>ขนมหวาน</h2>
+      </div>
+      <p class="cp-note">ขนมหวานใช้<strong>กล่องลูกฟูก</strong> จึงแยกจากอาหารเมนูที่ 2 ของ Signature · ราคาเพิ่มจะขึ้นเว็บเมื่อตั้งสถานะเป็น “ยืนยันแล้ว” เพิ่มที่นี่ ระบบจะใส่ประเภทเป็น “ขนมหวาน” ให้เอง ไม่ต้องเลือกเอง</p>
+      <div id="mc-desserts" class="cp-dish-topping"><p class="cp-sub">กำลังโหลด…</p></div>
+      <div class="cp-add-row">
+        <label class="cp-field">ชื่อขนมหวาน<input class="cp-input" type="text" id="mc-ds-name-th" placeholder="เช่น ลอดช่องไทย"></label>
+        <label class="cp-field">ราคาเพิ่ม (บาท/กล่อง)<input class="cp-input narrow" type="number" id="mc-ds-price" min="1" step="1" value="25"><small>บวกกับราคากล่อง</small></label>
+        <button type="button" class="cp-btn" id="mc-ds-add">+ เพิ่มขนมหวาน</button>
+        <span class="cp-sub" id="mc-ds-msg" role="status" aria-live="polite"></span>
+      </div>
+      <details class="cp-advanced" id="mc-ds-advanced">
+        <summary>รายละเอียดเพิ่มเติม</summary>
+        <div class="cp-advanced-grid">
+          <label class="cp-field">ชื่อภาษาอังกฤษ<input class="cp-input" type="text" id="mc-ds-name-en" placeholder="เช่น Thai-style Cendol" data-ds-field="nameEn"></label>
+          <label class="cp-field">ต้นทุน (บาท)<input class="cp-input narrow" type="number" id="mc-ds-cost" min="0" step="1" placeholder="ไม่บังคับ" data-ds-field="cost"></label>
+          <label class="cp-field">สถานะราคา<select class="cp-input narrow" id="mc-ds-priceStatus" data-ds-field="priceStatus"><option value="pending">รอยืนยัน</option><option value="ready">ยืนยันแล้ว</option></select></label>
+          <label class="cp-field" title="แสดงชื่อบนหน้าเว็บได้ไหม">
+            <span class="cp-inline"><input type="checkbox" id="mc-ds-public" data-ds-field="public" checked> ขึ้นเว็บ</span>
+          </label>
+          <label class="cp-field" title="ยังใช้อยู่ไหม">
+            <span class="cp-inline"><input type="checkbox" id="mc-ds-active" data-ds-field="active" checked> ใช้งาน</span>
           </label>
         </div>
       </details>
