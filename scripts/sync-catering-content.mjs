@@ -120,7 +120,7 @@ export async function syncCateringContent({ write = false } = {}) {
   };
   const urls = rules.positioning.servicePriority.map(id => rules.urls[id === 'mealBox' ? 'corporate' : id]);
   const names = (en) => rules.positioning[en ? 'serviceNamesEn' : 'serviceNamesTh'];
-  const details = { 'buffet.html': 'buffet', 'cocktail.html': 'cocktail', 'table-service.html': 'tableService', 'set-menu.html': 'setMenu', 'live-cooking-station.html': 'liveCooking' };
+  const details = { 'buffet.html': 'buffet', 'table-service.html': 'tableService', 'set-menu.html': 'setMenu', 'live-cooking-station.html': 'liveCooking' };
   const overviewPages = ['index.html', 'catering.html', 'about.html', 'faq.html'];
   const tierTablePages = ['popular-menu.html'];
   const tierCardPages = ['index.html'];
@@ -160,7 +160,7 @@ export async function syncCateringContent({ write = false } = {}) {
     }
     // These service pages previously had no structured data. Keep their graph
     // generated from the same facts as the visible service details, in both languages.
-    if (['cocktail.html', 'table-service.html', 'set-menu.html'].includes(base)) {
+    if (['table-service.html', 'set-menu.html'].includes(base)) {
       const url = `${new URL(rules.urls[details[base]]).origin}/${file}`;
       const title = /<title>([^<]*)<\/title>/.exec(html)?.[1];
       const description = /<meta\b[^>]*name="description"[^>]*content="([^"]*)"/.exec(html)?.[1];

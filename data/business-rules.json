@@ -90,14 +90,6 @@
       "serviceStyle": "เชฟปรุงสดจานต่อจาน ออกแบบตามธีม",
       "recommendedFor": "งาน VIP อีเวนต์ และงานเปิดตัว"
     },
-    "cocktail": {
-      "priceFrom": 200,
-      "minimumGuests": 30,
-      "maximumGuests": null,
-      "leadTimeDays": 7,
-      "serviceStyle": "ชิ้นพอดีคำดีไซน์พรีเมียม",
-      "serviceTeam": "จัดดิสเพลย์ เดินเสิร์ฟ และดูแลหน้างาน"
-    },
     "tableService": {
       "priceFromPerTable": 3000,
       "seatsFrom": 8,
@@ -172,7 +164,6 @@
     "contact": "https://eedhalal.com/contact.html",
     "line": "https://lin.ee/CfvqJTd",
     "about": "https://eedhalal.com/about.html",
-    "cocktail": "https://eedhalal.com/cocktail.html",
     "tableService": "https://eedhalal.com/table-service.html",
     "setMenu": "https://eedhalal.com/set-menu.html"
   },
@@ -182,7 +173,6 @@
     "descriptionEn": "EED HALAL provides halal catering in Bangkok for corporate events and celebrations.",
     "servicePriority": [
       "buffet",
-      "cocktail",
       "tableService",
       "setMenu",
       "liveCooking",
@@ -190,7 +180,6 @@
     ],
     "serviceNamesTh": [
       "บุฟเฟต์ฮาลาล",
-      "ค็อกเทลฮาลาล",
       "โต๊ะจีน / โต๊ะไทยฮาลาล",
       "อาหารชุด / Sit-down Dinner ฮาลาล",
       "ซุ้มอาหาร / Live Station ฮาลาล",
@@ -198,7 +187,6 @@
     ],
     "serviceNamesEn": [
       "Halal Buffet",
-      "Halal Cocktail / Finger Food",
       "Halal Chinese / Thai Table",
       "Halal Set Menu / Sit-down Dinner",
       "Halal Food Stall / Live Station",

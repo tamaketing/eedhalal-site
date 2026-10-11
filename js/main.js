@@ -44,7 +44,6 @@
   var CONTACT_PATH = fileAware(EN_PREFIX + '/contact.html');
   var CATERING_PATH = fileAware(EN_PREFIX + '/catering.html');
   var BUFFET_PATH = fileAware(EN_PREFIX + '/buffet.html');
-  var COCKTAIL_PATH = fileAware(EN_PREFIX + '/cocktail.html');
   var TABLE_SERVICE_PATH = fileAware(EN_PREFIX + '/table-service.html');
   var SET_MENU_PATH = fileAware(EN_PREFIX + '/set-menu.html');
   var LIVE_COOKING_PATH = fileAware(EN_PREFIX + '/live-cooking-station.html');
@@ -218,7 +217,7 @@
     if (path === '/contact.html') return 'contact';
     if (path === '/corporate.html') return 'corporate';
     if (path === '/catering.html') return 'catering';
-    if (['/buffet.html', '/cocktail.html', '/table-service.html', '/set-menu.html', '/live-cooking-station.html'].indexOf(path) !== -1) return 'catering';
+    if (['/buffet.html', '/table-service.html', '/set-menu.html', '/live-cooking-station.html'].indexOf(path) !== -1) return 'catering';
     if (path === '/popular-menu.html') return 'menu';
     if (path === '/snack-box.html') return 'menu';
     if (path === '/order-steps.html') return 'order_steps';
@@ -557,7 +556,6 @@
         <div class="nav-dropdown-menu">\
           <a href="' + CATERING_PATH + '" class="nav-dropdown-item">Catering</a>\
           <a href="' + BUFFET_PATH + '" class="nav-dropdown-item">Buffet</a>\
-          <a href="' + COCKTAIL_PATH + '" class="nav-dropdown-item">Cocktail / Finger Food</a>\
           <a href="' + TABLE_SERVICE_PATH + '" class="nav-dropdown-item">Chinese / Thai Table</a>\
           <a href="' + SET_MENU_PATH + '" class="nav-dropdown-item">Set Menu / Sit-down Dinner</a>\
           <a href="' + LIVE_COOKING_PATH + '" class="nav-dropdown-item">Live Cooking Station</a>\
@@ -599,7 +597,6 @@
         <div class="mobile-dropdown-menu" id="mobileServicesMenu">\
           <a href="' + CATERING_PATH + '" class="mobile-dropdown-item">Catering</a>\
           <a href="' + BUFFET_PATH + '" class="mobile-dropdown-item">Buffet</a>\
-          <a href="' + COCKTAIL_PATH + '" class="mobile-dropdown-item">Cocktail / Finger Food</a>\
           <a href="' + TABLE_SERVICE_PATH + '" class="mobile-dropdown-item">Chinese / Thai Table</a>\
           <a href="' + SET_MENU_PATH + '" class="mobile-dropdown-item">Set Menu / Sit-down Dinner</a>\
           <a href="' + LIVE_COOKING_PATH + '" class="mobile-dropdown-item">Live Cooking Station</a>\
@@ -644,7 +641,6 @@
         <div class="nav-dropdown-menu">\
           <a href="' + CATERING_PATH + '" class="nav-dropdown-item">\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
           <a href="' + BUFFET_PATH + '" class="nav-dropdown-item">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e48\u0e15\u0e4c</a>\
-          <a href="' + COCKTAIL_PATH + '" class="nav-dropdown-item">ค็อกเทลฮาลาล</a>\
           <a href="' + TABLE_SERVICE_PATH + '" class="nav-dropdown-item">โต๊ะจีน / โต๊ะไทยฮาลาล</a>\
           <a href="' + SET_MENU_PATH + '" class="nav-dropdown-item">อาหารชุดฮาลาล</a>\
           <a href="' + LIVE_COOKING_PATH + '" class="nav-dropdown-item">Live Cooking Station</a>\
@@ -686,7 +682,6 @@
         <div class="mobile-dropdown-menu" id="mobileServicesMenu">\
           <a href="' + CATERING_PATH + '" class="mobile-dropdown-item">\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
           <a href="' + BUFFET_PATH + '" class="mobile-dropdown-item">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e48\u0e15\u0e4c</a>\
-          <a href="' + COCKTAIL_PATH + '" class="mobile-dropdown-item">ค็อกเทลฮาลาล</a>\
           <a href="' + TABLE_SERVICE_PATH + '" class="mobile-dropdown-item">โต๊ะจีน / โต๊ะไทยฮาลาล</a>\
           <a href="' + SET_MENU_PATH + '" class="mobile-dropdown-item">อาหารชุดฮาลาล</a>\
           <a href="' + LIVE_COOKING_PATH + '" class="mobile-dropdown-item">Live Cooking Station</a>\
@@ -742,7 +737,6 @@
         <a href="' + SNACK_BOX_PATH + '">Snack Box</a>\
         <a href="' + CATERING_PATH + '">Catering</a>\
         <a href="' + BUFFET_PATH + '">Buffet</a>\
-        <a href="' + COCKTAIL_PATH + '">Cocktail / Finger Food</a>\
         <a href="' + TABLE_SERVICE_PATH + '">Chinese / Thai Table</a>\
         <a href="' + SET_MENU_PATH + '">Set Menu / Sit-down Dinner</a>\
         <a href="' + LIVE_COOKING_PATH + '">Live Cooking Station</a>\
@@ -820,7 +814,6 @@
         <a href="' + SNACK_BOX_PATH + '">\u0e02\u0e2d\u0e07\u0e27\u0e48\u0e32\u0e07 Snack Box</a>\
         <a href="' + CATERING_PATH + '">\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e40\u0e25\u0e35\u0e49\u0e22\u0e07</a>\
         <a href="' + BUFFET_PATH + '">\u0e1a\u0e38\u0e1f\u0e40\u0e1f\u0e15\u0e4c\u0e2e\u0e32\u0e25\u0e32\u0e25</a>\
-        <a href="' + COCKTAIL_PATH + '">ค็อกเทลฮาลาล</a>\
         <a href="' + TABLE_SERVICE_PATH + '">โต๊ะจีน / โต๊ะไทยฮาลาล</a>\
         <a href="' + SET_MENU_PATH + '">อาหารชุดฮาลาล</a>\
         <a href="' + LIVE_COOKING_PATH + '">Live Cooking Station</a>\

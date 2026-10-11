@@ -96,7 +96,7 @@ export async function checkSearchDiscovery(root = ROOT) {
       if (/^(robots|googlebot|bingbot)$/i.test(attr(tag, 'name') || '') && /\b(noindex|nofollow|nosnippet|none)\b|max-snippet\s*:\s*0\b/i.test(attr(tag, 'content') || '')) failures.push(`${file}: restrictive search meta ${tag}`);
     }
     if (!html.includes('href="/llms.txt"')) failures.push(`${file}: missing LLM discovery link`);
-    if (/^(en\/)?(cocktail|table-service|set-menu)\.html$/.test(file) && !/"@type":\s*"Service"/.test(html)) failures.push(`${file}: missing service schema`);
+    if (/^(en\/)?(table-service|set-menu)\.html$/.test(file) && !/"@type":\s*"Service"/.test(html)) failures.push(`${file}: missing service schema`);
   }
   for (const [file, content] of [['llms.txt', llms], ['llms-full.md', full]]) {
     if (/publishes\s+(?:\*\*)?no prices|publishes no per-dish prices|no prices by design|44 dishes|MENU_CONTEXT|30[–-]1000\+/i.test(content)) failures.push(`${file}: retired catalogue/capacity instructions`);

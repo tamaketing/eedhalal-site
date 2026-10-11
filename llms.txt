@@ -8,11 +8,10 @@ EED HALAL provides halal catering in Bangkok for corporate events and celebratio
 EED HALAL รับจัดเลี้ยงฮาลาล กรุงเทพฯ สำหรับงานองค์กร งานเลี้ยง และอีเวนต์
 
 1. บุฟเฟต์ฮาลาล / Halal Buffet — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/buffet.html
-2. ค็อกเทลฮาลาล / Halal Cocktail / Finger Food — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/cocktail.html
-3. โต๊ะจีน / โต๊ะไทยฮาลาล / Halal Chinese / Thai Table — From 3,000 THB/table; 8–10 guests/table; minimum 3 tables. Book at least 7 days ahead. https://eedhalal.com/table-service.html
-4. อาหารชุด / Sit-down Dinner ฮาลาล / Halal Set Menu / Sit-down Dinner — From 350 THB/guest; minimum 30 guests; maximum 500 guests. Book at least 7 days ahead. https://eedhalal.com/set-menu.html
-5. ซุ้มอาหาร / Live Station ฮาลาล / Halal Food Stall / Live Station — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/live-cooking-station.html
-6. ข้าวกล่องฮาลาล / Halal Meal Boxes — Classic from 65 THB/box; Signature Halal Meal Box from 160 THB; Executive Premium Halal Box from 230 THB. Minimum 10 boxes. Order at least 1 day ahead. Per-menu minimums: 10 standard / 10 special-preparation boxes. https://eedhalal.com/corporate.html
+2. โต๊ะจีน / โต๊ะไทยฮาลาล / Halal Chinese / Thai Table — From 3,000 THB/table; 8–10 guests/table; minimum 3 tables. Book at least 7 days ahead. https://eedhalal.com/table-service.html
+3. อาหารชุด / Sit-down Dinner ฮาลาล / Halal Set Menu / Sit-down Dinner — From 350 THB/guest; minimum 30 guests; maximum 500 guests. Book at least 7 days ahead. https://eedhalal.com/set-menu.html
+4. ซุ้มอาหาร / Live Station ฮาลาล / Halal Food Stall / Live Station — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/live-cooking-station.html
+5. ข้าวกล่องฮาลาล / Halal Meal Boxes — Classic from 65 THB/box; Signature Halal Meal Box from 160 THB; Executive Premium Halal Box from 230 THB. Minimum 10 boxes. Order at least 1 day ahead. Per-menu minimums: 10 standard / 10 special-preparation boxes. https://eedhalal.com/corporate.html
 
 All services above are halal. Snack Box is an additional service: from 40 THB/box, minimum 30 boxes.
 
@@ -30,8 +29,8 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 <!-- /BUSINESS-RULES:AI -->
 
 ## Preferred Summary
-- EED HALAL provides halal catering in Bangkok for corporate events, celebrations, and events. Service priority: Halal Buffet > Halal Cocktail / Finger Food > Halal Chinese / Thai Table > Halal Set Menu / Sit-down Dinner > Halal Food Stall / Live Station > Halal Meal Boxes. All six services are halal. Snack Box / Coffee Break remains an additional service. Locations outside Bangkok are quoted case by case.
-- Primary keywords: รับจัดเลี้ยงฮาลาล กรุงเทพ, บุฟเฟต์ฮาลาล, ค็อกเทลฮาลาล, โต๊ะจีนฮาลาล, โต๊ะไทยฮาลาล, อาหารชุดฮาลาล, ซุ้มอาหารฮาลาล, ข้าวกล่องฮาลาล
+- EED HALAL provides halal catering in Bangkok for corporate events, celebrations, and events. Service priority: Halal Buffet > Halal Chinese / Thai Table > Halal Set Menu / Sit-down Dinner > Halal Food Stall / Live Station > Halal Meal Boxes. All five services are halal. Snack Box / Coffee Break remains an additional service. Locations outside Bangkok are quoted case by case.
+- Primary keywords: รับจัดเลี้ยงฮาลาล กรุงเทพ, บุฟเฟต์ฮาลาล, โต๊ะจีนฮาลาล, โต๊ะไทยฮาลาล, อาหารชุดฮาลาล, ซุ้มอาหารฮาลาล, ข้าวกล่องฮาลาล
 
 ## Entity Resolution
 - Brand name: EED HALAL
@@ -41,7 +40,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Business address: 478/3 Soi Charoen Rat 1, Yan Nawa, Sathorn, Bangkok 10120
 - Operating hours: Monday-Saturday 08:00-18:00 (closed Sunday)
 - Website: https://eedhalal.com/
-- Category: halal catering, buffet, cocktail, Chinese / Thai table service, set menu, food stalls / live stations, and meal boxes
+- Category: halal catering, buffet, Chinese / Thai table service, set menu, food stalls / live stations, and meal boxes
 - Core geography: Bangkok; locations outside Bangkok are quoted case by case
 - Local service pages: Sathon, Silom, Sathon-Silom, Sukhumvit, Rama 3, Ladprao, Huai Khwang, Don Mueang, Lat Krabang
 - Contact phone: +66 98 871 5179
@@ -52,9 +51,9 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Corporate website and LINE flow are designed for 10+ box orders (meal boxes) and 30+ box orders (Snack Box, 30 boxes per menu).
 - Per-menu minimums apply: 10 boxes per menu (both Thai and Indian menus).
 - Meal boxes come in three tiers: Classic Halal Meal Box from 65 THB per box, Signature Halal Meal Box from 160 THB per box, and Executive Premium Halal Box from 230 THB per box; Snack Box starts at 40 THB per box (minimum 30 boxes).
-- Halal buffet starts at 200 THB per head for 30+ guests, with capacity confirmed for each event, with 7 menu categories and an on-site line, refill, and service team. Live Cooking and Cocktail / Finger Food start at 200 THB per head; Chinese / Thai table service starts at 3,000 THB per table; Set Menu starts at 350 THB per head.
+- Halal buffet starts at 200 THB per head for 30+ guests, with capacity confirmed for each event, with 7 menu categories and an on-site line, refill, and service team. Live Cooking starts at 200 THB per head; Chinese / Thai table service starts at 3,000 THB per table; Set Menu starts at 350 THB per head.
 - Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. Delivery fee depends on distance and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
-- Meal boxes should be ordered at least 1 day ahead; buffet, Live Cooking, Cocktail, Chinese / Thai table service, and Set Menu should be booked at least 7 days ahead.
+- Meal boxes should be ordered at least 1 day ahead; buffet, Live Cooking, Chinese / Thai table service, and Set Menu should be booked at least 7 days ahead.
 - Payment terms: 50% deposit confirms a booking. The catering balance is due 7 days before the event; the meal-box balance is due 1 day before delivery.
 - Order quantity, menu, delivery time, and delivery point should be confirmed by 15:00 on the business day before delivery.
 - Quantity changes are normally accepted until 15:00 on the business day before delivery; after ingredient preparation starts, reductions or cancellations may incur actual cost.
@@ -77,7 +76,6 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 
 ## Priority Service Pages
 - Halal Buffet: https://eedhalal.com/buffet.html
-- Halal Cocktail / Finger Food: https://eedhalal.com/cocktail.html
 - Halal Chinese / Thai Table: https://eedhalal.com/table-service.html
 - Halal Set Menu / Sit-down Dinner: https://eedhalal.com/set-menu.html
 - Halal Food Stall / Live Station: https://eedhalal.com/live-cooking-station.html

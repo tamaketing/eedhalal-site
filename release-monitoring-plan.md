@@ -1,7 +1,7 @@
 # Release and monitoring checklist
 
 ## Staged release
-1. Publish new service pages: cocktail, table-service, set-menu, catering-brief.
+1. Publish new service pages: table-service, set-menu, catering-brief.
 2. Verify the production URLs and LINE brief link on desktop and mobile.
 3. Publish the revised catering, buffet, and live-cooking pages.
 4. Publish the revised home page last.

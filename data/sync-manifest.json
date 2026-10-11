@@ -507,7 +507,6 @@
         "about.html",
         "buffet.html",
         "catering.html",
-        "cocktail.html",
         "faq.html",
         "index.html",
         "live-cooking-station.html",
@@ -516,7 +515,6 @@
         "en/about.html",
         "en/buffet.html",
         "en/catering.html",
-        "en/cocktail.html",
         "en/faq.html",
         "en/index.html",
         "en/live-cooking-station.html",
@@ -537,7 +535,6 @@
         "budget-planner.html",
         "buffet.html",
         "catering.html",
-        "cocktail.html",
         "faq.html",
         "index.html",
         "live-cooking-station.html",
@@ -547,7 +544,6 @@
         "en/about.html",
         "en/buffet.html",
         "en/catering.html",
-        "en/cocktail.html",
         "en/faq.html",
         "en/index.html",
         "en/live-cooking-station.html",
@@ -601,6 +597,19 @@
     }
   ],
   "forbidden": [
+    {
+      "id": "retired-cocktail-service",
+      "description": "ค็อกเทลฮาลาลถอดออกจากบริการแล้ว ห้ามหน้าเว็บ เมนู schema หรือช่องทางไหนอ้างว่าเรารับอีก (ยกเว้นหน้า redirect เก่า cocktail.html / en/cocktail.html ที่ส่งต่อไป /catering.html ไฟล์ snapshot ใน artifacts/ บันทึกวันที่ใน docs/ และโน้ตภายในของทีมใน .opencode/)",
+      "pattern": "ค็อกเทลฮาลาล|Halal Cocktail|Cocktail / Finger Food|cocktail\\.html|data-service=\"cocktail\"",
+      "exclude": [
+        "artifacts/",
+        ".opencode/",
+        "docs/",
+        "cocktail.html",
+        "en/cocktail.html",
+        "data/sync-manifest.json"
+      ]
+    },
     {
       "id": "old-halal-cert",
       "description": "เลขฮาลาลเก่าที่เลิกใช้แล้ว (เหลือได้เฉพาะไฟล์ snapshot ใน artifacts/)",
