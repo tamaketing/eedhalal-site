@@ -36,8 +36,8 @@ var EED = {
   /* ── ค่าจัดส่ง (นโยบายถามแอดมิน — ไม่มีเรท/โซน/ยอดส่งฟรี) ── */
   /*    ข้อความมาจาก data/business-rules.json → delivery.messageTh/messageEn */
   /*    ห้ามใส่ตัวเลขค่าส่ง 0 บาท หรือคำว่าส่งฟรีแทนค่าที่ยังไม่ทราบ */
-  shippingPolicyTh: 'กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ',
-  shippingPolicyEn: 'Please contact our team for a delivery quote with your delivery location and order quantity.',
+  shippingPolicyTh: 'กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ ค่าจัดส่งขึ้นอยู่กับระยะทางและจำนวนที่สั่ง',
+  shippingPolicyEn: 'Please contact our team for a delivery quote with your delivery location and order quantity. Delivery fee depends on distance and order quantity.',
   shippingPendingTh: 'รอแอดมินยืนยัน',
 
   /* ── ข้อความมาตรฐาน (ใช้คำเดียวกับแบบนี้ทุกหน้า) ── */

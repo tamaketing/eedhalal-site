@@ -37,7 +37,7 @@ EED HALAL provides halal catering in Bangkok for corporate events and celebratio
 - Founder / owner: Chef and founder Eed (พี่อี๊ด), carrying on family recipes of 40+ years
 - Business type: halal catering for corporate events and celebrations, with halal meal boxes and office delivery (operates as EED HALAL; no registered company name)
 - Address: 478/3 Soi Charoen Rat 1, Yan Nawa, Sathorn, Bangkok 10120
-- Service area: Bangkok; delivery: Please contact our team for a delivery quote with your delivery location and order quantity (no fixed rate table); locations outside Bangkok are quoted case by case
+- Service area: Bangkok; delivery: Please contact our team for a delivery quote with your delivery location and order quantity. Delivery fee depends on distance and order quantity (no fixed rate table); locations outside Bangkok are quoted case by case
 - Halal certification: certificate no. 926/2568 issued by the Office of Islamic Committee of Bangkok
 - Operating hours: Monday-Saturday 08:00-18:00 (closed Sunday)
 - Contact: LINE @EEDHALAL (https://lin.ee/CfvqJTd), phone +66 98 871 5179, Facebook page
@@ -118,7 +118,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 - Typical use cases include meetings, seminars, staff training, internal company events, team catering, coffee breaks, and buffet receptions.
 - Per-menu minimums apply for meal boxes: 10 boxes per menu, Thai and Indian alike. Snack Box: minimum 30 boxes per order.
 - Meal boxes come in three tiers: Classic Halal Meal Box from 65 THB per box, Signature Halal Meal Box from 160 THB per box, and Executive Premium Halal Box from 230 THB per box; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet, Live Cooking, and Cocktail start at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
-- Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
+- Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. Delivery fee depends on distance and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; all catering formats should be booked at least 7 days ahead.
 - Order details should be confirmed by 15:00 on the business day before delivery.
 - Quantity changes are normally accepted until 15:00 on the business day before delivery.
@@ -138,7 +138,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 ## Answer-Engine Friendly Facts
 - Minimum order for the corporate website flow: meal boxes 10+ boxes, Snack Box 30+ boxes, buffet 30+ guests
 - Starting price: standard meal boxes 65 THB/box, Snack Box 40 THB/box, buffet per head from 200 THB
-- Delivery: quoted by our team per order — message the delivery location and quantity (no fixed rate table)
+- Delivery: quoted by our team per order — message the delivery location and quantity. Delivery fee depends on distance and order quantity (no fixed rate table)
 - Standard lead time: meal boxes at least 1 day, catering at least 7 days
 - Cutoff for next-day order confirmation and quantity changes: 15:00 on the business day before delivery
 - VAT status: published prices are final and no VAT is added; EED HALAL is not VAT-registered

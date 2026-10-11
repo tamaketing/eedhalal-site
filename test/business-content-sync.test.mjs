@@ -4,7 +4,12 @@ import test from 'node:test';
 import { syncBusinessContent } from '../scripts/sync-business-content.mjs';
 
 const root = new URL('../', import.meta.url);
-const thaiAddressPolicy = 'กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ';
+// The district FAQ answers state the admin-quote policy in human wording, so the
+// guard pins the principle they must carry rather than one exact sentence: the
+// fee follows distance and quantity, and the number arrives with the quotation.
+// Pinning the literal would freeze today's copy and fight every rewording.
+const deliveryPolicyPrinciple = /ค่าส่งขึ้นอยู่กับระยะทางกับจำนวนที่สั่ง/;
+const quotedInQuotation = /ใบเสนอราคา/;
 const localFaqBaselines = {
   'ladprao.html': ['EED HALAL ส่งข้าวกล่องฮาลาลในลาดพร้าวฟรีไหม?', 'สั่งข้าวกล่องฮาลาลในลาดพร้าวขั้นต่ำกี่กล่อง?', 'EED HALAL มีใบรับรองฮาลาลหรือไม่?', 'ต้องสั่งข้าวกล่องฮาลาลล่วงหน้ากี่วัน?'],
   'rama3.html': ['EED HALAL ส่งข้าวกล่องฮาลาลในพระราม 3 ฟรีไหม?', 'สั่งข้าวกล่องฮาลาลในพระราม 3 ขั้นต่ำกี่กล่อง?', 'EED HALAL มีใบรับรองฮาลาลหรือไม่?', 'ต้องสั่งข้าวกล่องฮาลาลล่วงหน้ากี่วัน?'],
@@ -33,7 +38,10 @@ test('local pages preserve complete JSON-LD graphs and FAQ baseline semantics', 
     const faq = graph.find((node) => node['@type'] === 'FAQPage');
     assert.equal(faq.mainEntity.length, names.length);
     assert.deepEqual(faq.mainEntity.map((question) => question.name), names);
-    assert.equal(faq.mainEntity.find((question) => question.name.includes('ฟรีไหม'))?.acceptedAnswer.text, thaiAddressPolicy);
+    const deliveryAnswer = faq.mainEntity.find((question) => question.name.includes('ฟรีไหม'))?.acceptedAnswer.text ?? '';
+    assert.match(deliveryAnswer, deliveryPolicyPrinciple);
+    assert.match(deliveryAnswer, quotedInQuotation);
+    assert.doesNotMatch(deliveryAnswer, /ส่งฟรี|ฟรีค่าส่ง/);
     assert.doesNotMatch(JSON.stringify(graph), /priceValidUntil/);
   }
 });

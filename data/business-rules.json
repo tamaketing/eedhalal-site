@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "2026-10-04",
+  "revision": "2026-10-10",
   "business": {
     "name": "EED HALAL",
     "owner": "เชฟและผู้ก่อตั้ง พี่อี๊ด",
@@ -133,8 +133,8 @@
   },
   "delivery": {
     "policy": "adminQuote",
-    "messageTh": "กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ",
-    "messageEn": "Please contact our team for a delivery quote with your delivery location and order quantity.",
+    "messageTh": "กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ ค่าจัดส่งขึ้นอยู่กับระยะทางและจำนวนที่สั่ง",
+    "messageEn": "Please contact our team for a delivery quote with your delivery location and order quantity. Delivery fee depends on distance and order quantity.",
     "coverageTh": "จัดส่งทั่วกรุงเทพฯ",
     "coverageEn": "Delivery across Bangkok",
     "outsideBangkok": "สอบถามรายกรณี",

@@ -557,6 +557,47 @@
         "llms.txt",
         "llms-full.md"
       ]
+    },
+    {
+      "id": "delivery-policy",
+      "description": "นโยบายค่าจัดส่ง: ไม่มีตารางราคาคงที่ ไม่มีโซน ไม่มียอดส่งฟรี คิดตามระยะทางกับจำนวนที่สั่ง และให้แอดมินใส่ตัวเลขลงใบเสนอราคา (delivery.policy = adminQuote) หน้าที่พูดถึงค่าส่งต้องบอกหลักการนี้เสมอ ห้ามแตะตัวเลขค่าส่งในข้อความ",
+      "source": "delivery.policy",
+      "variants": [
+        "{{delivery.messageTh}}",
+        "{{delivery.messageEn}}",
+        "ค่าส่งขึ้นกับระยะทางกับจำนวนที่สั่ง",
+        "Delivery fee depends on distance and order quantity"
+      ],
+      "files": [
+        "blog/halal-box-100-boxes-price.html",
+        "blog/halal-box-50-people-price.html",
+        "corporate.html",
+        "delivery-area.html",
+        "donmueang.html",
+        "faq.html",
+        "huaykwang.html",
+        "ladprao.html",
+        "latkrabang.html",
+        "rama3.html",
+        "sathorn.html",
+        "silom.html",
+        "snack-box.html",
+        "sukhumvit.html",
+        "en/blog/corporate-meeting-100-people-checklist.html",
+        "en/blog/corporate-meeting-50-people-checklist.html",
+        "en/blog/halal-box-100-boxes-price.html",
+        "en/blog/halal-box-100-people-budget.html",
+        "en/blog/halal-box-50-people-price.html",
+        "en/blog/halal-box-budget-70-baht.html",
+        "en/blog/khao-mok-halal-explained.html",
+        "en/blog/seminar-200-people-menu.html",
+        "en/corporate.html",
+        "en/delivery-area.html",
+        "en/faq.html",
+        "en/snack-box.html",
+        "llms.txt",
+        "llms-full.md"
+      ]
     }
   ],
   "forbidden": [
@@ -583,6 +624,26 @@
       "exclude": [
         "artifacts/",
         "data/sync-manifest.json"
+      ]
+    },
+    {
+      "id": "retired-delivery-wording",
+      "description": "ข้อความนโยบายค่าจัดส่งรุ่นเก่า (ก่อนเติมว่า ค่าจัดส่งขึ้นอยู่กับระยะทางและจำนวนที่สั่ง / Delivery fee depends on distance and order quantity) ห้ามค้างอยู่ใน meta, JSON-LD หรือเนื้อความใดๆ ถ้าแก้ delivery.messageTh/messageEn ต้องอัปเดตทุกสำเนาพร้อมกัน ดู fact delivery-policy",
+      "pattern": "กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ(?! ค่าจัดส่งขึ้นอยู่กับระยะทางและจำนวนที่สั่ง)|Please contact our team for a delivery quote with your delivery location and order quantity\\.(?! Delivery fee depends)",
+      "exclude": [
+        "artifacts/",
+        "data/sync-manifest.json",
+        "js/business-data.js"
+      ]
+    },
+    {
+      "id": "delivery-rate-claim",
+      "description": "ห้ามอ้างค่าส่งเป็นตัวเลขหรือเงื่อนไขใดๆ (ค่าส่ง X บาท / ส่งฟรี / โซนราคา) เพราะ delivery.policy = adminQuote ไม่มีเรทคงที่ ดูหลักการที่ fact delivery-policy ยกเว้น js/business-data.js ซึ่งเก็บคอมเมนต์ภายในเรื่องนโยบายเดิม และตัวสตริงจัดส่งในไฟล์นั้นถูก check-system.mjs เทียบกับ business-rules.json อยู่แล้ว",
+      "pattern": "(?:ส่งฟรี|ฟรีค่า(?:ส่ง|จัดส่ง|ขนส่ง)|free\\s+delivery)|(?:ค่าส่ง|ค่าจัดส่ง)[^\\n]{0,30}?\\d[\\d,]*\\s*(?:บาท|THB)|(?:ค่าส่ง|ค่าจัดส่ง)\\s*(?:เริ่มต้น|เริ่ม|ต่ำสุด|ขั้นต่ำ)\\s*(?:ที่)?\\s*\\d[\\d,]*|โซนจัดส่ง[^\\n]{0,40}?\\d[\\d,]*\\s*(?:บาท|THB)|(?:delivery\\s+fee|delivery\\s+charge|shipping\\s+fee)[^\\n]{0,30}?\\d[\\d,]*\\s*(?:THB|฿)|(?:delivery\\s+fee|delivery\\s+charge|shipping\\s+fee)\\s*(?:from|starting\\s+at|starts\\s+at|minimum)\\s*\\d[\\d,]*",
+      "exclude": [
+        "artifacts/",
+        "data/sync-manifest.json",
+        "js/business-data.js"
       ]
     },
     {

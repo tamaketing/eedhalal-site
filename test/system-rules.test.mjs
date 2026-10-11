@@ -60,8 +60,16 @@ test('Snack Box minimum accepts 30 boxes and rejects 29', () => {
 test('delivery is admin-quoted with complete policy messages', () => {
   const policy = deliveryPolicy(data.rules);
   assert.equal(policy.policy, 'adminQuote');
-  assert.equal(policy.messageTh, 'กรุณาสอบถามค่าจัดส่งกับแอดมิน โดยแจ้งสถานที่จัดส่งและจำนวนที่ต้องการ');
-  assert.equal(policy.messageEn, 'Please contact our team for a delivery quote with your delivery location and order quantity.');
+  // The wording belongs to data/business-rules.json and may be rewritten by the
+  // owner, so the test pins what the message must say — ask for the location
+  // and the quantity, and say the fee follows distance and quantity — instead of
+  // one exact sentence that would go stale the moment the copy improves.
+  assert.match(policy.messageTh, /สถานที่จัดส่งและจำนวนที่ต้องการ/);
+  assert.match(policy.messageTh, /ระยะทางและจำนวนที่สั่ง/);
+  assert.match(policy.messageEn, /delivery location and order quantity/);
+  assert.match(policy.messageEn, /Delivery fee depends on distance and order quantity/);
+  assert.doesNotMatch(policy.messageTh, /ส่งฟรี/);
+  assert.doesNotMatch(policy.messageEn, /free delivery/i);
   assert.equal(policy.coverageTh, 'จัดส่งทั่วกรุงเทพฯ');
   assert.equal(policy.coverageEn, 'Delivery across Bangkok');
   assert.equal(policy.pendingTh, 'รอแอดมินยืนยัน');

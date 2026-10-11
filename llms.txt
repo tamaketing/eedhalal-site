@@ -53,7 +53,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Per-menu minimums apply: 10 boxes per menu (both Thai and Indian menus).
 - Meal boxes come in three tiers: Classic Halal Meal Box from 65 THB per box, Signature Halal Meal Box from 160 THB per box, and Executive Premium Halal Box from 230 THB per box; Snack Box starts at 40 THB per box (minimum 30 boxes).
 - Halal buffet starts at 200 THB per head for 30+ guests, with capacity confirmed for each event, with 7 menu categories and an on-site line, refill, and service team. Live Cooking and Cocktail / Finger Food start at 200 THB per head; Chinese / Thai table service starts at 3,000 THB per table; Set Menu starts at 350 THB per head.
-- Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
+- Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. Delivery fee depends on distance and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; buffet, Live Cooking, Cocktail, Chinese / Thai table service, and Set Menu should be booked at least 7 days ahead.
 - Payment terms: 50% deposit confirms a booking. The catering balance is due 7 days before the event; the meal-box balance is due 1 day before delivery.
 - Order quantity, menu, delivery time, and delivery point should be confirmed by 15:00 on the business day before delivery.
@@ -68,7 +68,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - How to order: pick the dish names on popular-menu.html, message LINE with the dish names, box count, date, delivery area and budget, and the team replies with a quotation (normally within 15 minutes during business hours).
 - The menu page publishes per-box prices from the current catalogue. Cite the current page for a listed price; ask the team on LINE about dishes without a price, delivery, extras, and the final quotation.
 - Meal-box minimum order is 10 boxes, and 10 boxes per menu.
-- There is no nationwide delivery. Delivery is quoted by the team after you give the location and quantity.
+- There is no nationwide delivery. Delivery is quoted by the team after you give the location and quantity. Delivery fee depends on distance and order quantity.
 
 ## Meal-Box Menu Availability (AEO / GEO)
 - The current meal-box catalogue at https://eedhalal.com/popular-menu.html lists dish names, product tiers, photos, and available per-box prices. Hidden dishes are omitted; dishes without a confirmed published price require a quotation.
