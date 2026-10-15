@@ -672,6 +672,9 @@ export function buildPlannerOverrides(central, current, now = new Date()) {
   // Central-managed keys (rebuilt; public fields only).
   next.prices = pick((menu) => menu.price);
   next.mins = pick((menu) => menu.minPerMenu);
+  // Every id appears here, photo or not: "" is how the catalogue says "no photo
+  // yet", and assertPublishSafe() requires images to cover exactly the ids that
+  // prices cover. Consumers must treat an empty value as an absent photo.
   next.images = pick((menu) => menu.image);
   next.names = pick((menu) => menu.name);
   next.tiers = pick((menu) => normalizeTier(menu.tier));

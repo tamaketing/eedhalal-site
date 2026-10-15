@@ -4,6 +4,10 @@
  *  - #popularMenuGrid  (16 cards)
  *  - #fullMenuBody     (full menu list, grouped by product level)
  * If data is available. If JS fails or file missing, static HTML remains.
+ *
+ * EED_MENUS is the Thai catalogue. On an /en/ page this file also needs
+ * js/menu-data-en.js, which carries the same ids in English; without it the
+ * page keeps its generated English markup instead of being redrawn in Thai.
  */
 (function(){
   'use strict';
@@ -120,6 +124,45 @@ var DEFAULT_EMOJI = '🍽';
     try{ applyCatalog({prices:JSON.parse(localStorage.getItem(LS_SELLING)||'null'),mins:JSON.parse(localStorage.getItem(LS_MINS)||'null'),images:JSON.parse(localStorage.getItem(LS_IMAGES)||'null'),names:JSON.parse(localStorage.getItem(LS_NAMES)||'null'),tiers:JSON.parse(localStorage.getItem(LS_TIERS)||'null'),deleted:JSON.parse(localStorage.getItem(LS_DELETED)||'null'),newMenus:JSON.parse(localStorage.getItem(LS_NEW_MENUS)||'null'),toppings:JSON.parse(localStorage.getItem(LS_TOPPINGS)||'null')}); }catch(e){}
   }
 
+  /* ─── English copy ───
+   * EED_MENUS carries Thai names, so rendering it unchanged swapped every
+   * English dish name on the English page for a Thai one the moment this file
+   * ran. js/menu-data-en.js holds the same ids in English, generated from
+   * data/menu-copy-en.json, so the swap is by id and never guesses a wording.
+   *
+   * Gated on the page being an English one, not merely on the file being
+   * loaded: a Thai page that picked up the extra <script> would otherwise be
+   * redrawn in English, which is the same bug wearing the other language.
+   *
+   * A dish with no English entry is dropped rather than shown in Thai: the page
+   * is generated from the same file and refuses to build without a name for
+   * every live menu, so reaching this branch means the runtime file is older
+   * than the catalogue. Better a missing dish, loudly, than a wrong language.
+   */
+  function applyEnglishCopy(){
+    if(!isEnPath()) return;
+    if(typeof EED_MENU_COPY_EN==='undefined' || !EED_MENU_COPY_EN) return;
+    var missing=[];
+    EED_MENUS=Array.isArray(EED_MENUS)?EED_MENUS.filter(function(m){
+      var entry=EED_MENU_COPY_EN[String(m.id)];
+      if(!entry || !entry.name){ missing.push(m.id); return false; }
+      m.name=entry.name;
+      if(entry.desc) m.desc=entry.desc;
+      // The English cards are generated without a badge, and the owner's label
+      // is Thai for several dishes ("ใหม่", "พรีเมียม"), so it stays off here.
+      m.badge='';
+      return true;
+    }):EED_MENUS;
+    if(missing.length) console.warn('[popular-menu-hydrate] no English copy for menu id(s):', missing.join(', '));
+  }
+
+  // On an English page the Thai catalogue is the wrong language, not a fallback:
+  // without the English runtime file the safe output is the markup the page
+  // already ships, not a redraw of the same page in Thai.
+  function hasEnglishCopy(){
+    return typeof EED_MENU_COPY_EN!=='undefined' && !!EED_MENU_COPY_EN;
+  }
+
   function loadServerOverrides(cb){
     if(location.protocol==='file:'){ if(cb) cb(); return; }
     var urls=['/data/planner-overrides.json','data/planner-overrides.json','./data/planner-overrides.json','../data/planner-overrides.json'];
@@ -135,6 +178,41 @@ var DEFAULT_EMOJI = '🍽';
       }).catch(next);
     }
     next();
+  }
+
+  /* ─── Price and minimum on a card ───
+   * The static English markup prints both under the dish name, so redrawing the
+   * card must print them too: hydrating without them took the figure away from
+   * every visitor who does have JS — exactly the people this file exists for.
+   * Both numbers come from EED_MENUS, which applyCatalog() keeps in step with
+   * the published catalogue (prices[] and mins[]), so nothing is guessed here.
+   * Wording follows the page's language the same way the toppings list does.
+   */
+  function priceCell(m, en){
+    var price = Number(m.price);
+    if(!isFinite(price) || price <= 0) return '';
+    var unit = en ? '/ box' : '/ กล่อง';
+    var money = en ? 'THB' : 'บาท';
+    return '<p style="font-size:1.05rem;font-weight:800;color:var(--primary);margin:0.15rem 0 0">'+price+' '+money+'<span style="font-size:0.75rem;font-weight:600;color:var(--text-muted);margin-left:0.25rem">'+unit+'</span></p>';
+  }
+  function minCell(m, en){
+    var min = parseInt(m.minPerMenu, 10);
+    if(!isFinite(min) || min < 1) return '';
+    var text = en ? 'Min '+min+' '+(min===1?'box':'boxes') : 'ขั้นต่ำ '+min+' กล่อง';
+    return '<p style="font-size:0.8rem;font-weight:600;color:var(--text-muted);margin:0.2rem 0 0">'+text+'</p>';
+  }
+
+  /* The compact full-list line: price and minimum on one row, so a dish listed
+   * by name still reads as the same product as a photographed one. */
+  function priceInline(m, en){
+    var price = Number(m.price);
+    if(!isFinite(price) || price <= 0) return '';
+    var money = en ? price+' THB / box' : price+' บาท/ กล่อง';
+    var min = parseInt(m.minPerMenu, 10);
+    var tail = (isFinite(min) && min >= 1)
+      ? (en ? ' · Min '+min+' '+(min===1?'box':'boxes') : ' · ขั้นต่ำ '+min+' กล่อง')
+      : '';
+    return '<span class="pm-price-unit">'+money+tail+'</span>';
   }
 
   /* ─── Popular Grid ─── */
@@ -183,6 +261,7 @@ var DEFAULT_EMOJI = '🍽';
     try{
       var photoMenus = menus.filter(function(m){ return m.image && !/logo\.(png|jpg|jpeg|webp)$/i.test(m.image); });
       var nameOnlyMenus = menus.filter(function(m){ return !m.image; });
+      var en = isEnPath();
       var html = photoMenus.map(function(m){
         var badge = m.badge ? '<span style="background:var(--accent);color:var(--white);font-size:0.65rem;font-weight:700;padding:0.2rem 0.55rem;border-radius:999px;vertical-align:middle">'+escapeHtml(m.badge)+'</span>' : '';
         return '<div style="background:var(--white);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column">'
@@ -192,6 +271,7 @@ var DEFAULT_EMOJI = '🍽';
           + '<div style="padding:1.25rem 1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.4rem;flex:1">'
           + '<h4 style="font-size:1.25rem;font-weight:900;color:var(--text);margin:0">'+escapeHtml(m.name)+' '+badge+'</h4>'
           + '<p style="font-size:0.8rem;line-height:1.7;opacity:0.7;color:var(--text);margin:0">'+escapeHtml(m.desc||'')+'</p>'
+          + priceCell(m, en) + minCell(m, en)
           + '</div>'
           + '</div>';
       }).join('');
@@ -229,10 +309,10 @@ var DEFAULT_EMOJI = '🍽';
         var itemsWithImage = items.filter(function(m){ return m.image; });
         var itemsNameOnly = items.filter(function(m){ return !m.image; });
         var itemHtml = itemsWithImage.map(function(m){
-          return '<div class="menu-item"><span class="menu-item-name">'+escapeHtml(cat.emoji)+' '+escapeHtml(m.name)+'</span>'+dots+'</div>';
+          return '<div class="menu-item"><span class="menu-item-name">'+escapeHtml(cat.emoji)+' '+escapeHtml(m.name)+priceInline(m, true)+'</span>'+dots+'</div>';
         }).join('');
         var nameOnlyHtml = itemsNameOnly.map(function(m){
-          return '<div class="menu-item pm-name-only"><span class="pm-name-only-text">'+escapeHtml(m.name)+'</span></div>';
+          return '<div class="menu-item pm-name-only"><span class="pm-name-only-text">'+escapeHtml(m.name)+priceInline(m, true)+'</span></div>';
         }).join('');
         return '<div style="margin-bottom:2.5rem">'
           + '<h4 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0 0 1rem">'+escapeHtml(cat.emoji)+' '+escapeHtml(cat.label)+'</h4>'
@@ -255,7 +335,10 @@ var DEFAULT_EMOJI = '🍽';
     : (typeof EED_DEFAULT_TOPPINGS !== 'undefined' ? EED_DEFAULT_TOPPINGS : []);
   var en = isEnPath();
   toppingsList.innerHTML = source.map(function(t){
-    var name = escapeHtml(String(t && t.name || '').trim());
+    // Keyed by the Thai name in the catalogue, the way the static page resolves
+    // a topping. A topping with no English name is left out, not shown in Thai.
+    var raw = String(t && t.name || '').trim();
+    var name = escapeHtml(en ? ((typeof EED_TOPPINGS_EN !== 'undefined' && EED_TOPPINGS_EN) ? String(EED_TOPPINGS_EN[raw] || '') : '') : raw);
     if(!name) return '';
     var price = Number(t && t.price);
     var has = isFinite(price) && price > 0;
@@ -269,6 +352,11 @@ var DEFAULT_EMOJI = '🍽';
 
 function init(){
   if(typeof EED_MENUS==='undefined') return;
+  if(isEnPath() && !hasEnglishCopy()){
+    console.warn('[popular-menu-hydrate] js/menu-data-en.js is missing; keeping the generated English menu instead of redrawing it in Thai');
+    return;
+  }
+  applyEnglishCopy();
   applyOverrides();
   var rendered = false;
   function doRender(){
@@ -280,6 +368,9 @@ function init(){
   }
   doRender();
   loadServerOverrides(function(){
+    // The catalogue can add or drop dishes after the first render, so the
+    // English words are re-applied to whatever is left before drawing again.
+    applyEnglishCopy();
     doRender();
     renderGrid();
     renderFullMenu();

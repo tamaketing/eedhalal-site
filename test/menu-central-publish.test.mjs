@@ -54,7 +54,12 @@ async function seedTempRoot() {
   // Seed only the image files the catalog references (empty bytes are enough
   // for the existence check; bytes never ship from here).
   for (const image of new Set(Object.values(overrides.images))) {
-    const target = path.join(dir, decodeURIComponent(String(image).replace(/^\/+/, '')));
+    // "" คือ "เมนูนี้ยังไม่มีรูป" ไม่ใช่พาธรูป: catalogue เขียนค่านี้โดยเจตนา
+    // (assertPublishSafe บังคับให้ images ครอบ id ทุกเมนู) และหน้าเมนูเอาไป
+    // แสดงเป็นรายชื่อแทนการ์ดรูปเปล่า จึงไม่มีอะไรให้สร้าง
+    const ref = String(image || '').trim();
+    if (!ref) continue;
+    const target = path.join(dir, decodeURIComponent(ref.replace(/^\/+/, '')));
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, '', 'utf8');
   }

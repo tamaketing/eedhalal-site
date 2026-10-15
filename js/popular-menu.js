@@ -83,6 +83,16 @@ var TOPPINGS_ID = 'pm-toppings-list';
     return '<p class="' + extraClass + '">' + price + ' บาท<span class="pm-price-unit">/ กล่อง</span></p>';
   }
 
+  // Per-menu minimum, matching scripts/popular-menu-page.mjs so the static mark
+  // and this renderer say the same thing (the page must not reflow either way).
+  // The figure is the published catalogue value (standardMenuMinimum); a menu
+  // carrying none adds no line rather than a guessed one.
+  function minCell(menu, extraClass) {
+    var min = parseInt(menu.minPerMenu, 10);
+    if (!isFinite(min) || min < 1) return '';
+    return '<p class="' + extraClass + '">ขั้นต่ำ ' + min + ' กล่อง</p>';
+  }
+
   function renderCard(menu) {
   // The anchor id matches scripts/popular-menu-page.mjs so a shared deep link
   // (popular-menu.html#menu-17) lands on the dish before AND after this
@@ -95,6 +105,7 @@ var TOPPINGS_ID = 'pm-toppings-list';
           '<h3 class="pm-card-name">' + escapeHtml(menu.name) + '</h3>' +
           (menu.desc ? '<p class="pm-card-desc">' + escapeHtml(menu.desc) + '</p>' : '') +
           priceCell(menu, 'pm-card-price') +
+          minCell(menu, 'pm-card-min') +
           lineCta('สั่งเมนูนี้', 'popular_menu_card', 'pm-card-cta') +
           copyButton() +
         '</div>' +
@@ -108,6 +119,7 @@ var TOPPINGS_ID = 'pm-toppings-list';
           '<p class="pm-row-tier">' + escapeHtml(tierLabel(menu.tier)) + '</p>' +
           '<p class="pm-row-name">' + escapeHtml(menu.name) + '</p>' +
           priceCell(menu, 'pm-row-price') +
+          minCell(menu, 'pm-row-min') +
         '</div>' +
         '<div class="pm-row-actions">' +
           lineCta('สั่งเมนูนี้', 'popular_menu_row', 'pm-row-cta') +
@@ -116,8 +128,17 @@ var TOPPINGS_ID = 'pm-toppings-list';
       '</div>';
   }
 
+  // A dish with no photo is listed by name, but it still carries its price, its
+  // minimum and the same LINE order button — matching
+  // scripts/popular-menu-page.mjs so the static markup and this renderer agree
+  // and a customer can order a photo-less dish like any other.
   function renderNameOnly(menu) {
-    return '<div class="pm-name-only" id="menu-' + escapeHtml(menu.id) + '" data-menu-id="' + escapeHtml(menu.id) + '" data-tier="' + escapeHtml(menu.tier || 'classic') + '"><span class="pm-name-only-text">' + escapeHtml(menu.name) + '</span></div>';
+    return '<div class="pm-name-only" id="menu-' + escapeHtml(menu.id) + '" data-menu-id="' + escapeHtml(menu.id) + '" data-tier="' + escapeHtml(menu.tier || 'classic') + '">'
+      + '<span class="pm-name-only-text">' + escapeHtml(menu.name) + '</span>' +
+      priceCell(menu, 'pm-row-price') +
+      minCell(menu, 'pm-row-min') +
+      lineCta('สั่งเมนูนี้', 'popular_menu_card', 'pm-card-cta') +
+      '</div>';
   }
 
   function copyMenuName(button, nameEl) {

@@ -20,7 +20,7 @@
 // verifyLive, now, loadCentral }) so tests drive the REAL git binary against
 // temp repos with only the network faked.
 
-import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { getForbiddenPaths } from './check-repository-safety.mjs';
 import {
@@ -45,6 +45,11 @@ export const WORKTREE_MARKER = '.eed-publish-worktree';
 const GENERATED_TEXT_FILES = new Set([
   'js/business-data.js',
   'js/menu-data.js',
+  // The English half of the catalogue, built from data/menu-copy-en.json by the
+  // same generator as js/menu-data.js. Without it in the release list the live
+  // site would keep serving an English page whose runtime still redraws itself
+  // in Thai.
+  'js/menu-data-en.js',
   'js/snack-data.js',
   'llms.txt',
   'llms-full.md',
@@ -197,7 +202,13 @@ export async function ensurePublishWorktree({ repoRoot, dir, remote = 'origin', 
   if (!reuse) {
     await runGit(['worktree', 'remove', '--force', dir], { cwd: repoRoot }).catch(() => {});
     await rm(dir, { recursive: true, force: true });
-    await mkdir(path.dirname(dir), { recursive: true });
+    // Create the parent only when it is genuinely missing. The default worktree
+    // sits next to the repo, so its parent is often a drive root ("D:\"), and on
+    // Windows mkdir against an existing drive root fails with EPERM even though
+    // the directory is right there — that aborted every release on a machine
+    // whose repo lived at the top of a drive.
+    const parent = path.dirname(dir);
+    if (!(await stat(parent).catch(() => null))) await mkdir(parent, { recursive: true });
     await runGit(['worktree', 'add', '--detach', dir, baseSha], { cwd: repoRoot });
     await writeFile(path.join(dir, WORKTREE_MARKER), `${baseSha}\n`, 'utf8');
   }

@@ -129,14 +129,21 @@ function buildActiveCatalog(planner) {
     if (typeof minPerMenu !== 'number' || !Number.isInteger(minPerMenu) || minPerMenu < 1) fail();
     if (typeof name !== 'string' || !name.trim()) fail();
     if (!MENU_TIERS.includes(tier)) fail();
-    if (typeof image !== 'string' || !image.trim()) fail();
+    // An empty image is a dish the owner has not photographed yet, and the
+    // catalogue is allowed to say so: the publish pipeline writes "" for it
+    // (assertPublishSafe requires every id to appear in `images`) and the menu
+    // page lists such a dish by name instead of rendering an empty card.
+    // Rejecting it here would take the whole catalogue offline — every price,
+    // name and lookup with it — over one missing photo.
+    if (image != null && typeof image !== 'string') fail();
+    const photo = typeof image === 'string' ? image.trim() : '';
     menus.push({
       id,
       name: name.trim(),
       price,
       minPerMenu,
       tier,
-      image: image.trim(),
+      image: photo,
     });
   }
   if (menus.length === 0) fail();

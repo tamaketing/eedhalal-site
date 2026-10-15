@@ -41,7 +41,7 @@
           "bestForEn": "Client events, product launches, and executive dinners",
           "boxFormatTh": "ข้าว อาหารหลัก 1 อย่าง อาหารรอง 1 อย่าง และผัก ในกล่อง 4 ช่อง",
           "boxFormatEn": "Rice, one main, one second dish, and vegetables, in a four-compartment box",
-          "sideChoices": ["side-001", "side-002", "side-003", "soup-001", "soup-002", "curry-001"],
+          "sideChoices": ["side-003", "soup-001", "soup-002", "curry-001"],
           "sideChoiceLabelTh": "อาหารเมนูที่ 2",
           "sideChoiceLabelEn": "Second dish",
           "sideChoiceNoteTh": "บอกอาหารหลักที่ชอบมาได้เลย เราจะเสนออาหารรองที่เข้ากันให้ 2-3 ตัวเลือก ถ้าไม่สั่งเราก็ใช้คู่มาตรฐานของร้านให้ ราคาขึ้นตามคู่เมนูที่เลือก เราจะส่งราคารวมทั้งกล่องให้ก่อนเสมอ ไม่มีบรรทัดค่าเพิ่มทีหลัง",

@@ -146,10 +146,14 @@ test('the page publishes the catalogue price for every dish, and no other figure
     assert.match(block, new RegExp(`pm-(?:card|row)-price[^>]*>${expected} บาท`), `dish ${item.id} must show its catalogue price ${expected}`);
   }
 
-  // No invented figures: every บาท amount in the menu markup is a catalogue price.
+  // No invented figures: every บาท amount in the menu markup is a published
+  // figure. That includes topping prices — a description may legitimately split
+  // a box price ("65 บาท + ไข่เจียว 10 บาท") and those numbers are real too.
   const cataloguePrices = new Set(Object.values(overrides.prices).map(Number));
+  const toppingPrices = new Set((overrides.toppings || []).map((t) => Number(t.price)).filter(Number.isFinite));
+  const publishedFigures = new Set([...cataloguePrices, ...toppingPrices]);
   for (const [, figure] of markup.matchAll(/(\d[\d,]*) บาท/g)) {
-    assert.ok(cataloguePrices.has(Number(figure.replace(/,/g, ''))), `${figure} THB is not a catalogue price`);
+    assert.ok(publishedFigures.has(Number(figure.replace(/,/g, ''))), `${figure} THB is not a catalogue price`);
   }
   assert.ok(sellable.length > 0, 'the page must actually show prices, not just skip them');
 
@@ -229,7 +233,10 @@ test('the photo/row split matches the production renderer', async () => {
   }
   for (const id of rowIds) {
     const item = catalogue.find((m) => m.id === id);
-    assert.ok(isLogo(item.image), `menu ${id} must render as an image card`);
+    // ในรายการมีได้สองแบบ: จานที่รูปเป็นโลโก้ธนาคาร และจานที่ยังไม่มีรูป
+    // ซึ่งถูกแสดงเป็นรายชื่อแทนการ์ดรูปเปล่า ทั้งสองแบบไม่ควรอยู่ใน grid
+    // เดิมอ่านแค่ isLogo(...) เพราะยังไม่เคยมีจานไร้รูป ทำให้ branch นี้ไม่เคยถูกทดสอบ
+    assert.ok(isLogo(item.image) || !item.image, `menu ${id} must not render as a photo card`);
   }
 });
 
@@ -300,7 +307,7 @@ test('the topping list reads its fallback before it writes over it', async () =>
   const renderBody = renderer.slice(renderer.indexOf('function render(menus)'));
   assert.ok(
     renderBody.indexOf('readStaticToppings') !== -1
-      && renderBody.indexOf('readStaticToppings') < renderBody.indexOf('renderToppings('),
+    && renderBody.indexOf('readStaticToppings') < renderBody.indexOf('renderToppings('),
     'capture must happen before the list is replaced',
   );
   // The fallback must keep the amount too, or a failed fetch would drop it.

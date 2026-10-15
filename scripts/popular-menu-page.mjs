@@ -90,6 +90,10 @@ export function buildCatalogue(overrides, menus) {
       // Per-box figure straight from the published catalogue. quoteOnly dishes
       // are served but not quotable from our own data, so they carry no price.
       price: quoteOnly.has(id) ? null : cataloguePrice(overrides.prices?.[id]),
+      // Per-menu minimum, straight from the published catalogue: the planner's
+      // mins[] wins and menu-data.js is the fallback. It is a published business
+      // fact (the standard menu minimum), never a figure this script invents.
+      minPerMenu: catalogueMin(overrides.mins?.[id] ?? menu.minPerMenu),
     });
   }
   return items;
@@ -100,11 +104,26 @@ function cataloguePrice(raw) {
   return Number.isFinite(price) && price > 0 ? price : null;
 }
 
+function catalogueMin(raw) {
+  const min = Number(raw);
+  return Number.isInteger(min) && min >= 1 ? min : null;
+}
+
 // Per-box price line. The unit is stated so a bare number is never ambiguous,
 // and the note keeps the page honest about what moves the final figure.
 function priceHtml(item, extraClass) {
   if (item.price == null) return '';
   return `<p class="${extraClass}">${item.price} บาท<span class="pm-price-unit">/ กล่อง</span></p>`;
+}
+
+// Per-menu minimum, in the words a customer asks it: how many boxes does one
+// dish need before EED can cook it? The figure comes from the catalogue
+// (standardMenuMinimum), so this line can only ever repeat a minimum the owner
+// already published — it never rounds, guesses or invents one. A dish carrying
+// no valid minimum simply adds no line.
+function minHtml(item, extraClass) {
+  if (item.minPerMenu == null) return '';
+  return `<p class="${extraClass}">ขั้นต่ำ ${item.minPerMenu} กล่อง</p>`;
 }
 
 // The product level is the only label a card carries (data/business-rules.json ->
@@ -137,6 +156,7 @@ function cardHtml(item) {
     + `<h3 class="pm-card-name">${escapeHtml(item.name)}</h3>`
     + (item.desc ? `<p class="pm-card-desc">${escapeHtml(item.desc)}</p>` : '')
     + priceHtml(item, 'pm-card-price')
+    + minHtml(item, 'pm-card-min')
     + `<a class="pm-btn pm-btn-outline pm-card-cta" href="${LINE_URL}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_card">สั่งเมนูนี้ <span aria-hidden="true">↗</span></a>`
     + '</div>'
     + '</article>';
@@ -149,6 +169,7 @@ function rowHtml(item) {
     + `<p class="pm-row-tier">${escapeHtml(tierLabel(item.tier))}</p>`
     + `<p class="pm-row-name">${escapeHtml(item.name)}</p>`
     + priceHtml(item, 'pm-row-price')
+    + minHtml(item, 'pm-row-min')
     + '</div>'
     + '<div class="pm-row-actions">'
     + `<a class="pm-btn pm-btn-outline pm-row-cta" href="${LINE_URL}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_row">สั่งเมนูนี้ <span aria-hidden="true">↗</span></a>`
@@ -156,8 +177,17 @@ function rowHtml(item) {
     + '</div>';
 }
 
+// A dish with no photo is listed by name instead of getting an empty card —
+// but it still carries its price, its minimum and the same LINE order button,
+// because a customer who reads it must be able to act on it exactly like any
+// other dish on the page.
 function nameOnlyHtml(item) {
-  return `<div class="pm-name-only" id="menu-${escapeHtml(item.id)}" data-menu-id="${escapeHtml(item.id)}" data-tier="${escapeHtml(item.tier || 'classic')}"><span class="pm-name-only-text">${escapeHtml(item.name)}</span></div>`;
+  return `<div class="pm-name-only" id="menu-${escapeHtml(item.id)}" data-menu-id="${escapeHtml(item.id)}" data-tier="${escapeHtml(item.tier || 'classic')}">`
+    + `<span class="pm-name-only-text">${escapeHtml(item.name)}</span>`
+    + priceHtml(item, 'pm-row-price')
+    + minHtml(item, 'pm-row-min')
+    + `<a class="pm-btn pm-btn-outline pm-card-cta" href="${LINE_URL}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_card">สั่งเมนูนี้ <span aria-hidden="true">↗</span></a>`
+    + '</div>';
 }
 
 export function renderStaticMenu(items) {
@@ -398,10 +428,22 @@ async function readRules(root) {
  * The catalogue stores Thai names only, so the English wording lives in
  * data/menu-copy-en.json (id -> { name, desc }). A live menu with no English
  * copy is a build error, not a silent gap: an English visitor must never find
- * a dish missing that the Thai page sells.
+ * a dish missing that the Thai page sells — and never find one under a Thai
+ * name either, which is why a field that still holds Thai script counts as no
+ * copy at all.
+ *
+ * That file feeds two outputs: this page's static markup, and
+ * js/menu-data-en.js, the same English words in the shape the browser runtime
+ * needs. See buildMenuDataEnJs for why the page cannot ship without the second.
  */
 const PAGE_EN = 'en/popular-menu.html';
 const EN_COPY_FILE = 'data/menu-copy-en.json';
+const EN_RUNTIME_FILE = 'js/menu-data-en.js';
+
+// A field that still holds Thai script is not English copy. Romanised dish
+// names ("Pad Thai", "Khao Mok") pass; a pasted Thai string does not, because it
+// is exactly the failure this file exists to prevent.
+const THAI_SCRIPT = /[\u0E00-\u0E7F]/;
 
 const TIER_EN = { classic: 'Classic', signature: 'Signature', executive: 'Executive' };
 const TIER_ORDER = ['classic', 'signature', 'executive'];
@@ -415,10 +457,12 @@ const TIER_EN_NAME = {
 
 export async function loadEnCopy(root = ROOT, items, toppings = [], desserts = []) {
   const copy = JSON.parse(await readFile(path.join(root, EN_COPY_FILE), 'utf8'));
-  const usable = (value) => typeof value === 'string' && value.trim() !== '';
-  // A name is required: an English visitor must never be handed a Thai dish
-  // name. A description is not — the owner may publish the dish before writing
-  // one, and the card simply omits the paragraph in both languages.
+  // A name is required, and it must not be Thai: an English visitor must never
+  // be handed a Thai dish name, whether the copy is missing or was copied from
+  // the catalogue. A description is not required — the owner may publish the
+  // dish before writing one, and the card simply omits the paragraph in both
+  // languages.
+  const usable = (value) => typeof value === 'string' && value.trim() !== '' && !THAI_SCRIPT.test(value);
   const missing = items
     .filter((item) => {
       const entry = copy[item.id];
@@ -431,7 +475,7 @@ export async function loadEnCopy(root = ROOT, items, toppings = [], desserts = [
     );
   }
   // Same rule for the topping list: a Thai name on the English page reads as a
-  // bug to the customer, so a missing translation fails the build.
+  // bug to the customer, so a missing or untranslated name fails the build.
   const toppingCopy = copy.toppings && typeof copy.toppings === 'object' ? copy.toppings : {};
   const noEnglish = toppings
     .map((t) => String(t?.name ?? '').trim())
@@ -460,11 +504,20 @@ export async function loadEnCopy(root = ROOT, items, toppings = [], desserts = [
 // because that page predates those classes. These strings keep that look, and the
 // fields shown match the Thai card exactly (level, name, description, price) so
 // a customer comparing the two pages finds the same dish at the same price.
+// The per-menu minimum in English, the same catalogue fact minHtml() prints on
+// the Thai page (standardMenuMinimum) — worded the way this page words every
+// other figure, singular only when the minimum really is one box.
+function minEnText(item) {
+  if (item.minPerMenu == null) return '';
+  return `Min ${item.minPerMenu} ${item.minPerMenu === 1 ? 'box' : 'boxes'}`;
+}
+
 function enCardHtml(item, copy) {
   const photo = hasDishPhoto(item)
     ? `<img src="../${escapeHtml(item.image)}" alt="${escapeHtml(copy[item.id].name)} EED HALAL" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">`
     : '';
   const price = item.price == null ? '' : `<p style="font-size:1.05rem;font-weight:800;color:var(--primary);margin:0.15rem 0 0">${item.price} THB<span style="font-size:0.75rem;font-weight:600;color:var(--text-muted);margin-left:0.25rem">/ box</span></p>`;
+  const min = minEnText(item) ? `<p style="font-size:0.8rem;font-weight:600;color:var(--text-muted);margin:0.2rem 0 0">${minEnText(item)}</p>` : '';
   return `<div style="background:var(--white);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column">
 <div style="aspect-ratio:4/3;overflow:hidden">
 ${photo}
@@ -473,17 +526,21 @@ ${photo}
 <h4 style="font-size:1.25rem;font-weight:900;color:var(--text);margin:0">${escapeHtml(copy[item.id].name)}</h4>
 <p style="font-size:0.8rem;line-height:1.7;opacity:0.7;color:var(--text);margin:0">${escapeHtml(tierLabel(item.tier))} &middot; ${escapeHtml(copy[item.id].desc)}</p>
 ${price}
+${min}
 </div>
 </div>`;
 }
 
 function enListRowHtml(item, copy, emoji) {
   const price = item.price == null ? '' : `<span class="pm-price-unit">${item.price} THB / box</span>`;
-  return `<div class="menu-item"><span class="menu-item-name">${emoji} ${escapeHtml(copy[item.id].name)}${price}</span><span class="menu-item-dots"></span></div>`;
+  const min = minEnText(item) ? `<span class="pm-price-unit"> &middot; ${minEnText(item)}</span>` : '';
+  return `<div class="menu-item"><span class="menu-item-name">${emoji} ${escapeHtml(copy[item.id].name)}${price}${min}</span><span class="menu-item-dots"></span></div>`;
 }
 
 function enNameOnlyHtml(item, copy) {
-  return `<div class="pm-name-only"><span class="pm-name-only-text">${escapeHtml(copy[item.id].name)}</span></div>`;
+  const price = item.price == null ? '' : `<span class="pm-price-unit">${item.price} THB / box</span>`;
+  const min = minEnText(item) ? `<span class="pm-price-unit"> &middot; ${minEnText(item)}</span>` : '';
+  return `<div class="pm-name-only"><span class="pm-name-only-text">${escapeHtml(copy[item.id].name)}${price}${min}</span></div>`;
 }
 
 export function renderStaticMenuEn(items, copy) {
@@ -618,6 +675,58 @@ export async function buildPopularMenuPage(root = ROOT) {
   return renderPopularMenuPage(page, await loadCatalogue(root));
 }
 
+/**
+ * The English half of the catalogue, for the visitor's browser.
+ *
+ * en/popular-menu.html ships English markup, but js/popular-menu-hydrate.js
+ * redraws the grid and the full list from EED_MENUS the moment the page loads,
+ * and the catalogue stores Thai names only. Rendering it unchanged therefore
+ * replaced every English dish name with a Thai one — a bug a crawler never sees,
+ * because crawlers read the static HTML, and every human visitor does.
+ *
+ * So the English words are published as their own file, keyed by exactly the
+ * same ids as js/menu-data.js and generated from the same data/menu-copy-en.json
+ * the static markup is built from. One source of English wording, two
+ * consumers: the markup a crawler reads and the runtime a visitor sees.
+ */
+export function buildMenuDataEnJs(copy) {
+  const menus = {};
+  Object.keys(copy)
+    .filter((id) => /^\d+$/.test(id))
+    .sort((a, b) => Number(a) - Number(b))
+    .forEach((id) => {
+      menus[id] = { name: copy[id].name, desc: copy[id].desc || '' };
+    });
+  // Keyed by the Thai name in data/planner-overrides.json, exactly like the
+  // static page resolves a topping: the Thai string is the join key, never text
+  // the customer is shown.
+  const toppings = {};
+  Object.keys(copy.toppings || {})
+    .filter((name) => name !== '_comment')
+    .sort()
+    .forEach((name) => {
+      toppings[name] = copy.toppings[name];
+    });
+  return [
+    '/* EED HALAL - English menu copy for the page runtime. Generated from data/menu-copy-en.json by scripts/popular-menu-page.mjs --write. Do not edit by hand. */',
+    `var EED_MENU_COPY_EN = ${JSON.stringify(menus)};`,
+    `var EED_TOPPINGS_EN = ${JSON.stringify(toppings)};`,
+    '',
+  ].join('\n');
+}
+
+export async function buildMenuDataEn(root = ROOT) {
+  const catalogue = await loadCatalogue(root);
+  const copy = await loadEnCopy(root, catalogue.items, catalogue.toppings, catalogue.desserts);
+  return buildMenuDataEnJs(copy);
+}
+
+export async function checkMenuDataEn(root = ROOT) {
+  const onDisk = await readFile(path.join(root, EN_RUNTIME_FILE), 'utf8');
+  const norm = (text) => text.replaceAll('\r\n', '\n');
+  return { ok: norm(onDisk) === norm(await buildMenuDataEn(root)), file: EN_RUNTIME_FILE };
+}
+
 export async function buildPopularMenuPageEn(root = ROOT) {
   const page = await readFile(path.join(root, PAGE_EN), 'utf8');
   const catalogue = await loadCatalogue(root);
@@ -653,28 +762,39 @@ if (invokedDirectly) {
   // same dishes at the same prices.
   async function writePage(file, builder) {
     const target = path.join(ROOT, file);
-    const existing = await readFile(target, 'utf8');
+    // A file this generator has never written has no established line endings.
+    // LF is the safe default: it is what the index must hold, so a CRLF working
+    // copy can never commit CRLF by accident.
+    let crlf = false;
+    try {
+      crlf = (await readFile(target, 'utf8')).includes('\r\n');
+    } catch { /* first run: the file does not exist yet */ }
     const built = await builder(ROOT);
-    const crlf = existing.includes('\r\n');
     // Normalise to LF first. A blind replaceAll('\n', '\r\n') on text that
     // already carries CRLF turns \r\n into \r\r\n, so every write added one
     // more carriage return until the file was no longer valid.
     const lf = built.replace(/\r+\n/g, '\n');
     await writeFile(target, crlf ? lf.replaceAll('\n', '\r\n') : lf, 'utf8');
-    console.log(`${file}: static menu block written`);
+    console.log(`${file}: written`);
   }
 
   if (write) {
     await writePage(PAGE, buildPopularMenuPage);
     await writePage(PAGE_EN, buildPopularMenuPageEn);
+    await writePage(EN_RUNTIME_FILE, buildMenuDataEn);
   } else {
-    for (const [file, checker] of [[PAGE, checkPopularMenuPage], [PAGE_EN, checkPopularMenuPageEn]]) {
+    const checks = [
+      [PAGE, checkPopularMenuPage, 'static menu block'],
+      [PAGE_EN, checkPopularMenuPageEn, 'static menu block'],
+      [EN_RUNTIME_FILE, checkMenuDataEn, 'English runtime copy'],
+    ];
+    for (const [file, checker, label] of checks) {
       const result = await checker(ROOT);
       if (!result.ok) {
-        console.error(`${file}: static menu block is stale; run with --write`);
+        console.error(`${file}: ${label} is stale; run with --write`);
         process.exit(1);
       }
-      console.log(`${file}: static menu block is in sync`);
+      console.log(`${file}: ${label} is in sync`);
     }
   }
 }

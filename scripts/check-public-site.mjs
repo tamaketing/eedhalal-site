@@ -89,6 +89,90 @@ const PUBLISHED_INTERNAL_TOKENS = [
   'profit', 'marginpct', 'eed_internal_api_secret',
 ];
 const PUBLISHED_LOCAL_TOKENS = ['localhost', '127.0.0.1', 'file://', 'owner-costs', 'C:\\', 'C:/'];
+const THAI_SCRIPT = /[\u0E00-\u0E7F]/;
+
+// One `var NAME = {...};` per line, so the value is the rest of that line.
+function readGeneratedVar(source, name) {
+  const prefix = `var ${name} = `;
+  const line = source.split('\n').find((row) => row.startsWith(prefix));
+  if (!line) return null;
+  try {
+    return JSON.parse(line.slice(prefix.length).replace(/;\s*$/, ''));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The English menu page redraws itself in the visitor's browser out of the Thai
+ * catalogue, so js/menu-data-en.js is the only thing standing between an English
+ * customer and a screen full of Thai dish names.
+ *
+ * The static HTML cannot catch this: a crawler reads the generated English markup
+ * and never runs the script that replaced it, which is precisely how the page
+ * shipped English to Google and Thai to every human who visited. So the runtime
+ * half is checked here, next to the files that get published.
+ */
+export async function checkEnglishMenuRuntime(root = ROOT) {
+  const failures = [];
+  const overrides = JSON.parse(await readFile(path.join(root, 'data', 'planner-overrides.json'), 'utf8'));
+  const runtime = await readFile(path.join(root, 'js', 'menu-data-en.js'), 'utf8').catch(() => null);
+  if (runtime === null) {
+    failures.push('js/menu-data-en.js is missing; en/popular-menu.html needs it to render English after hydration');
+    assert.deepEqual(failures, [], `English menu runtime validation failed:\n${failures.join('\n')}`);
+    return;
+  }
+  const menus = readGeneratedVar(runtime, 'EED_MENU_COPY_EN');
+  const toppingCopy = readGeneratedVar(runtime, 'EED_TOPPINGS_EN');
+  if (!menus || !toppingCopy) {
+    failures.push('js/menu-data-en.js: EED_MENU_COPY_EN and EED_TOPPINGS_EN must both be declared');
+  } else {
+    const liveIds = Object.keys(overrides.names || {});
+    const missing = liveIds.filter((id) => !menus[id] || !String(menus[id].name || '').trim());
+    if (missing.length) failures.push(`js/menu-data-en.js: no English name for live menu id(s) ${missing.join(', ')}`);
+    // Thai script may only ever be a join key. Anywhere else it is a dish or
+    // topping name an English customer would be shown.
+    for (const [id, entry] of Object.entries(menus)) {
+      for (const field of ['name', 'desc']) {
+        if (THAI_SCRIPT.test(String(entry?.[field] ?? ''))) {
+          failures.push(`js/menu-data-en.js: menu ${id} ${field} still holds Thai script`);
+        }
+      }
+    }
+    for (const topping of overrides.toppings || []) {
+      const thai = String(topping?.name ?? '').trim();
+      if (!thai) continue;
+      const english = String(toppingCopy[thai] ?? '').trim();
+      if (!english) failures.push(`js/menu-data-en.json: no English name for topping "${thai}"`);
+      else if (THAI_SCRIPT.test(english)) failures.push(`js/menu-data-en.js: topping "${thai}" still shows Thai script`);
+    }
+  }
+
+  // The overlay must be gated on the page being English. Keying it only on the
+  // file being loaded would quietly render the Thai page in English instead,
+  // which is the same defect in the other language.
+  const hydrate = await readFile(path.join(root, 'js', 'popular-menu-hydrate.js'), 'utf8');
+  const overlay = hydrate.slice(hydrate.indexOf('function applyEnglishCopy()'));
+  const guard = overlay.slice(0, overlay.indexOf('}'));
+  if (!/isEnPath\(\)/.test(guard)) {
+    failures.push('js/popular-menu-hydrate.js: applyEnglishCopy must check isEnPath() before swapping names');
+  }
+  if (!/EED_MENU_COPY_EN[^\n]*undefined/.test(hydrate)) {
+    failures.push('js/popular-menu-hydrate.js: an English page must be left alone when js/menu-data-en.js is absent');
+  }
+
+  // Load order decides the outcome: the words must exist before anything is drawn.
+  const page = await readFile(path.join(root, 'en', 'popular-menu.html'), 'utf8');
+  const englishCopy = page.indexOf('js/menu-data-en.js');
+  const hydrateScript = page.indexOf('js/popular-menu-hydrate.js');
+  if (englishCopy === -1) failures.push('en/popular-menu.html: does not load js/menu-data-en.js');
+  else if (hydrateScript !== -1 && englishCopy > hydrateScript) {
+    failures.push('en/popular-menu.html: js/menu-data-en.js must load before js/popular-menu-hydrate.js');
+  }
+
+  assert.deepEqual(failures, [], `English menu runtime validation failed:\n${failures.join('\n')}`);
+  console.log('English menu runtime validation passed (English names and toppings for every live menu).');
+}
 
 export async function checkPublishSafety(root = ROOT) {
   const failures = [];
@@ -181,6 +265,11 @@ export async function checkPublishSafety(root = ROOT) {
   if (overrides) {
     for (const [id, image] of Object.entries(overrides.images || {})) {
       const ref = String(image || '');
+      // An empty value is "this dish has no photo", not a declared photo: the
+      // admin writes "" when the image field is cleared, and the menu page then
+      // lists the dish by name instead of rendering a broken card. Nothing to
+      // resolve, so there is nothing to fail on.
+      if (!ref) continue;
       if (/^https?:\/\//i.test(ref)) {
         if (!/^https:\/\//i.test(ref) || /localhost|127\.0\.0\.1/.test(ref)) {
           failures.push(`data/planner-overrides.json: image id ${id} is not web-safe: ${ref}`);
@@ -198,6 +287,7 @@ export async function checkPublishSafety(root = ROOT) {
   }
   assert.deepEqual(failures, [], `Publish safety validation failed:\n${failures.join('\n')}`);
   console.log('Publish safety validation passed (no internal data in public catalog).');
+  await checkEnglishMenuRuntime(root);
 }
 
 export async function checkPublicSite(root = ROOT) {
