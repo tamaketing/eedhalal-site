@@ -69,6 +69,20 @@ const rootFiles = new Map([
   ['/budget-planner.html', [path.join(ROOT, 'budget-planner.html'), 'text/html; charset=utf-8']],
 ]);
 
+// Dish photos for the admin menu cards. The catalogue stores repository-root
+// relative paths ("img/khao-mok.jpg"), and the cost page is served from this
+// local server, so those paths 404 without a route — every card thumbnail came
+// up as a broken box. Only real image files inside the repo's img/ are served.
+const IMAGE_CONTENT_TYPES = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.avif': 'image/avif',
+  '.svg': 'image/svg+xml',
+};
+
 async function ensureCentral(dataDir) {
   try {
     return await loadCentral(dataDir);
@@ -449,6 +463,20 @@ export function createLocalServer({ dataDir = resolveDataDir() } = {}) {
       if (pathname === '/menu-catalog') return send(200, JSON.stringify(await catalog(dataDir)), 'application/json; charset=utf-8');
       const rootFile = rootFiles.get(pathname);
       if (rootFile) return send(200, await readFile(rootFile[0]), rootFile[1]);
+      if (pathname.startsWith('/img/')) {
+        let name = '';
+        try { name = decodeURIComponent(pathname.slice('/img/'.length)); } catch { name = ''; }
+        const imgRoot = path.join(ROOT, 'img');
+        const target = name ? path.resolve(imgRoot, name) : '';
+        const inside = Boolean(target) && target.startsWith(imgRoot + path.sep);
+        const type = inside ? IMAGE_CONTENT_TYPES[path.extname(target).toLowerCase()] : null;
+        if (!inside || !type) return send(404, 'Not found');
+        try {
+          return send(200, await readFile(target), type);
+        } catch {
+          return send(404, 'Not found');
+        }
+      }
       const file = files.get(pathname);
       if (!file) return send(404, 'Not found');
       return send(200, await readFile(path.join(HERE, file[0])), file[1]);

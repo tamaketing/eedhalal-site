@@ -27,7 +27,7 @@
       </div>
       <div class="cp-sticky-actions">
         <button type="button" class="cp-btn" id="mc-save" disabled>บันทึก</button>
-        <button type="button" class="cp-btn ghost" id="mc-publish-open" disabled>ดูตัวอย่างและเผยแพร่</button>
+        <button type="button" class="cp-btn ghost" id="mc-publish-open" disabled>ดูตัวอย่างก่อนขึ้นเว็บ</button>
       </div>
     </div>
   </div>
@@ -38,8 +38,9 @@
         <h1>จัดการเมนู</h1>
         <ol class="mc-steps">
           <li><strong>แก้ราคา</strong> — พิมพ์ในกล่องราคาของการ์ดเมนูได้เลย</li>
-          <li>กด <strong>บันทึก</strong> — เก็บลงเครื่อง เครื่องมืออื่นใช้ข้อมูลใหม่ทันที</li>
-          <li>กด <strong>ดูตัวอย่างและเผยแพร่</strong> — ขึ้นเว็บจริง (ต้อง commit + push เอง)</li>
+          <li>กด <strong>บันทึก</strong> — เก็บลงเครื่อง เครื่องมืออื่นใช้ข้อมูลใหม่ทันที แต่เว็บลูกค้ายังเป็นฉบับเดิม</li>
+          <li>กด <strong>อัปเดตเว็บทั้งหมด</strong> (ท้ายหน้า) — ระบบสร้างไฟล์เว็บครบชุด → push → รอตรวจเว็บจริงให้เสร็จในครั้งเดียว</li>
+          <li>อยากดูก่อนว่าอะไรจะเปลี่ยน? กด <strong>ดูตัวอย่างก่อนขึ้นเว็บ</strong> — ดูอย่างเดียว ยังไม่ขึ้นเว็บ</li>
         </ol>
         <details class="cp-details">
           <summary>ทำอะไรได้ในหน้านี้</summary>
@@ -182,7 +183,7 @@
       <div class="cp-editor-actions"><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>
     </div>
   </div>
-  <!-- ฐานกลางเมนู (local): demo/owner-set-builder/menu-central.json ผ่านปุ่ม "บันทึก" · ฉบับเผยแพร่: data/planner-overrides.json + js/menu-data.js ผ่านปุ่ม "ดูตัวอย่างและเผยแพร่" (ต้อง commit + push เอง)  -->
+  <!-- ฐานกลางเมนู (local): demo/owner-set-builder/menu-central.json ผ่านปุ่ม "บันทึก" · ขึ้นเว็บลูกค้าผ่านปุ่มเดียว อัปเดตเว็บทั้งหมด (สร้างไฟล์ทั้งสองฉบับ แล้ว commit + push + ตรวจเว็บจริง)  -->
   <style>#mc-modal[hidden]{display:none}</style>
 </body>
 </html>

@@ -10,11 +10,16 @@
 // Two main actions:
 //   บันทึก                  -> POST /menu-central (central draft; admin tools
 //                              use it immediately, customer web unchanged)
-//   ดูตัวอย่างและเผยแพร่      -> GET /menu-publish-preview (added/changed/hidden
-//                              vs the last published release + customer sample)
-//                              then POST /menu-publish on confirm. No tokens,
-//                              no network: the local server rewrites the two
-//                              published static files; `git push` stays manual.
+//   ดูตัวอย่างก่อนขึ้นเว็บ    -> GET /menu-publish-preview (added/changed/hidden
+//                              vs the last published release + customer sample).
+//                              Read-only: it publishes nothing.
+//   อัปเดตเว็บทั้งหมด         -> the ONE way to reach customers. It runs the
+//                              whole chain itself: POST /menu-publish (rewrite the
+//                              two published files) → POST /menu-deploy (commit +
+//                              push) → wait → verify the live site. There is no
+//                              separate "publish then push" path to get lost in.
+//                              No tokens, no network beyond git; the local server
+//                              does all of it.
 const $ = (selector) => document.querySelector(selector);
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -139,12 +144,10 @@ function renderDeploy() {
     + `<div class="cp-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">`
     + `<button type="button" class="cp-btn" id="mc-release-open">อัปเดตเว็บทั้งหมด</button>`
     + `<button type="button" class="cp-btn ghost sm" id="mc-verify-live">ตรวจเว็บจริงตอนนี้</button>`
-    + `<button type="button" class="cp-btn ghost sm" id="mc-deploy-open"${info.deployEnabled ? '' : ' disabled title="ยังไม่เปิดการขึ้นเว็บอัตโนมัติ"'}>เผยแพร่ขึ้นเว็บจริง</button>`
     + `<span class="cp-form-status" id="mc-deploy-status"></span></div>`
     + '<div id="mc-release-panel"></div>'
     + `<div id="mc-backups"><p class="cp-sub">กำลังโหลดรายการสำรอง…</p></div>`;
   $('#mc-verify-live')?.addEventListener('click', verifyLive);
-  $('#mc-deploy-open')?.addEventListener('click', openDeployConfirm);
   $('#mc-release-open')?.addEventListener('click', openRelease);
   loadBackups();
 }
@@ -165,35 +168,6 @@ async function verifyLive() {
     if (statusBox) statusBox.textContent = `ตรวจไม่สำเร็จ: ${error.message}`;
   }
   await refreshPublish();
-}
-
-function openDeployConfirm() {
-  const modal = $('#mc-modal');
-  const body = $('#mc-modal-body');
-  if (!modal || !body) return;
-  const info = state.publish;
-  if (info?.diff?.hasChanges) {
-    body.innerHTML = '<p><strong>ขึ้นเว็บไม่ได้ตอนนี้</strong></p><p class="cp-sub">ฐานกลางยังใหม่กว่าฉบับไฟล์ — กด “ดูตัวอย่างและเผยแพร่” (สร้างไฟล์) ก่อน แล้วค่อยกลับมาขึ้นเว็บ</p><div class="cp-editor-actions"><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>';
-    modal.hidden = false;
-    return;
-  }
-  body.innerHTML = '<p><strong>ยืนยันขึ้นเว็บจริง</strong></p>'
-    + '<p class="cp-sub">ระบบจะทำจากเครื่องนี้: สร้างไฟล์เว็บไซต์ครบชุดจากฐานกลาง → ตรวจไฟล์อีกรอบ → commit <strong>เฉพาะ</strong> ไฟล์ที่ build สร้างหรือรูปที่ฐานกลางอ้างอิง (งานค้างอื่นไม่รวม) → push → รอตรวจว่าเว็บจริงให้บริการไฟล์ครบชุดตรงกับฉบับนี้ ถ้าตรวจไม่ได้จะขึ้น “ยังไม่ยืนยัน” ไม่ถือว่าสำเร็จ</p>'
-    + '<p class="cp-sub">ห้ามรวมงานอื่นเข้า commit อัตโนมัติ: ถ้ามี commit อื่นรอ push อยู่ ระบบจะหยุดและแจ้งสาเหตุ</p>'
-    + '<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-deploy-confirm">ยืนยันขึ้นเว็บจริง</button><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button><span class="cp-form-status" id="mc-deploy-confirm-status"></span></div>';
-  modal.hidden = false;
-  $('#mc-deploy-confirm')?.addEventListener('click', async () => {
-    const statusBox = $('#mc-deploy-confirm-status');
-    if (statusBox) statusBox.textContent = 'เริ่มงานขึ้นเว็บ… (ติดตามที่การ์ดด้านล่าง)';
-    try {
-      const response = await fetch('/menu-deploy', { method: 'POST', headers: { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' }, body: JSON.stringify({ confirm: true }) });
-      const result = await response.json();
-      if (statusBox) statusBox.textContent = result.ok ? 'เริ่มงานแล้ว — อย่าปิดหน้านี้ระหว่างตรวจเว็บจริง' : `เริ่มไม่ได้: ${result.error || ''}`;
-    } catch (error) {
-      if (statusBox) statusBox.textContent = `เริ่มไม่ได้: ${error.message}`;
-    }
-    await refreshPublish();
-  });
 }
 
 async function loadBackups() {
@@ -233,53 +207,69 @@ function matchesFilter(menu) {
   return true;
 }
 
-// Tier options come from business-rules.json via the release card, so the owner
-// always picks from the levels the website and the bot actually publish.
+// The product levels to offer, from business-rules.json via the release card,
+// so the owner always picks from the levels the website and the bot publish.
 const TIER_FALLBACK_LABELS = { classic: 'Classic', signature: 'Signature', executive: 'Executive' };
 
-function tierOptions(current) {
-  const known = new Set(Object.keys(TIER_FALLBACK_LABELS));
+function tierChoices(current) {
   const declared = state.publish?.tiers || [];
-  const options = declared.length
-    ? declared
-      .map((tier) => `<option value="${esc(tier.id)}"${tier.id === current ? ' selected' : ''}>${esc(tier.nameTh || tier.nameEn || tier.id)}</option>`)
-      .join('')
-    : Object.keys(TIER_FALLBACK_LABELS)
-      .map((id) => `<option value="${id}"${id === current ? ' selected' : ''}>${TIER_FALLBACK_LABELS[id]}</option>`)
-      .join('');
-  const extra = current && !known.has(current)
-    ? `<option value="${esc(current)}" selected>${esc(current)} (ไม่อยู่ในระดับที่ประกาศ)</option>`
-    : '';
-  return options + extra;
+  let choices = declared.length
+    ? declared.map((tier) => ({ id: tier.id, label: tier.nameTh || tier.nameEn || tier.id }))
+    : Object.keys(TIER_FALLBACK_LABELS).map((id) => ({ id, label: TIER_FALLBACK_LABELS[id] }));
+  // A stray level (a draft saved before this level existed) still shows, so the
+  // owner can move it to a real level rather than losing sight of it.
+  if (current && !choices.some((choice) => choice.id === current)) {
+    choices = [...choices, { id: current, label: `${current} (ไม่อยู่ในระดับที่ประกาศ)` }];
+  }
+  return choices;
 }
 
-// One card per menu. The common job — editing a price — is the biggest thing on
-// the card; everything else stays tucked behind "รายละเอียด" so a 44-menu
-// catalogue stays scannable on a phone.
+// One card per menu, arranged as the two layers the owner thinks in:
+//  - the TOP layer is everything a CUSTOMER sees (photo, name, level, price,
+//    description / price breakdown) — it is always visible, because hiding a
+//    customer-facing field behind a panel was the whole problem with the old card;
+//  - the collapsed "ตั้งค่า" panel holds the back-office fields (minimum, sort
+//    order, image, internal note, display switches, delete).
+// This keeps a 44-menu catalogue scannable on a phone without burying what
+// actually sells the dish.
 function cardHtml(menu, index) {
+  const hidden = Boolean(menu.hidden);
   const flags = [
-    menu.hidden ? '<span class="mc-flag is-off">ซ่อนจากเว็บ</span>' : '<span class="mc-flag is-on">ขึ้นเว็บ</span>',
+    hidden ? '<span class="mc-flag is-off">ซ่อนจากเว็บ</span>' : '<span class="mc-flag is-on">ขึ้นเว็บ</span>',
     `<span class="mc-flag mc-id">ID ${esc(menu.id)}</span>`,
   ].join('');
-  return `<article class="mc-card${menu.hidden ? ' is-hidden' : ''}" data-mc-row="${index}">
+  // Level = a 3-way segmented control instead of a select. The card sits inside
+  // a level group, so seeing the level as an active pill reads faster than
+  // opening a dropdown, and a change moves the card to its real group. The
+  // buttons carry data-field="tier" (they edit that field); they fire only
+  // `click`, never `input`/`change`, so the field-input path never runs on them.
+  const tierSeg = `<div class="mc-tier-seg" role="group" aria-label="ระดับสินค้า ${esc(menu.name)}">`
+    + tierChoices(menu.tier)
+      .map((tier) => `<button type="button" class="mc-tier-btn${tier.id === menu.tier ? ' is-on' : ''} mc-tier-${esc(tier.id)}" data-tier-set="${index}" data-tier-value="${esc(tier.id)}" data-field="tier" aria-pressed="${tier.id === menu.tier ? 'true' : 'false'}">${esc(tier.label)}</button>`)
+      .join('')
+    + '</div>';
+  const showPrice = menu.showPrice !== false;
+  return `<article class="mc-card${hidden ? ' is-hidden' : ''}" data-mc-row="${index}">
     <div class="mc-card-top">
       <img class="mc-thumb" src="${esc(menu.image)}" alt="" loading="lazy" onerror="this.remove()">
-      <div class="mc-card-id">
-        <label class="mc-label">ชื่อเมนู</label>
-        <input class="cp-input" type="text" value="${esc(menu.name)}" data-mc="${index}" data-field="name" aria-label="ชื่อเมนู">
-        <label class="mc-label mc-tier-label">ระดับสินค้า
-          <select class="cp-input" data-mc="${index}" data-field="tier" aria-label="ระดับสินค้า ${esc(menu.name)}">${tierOptions(menu.tier)}</select>
-        </label>
-        <div class="mc-flags">${flags}</div>
-      </div>
       <div class="mc-card-price">
         <label class="mc-label" for="p-${index}">ราคาขาย</label>
         <input id="p-${index}" class="cp-input mc-price" type="number" min="1" step="1" value="${esc(menu.price)}" data-mc="${index}" data-field="price" aria-label="ราคาขาย ${esc(menu.name)}">
         <span class="mc-unit">บาท/กล่อง</span>
       </div>
     </div>
+    <div class="mc-card-id">
+      <label class="mc-label" for="n-${index}">ชื่อเมนู</label>
+      <input id="n-${index}" class="cp-input mc-name" type="text" value="${esc(menu.name)}" data-mc="${index}" data-field="name" aria-label="ชื่อเมนู">
+    </div>
+    <div class="mc-card-meta">
+      ${tierSeg}
+      <div class="mc-flags">${flags}</div>
+    </div>
+    <label class="mc-label" for="d-${index}">คำอธิบาย / ราคาแยก (ลูกค้าเห็น)</label>
+    <textarea id="d-${index}" class="cp-input mc-desc" rows="4" data-mc="${index}" data-field="desc" aria-label="คำอธิบายหรือราคาแยกที่ลูกค้าเห็น" placeholder="เช่น กะเพราไก่อย่างเดียว 55 บาท + ไข่ดาว 10 บาท = 65 บาท&#10;ข้าวสวย + ไก่ทอดกระเทียม กินอร่อย ปริมาณพอดี 1 กล่อง">${esc(menu.desc || '')}</textarea>
     <details class="mc-more">
-      <summary>รายละเอียดอื่น</summary>
+      <summary>ตั้งค่า</summary>
       <div class="mc-grid">
         <label class="mc-label">ขั้นต่ำ (กล่อง)
           <input class="cp-input" type="number" min="1" step="1" value="${esc(menu.minPerMenu)}" data-mc="${index}" data-field="minPerMenu" aria-label="ขั้นต่ำ">
@@ -287,18 +277,16 @@ function cardHtml(menu, index) {
         <label class="mc-label">ลำดับแสดง
           <input class="cp-input" type="number" step="1" value="${esc(menu.sortOrder)}" data-mc="${index}" data-field="sortOrder" aria-label="ลำดับแสดง">
         </label>
-        <label class="mc-label">รูป
+        <label class="mc-label mc-span">รูป
           <input class="cp-input" type="text" value="${esc(menu.image)}" data-mc="${index}" data-field="image" aria-label="รูป" placeholder="img/...">
-        </label>
-        <label class="mc-label mc-span">คำอธิบาย (ลูกค้าเห็น)
-          <input class="cp-input" type="text" value="${esc(menu.desc || '')}" data-mc="${index}" data-field="desc" aria-label="คำอธิบาย" placeholder="คำอธิบายสั้น">
         </label>
         <label class="mc-label mc-span">หมายเหตุภายใน (ลูกค้าไม่เห็น)
           <input class="cp-input" type="text" value="${esc(menu.internalNote || '')}" data-mc="${index}" data-field="internalNote" aria-label="หมายเหตุภายใน">
         </label>
       </div>
       <div class="mc-toggles">
-        <label class="cp-check"><input type="checkbox"${menu.hidden ? ' checked' : ''} data-mc="${index}" data-field="hidden">ซ่อนจากเว็บ</label>
+        <label class="cp-check"><input type="checkbox"${hidden ? ' checked' : ''} data-mc="${index}" data-field="hidden">ซ่อนจากเว็บ</label>
+        <label class="cp-check"><input type="checkbox"${showPrice ? ' checked' : ''} data-mc="${index}" data-field="showPrice">แสดงราคาบนเว็บ</label>
         <button type="button" class="cp-btn danger sm" data-mc-delete="${index}">ลบถาวร</button>
       </div>
     </details>
@@ -380,7 +368,10 @@ function renderTable() {
     .map((tier) => {
       const items = byTier.get(tier);
       const label = TIER_FALLBACK_LABELS[tier] || tier;
-      return `<section class="mc-group">
+      // data-mc-group, NOT data-tier: the chip handler resolves
+      // closest('[data-tier]'), so a data-tier ancestor would turn every click
+      // inside a card into a filter change. The accent below reads this instead.
+      return `<section class="mc-group" data-mc-group="${esc(tier)}">
         <h3 class="mc-group-head">${esc(label)} <span>${items.length} เมนู</span></h3>
         <div class="mc-grid-cards">${items.map(({ menu, index }) => cardHtml(menu, index)).join('')}</div>
       </section>`;
@@ -700,7 +691,7 @@ function onEdit(target) {
   const field = target.dataset.field;
   const menu = state.working?.menus?.[index];
   if (!menu || !field) return;
-  if (field === 'hidden') menu[field] = target.checked;
+  if (field === 'hidden' || field === 'showPrice') menu[field] = target.checked;
   else if (field === 'price' || field === 'minPerMenu' || field === 'sortOrder') {
     const value = target.value === '' ? '' : Number(target.value);
     menu[field] = value;
@@ -843,17 +834,19 @@ async function openPreview() {
       + `<div style="margin:.75rem 0"><strong>ตัวอย่างหน้าเว็บ (8 รายการแรกที่จะแสดง)</strong> <span class="cp-sub">· หน้าเว็บเป็นแค่แคตตาล็อก ไม่มีราคาและไม่มีระบบสั่งออนไลน์ ลูกค้าเลือกเมนูแล้วทัก LINE</span><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.5rem;margin-top:.4rem">`
       + info.preview.map((item) => `<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden"><img src="${esc(item.image)}" alt="" style="width:100%;height:90px;object-fit:cover;display:block" onerror="this.style.display='none'"><div style="padding:.4rem .55rem"><div style="font-weight:800;font-size:.82rem">${esc(item.name)}</div><div class="cp-sub">${esc(TIER_FALLBACK_LABELS[item.tier] || item.tier || '')}</div></div></div>`).join('')
       + '</div></div>'
-      + `<p class="cp-sub">กดยืนยัน = สร้างไฟล์ในเครื่องเท่านั้น (สถานะ “เตรียมไฟล์แล้ว — รอขึ้นเว็บไซต์”) · ขึ้นเว็บจริงเป็นอีกขั้นตอนที่การ์ดด้านล่าง · ถ้าสร้างไฟล์ล้มเหลว ฉบับเดิมยังใช้งานได้และสถานะจะขึ้น “เผยแพร่ไม่สำเร็จ”</p>`
-      + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-publish-confirm">ยืนยันเผยแพร่</button><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button><span class="cp-form-status" id="mc-publish-status"></span></div>`;
-    $('#mc-publish-confirm')?.addEventListener('click', publish);
+      + `<p class="cp-sub">หน้านี้เป็นการดูอย่างเดียว ยังไม่ได้แตะเว็บ · ขั้นต่อไปคือกด <strong>“อัปเดตเว็บทั้งหมด”</strong> ระบบจะสร้างไฟล์เว็บครบชุดจากฐานกลาง → ตรวจไฟล์อีกรอบ → push → รอตรวจว่าเว็บจริงให้บริการตรงกัน ถ้าตรวจไม่ได้จะขึ้น “ยังไม่ยืนยัน” ไม่ถือว่าสำเร็จ · ถ้าสร้างไฟล์ล้มเหลว ฉบับเดิมยังใช้งานได้และสถานะจะขึ้น “เผยแพร่ไม่สำเร็จ”</p>`
+      + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-preview-release">อัปเดตเว็บทั้งหมด</button><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>`;
+    $('#mc-preview-release')?.addEventListener('click', openRelease);
   } catch {
     body.innerHTML = `<p style="color:#DC2626;font-weight:800">เทียบฉบับเผยแพร่ไม่สำเร็จ — ตรวจเซิร์ฟเวอร์ local แล้วลองใหม่</p><div class="cp-editor-actions"><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>`;
   }
 }
 
 async function publish() {
+  // Only reachable from the release flow on a machine where git deploy is off,
+  // where it degrades to "write the files locally" instead of pushing.
   const statusBox = $('#mc-publish-status');
-  const button = $('#mc-publish-confirm');
+  const button = $('#mc-release-stage-only');
   if (button) button.disabled = true;
   if (statusBox) statusBox.textContent = 'กำลังเผยแพร่… (ตรวจไฟล์ก่อนสลับฉบับจริง)';
   try {
@@ -867,7 +860,7 @@ async function publish() {
       const modalBody = $('#mc-modal-body');
       if (modalBody) {
         modalBody.insertAdjacentHTML('beforeend', `<p class="cp-sub" style="margin-top:.6rem">ไฟล์: ${((body.record || {}).file?.files || []).join(', ')} · ฉบับไฟล์ v${esc(record.fileVersion ?? '')}</p>`
-          + `<p class="cp-sub">ขั้นต่อไป: กด “เผยแพร่ขึ้นเว็บจริง” ที่การ์ดด้านล่าง แล้วรอให้ระบบตรวจว่าเว็บจริงให้บริการฉบับนี้แล้ว — ขึ้น “เผยแพร่แล้ว” ต่อเมื่อตรวจพบจริงเท่านั้น</p>`);
+          + `<p class="cp-sub">ขั้นต่อไป: กด <strong>“อัปเดตเว็บทั้งหมด”</strong> แล้วรอให้ระบบตรวจว่าเว็บจริงให้บริการฉบับนี้แล้ว — ขึ้น “เผยแพร่แล้ว” ต่อเมื่อตรวจพบจริงเท่านั้น</p>`);
       }
       return;
     }
@@ -960,7 +953,7 @@ async function runFullRelease() {
       + tierPanel(state.publish)
       + `<p><strong>สร้างไฟล์ได้ แต่ขึ้นเว็บอัตโนมัติยังไม่เปิด</strong></p>`
       + '<p class="cp-sub">เครื่องนี้ยังไม่ได้ตั้ง EED_ALLOW_GIT_DEPLOY=1 — ระบบจะสร้างไฟล์ในเครื่องเท่านั้น ไม่ได้ push ขึ้น GitHub</p>'
-      + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-release-stage-only">สร้างไฟล์เท่านั้น</button><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button></div>`;
+      + `<div class="cp-editor-actions"><button type="button" class="cp-btn" id="mc-release-stage-only">สร้างไฟล์เท่านั้น</button><button type="button" class="cp-btn ghost" data-mc-close>ปิด</button><span class="cp-form-status" id="mc-publish-status"></span></div>`;
     modal.hidden = false;
     $('#mc-release-stage-only')?.addEventListener('click', () => { publish(); });
     return;
@@ -1157,6 +1150,22 @@ function bind() {
   document.addEventListener('click', (event) => {
     const closer = event.target.closest('[data-mc-close]');
     if (closer) { $('#mc-modal').hidden = true; return; }
+    // Level segmented control: changing a level moves the card between groups,
+    // so it must re-render — same as the old <select> did on change.
+    const tierSet = event.target.closest('[data-tier-set]');
+    if (tierSet) {
+      const index = Number(tierSet.dataset.tierSet);
+      const value = tierSet.dataset.tierValue;
+      const menu = state.working?.menus?.[index];
+      if (menu && value && menu.tier !== value) {
+        menu.tier = value;
+        scheduleDraftBackup();
+        updateButtons();
+        setFormStatus('', '');
+        renderTable();
+      }
+      return;
+    }
     const tpDelete = event.target.closest('[data-tp-delete]');
     if (tpDelete) { deleteTopping(Number(tpDelete.dataset.tpDelete)); return; }
     const siDelete = event.target.closest('[data-si-delete]');
