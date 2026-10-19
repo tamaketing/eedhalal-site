@@ -71,7 +71,7 @@ export async function checkSearchDiscovery(root = ROOT) {
   if (new Set(urls).size !== urls.length) failures.push('sitemap.xml: duplicate URLs');
   const publicData = ['/data/planner-overrides.json', '/data/business-rules.json', '/data/menu-copy-en.json']
     .flatMap(url => [url, `${url}?t=1`]);
-  const publicPaths = [...urls.map(url => new URL(url).pathname), '/llms.txt', '/llms-full.md', '/sitemap.xml', '/css/style.css', '/js/main.js', '/js/menu-data.js', ...publicData];
+  const publicPaths = [...urls.map(url => new URL(url).pathname), '/llms.txt', '/llms-full.md', '/sitemap.xml', '/css/style.css', '/js/main.js', '/js/menu-data.js', '/js/menu-data-en.js', ...publicData];
   for (const agent of [...SEARCH_AGENTS, 'UnlistedSearchAgent']) {
     for (const url of publicPaths) if (!crawlAllowed(groups, agent, url)) failures.push(`robots.txt: ${agent} cannot crawl ${url}`);
     for (const url of ['/budget-planner.html', '/kitchen-order.html', '/en.html', '/data/private-placeholder.json']) {

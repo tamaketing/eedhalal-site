@@ -261,6 +261,8 @@ function cardHtml(menu, index) {
     <div class="mc-card-id">
       <label class="mc-label" for="n-${index}">ชื่อเมนู</label>
       <input id="n-${index}" class="cp-input mc-name" type="text" value="${esc(menu.name)}" data-mc="${index}" data-field="name" aria-label="ชื่อเมนู">
+      <label class="mc-label" for="b-${index}">ป้ายบนรูป (ลูกค้าเห็น — เว้นว่างไว้ = ไม่ติดป้าย)</label>
+      <input id="b-${index}" class="cp-input mc-tag" type="text" value="${esc(menu.badge || '')}" data-mc="${index}" data-field="badge" aria-label="ป้ายบนรูปของ ${esc(menu.name)}" placeholder="เช่น ขายดี · ใหม่ · พรีเมียม · ⭐ Best Seller">
     </div>
     <div class="mc-card-meta">
       ${tierSeg}
@@ -1122,6 +1124,157 @@ async function deleteMenu(index) {
   setFormStatus(`ลบ “${menu.name}” (ID ${menu.id}) ออกจากฉบับร่างแล้ว${wasPopular ? ' และถอดออกจากรายการยอดนิยมให้อัตโนมัติ' : ''} — กด “บันทึก” เพื่อเก็บถาวร`, 'ok');
 }
 
+// ---------------------------------------------------------------------------
+// "บอกผู้จัดการ" — hand the pending work to the manager agent as plain text.
+//
+// This deliberately stops at a clipboard. The page has no route that reaches an
+// agent, so nothing here can spend a model call, reach the network, or let an
+// agent write a file: the owner reads the text and decides where it goes.
+// That also keeps the whole feature inside this file — no new endpoint, no new
+// module to register in the server's file table and the launcher's asset probe.
+//
+// WHITELIST, not a dump of the draft. internalNote, noLock and every cost
+// figure stay in the browser: the text is meant to leave the machine, and the
+// menu agent is forbidden from reading those files anyway.
+// ---------------------------------------------------------------------------
+const BRIEF_FIELDS = [
+  ['name', 'ชื่อ'],
+  ['price', 'ราคา'],
+  ['tier', 'ระดับ'],
+  ['minPerMenu', 'ขั้นต่ำต่อเมนู'],
+  ['sortOrder', 'ลำดับ'],
+  ['badge', 'ป้าย'],
+  ['desc', 'คำอธิบาย'],
+  ['image', 'รูป'],
+  ['hidden', 'ซ่อนจากเว็บ'],
+  ['showPrice', 'แสดงราคา'],
+];
+
+function briefValue(field, value) {
+  if (field === 'price') return value === '' || value === null || value === undefined ? 'ไม่ได้ใส่' : `${value} บาท`;
+  if (field === 'tier') return TIER_FALLBACK_LABELS[value] || value || 'ไม่ระบุ';
+  if (field === 'minPerMenu') return value === '' || value === null || value === undefined ? 'ไม่ได้ใส่' : `${value} กล่อง`;
+  if (field === 'hidden') return value === true ? 'ซ่อน' : 'แสดง';
+  if (field === 'showPrice') return value === false ? 'ไม่แสดงราคา (ขอใบเสนอราคา)' : 'แสดงราคา';
+  if (value === '' || value === null || value === undefined) return 'ว่าง';
+  return String(value);
+}
+
+// undefined and false are not the same thing for a checkbox, but a draft that
+// simply never carried the key must not read as an edit.
+function briefSame(a, b) {
+  if (typeof a === 'boolean' || typeof b === 'boolean') return Boolean(a) === Boolean(b);
+  return String(a ?? '') === String(b ?? '');
+}
+
+function buildManagerBrief() {
+  const working = state.working;
+  const saved = state.saved;
+  if (!working || !saved) return '';
+
+  const savedMenus = new Map((saved.menus || []).map((menu) => [String(menu.id), menu]));
+  const workingMenus = new Map((working.menus || []).map((menu) => [String(menu.id), menu]));
+  const added = [];
+  const changed = [];
+  const removed = [];
+
+  for (const menu of working.menus || []) {
+    const before = savedMenus.get(String(menu.id));
+    if (!before) {
+      added.push(menu);
+      continue;
+    }
+    const fields = BRIEF_FIELDS
+      .filter(([field]) => !briefSame(before[field], menu[field]))
+      .map(([field, label]) => `${label} ${briefValue(field, before[field])} → ${briefValue(field, menu[field])}`);
+    if (fields.length) changed.push({ menu, fields });
+  }
+  for (const menu of saved.menus || []) {
+    if (!workingMenus.has(String(menu.id))) removed.push(menu);
+  }
+
+  const extras = [];
+  const changedList = (key, label) => {
+    if (JSON.stringify(working[key] ?? null) !== JSON.stringify(saved[key] ?? null)) extras.push(label);
+  };
+  changedList('toppings', 'ท็อปปิ้ง');
+  changedList('sideItems', 'อาหารเมนูที่ 2 / ขนมหวาน');
+  changedList('popular', 'ลำดับยอดนิยม');
+
+  const info = state.publish;
+  const publishLine = !info
+    ? 'สถานะเผยแพร่: กำลังตรวจ…'
+    : info.diff?.hasChanges
+      ? `สถานะเผยแพร่: ยังไม่ขึ้นเว็บ — มีการเปลี่ยนแปลงรอเผยแพร่อยู่`
+      : 'สถานะเผยแพร่: ตรงกับฉบับที่เผยแพร่แล้ว ไม่มีอะไรค้าง';
+
+  const lines = [
+    'บอกผู้จัดการ: ผมแก้ฐานเมนูกลางในหน้าเว็บเสร็จแล้ว ช่วยดูให้หน่อยว่าต้องแก้อะไรต่อ',
+    '',
+    `ฐานกลางรุ่น ${saved.version ?? 0} · ${(working.menus || []).length} เมนู`,
+  ];
+
+  const unsaved = added.length + changed.length + removed.length + extras.length;
+  if (!unsaved) {
+    lines.push('ยังไม่มีอะไรค้างในหน้านี้ — ถ้าจะให้ช่วยเรื่องอื่น เขียนเพิ่มท้ายสรุปนี้ได้เลย');
+  } else {
+    lines.push('แก้ไขค้างในหน้านี้ (ยังไม่บันทึก):');
+    for (const menu of added) {
+      lines.push(`  + ID ${menu.id} ${menu.name} (ใหม่) · ${briefValue('price', menu.price)} · ${briefValue('tier', menu.tier)}`);
+    }
+    for (const { menu, fields } of changed) {
+      lines.push(`  ~ ID ${menu.id} ${menu.name}`);
+      for (const field of fields) lines.push(`      · ${field}`);
+    }
+    for (const menu of removed) lines.push(`  - ID ${menu.id} ${menu.name} (ถูกลบออกจากฐานกลาง)`);
+    if (extras.length) lines.push(`  · มีการแก้: ${extras.join(' · ')}`);
+  }
+
+  lines.push(publishLine);
+  if (unsaved) {
+    lines.push('หมายเหตุ: ผมยังไม่ได้กด “บันทึก” — ถ้าต้องการให้ผู้จัดการอ่านค่าจริงจากไฟล์ ต้องกดบันทึกก่อน');
+  }
+  return lines.join('\n');
+}
+
+function makeBrief() {
+  const box = $('#mc-brief-text');
+  const status = $('#mc-brief-status');
+  const copy = $('#mc-brief-copy');
+  if (!box) return;
+  if (!state.working || !state.saved) {
+    if (status) { status.textContent = 'ยังไม่ได้โหลดฐานกลาง — กด “โหลดข้อมูลใหม่” ก่อน'; status.className = 'cp-form-status bad'; }
+    return;
+  }
+  box.value = buildManagerBrief();
+  if (copy) copy.disabled = !box.value;
+  if (status) {
+    status.textContent = box.value ? 'เขียนสรุปให้แล้ว — คัดลอกไปวางใน OpenCode หรือแก้เพิ่มก่อนก็ได้' : '';
+    status.className = 'cp-form-status ok';
+  }
+  box.focus();
+  box.setSelectionRange?.(0, box.value.length);
+}
+
+async function copyBrief() {
+  const box = $('#mc-brief-text');
+  const status = $('#mc-brief-status');
+  if (!box?.value) return;
+  try {
+    await navigator?.clipboard?.writeText(box.value);
+  } catch {
+    // Clipboard API is blocked outside a secure context in some browsers; the
+    // hidden-textarea fallback keeps the button useful there.
+    const area = document.createElement('textarea');
+    area.value = box.value;
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    area.remove();
+  }
+  if (status) { status.textContent = 'คัดลอกแล้ว ✓'; status.className = 'cp-form-status ok'; }
+}
+
 function bind() {
   document.addEventListener('input', (event) => {
     const target = event.target;
@@ -1200,6 +1353,8 @@ function bind() {
   $('#mc-save')?.addEventListener('click', save);
   $('#mc-publish-open')?.addEventListener('click', openPreview);
   $('#mc-reload')?.addEventListener('click', () => load());
+  $('#mc-brief-make')?.addEventListener('click', makeBrief);
+  $('#mc-brief-copy')?.addEventListener('click', copyBrief);
   
   $('#mc-add')?.addEventListener('click', addMenu);
   $('#mc-tp-add')?.addEventListener('click', addTopping);

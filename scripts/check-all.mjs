@@ -8,7 +8,9 @@ import { promisify } from 'node:util';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const exec = promisify(execFile);
 
-const CHECKS = [
+// Exported so a compact reporter can run exactly the same list instead of
+// keeping a second copy that would drift.
+export const CHECKS = [
   {
     name: 'repository-safety',
     script: 'scripts/check-repository-safety.mjs',
@@ -108,7 +110,12 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+// Only run when invoked directly. Importing this file (for CHECKS) must not
+// trigger a full validation pass.
+const isCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isCli) {
+  main().catch((error) => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  });
+}

@@ -151,7 +151,12 @@ test('the page publishes the catalogue price for every dish, and no other figure
   // a box price ("65 บาท + ไข่เจียว 10 บาท") and those numbers are real too.
   const cataloguePrices = new Set(Object.values(overrides.prices).map(Number));
   const toppingPrices = new Set((overrides.toppings || []).map((t) => Number(t.price)).filter(Number.isFinite));
-  const publishedFigures = new Set([...cataloguePrices, ...toppingPrices]);
+  // A published dish description may name component prices ("ซาโมซา 20 บาท").
+  // Those figures come from the menu central too, so they belong in the allowlist.
+  const descFigures = new Set(catalogue.flatMap((item) =>
+    [...String(item.desc || '').matchAll(/(\d[\d,]*)\s*บาท/g)].map(([, n]) => Number(n.replace(/,/g, ''))),
+  ));
+  const publishedFigures = new Set([...cataloguePrices, ...toppingPrices, ...descFigures]);
   for (const [, figure] of markup.matchAll(/(\d[\d,]*) บาท/g)) {
     assert.ok(publishedFigures.has(Number(figure.replace(/,/g, ''))), `${figure} THB is not a catalogue price`);
   }

@@ -180,6 +180,16 @@ var DEFAULT_EMOJI = '🍽';
     next();
   }
 
+  /* The tag pinned to the photo, matching tagText()/tagTextEn() in
+   * scripts/popular-menu-page.mjs. On an English page a Thai badge is skipped
+   * and nothing is said in its place: this grid is already the "Popular Menu"
+   * section, so a "Best seller" badge on all of it would say nothing. */
+  function tagText(m, en){
+    var own = String(m.badge || '').trim();
+    if(en && /[\u0E00-\u0E7F]/.test(own)) return '';
+    return own;
+  }
+
   /* ─── Price and minimum on a card ───
    * The static English markup prints both under the dish name, so redrawing the
    * card must print them too: hydrating without them took the figure away from
@@ -213,6 +223,29 @@ var DEFAULT_EMOJI = '🍽';
       ? (en ? ' · Min '+min+' '+(min===1?'box':'boxes') : ' · ขั้นต่ำ '+min+' กล่อง')
       : '';
     return '<span class="pm-price-unit">'+money+tail+'</span>';
+  }
+
+  /* ─── Order path ───
+   * The generated English markup carries an order button on every dish, and this
+   * file redraws both containers the moment the page loads. Without the same
+   * button here the visitor who has JavaScript — the one this file exists for —
+   * would be left with a catalogue and no way to act on the dish they just read.
+   * The message is the dish they clicked, pre-typed; see lineHref() in
+   * scripts/popular-menu-page.mjs for why the name is worth carrying across. */
+  var LINE_URL = 'https://lin.ee/CfvqJTd';
+  var CTA_STYLE = 'display:block;margin-top:auto;padding:12px 20px;border:1px solid #1d6b3e;border-radius:3px;background:transparent;color:#1d6b3e;font-weight:700;font-size:14px;text-align:center;text-decoration:none;white-space:nowrap';
+  var CTA_HOVER = 'onmouseover="this.style.background=\'#1d6b3e\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'transparent\';this.style.color=\'#1d6b3e\'"';
+  function orderMessage(m, en){
+    var price = Number(m.price);
+    var withPrice = (isFinite(price) && price > 0) ? (en ? ' ' + price + ' THB/box' : ' ' + price + ' บาท/กล่อง') : '';
+    return en
+      ? 'Interested in ' + (m.name||'') + withPrice + ', ___ boxes, on ___ , delivered to ___'
+      : 'สนใจเมนู ' + (m.name||'') + withPrice + ' จำนวน ___ กล่อง วันที่ ___ จุดส่ง ___';
+  }
+  function orderCta(m, en, source){
+    var href = LINE_URL + '?text=' + encodeURIComponent(orderMessage(m, en));
+    return '<a style="'+CTA_STYLE+'" '+CTA_HOVER+' href="'+href+'" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="'+source+'">'
+      + (en ? 'Order this menu' : 'สั่งเมนูนี้') + '</a>';
   }
 
   /* ─── Popular Grid ─── */
@@ -263,21 +296,24 @@ var DEFAULT_EMOJI = '🍽';
       var nameOnlyMenus = menus.filter(function(m){ return !m.image; });
       var en = isEnPath();
       var html = photoMenus.map(function(m){
-        var badge = m.badge ? '<span style="background:var(--accent);color:var(--white);font-size:0.65rem;font-weight:700;padding:0.2rem 0.55rem;border-radius:999px;vertical-align:middle">'+escapeHtml(m.badge)+'</span>' : '';
-        return '<div style="background:var(--white);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column">'
+        var tag = tagText(m, en);
+        var bestSeller = tag ? '<span style="position:absolute;top:0.6rem;left:0.6rem;background:#a87e1f;color:#fff;font-size:0.72rem;font-weight:800;letter-spacing:.02em;padding:0.2rem 0.55rem;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.25)">'+escapeHtml(tag)+'</span>' : '';
+        return '<div style="position:relative;background:var(--white);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column">'
           + '<div style="aspect-ratio:4/3;overflow:hidden">'
           + '<img src="'+escapeHtml(fixImagePath(m.image))+'" alt="'+escapeHtml(m.name)+' EED HALAL" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" onerror="this.style.display=\'none\'">'
           + '</div>'
+          + bestSeller
           + '<div style="padding:1.25rem 1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.4rem;flex:1">'
-          + '<h4 style="font-size:1.25rem;font-weight:900;color:var(--text);margin:0">'+escapeHtml(m.name)+' '+badge+'</h4>'
+          + '<h4 style="font-size:1.25rem;font-weight:900;color:var(--text);margin:0">'+escapeHtml(m.name)+'</h4>'
           + '<p style="font-size:0.8rem;line-height:1.7;opacity:0.7;color:var(--text);margin:0">'+escapeHtml(m.desc||'')+'</p>'
           + priceCell(m, en) + minCell(m, en)
+          + orderCta(m, en, 'popular_menu_card_en')
           + '</div>'
           + '</div>';
       }).join('');
       if (nameOnlyMenus.length) {
         html += nameOnlyMenus.map(function(m){
-          return '<div class="pm-name-only"><span class="pm-name-only-text">'+escapeHtml(m.name)+'</span></div>';
+          return '<div class="pm-name-only"><span class="pm-name-only-text">'+escapeHtml(m.name)+'</span>'+orderCta(m, en, 'popular_menu_card_en')+'</div>';
         }).join('');
       }
       grid.innerHTML = html;
@@ -309,10 +345,10 @@ var DEFAULT_EMOJI = '🍽';
         var itemsWithImage = items.filter(function(m){ return m.image; });
         var itemsNameOnly = items.filter(function(m){ return !m.image; });
         var itemHtml = itemsWithImage.map(function(m){
-          return '<div class="menu-item"><span class="menu-item-name">'+escapeHtml(cat.emoji)+' '+escapeHtml(m.name)+priceInline(m, true)+'</span>'+dots+'</div>';
+          return '<div class="menu-item"><span class="menu-item-name">'+escapeHtml(cat.emoji)+' '+escapeHtml(m.name)+priceInline(m, true)+'</span>'+dots+orderCta(m, true, 'popular_menu_row_en')+'</div>';
         }).join('');
         var nameOnlyHtml = itemsNameOnly.map(function(m){
-          return '<div class="menu-item pm-name-only"><span class="pm-name-only-text">'+escapeHtml(m.name)+priceInline(m, true)+'</span></div>';
+          return '<div class="menu-item pm-name-only"><span class="pm-name-only-text">'+escapeHtml(m.name)+priceInline(m, true)+'</span>'+orderCta(m, true, 'popular_menu_row_en')+'</div>';
         }).join('');
         return '<div style="margin-bottom:2.5rem">'
           + '<h4 style="font-size:1.15rem;font-weight:900;color:var(--primary);margin:0 0 1rem">'+escapeHtml(cat.emoji)+' '+escapeHtml(cat.label)+'</h4>'

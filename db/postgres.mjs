@@ -150,6 +150,9 @@ function buildRepos(run) {
     async listByStatus(status) {
       return mapAll(await run('SELECT * FROM drafts WHERE status = $1 ORDER BY created_at ASC', [status]));
     },
+    async listByCustomer(customerId) {
+      return mapAll(await run('SELECT * FROM drafts WHERE customer_id = $1 ORDER BY created_at ASC', [customerId]));
+    },
     async update(id, patch) {
       return applyDraftUpdate(run, id, patch, {});
     },

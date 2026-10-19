@@ -132,6 +132,12 @@ export function createMemoryAdapter() {
     async listByStatus(status) {
       return [...tables.drafts.values()].filter((row) => row.status === status).map(clone);
     },
+    async listByCustomer(customerId) {
+      return [...tables.drafts.values()]
+        .filter((row) => row.customerId === customerId)
+        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+        .map(clone);
+    },
     async update(id, patch, now = new Date().toISOString()) {
       const current = tables.drafts.get(id);
       if (!current) return null;

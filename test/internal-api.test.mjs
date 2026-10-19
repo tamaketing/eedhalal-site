@@ -183,9 +183,10 @@ test('P: responses expose no secret or replyToken', async () => {
 
 test('Q+R: no LINE sender or kitchen push anywhere in server/domain/db code', async () => {
   const roots = ['server', 'services', 'db'];
-  // Phase 4B-3A explicitly approves exactly one reviewed sender: the
-  // owner-invoked Push provider. Everything else stays forbidden.
-  const approvedSenders = new Set(['services/linePush.mjs']);
+  // Exactly two reviewed senders are approved: the owner-invoked Push
+  // provider, and the single-message Reply provider (auto-reply to the
+  // message that just arrived, one-shot replyToken, kill-switch gated).
+  const approvedSenders = new Set(['services/linePush.mjs', 'services/lineReply.mjs']);
   const offenders = [];
   async function walk(relative) {
     for (const entry of await readdir(relative, { withFileTypes: true })) {
@@ -199,9 +200,10 @@ test('Q+R: no LINE sender or kitchen push anywhere in server/domain/db code', as
         if (/lineMessaging|api(-data)?\.line\.me|Push to Kitchen|kitchen.?group|oaMessage/i.test(content)) {
           if (!approvedSenders.has(full)) offenders.push(full);
         }
-        // Even the approved provider must never use reply/multicast/broadcast
-        // endpoints or invoke itself on a schedule.
-        if (/\/v2\/bot\/message\/(reply|multicast|broadcast)|setInterval|cron/i.test(content)) {
+        // Only the single-message reply endpoint is allowed now; mass-send
+        // (multicast/broadcast) and any self-scheduling stay forbidden even
+        // for approved providers.
+        if (/\/v2\/bot\/message\/(multicast|broadcast)|setInterval|cron/i.test(content)) {
           offenders.push(`${full} (forbidden endpoint/scheduler)`);
         }
       }

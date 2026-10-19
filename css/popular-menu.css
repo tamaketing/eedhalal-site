@@ -17,8 +17,15 @@
 .pm-subhead span{display:block;font-size:13px;font-weight:400;color:#66675f;margin-top:2px}
 .pm-subhead[hidden]{display:none}
 .pm-grid{margin:0;padding:28px 0 8px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
-.pm-card{margin:0;background:#fff;border:1px solid #e4e0d6;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.pm-card{margin:0;position:relative;background:#fff;border:1px solid #e4e0d6;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
 .pm-card[hidden]{display:none}
+/* The tag pinned to the photo. Gold is reserved for the owner's published
+   best-seller list, because gold is a promise we can back; anything the owner
+   wrote per dish ("ใหม่", "พรีเมียม") gets the quiet tag, and a long tag is
+   clipped rather than allowed to run across the photo. */
+.pm-flag{position:absolute;top:10px;left:10px;z-index:2;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#3f4a41;color:#fff;font-size:12px;font-weight:800;letter-spacing:.02em;padding:4px 10px;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.25);pointer-events:none}
+.pm-flag-best{background:#a87e1f}
+.pm-flag-own{background:#3f4a41}
 .pm-photo,.pm-photo-placeholder{width:100%;aspect-ratio:4/3;object-fit:cover;background:#f1eee5}
 .pm-photo-placeholder{display:flex;align-items:center;justify-content:center}
 .pm-photo-placeholder span{font-size:64px;font-weight:700;color:#b58a32;opacity:.55}
@@ -95,6 +102,22 @@
 .pm-how-list{margin:22px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 24px}
 .pm-how-list li{padding:16px 18px;background:#fff;border:1px solid #e4e0d6;border-radius:10px;color:#66675f;font-size:14px;line-height:1.8}
 .pm-how-list strong{display:block;margin-bottom:2px;color:#24251f;font-size:15px}
+.pm-quickpick{padding-block:8px 0}
+.pm-quickpick h2{margin:0;font-size:clamp(24px,3.2vw,32px);font-weight:600;letter-spacing:-.02em;color:#24251f}
+.pm-quickpick-sub{margin:12px auto 0;max-width:44rem;text-align:center;color:#66675f;font-size:16px;line-height:1.8}
+.pm-quickpick-row{margin:26px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.pm-quickpick-chip{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:76px;padding:14px 12px;border:1px solid #e4e0d6;border-radius:10px;background:#fff;box-shadow:0 1px 2px rgba(36,37,31,.05);text-align:center;text-decoration:none;transition:border-color .16s,background-color .16s}
+.pm-quickpick-chip:hover{border-color:#1d6b3e;background:#f6f8f5}
+.pm-quickpick-people{font-size:17px;font-weight:700;color:#24251f;line-height:1.4}
+.pm-quickpick-amount{font-size:14px;font-weight:700;color:#1d6b3e;line-height:1.4}
+/* Every chip is already a chat, so the icon states the next step instead of
+   repeating "order" — the label a person reads first is the headcount. */
+.pm-quickpick-chip span[aria-hidden]{font-size:15px;line-height:1;margin-top:2px;opacity:.6}
+.pm-quickpick-note{margin:18px 0 0;text-align:center;color:#66675f;font-size:13px;line-height:1.8}
+.pm-quickpick-bigger{margin:6px 0 0;text-align:center;color:#66675f;font-size:14px;line-height:1.8}
+.pm-quickpick-bigger a{color:#1d6b3e;font-weight:700}
+@media(max-width:760px){.pm-quickpick-row{grid-template-columns:1fr 1fr}.pm-quickpick-chip{min-height:68px}}
+
 .pm-budget{margin:40px 0 0;padding:40px 36px;background:#f1eee5;border:1px solid #e4e0d6;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:28px}
 .pm-budget h2{margin:0;font-size:24px;font-weight:600;line-height:1.5;color:#24251f}
 .pm-budget p{margin:8px 0 0;color:#66675f;font-size:15px}

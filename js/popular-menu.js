@@ -24,6 +24,8 @@ var TOPPINGS_ID = 'pm-toppings-list';
   // Set once from the published planner; null until that fetch resolves, so the
   // list can tell "the owner deleted every topping" from "we never got the data".
   var PUBLISHED_TOPPINGS = null;
+  // Owner's published best-seller ids (data/planner-overrides.json -> popular).
+  var PUBLISHED_POPULAR = new Set();
   var SEARCH_ID = 'pm-search';
   var FILTER_ID = 'pm-filter';
   var COUNT_ID = 'pm-count';
@@ -70,8 +72,26 @@ var TOPPINGS_ID = 'pm-toppings-list';
     return '<button class="pm-btn pm-copy-btn" type="button" data-copy-name>คัดลอกชื่อเมนู</button>';
   }
 
-  function lineCta(label, source, extraClass) {
-    return '<a class="pm-btn pm-btn-outline ' + (extraClass || '') + '" href="' + LINE_URL + '" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="' + source + '">' + label + ' <span aria-hidden="true">↗</span></a>';
+  // A LINE deep link with the message already typed in. The customer just clicked
+  // "สั่งเมนูนี้" on one specific dish, so that dish is what we name in the chat:
+  // without it they have to remember the name and type it by hand, and that is
+  // where the order is lost. Ignored parameters still open the same chat, so the
+  // link cannot break. Mirrors lineHref() in scripts/popular-menu-page.mjs.
+  function lineHref(text) {
+    var message = String(text || '').trim();
+    return message ? LINE_URL + '?text=' + encodeURIComponent(message) : LINE_URL;
+  }
+
+  // What the team needs back to quote: the dish, the box count, the date and the
+  // drop-off point. The blanks stay in the message on purpose.
+  function orderMessage(menu) {
+    var price = Number(menu.price);
+    var withPrice = isFinite(price) && price > 0 ? ' ' + price + ' บาท/กล่อง' : '';
+    return 'สนใจเมนู ' + (menu.name || '') + withPrice + ' จำนวน ___ กล่อง วันที่ ___ จุดส่ง ___';
+  }
+
+  function lineCta(label, source, extraClass, menu) {
+    return '<a class="pm-btn pm-btn-outline ' + (extraClass || '') + '" href="' + lineHref(menu ? orderMessage(menu) : '') + '" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="' + source + '">' + label + ' <span aria-hidden="true">↗</span></a>';
   }
 
 // Per-box price, matching scripts/popular-menu-page.mjs so the page does not
@@ -93,12 +113,31 @@ var TOPPINGS_ID = 'pm-toppings-list';
     return '<p class="' + extraClass + '">ขั้นต่ำ ' + min + ' กล่อง</p>';
   }
 
+  // The tag pinned to the photo: the owner's own words first, and the published
+  // best-seller list only when they wrote nothing. Matches tagText() in
+  // scripts/popular-menu-page.mjs so the static mark and this renderer agree.
+  function tagText(menu) {
+    var own = String(menu.badge || '').trim();
+    if (own) return own;
+    return menu.popular ? 'ขายดี' : '';
+  }
+
+  // Gold is the best-seller signal, so it belongs only to a dish that is actually
+  // on the published best-seller list. Anything else the owner typed per dish
+  // ("ใหม่", "พรีเมียม") gets the quiet tag instead of borrowing the claim.
+  function flagHtml(menu) {
+    var text = tagText(menu);
+    if (!text) return '';
+    return '<span class="pm-flag pm-flag-' + (menu.popular ? 'best' : 'own') + '">' + escapeHtml(text) + '</span>';
+  }
+
   function renderCard(menu) {
   // The anchor id matches scripts/popular-menu-page.mjs so a shared deep link
   // (popular-menu.html#menu-17) lands on the dish before AND after this
   // renderer replaces the container.
     return '' +
       '<article class="pm-card" id="menu-' + escapeHtml(menu.id) + '" data-menu-id="' + escapeHtml(menu.id) + '" data-tier="' + escapeHtml(menu.tier || 'classic') + '">' +
+        flagHtml(menu) +
         imageCell(menu) +
         '<div class="pm-card-body">' +
           '<p class="pm-card-tier">' + escapeHtml(tierLabel(menu.tier)) + '</p>' +
@@ -106,7 +145,7 @@ var TOPPINGS_ID = 'pm-toppings-list';
           (menu.desc ? '<p class="pm-card-desc">' + escapeHtml(menu.desc) + '</p>' : '') +
           priceCell(menu, 'pm-card-price') +
           minCell(menu, 'pm-card-min') +
-          lineCta('สั่งเมนูนี้', 'popular_menu_card', 'pm-card-cta') +
+          lineCta('สั่งเมนูนี้', 'popular_menu_card', 'pm-card-cta', menu) +
           copyButton() +
         '</div>' +
       '</article>';
@@ -122,7 +161,7 @@ var TOPPINGS_ID = 'pm-toppings-list';
           minCell(menu, 'pm-row-min') +
         '</div>' +
         '<div class="pm-row-actions">' +
-          lineCta('สั่งเมนูนี้', 'popular_menu_row', 'pm-row-cta') +
+          lineCta('สั่งเมนูนี้', 'popular_menu_row', 'pm-row-cta', menu) +
           copyButton() +
         '</div>' +
       '</div>';
@@ -137,7 +176,7 @@ var TOPPINGS_ID = 'pm-toppings-list';
       + '<span class="pm-name-only-text">' + escapeHtml(menu.name) + '</span>' +
       priceCell(menu, 'pm-row-price') +
       minCell(menu, 'pm-row-min') +
-      lineCta('สั่งเมนูนี้', 'popular_menu_card', 'pm-card-cta') +
+      lineCta('สั่งเมนูนี้', 'popular_menu_card', 'pm-card-cta', menu) +
       '</div>';
   }
 
@@ -387,6 +426,16 @@ var TOPPINGS_ID = 'pm-toppings-list';
       var shown = menus.filter(function (menu) {
         return menu && menu.id != null &&
           !hidden.has(Number(menu.id)) && !hidden.has(String(menu.id));
+      });
+      // The owner's best-seller list and their own tag wording, read from the
+      // published planner exactly as the static generator reads them, so the
+      // tag survives this re-render.
+      PUBLISHED_POPULAR = new Set((data.popular || []).map(String));
+      var badges = data.badges || {};
+      shown.forEach(function (menu) {
+        var key = String(menu.id);
+        menu.popular = PUBLISHED_POPULAR.has(key);
+        if (Object.prototype.hasOwnProperty.call(badges, key)) menu.badge = String(badges[key] || '');
       });
       render(shown);
       bindTierLinks();

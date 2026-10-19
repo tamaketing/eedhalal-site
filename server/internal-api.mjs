@@ -46,7 +46,7 @@ import { createResponseExampleFromDraft, getResponseExample, listResponseExample
 import { ConflictError, NotFoundError, UnauthorizedError, ValidationError } from '../services/errors.mjs';
 import { maybeCreateLead } from '../services/leads.mjs';
 import { resolveCustomer } from '../services/customers.mjs';
-import { approveDraft, editDraft, persistDraftOnce, rejectDraft, sendDraft } from '../services/drafts.mjs';
+import { approveDraft, editDraft, persistDraftOnce, rejectDraft, sendDraft, autoReplyDraft } from '../services/drafts.mjs';
 import { clampLimit, findMealboxMenus, MEALBOX_SERVICE_TYPE, MEALBOX_SOURCE } from '../services/menus.mjs';
 
 const MAX_BODY_BYTES = 256 * 1024;
@@ -372,12 +372,22 @@ export function createInternalApi({ repos, env = process.env } = {}) {
 
       // GET /api/v1/drafts?status=&limit=&order= (order defaults to asc for
       // backward compatibility; the Owner Console requests order=desc).
+      // Optional customerId= filters to one customer's conversation history,
+      // used by the LINE reply worker to give the AI conversation context.
       if (request.method === 'GET' && pathname === '/api/v1/drafts') {
         const status = url.searchParams.get('status') || 'WAITING_FOR_HUMAN';
         const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || DEFAULT_LIMIT, 1), MAX_LIMIT);
         const order = url.searchParams.get('order') || 'asc';
         if (order !== 'asc' && order !== 'desc') throw new ValidationError('order must be asc or desc');
-        const rows = await store.drafts.listByStatus(status);
+        const customerId = url.searchParams.get('customerId');
+        if (customerId !== null) {
+          if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(customerId.trim())) {
+            throw new ValidationError('invalid customerId');
+          }
+        }
+        const rows = customerId !== null
+          ? await store.drafts.listByCustomer(customerId.trim())
+          : await store.drafts.listByStatus(status);
         const ordered = order === 'desc' ? [...rows].reverse() : rows;
         const page = ordered.slice(0, limit);
         const drafts = [];
@@ -390,7 +400,7 @@ export function createInternalApi({ repos, env = process.env } = {}) {
         return;
       }
 
-      const draftMatch = pathname.match(/^\/api\/v1\/drafts\/([^/]+)(\/(approve|edit|reject|send))?$/);
+      const draftMatch = pathname.match(/^\/api\/v1\/drafts\/([^/]+)(\/(approve|edit|reject|send|auto-reply))?$/);
       if (draftMatch) {
         const record = await findDraft(decodeURIComponent(draftMatch[1]));
         if (!record) throw new NotFoundError('draft not found');
@@ -417,6 +427,25 @@ export function createInternalApi({ repos, env = process.env } = {}) {
             // Body fields beyond owner/concurrency expectations are ignored.
             try {
               const result = await sendDraft(store, record.id, options, { token: env.LINE_CHANNEL_ACCESS_TOKEN });
+              send(response, 200, { draft: presentDraft(result.draft), send: result.send });
+            } catch (error) {
+              if (error && error.message === 'line send not configured') {
+                send(response, 503, { error: 'send_not_configured' });
+                return;
+              }
+              throw error;
+            }
+            return;
+          }
+          if (action === 'auto-reply') {
+            // Gateway-only auto-reply: the replyToken arrives in the body and
+            // is used in-memory once, never persisted. Fails closed when the
+            // LINE token is unset.
+            try {
+              const result = await autoReplyDraft(store, record.id, {
+                replyToken: typeof body.replyToken === 'string' ? body.replyToken : '',
+                expectedStatus: body.expectedStatus,
+              }, { token: env.LINE_CHANNEL_ACCESS_TOKEN });
               send(response, 200, { draft: presentDraft(result.draft), send: result.send });
             } catch (error) {
               if (error && error.message === 'line send not configured') {

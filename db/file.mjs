@@ -191,6 +191,13 @@ export function createFileAdapter(dir) {
       return exclusive(async () =>
         Object.values((await load()).drafts).filter((r) => r.status === status).map(clone));
     },
+    async listByCustomer(customerId) {
+      return exclusive(async () =>
+        Object.values((await load()).drafts)
+          .filter((r) => r.customerId === customerId)
+          .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+          .map(clone));
+    },
     async update(id, patch, now = new Date().toISOString()) {
       return exclusive(async () => {
         const tables = await load();

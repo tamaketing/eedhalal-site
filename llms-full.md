@@ -11,14 +11,14 @@ EED HALAL รับจัดเลี้ยงฮาลาล กรุงเท
 2. โต๊ะจีน / โต๊ะไทยฮาลาล / Halal Chinese / Thai Table — From 3,000 THB/table; 8–10 guests/table; minimum 3 tables. Book at least 7 days ahead. https://eedhalal.com/table-service.html
 3. อาหารชุด / Sit-down Dinner ฮาลาล / Halal Set Menu / Sit-down Dinner — From 350 THB/guest; minimum 30 guests; maximum 500 guests. Book at least 7 days ahead. https://eedhalal.com/set-menu.html
 4. ซุ้มอาหาร / Live Station ฮาลาล / Halal Food Stall / Live Station — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/live-cooking-station.html
-5. ข้าวกล่องฮาลาล / Halal Meal Boxes — Classic from 65 THB/box; Signature Halal Meal Box from 160 THB; Executive Premium Halal Box from 230 THB. Minimum 10 boxes. Order at least 1 day ahead. Per-menu minimums: 10 standard / 10 special-preparation boxes. https://eedhalal.com/corporate.html
+5. ข้าวกล่องฮาลาล / Halal Meal Boxes — Classic from 65 THB/box; Signature Halal Meal Box from 155 THB; Executive Premium Halal Box from 230 THB. Minimum 10 boxes. Order at least 1 day ahead. Per-menu minimums: 10 standard / 10 special-preparation boxes. https://eedhalal.com/corporate.html
 
 All services above are halal. Snack Box is an additional service: from 40 THB/box, minimum 30 boxes.
 
 ## Meal-box tiers
 - Classic Halal Meal Box (ข้าวกล่องฮาลาลระดับคลาสสิก): from 65 THB/box (cheapest set: ข้าวคั่วกลิ้งไก่สับ, ID 17). Best for: Company meetings, training days, seminars, and regular staff meals.
   Box: Standard rice box.
-- Signature Halal Meal Box (ข้าวกล่องฮาลาลระดับซิกเนเจอร์): from 160 THB/box (cheapest set: ข้าวผัดปลาอินทรีทอดเครื่องเทศ ซุปอิสลามไก่, ID 116). Best for: Client events, product launches, and executive dinners.
+- Signature Halal Meal Box (ข้าวกล่องฮาลาลระดับซิกเนเจอร์): from 155 THB/box (cheapest set: ข้าวผัดปลาอินทรีทอดเครื่องเทศ ซุปอิสลามไก่, ID 116). Best for: Client events, product launches, and executive dinners.
   Box: Rice, one main, one second dish, and vegetables, in a four-compartment box.
   Second dish: Stir-fried mixed vegetables, Chicken Tom Yum, Clear Soup with Tofu and Minced Chicken, Beef Green Curry.
   Tell us the main you like and we will offer two or three second dishes that go with it; if you do not choose, we use our standard pairing. The price follows the pair you pick, so we always send the full box price first and never add an extra line afterwards.
@@ -114,7 +114,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 - The website is designed around organization-ready orders: meal boxes 10+ boxes (65 THB/box), Snack Box 30+ boxes (40 THB/box), buffet 30+ guests from 200 THB/head.
 - Typical use cases include meetings, seminars, staff training, internal company events, team catering, coffee breaks, and buffet receptions.
 - Per-menu minimums apply for meal boxes: 10 boxes per menu, Thai and Indian alike. Snack Box: minimum 30 boxes per order.
-- Meal boxes come in three tiers: Classic Halal Meal Box from 65 THB per box, Signature Halal Meal Box from 160 THB per box, and Executive Premium Halal Box from 230 THB per box; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet and Live Cooking start at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
+- Meal boxes come in three tiers: Classic Halal Meal Box from 65 THB per box, Signature Halal Meal Box from 155 THB per box, and Executive Premium Halal Box from 230 THB per box; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet and Live Cooking start at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
 - Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. Delivery fee depends on distance and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; all catering formats should be booked at least 7 days ahead.
 - Order details should be confirmed by 15:00 on the business day before delivery.

@@ -25,6 +25,8 @@
 
 ฐานเมนูกลางอยู่ใน `EED_ADMIN_DATA_DIR` (ค่าเริ่มต้น `demo/owner-set-builder/`) เป็นข้อมูลในเครื่องและไม่เข้า Git ผลลัพธ์ที่เผยแพร่คือ [data/planner-overrides.json](data/planner-overrides.json) และ [js/menu-data.js](js/menu-data.js) ห้ามแก้สองไฟล์นี้ด้วยมือ
 
+ชื่อเมนูภาษาไทยอยู่ในแคตตาล็อกกลาง ส่วนชื่อภาษาอังกฤษอยู่ที่ [data/menu-copy-en.json](data/menu-copy-en.json) และถูกสร้างเป็น [js/menu-data-en.js](js/menu-data-en.js) เพื่อให้หน้าอังกฤษแสดงชื่ออังกฤษหลัง JavaScript ทำงาน ห้ามแก้ทั้งสองไฟล์นี้ด้วยมือ เมนูที่ยังขายอยู่แต่ไม่มีชื่ออังกฤษจะทำให้การสร้างไฟล์ล้มเหลว
+
 ## จุดที่ต้องซิงก์
 
 อ่าน [data/sync-manifest.json](data/sync-manifest.json) ก่อนแก้ข้อเท็จจริง แต่ละรายการระบุต้นทาง รูปแบบข้อความที่ตรวจ และไฟล์ที่ต้องมีข้อมูลนั้น ไม่คัดลอกรายชื่อหรือจำนวนจุดตรวจมาไว้ในเอกสารนี้
@@ -34,7 +36,7 @@
 | รูปแบบข้อมูล | เครื่องมือหรือวิธีดูแล |
 |---|---|
 | บล็อก `BUSINESS-RULES:*` ตาราง/การ์ดบริการและระดับ | `scripts/sync-catering-content.mjs` |
-| รายการเมนูและ `ItemList` ไทย–อังกฤษ | `scripts/popular-menu-page.mjs` |
+| รายการเมนูและ `ItemList` ไทย–อังกฤษ รวมชื่อเมนูภาษาอังกฤษสำหรับหน้าเว็บ | `scripts/popular-menu-page.mjs` |
 | ข้อมูลธุรกิจ เมนู และ Snack Box ที่หน้าเว็บใช้ | `scripts/check-system.mjs` |
 | ข้อความนอกบล็อกอัตโนมัติ เช่น FAQ บทความ และบางส่วนของ llms | แก้ด้วยมือจากต้นทาง ตามกฎการเขียนใน AGENTS |
 | LINE OA rich menu และ keyword replies | ตรวจ [data/rich-menu.json](data/rich-menu.json) และข้อความในช่องทางที่เกี่ยวข้องพร้อมกัน |

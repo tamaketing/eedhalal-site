@@ -2961,3 +2961,104 @@ main[data-urgency] > .page-header { padding-top: 5rem; }
 #tier-classic,#tier-signature,#tier-executive{scroll-margin-top:5rem}@media(max-width:900px){.tier-cards{grid-template-columns:1fr}}
 /* Signature: a second dish the guest picks, and the launching state. */
 .tier-table .tier-price-soon,.tier-card-price-soon{color:var(--accent,#b45309);font-size:.98rem;font-weight:900}.tier-table .tier-launch-note,.tier-card .tier-launch-note{margin:.3rem 0 0;font-size:.8rem;line-height:1.65;color:var(--text-muted,#64748b)}.tier-card .tier-launch-note{margin-top:auto;padding-top:.35rem}.tier-box-format{margin:.45rem 0 0;font-size:.85rem;line-height:1.7;font-weight:600;color:var(--text,#1e293b)}.tier-card .tier-box-format{color:var(--text-muted,#475569);font-weight:500}.tier-side-note{margin:.5rem 0 0;font-size:.82rem;line-height:1.7;color:var(--text-muted,#475569)}.tier-table .tier-side-choices{margin:.4rem 0 0;font-size:.82rem;line-height:1.7}.tier-table .tier-side-choices span{font-weight:700}.tier-card .tier-side-choices{margin:.1rem 0 0;font-size:.82rem;line-height:1.7;color:var(--text-muted,#475569)}.tier-card .tier-side-choices span{font-weight:700;color:var(--text,#1e293b)}
+
+/* Mobile gutters (layout/spacing only, no copy or business data).
+   Area-page hero wrappers ship an inline `padding: 0 1rem` (16px) while
+   `.container` uses 1.5rem (24px), so small screens read edge-to-edge and
+   uneven. This single block makes every page use one 24px left/right gutter
+   on phones. The `body` prefix only raises specificity so it beats the
+   per-page inline <style> (which loads after this file) — no HTML edits.
+   `overflow-x: clip` is used instead of `hidden` so the sticky header and the
+   mobile menu keep working. */
+@media (max-width: 767px) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  body .local-hero-inner {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+/* Meal-box tier table on phones: one card per tier row, stacked, no
+   horizontal swiping (the desktop table needs ~736px but phones have 360px).
+   Layout only — no copy or business data changes. The column labels below
+   duplicate the <thead> header text that ships in the same table; keep them
+   in sync with scripts/mealbox-tiers.mjs lines 363-367 (and the generated
+   blocks in popular-menu.html / en/popular-menu.html) if a header changes.
+   Scoped with :lang() because css/style.css is shared by the TH and EN pages.
+   The 767px breakpoint matches the mobile gutter block above. */
+@media (max-width: 767px) {
+  .tier-table {
+    min-width: 0;
+    border: 0;
+  }
+
+  .tier-table thead {
+    display: none;
+  }
+
+  .tier-table tbody {
+    display: block;
+  }
+
+  .tier-table tbody tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    background: var(--white, #fff);
+    overflow: hidden;
+  }
+
+  .tier-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .tier-table tbody th {
+    display: block;
+    min-width: 0;
+    border: 0;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    padding: .9rem 1rem;
+  }
+
+  .tier-table tbody td {
+    display: block;
+    border: 0;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    padding: .8rem 1rem;
+  }
+
+  .tier-table tbody td:last-child {
+    border-bottom: 0;
+  }
+
+  /* Cell labels: the row header (th) is the card title, cells 2-5 get the
+     column name above their value. No letter-spacing (it breaks Thai marks). */
+  .tier-table tbody td::before {
+    content: "";
+    display: block;
+    margin-bottom: .3rem;
+    font-size: .72rem;
+    font-weight: 800;
+    color: var(--text-muted, #64748b);
+  }
+
+  :lang(th) .tier-table tbody td:nth-child(2)::before { content: "ราคาเริ่มต้นต่อกล่อง"; }
+  :lang(th) .tier-table tbody td:nth-child(3)::before { content: "ช่วยคุณได้อะไร"; }
+  :lang(th) .tier-table tbody td:nth-child(4)::before { content: "เหมาะงานแบบไหน"; }
+  :lang(th) .tier-table tbody td:nth-child(5)::before { content: "สนใจระดับนี้ทำอย่างไร"; }
+
+  :lang(en) .tier-table tbody td:nth-child(2)::before { content: "Starting price per box"; }
+  :lang(en) .tier-table tbody td:nth-child(3)::before { content: "What you get"; }
+  :lang(en) .tier-table tbody td:nth-child(4)::before { content: "Which event it suits"; }
+  :lang(en) .tier-table tbody td:nth-child(5)::before { content: "What to do next"; }
+}

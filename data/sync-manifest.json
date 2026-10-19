@@ -259,6 +259,7 @@
         "en/sathorn-silom.html",
         "llms.txt",
         "llms-full.md",
+        "data/rich-menu.json",
         "blog/corporate-meeting-100-people-checklist.html",
         "blog/corporate-meeting-50-people-checklist.html",
         "blog/halal-box-100-people-budget.html",
@@ -419,6 +420,7 @@
         "en/silom.html",
         "en/snack-box.html",
         "en/sukhumvit.html",
+        "data/rich-menu.json",
         "blog/buffet-100-people-price.html",
         "blog/corporate-meeting-100-people-checklist.html",
         "blog/corporate-meeting-50-people-checklist.html",
@@ -551,7 +553,8 @@
         "en/snack-box.html",
         "en/table-service.html",
         "llms.txt",
-        "llms-full.md"
+        "llms-full.md",
+        "data/rich-menu.json"
       ]
     },
     {
@@ -592,21 +595,20 @@
         "en/faq.html",
         "en/snack-box.html",
         "llms.txt",
-        "llms-full.md"
+        "llms-full.md",
+        "data/rich-menu.json"
       ]
     }
   ],
   "forbidden": [
     {
       "id": "retired-cocktail-service",
-      "description": "ค็อกเทลฮาลาลถอดออกจากบริการแล้ว ห้ามหน้าเว็บ เมนู schema หรือช่องทางไหนอ้างว่าเรารับอีก (ยกเว้นหน้า redirect เก่า cocktail.html / en/cocktail.html ที่ส่งต่อไป /catering.html ไฟล์ snapshot ใน artifacts/ บันทึกวันที่ใน docs/ และโน้ตภายในของทีมใน .opencode/)",
+      "description": "ค็อกเทลฮาลาลถอดออกจากบริการแล้ว หน้า cocktail.html / en/cocktail.html ถูกลบออกแล้ว ห้ามหน้าเว็บ เมนู schema หรือช่องทางไหนอ้างว่าเรารับอีก (ยกเว้นไฟล์ snapshot ใน artifacts/ บันทึกวันที่ใน docs/ และโน้ตภายในของทีมใน .opencode/)",
       "pattern": "ค็อกเทลฮาลาล|Halal Cocktail|Cocktail / Finger Food|cocktail\\.html|data-service=\"cocktail\"",
       "exclude": [
         "artifacts/",
         ".opencode/",
         "docs/",
-        "cocktail.html",
-        "en/cocktail.html",
         "data/sync-manifest.json"
       ]
     },
@@ -683,6 +685,14 @@
       "id": "positive-vat-included-th",
       "description": "ห้ามอ้างภาษาไทยว่าราคารวม VAT แล้ว (ราคาสุทธิ ไม่รวม VAT)",
       "pattern": "ราคารวม VAT|รวม VAT แล้ว|ราคารวมภาษีมูลค่าเพิ่ม",
+      "exclude": [
+        "artifacts/"
+      ]
+    },
+    {
+      "id": "thai-script-on-english-page",
+      "description": "หน้าที่เปิดด้วย <html lang=\"en\"> ต้องไม่มีอักษรไทยค้างอยู่ในข้อความที่ลูกค้าอ่านหรือใน JSON-LD เลย เพราะเป็นอาการของหน้าอังกฤษที่ถูกก็อปจากหน้าไทยแล้วแปลแค่เนื้อความหลัก ตกหล่นหัวข้อ section ป้าย stats ปุ่ม CTA breadcrumb และชื่อพื้นที่ใน schema (เคยเกิดกับ en/rama3.html en/sukhumvit.html en/about.html en/story.html) ตัวตรวจจับเฉพาะหลังแท็ก lang=\"en\" จึงไม่กระทบหน้าไทย ส่วนเครื่องหมายบาท ฿ (U+0E3F) เป็นสกุลเงิน ปล่อยได้ ชื่อพื้นที่ภาษาอังกฤษยึดการถอดอักษรที่ en/delivery-area.html และ en/faq.html ใช้อยู่ (Rama 3, Nang Linchi, Charoen Rat, Chong Nonsi, Asok, Thong Lo, Ekkamai, Phra Khanong) ส่วนชื่อเมนูอาหารอังกฤษต้องมาจากการสร้าง js/menu-data-en.js ตาม FACTS.md ห้ามก็อปชื่อไทยมาวาง (งานแปล 2026-10-13 แปลen/index.html ครบแล้ว จึงไม่มีข้อยกเว้นให้หน้า EN ใดอีก)",
+      "pattern": "<html lang=\"en\"[\\s\\S]*?[\\u0E01-\\u0E3E\\u0E40-\\u0E5B]",
       "exclude": [
         "artifacts/"
       ]

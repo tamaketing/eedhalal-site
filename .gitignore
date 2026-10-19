@@ -34,6 +34,9 @@ data/*.bak
 data/*.tmp
 data/owner-costs.json
 
+# LINE auto-reply runtime database (customer leads/drafts — never committed).
+data/line-runtime/
+
 # Project-owned Node dependencies (package.json/lock are committed, modules are not).
 node_modules/
 

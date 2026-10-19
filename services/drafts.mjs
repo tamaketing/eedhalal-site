@@ -10,6 +10,7 @@
 import { randomUUID } from 'node:crypto';
 import { createHash } from 'node:crypto';
 import { sendPushMessage } from './linePush.mjs';
+import { sendReplyMessage } from './lineReply.mjs';
 import {
   createDraft,
   DRAFT_STATUSES,
@@ -382,6 +383,83 @@ export async function sendDraft(repos, id, { ownerId = '', expectedUpdatedAt, ex
       await sendAudit(tx, current.id, 'LINE_SEND_RETRYABLE', ownerId,
         { status: current.status }, { status: current.status, providerCode: result.code });
       return { draft: fromDraftRow(current), send: { outcome: result.outcome, code: result.code, httpStatus: result.httpStatus ?? null } };
+    }).catch((error) => { throw toServiceError(error, id); });
+  }).catch((error) => { throw toServiceError(error, id); });
+}
+
+// Auto-reply send (Phase 3). Mirrors sendDraft's three-phase CAS but uses the
+// LINE Reply API with the short-lived replyToken instead of Push. The token
+// lives only in memory — it is never persisted. Actor is SYSTEM, and this
+// path is only reachable when the gateway's AUTO_REPLY switch is on.
+export async function autoReplyDraft(repos, id, { replyToken = '', expectedStatus } = {}, deps = {}) {
+  const reply = deps.reply || sendReplyMessage;
+  const token = deps.token;
+  if (!replyToken) throw new ValidationError('auto-reply needs a reply token');
+  return withDraftLock(id, async () => {
+    // Phase 1: claim the draft for auto-send (only from WAITING_FOR_HUMAN).
+    const frozen = await repos.transaction(async (tx) => {
+      const current = await tx.drafts.findById(id);
+      if (!current) throw new NotFoundError(`draft not found: ${id}`);
+      if (expectedStatus !== undefined && current.status !== expectedStatus) {
+        throw new ConflictError('stale draft: status moved, refresh and retry');
+      }
+      if (current.status !== 'WAITING_FOR_HUMAN') {
+        throw new ConflictError(`draft is ${current.status}; auto-reply only from WAITING_FOR_HUMAN`);
+      }
+      const finalText = current.ownerFinalResponse || current.draftResponse;
+      if (!finalText || !finalText.trim()) throw new ValidationError('draft has no sendable text');
+      if (!token) throw new Error('line send not configured');
+      const next = transitionDraft(fromDraftRow(current), 'APPROVED', 'system');
+      const saved = await tx.drafts.updateIfCurrent(
+        current.id,
+        toDraftRow({ ...next, dbId: current.id }),
+        { status: current.status, updatedAt: current.updatedAt },
+      );
+      if (!saved) throw new ConflictError('stale draft: changed concurrently');
+      await recordAudit(tx, {
+        entityType: 'draft', entityId: current.id, action: 'DRAFT_APPROVED',
+        actorType: 'SYSTEM', actorId: 'auto-reply',
+        beforeData: { status: current.status }, afterData: { status: 'APPROVED' },
+      });
+      return { row: fromDraftRow(saved), finalText };
+    }).catch((error) => { throw toServiceError(error, id); });
+
+    // Phase 2: Reply API call outside any transaction.
+    const result = await reply({ token, replyToken, text: frozen.finalText });
+
+    // Phase 3: settle to SENT / FAILED under a fresh CAS guard.
+    return repos.transaction(async (tx) => {
+      const current = await tx.drafts.findById(id);
+      if (!current) throw new NotFoundError(`draft not found: ${id}`);
+      if (current.status !== 'APPROVED') throw new ConflictError(`draft is ${current.status}; outcome cannot be recorded`);
+      if (result.outcome === 'ACCEPTED') {
+        const next = transitionDraft(fromDraftRow(current), 'SENT', 'system');
+        const saved = await tx.drafts.updateIfCurrent(
+          current.id, toDraftRow({ ...next, dbId: current.id }),
+          { status: current.status, updatedAt: current.updatedAt },
+        );
+        if (!saved) throw new ConflictError('stale draft: changed concurrently during send');
+        await recordAudit(tx, {
+          entityType: 'draft', entityId: current.id, action: 'DRAFT_SENT',
+          actorType: 'SYSTEM', actorId: 'auto-reply',
+          beforeData: { status: current.status }, afterData: { status: 'SENT', providerCode: result.code },
+        });
+        return { draft: fromDraftRow(saved), send: { outcome: result.outcome, code: result.code, httpStatus: result.httpStatus ?? null } };
+      }
+      // A used/expired replyToken is gone forever: surface as FAILED so the
+      // owner sees it and can Push manually. Never auto-retry a dead token.
+      const next = transitionDraft(fromDraftRow(current), 'FAILED', 'system');
+      const saved = await tx.drafts.updateIfCurrent(
+        current.id, toDraftRow({ ...next, dbId: current.id }),
+        { status: current.status, updatedAt: current.updatedAt },
+      );
+      if (!saved) throw new ConflictError('stale draft: changed concurrently during send');
+      await recordAudit(tx, {
+        entityType: 'draft', entityId: current.id, action: 'LINE_SEND_FAILED',
+        actorType: 'SYSTEM', actorId: 'auto-reply',
+        beforeData: { status: current.status }, afterData: { status: 'FAILED', providerCode: result.code },
+      });
+      return { draft: fromDraftRow(saved), send: { outcome: result.outcome, code: result.code, httpStatus: result.httpStatus ?? null } };
     }).catch((error) => { throw toServiceError(error, id); });
   }).catch((error) => { throw toServiceError(error, id); });
 }

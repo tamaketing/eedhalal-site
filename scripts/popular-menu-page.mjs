@@ -28,7 +28,13 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseMenuDataJs } from './menu-central.mjs';
-import { resolveSideChoices, sideItemsFromPlanner, tierDefinitions } from './mealbox-tiers.mjs';
+import {
+  computeTierFloors,
+  resolveSideChoices,
+  setsFromPlanner,
+  sideItemsFromPlanner,
+  tierDefinitions,
+} from './mealbox-tiers.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -42,10 +48,38 @@ const SECOND_DISH_START = '<!-- MENU:SECOND-DISH:START -->';
 const SECOND_DISH_END = '<!-- MENU:SECOND-DISH:END -->';
 const DESSERTS_START = '<!-- MENU:DESSERTS:START -->';
 const DESSERTS_END = '<!-- MENU:DESSERTS:END -->';
+const HEADCOUNT_START = '<!-- MENU:HEADCOUNT:START -->';
+const HEADCOUNT_END = '<!-- MENU:HEADCOUNT:END -->';
 const JSONLD_START = '<!-- MENU:JSONLD:START -->';
 const JSONLD_END = '<!-- MENU:JSONLD:END -->';
 const PAGE = 'popular-menu.html';
 const LINE_URL = 'https://lin.ee/CfvqJTd';
+
+/**
+ * A LINE deep link with the message already typed in.
+ *
+ * WHY: the customer clicks "สั่งเมนูนี้" while looking at one specific dish. If
+ * the link opens an empty chat, they have to remember the name, find the app and
+ * type it by hand — and that is exactly where a catalogue order is lost. Naming
+ * the dish they were looking at turns the click into a message they only have to
+ * send.
+ *
+ * The fill is a convenience, not a dependency: a client that ignores the
+ * parameter still opens the same chat, just without the text, so the link can
+ * never break.
+ */
+function lineHref(text) {
+  const message = String(text || '').trim();
+  return message ? `${LINE_URL}?text=${encodeURIComponent(message)}` : LINE_URL;
+}
+
+// What the team actually needs back to quote: the dish, how many boxes, when it
+// is needed and where it goes. The blanks stay in the message on purpose — the
+// customer fills three short gaps instead of writing the order from scratch.
+function orderMessage(item) {
+  const price = item.price == null ? '' : ` ${item.price} บาท/กล่อง`;
+  return `สนใจเมนู ${item.name}${price} จำนวน ___ กล่อง วันที่ ___ จุดส่ง ___`;
+}
 
 const escapeHtml = (value) => String(value ?? '')
   .replaceAll('&', '&amp;')
@@ -74,6 +108,9 @@ function imageSrc(menu) {
 export function buildCatalogue(overrides, menus) {
   const hidden = new Set((overrides.deleted || []).map(String));
   const quoteOnly = new Set((overrides.quoteOnly || []).map(String));
+  // The owner's own "ขายดี" list, edited in the admin menu central. It is a
+  // business fact like any other: this script only reads it, never picks a dish.
+  const popular = new Set((overrides.popular || []).map(String));
   const seen = new Set();
   const items = [];
   for (const menu of menus) {
@@ -94,6 +131,10 @@ export function buildCatalogue(overrides, menus) {
       // mins[] wins and menu-data.js is the fallback. It is a published business
       // fact (the standard menu minimum), never a figure this script invents.
       minPerMenu: catalogueMin(overrides.mins?.[id] ?? menu.minPerMenu),
+      popular: popular.has(id),
+      // The owner's own words for the tag on the photo. Empty means "no tag",
+      // and the best-seller list then speaks for itself.
+      badge: String(overrides.badges?.[id] ?? menu.badge ?? ''),
     });
   }
   return items;
@@ -139,10 +180,48 @@ function tierLabel(tier) {
   return TIER_LABELS[String(tier)] || 'Classic';
 }
 
+// The tag pinned to the photo. The owner's own wording comes first — they type
+// it per dish in the admin ("ใหม่", "พรีเมียม", "+ ผลไม้", "⭐ Best Seller") —
+// and only when they leave it blank does the best-seller list say it instead.
+export function tagText(item) {
+  const own = String(item.badge || '').trim();
+  if (own) return own;
+  return item.popular ? 'ขายดี' : '';
+}
+
+// The same tag for the English page. A Thai word must never reach an English
+// visitor, so a badge the owner wrote in Thai is skipped here — and because
+// this page's grid IS the "Popular Menu" section, there is nothing useful to
+// say in its place either. (An English badge is a translation job, not
+// something this generator may invent.)
+export function tagTextEn(item) {
+  const own = String(item.badge || '').trim();
+  return own && !/[\u0E00-\u0E7F]/.test(own) ? own : '';
+}
+
+/**
+ * The tag pinned to the photo, and which claim it is allowed to make.
+ *
+ * Gold belongs to the published best-seller list and to nothing else: gold is a
+ * signal the customer reads as "this is what offices order most", so it may only
+ * sit on a dish the owner actually put on that list. A per-dish note the owner
+ * typed ("ใหม่", "พรีเมียม", "+ ผลไม้") is useful but it is not a popularity
+ * claim, so it gets the quiet tag instead of borrowing the gold one.
+ */
+function flagHtml(item) {
+  const text = tagText(item);
+  if (!text) return '';
+  return `<span class="pm-flag pm-flag-${item.popular ? 'best' : 'own'}">${escapeHtml(text)}</span>`;
+}
+
 function cardHtml(item) {
   const photo = hasDishPhoto(item)
     ? `<img class="pm-photo" src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" loading="lazy">`
     : `<div class="pm-photo-placeholder" aria-hidden="true"><span>${escapeHtml(item.name.trim().charAt(0) || '•')}</span></div>`;
+  // The tag rides on the photo so the eye finds the dish people actually order
+  // before it reads anything else. The words are the owner's (see tagText) and
+  // the colour only makes the popularity claim the owner actually backed.
+  const bestSeller = flagHtml(item);
   // Every dish is treated identically here. There is no online ordering on this
   // site at all: it is a catalogue, and every order is placed over LINE. The
   // cost gate decides whether the SHOP can quote a dish from its own data, not
@@ -150,6 +229,7 @@ function cardHtml(item) {
   // figure rather than with one we cannot stand behind.
   return ''
     + `<article class="pm-card" id="menu-${escapeHtml(item.id)}" data-menu-id="${escapeHtml(item.id)}" data-tier="${escapeHtml(item.tier || 'classic')}">`
+    + bestSeller
     + photo
     + '<div class="pm-card-body">'
     + `<p class="pm-card-tier">${escapeHtml(tierLabel(item.tier))}</p>`
@@ -157,7 +237,7 @@ function cardHtml(item) {
     + (item.desc ? `<p class="pm-card-desc">${escapeHtml(item.desc)}</p>` : '')
     + priceHtml(item, 'pm-card-price')
     + minHtml(item, 'pm-card-min')
-    + `<a class="pm-btn pm-btn-outline pm-card-cta" href="${LINE_URL}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_card">สั่งเมนูนี้ <span aria-hidden="true">↗</span></a>`
+    + `<a class="pm-btn pm-btn-outline pm-card-cta" href="${lineHref(orderMessage(item))}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_card">สั่งเมนูนี้ <span aria-hidden="true">↗</span></a>`
     + '</div>'
     + '</article>';
 }
@@ -172,7 +252,7 @@ function rowHtml(item) {
     + minHtml(item, 'pm-row-min')
     + '</div>'
     + '<div class="pm-row-actions">'
-    + `<a class="pm-btn pm-btn-outline pm-row-cta" href="${LINE_URL}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_row">สั่งเมนูนี้ <span aria-hidden="true">↗</span></a>`
+    + `<a class="pm-btn pm-btn-outline pm-row-cta" href="${lineHref(orderMessage(item))}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_row">สั่งเมนูนี้ <span aria-hidden="true">↗</span></a>`
     + '</div>'
     + '</div>';
 }
@@ -186,7 +266,7 @@ function nameOnlyHtml(item) {
     + `<span class="pm-name-only-text">${escapeHtml(item.name)}</span>`
     + priceHtml(item, 'pm-row-price')
     + minHtml(item, 'pm-row-min')
-    + `<a class="pm-btn pm-btn-outline pm-card-cta" href="${LINE_URL}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_card">สั่งเมนูนี้ <span aria-hidden="true">↗</span></a>`
+    + `<a class="pm-btn pm-btn-outline pm-card-cta" href="${lineHref(orderMessage(item))}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_card">สั่งเมนูนี้ <span aria-hidden="true">↗</span></a>`
     + '</div>';
 }
 
@@ -263,8 +343,96 @@ function replaceBlock(html, start, end, body) {
   return html.slice(0, from + start.length) + '\n' + body + '\n' + html.slice(to);
 }
 
+// ─── How much will it cost for my headcount? ───────────────────────────────
+// A buying team does not think in dishes, it thinks in people and in one number
+// it has to take to its boss. Thirty cards of per-box prices answer neither, so
+// this block answers both at once: pick the headcount, read the total, and the
+// link opens LINE with that headcount already typed.
+//
+// NOTHING HERE IS A NEW BUSINESS FACT. The per-box figure is the published
+// Classic floor (the cheapest open Classic set), the totals are that figure
+// multiplied by the headcount, and the smallest headcount is the published
+// order minimum. A price change in the catalogue therefore reaches this block on
+// the next publish, exactly like the tier table. The button opens LINE, because
+// a budget is not an order yet: the shop still has to check the headcount, the
+// date and the delivery point before anything is cooked.
+const HEADCOUNT_STEPS = [20, 30, 50, 100, 200];
+
+const HEADCOUNT_COPY = {
+  th: {
+    label: 'งบคร่าวๆ ตามจำนวนคน',
+    head: 'มีกี่คน ลองดูงบคร่าวๆ ได้เลย',
+    sub: 'กดจำนวนคนที่ใกล้กับงานของคุณ เราคิดให้จากราคาจริงของเมนูที่ขายอยู่ตอนนี้ แล้วพาไปที่ LINE พร้อมข้อความเตรียมไว้ให้ ส่งได้เลยครับ',
+    unit: 'คน',
+    from: 'เริ่ม',
+    line: (n, total) => `สนใจสั่งข้าวกล่อง ${n} กล่อง (${n} คน) งบราว ๆ ${total} บาท ใช้วันที่ ___ ส่งที่ ___ ช่วยแนะนำเมนูให้หน่อยนะครับ`,
+    note: (price) => `ตัวเลขคิดจากระดับ Classic ที่เริ่ม ${price} บาทต่อกล่อง นับเฉพาะค่าอาหารนะครับ ค่าส่งกับบริการเพิ่มเติมเราจะแจ้งไว้ในใบเสนอราคา`,
+    bigger: 'งาน 30 คนขึ้นไปที่อยากให้มีทีมไปดูแลหน้างานด้วย ลองดู ',
+    linkCatering: 'จัดเลี้ยงฮาลาล',
+    linkBuffet: 'บุฟเฟต์ฮาลาล',
+    tail: ' ได้เลยนะครับ',
+  },
+  en: {
+    label: 'A quick estimate by headcount',
+    head: "How many people? Here's a rough budget",
+    sub: "Tap the headcount closest to your event. We work it out from the prices we're selling at right now, then open LINE with the message already written. Just hit send.",
+    unit: 'pax',
+    from: 'From',
+    line: (n, total) => `Hi, I'd like ${n} boxes (${n} pax), roughly ${total} THB for food. Date: ___, delivery to: ___. Could you suggest some menus?`,
+    note: (price) => `Based on Classic, starting at ${price} THB a box. That's food only; delivery and any extras come in your quote.`,
+    bigger: 'Planning for 30 guests or more and want a team on site? Take a look at ',
+    linkCatering: 'Halal Catering',
+    linkBuffet: 'Halal Buffet',
+    tail: '.',
+  },
+};
+
+const money = (value) => Number(value).toLocaleString('en-US');
+
+function headcountSteps(minimumOrder) {
+  const min = Number.isFinite(Number(minimumOrder)) && Number(minimumOrder) >= 1
+    ? Number(minimumOrder)
+    : 10;
+  return [...new Set([min, ...HEADCOUNT_STEPS])].filter((n) => n >= min);
+}
+
+function renderHeadcountPicker(floor, minimumOrder, en) {
+  const copy = en ? HEADCOUNT_COPY.en : HEADCOUNT_COPY.th;
+  // No published Classic set means no figure to multiply, so the block keeps its
+  // buttons and drops the numbers rather than showing a total nobody can quote.
+  const priceFrom = floor?.priceFrom ?? null;
+  const unit = en ? 'THB' : 'บาท';
+  const chips = headcountSteps(minimumOrder).map((n) => {
+    const total = priceFrom == null ? null : money(priceFrom * n);
+    const message = copy.line(n, total ?? '');
+    const amount = total == null
+      ? ''
+      : `<span class="pm-quickpick-amount">${copy.from} ${total} ${unit}</span>`;
+    return `          <a class="pm-quickpick-chip" href="${lineHref(message)}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="popular_menu_headcount">`
+      + `<span class="pm-quickpick-people">${n} ${copy.unit}</span>${amount}`
+      + '<span aria-hidden="true">💬</span></a>';
+  }).join('\n');
+  if (!chips) return '';
+  const cateringHref = en ? '/en/catering.html' : '/catering.html';
+  const buffetHref = en ? '/en/buffet.html' : '/buffet.html';
+  return [
+    '<section class="section pm-quickpick" aria-labelledby="pm-quickpick-heading">',
+    '<div class="container">',
+    `<div class="section-label">${copy.label}</div>`,
+    `<h2 id="pm-quickpick-heading">${copy.head}</h2>`,
+    `<p class="pm-quickpick-sub">${copy.sub}</p>`,
+    '<div class="pm-quickpick-row">',
+    chips,
+    '</div>',
+    priceFrom == null ? '' : `<p class="pm-quickpick-note">${copy.note(money(priceFrom))}</p>`,
+    `<p class="pm-quickpick-bigger">${copy.bigger}<a href="${cateringHref}">${copy.linkCatering}</a> ${en ? 'and' : 'และ'} <a href="${buffetHref}">${copy.linkBuffet}</a>${copy.tail}</p>`,
+    '</div>',
+    '</section>',
+  ].join('\n');
+}
+
 /** Build the full page with the static block injected from published data. */
-export function renderPopularMenuPage(html, { items, toppings, secondDish, desserts }) {
+export function renderPopularMenuPage(html, { items, toppings, secondDish, desserts, classicFloor, minimumOrder }) {
   const { grid, list } = renderStaticMenu(items);
   const toppingsHtml = renderToppingsList(toppings);
   let out = replaceBlock(html, GRID_START, GRID_END, grid);
@@ -272,6 +440,7 @@ export function renderPopularMenuPage(html, { items, toppings, secondDish, desse
   out = replaceBlock(out, TOPPINGS_START, TOPPINGS_END, toppingsHtml);
   out = replaceBlock(out, SECOND_DISH_START, SECOND_DISH_END, renderSecondDishList(secondDish, false));
   out = replaceBlock(out, DESSERTS_START, DESSERTS_END, renderDessertsList(desserts, false));
+  out = replaceBlock(out, HEADCOUNT_START, HEADCOUNT_END, renderHeadcountPicker(classicFloor, minimumOrder, false));
   out = replaceBlock(out, JSONLD_START, JSONLD_END, renderItemListJsonLd(items));
   return out;
 }
@@ -286,18 +455,18 @@ export function renderPopularMenuPage(html, { items, toppings, secondDish, desse
 // meaning and tone, not word for word.
 const SECOND_DISH_COPY = {
   th: {
-    head: 'เลือกอาหารเมนูที่ 2 ให้ชุด Signature ถูกใจแขก',
-    sub: 'แขกได้สองอย่างในกล่องเดียว คุณจึงไม่ต้องเดาว่าใครชอบอะไร',
-    body: 'ชุด Signature คือข้าว อาหารหลัก 1 อย่าง อาหารเมนูที่ 2 อีก 1 อย่าง และผัก ในกล่อง 4 ช่อง บอกอาหารหลักที่ชอบมาได้เลยครับ แล้วเลือกอีกจานจากรายการนี้ เราจะจับคู่ให้เข้ากันและส่งราคารวมทั้งกล่องให้ก่อนยืนยันออเดอร์ ไม่มีบรรทัดค่าเพิ่มทีหลัง',
+    head: 'ให้แขกเลือกอาหารเมนูที่ 2 เองได้',
+    sub: 'กล่องเดียวได้สองอย่าง ไม่ต้องเดาว่าแขกชอบอะไร',
+    body: 'Signature หนึ่งกล่องมีข้าว อาหารหลัก 1 อย่าง อาหารเมนูที่ 2 อีก 1 อย่าง และผัก ใส่ในกล่อง 4 ช่อง บอกมาเลยว่าอาหารหลักที่ชอบคืออะไร แล้วเลือกอาหารเมนูที่ 2 จากรายการนี้ เราจับคู่ให้เข้ากันเอง และส่งราคารวมทั้งกล่องให้ดูก่อนยืนยันออเดอร์ ไม่มีค่าเพิ่มโผล่มาทีหลังแน่นอนครับ',
     lead: 'อาหารเมนูที่ 2 ที่เลือกได้',
-    cta: 'ให้ EED ช่วยจับคู่เมนู',
+    cta: 'ให้ EED ช่วยจับคู่ให้',
   },
   en: {
-    head: 'Pick the second dish so your Signature box suits every guest',
-    sub: 'Two dishes in one box, so you never have to guess what they will like',
-    body: 'A Signature box is rice, one main dish, a second dish and vegetables in four compartments. Tell us the main you like, then pick the second dish from the list below. We will pair them for you and send the full box price before you confirm — no extra line afterwards.',
+    head: 'Let your guests pick the second dish',
+    sub: "Two dishes in one box, so you don't have to guess what they'll like",
+    body: "A Signature box holds rice, one main, a second dish and vegetables, all in four compartments. Tell us the main they'll enjoy, then pick the second dish from the list. We'll match the pair and send you the full box price before you confirm, with no surprise extras later.",
     lead: 'Second dishes you can choose',
-    cta: 'Let EED pair the dishes for me',
+    cta: 'Let EED match the dishes for me',
   },
 };
 
@@ -324,13 +493,13 @@ ${picks}
 const DESSERT_COPY = {
   th: {
     head: 'ขนมหวานปิดท้ายมื้อ',
-    sub: 'ใส่กล่องลูกฟูกแยก ไม่ใช่อาหารเมนูที่ 2 ของชุด Signature',
-    note: 'เลือกเพิ่มได้กับทุกกล่อง ราคาบวกเพิ่มจากราคากล่อง แจ้งทีมงานตอนสั่งได้เลย',
+    sub: 'ใส่กล่องแยกต่างหาก ไม่นับเป็นอาหารเมนูที่ 2 ของชุด Signature',
+    note: 'เพิ่มได้กับทุกกล่องเลยครับ ราคาบวกเพิ่มจากราคากล่อง บอกทีมงานตอนสั่งได้เลย',
   },
   en: {
     head: 'Something sweet to finish',
-    sub: 'Packed in its own corned box, not as the Signature second dish',
-    note: 'Add to any box. The amount sits on top of the box price — tell us on LINE when you order.',
+    sub: 'Packed in its own box, not counted as the Signature second dish',
+    note: 'Add it to any box. The price goes on top of the box price, so just tell us when you order.',
   },
 };
 
@@ -395,10 +564,16 @@ export async function loadCatalogue(root = ROOT) {
         .filter((item) => item.public)
         .map((item) => ({ nameTh: item.nameTh, nameEn: item.nameEn }))
     : [];
+  // The headcount block multiplies the published Classic floor by the headcount,
+  // so it reads the floor through the same price rule the tier table uses rather
+  // than picking a number of its own.
+  const classicFloor = computeTierFloors(setsFromPlanner(overrides)).floors.classic;
   return {
     items: buildCatalogue(overrides, menus),
     toppings: Array.isArray(overrides.toppings) ? overrides.toppings : [],
     secondDish,
+    classicFloor,
+    minimumOrder: Number(rules?.services?.mealBox?.minimumOrder) || 10,
     // Desserts live in the same sideItems array, tagged `kind: "dessert"`. They
     // are split out because they are a corned-box add-on, not a Signature dish.
     desserts: Array.isArray(overrides.sideItems)
@@ -512,21 +687,46 @@ function minEnText(item) {
   return `Min ${item.minPerMenu} ${item.minPerMenu === 1 ? 'box' : 'boxes'}`;
 }
 
+// The English card gets the same order path the Thai card has. Without it the
+// English page is a read-only catalogue: a visitor has to find the contact page
+// on their own, and the dish they just chose is the one thing we want them to
+// send us.
+function orderMessageEn(item) {
+  const price = item.price == null ? '' : ` ${item.price} THB/box`;
+  return `Interested in ${item.name}${price}, ___ boxes, on ___ , delivered to ___`;
+}
+
+const EN_CTA_STYLE = 'display:block;margin-top:auto;padding:12px 20px;border:1px solid #1d6b3e;border-radius:3px;background:transparent;color:#1d6b3e;font-weight:700;font-size:14px;text-align:center;text-decoration:none;white-space:nowrap';
+const EN_CTA_HOVER = 'onmouseover="this.style.background=\'#1d6b3e\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'transparent\';this.style.color=\'#1d6b3e\'"';
+
+function enOrderCta(item, source) {
+  return `<a style="${EN_CTA_STYLE}" ${EN_CTA_HOVER} href="${lineHref(orderMessageEn(item))}" target="_blank" rel="noopener noreferrer" data-track-event="lead_line_click" data-track-section="popular_menu" data-track-source="${source}">Order this menu</a>`;
+}
+
 function enCardHtml(item, copy) {
   const photo = hasDishPhoto(item)
     ? `<img src="../${escapeHtml(item.image)}" alt="${escapeHtml(copy[item.id].name)} EED HALAL" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">`
     : '';
   const price = item.price == null ? '' : `<p style="font-size:1.05rem;font-weight:800;color:var(--primary);margin:0.15rem 0 0">${item.price} THB<span style="font-size:0.75rem;font-weight:600;color:var(--text-muted);margin-left:0.25rem">/ box</span></p>`;
   const min = minEnText(item) ? `<p style="font-size:0.8rem;font-weight:600;color:var(--text-muted);margin:0.2rem 0 0">${minEnText(item)}</p>` : '';
-  return `<div style="background:var(--white);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column">
+  // Same tag as the Thai page, in this page's own inline style. Thai owner
+  // wording is skipped (see tagTextEn) so no Thai reaches an English visitor,
+  // and gold stays reserved for the published best-seller list.
+  const tag = tagTextEn(item);
+  const bestSeller = tag
+    ? `<span style="position:absolute;top:0.6rem;left:0.6rem;background:${item.popular ? '#a87e1f' : '#3f4a41'};color:#fff;font-size:0.72rem;font-weight:800;letter-spacing:.02em;padding:0.2rem 0.55rem;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.25)">${escapeHtml(tag)}</span>`
+    : '';
+  return `<div style="position:relative;background:var(--white);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column">
 <div style="aspect-ratio:4/3;overflow:hidden">
 ${photo}
 </div>
+${bestSeller}
 <div style="padding:1.25rem 1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.4rem;flex:1">
 <h4 style="font-size:1.25rem;font-weight:900;color:var(--text);margin:0">${escapeHtml(copy[item.id].name)}</h4>
 <p style="font-size:0.8rem;line-height:1.7;opacity:0.7;color:var(--text);margin:0">${escapeHtml(tierLabel(item.tier))} &middot; ${escapeHtml(copy[item.id].desc)}</p>
 ${price}
 ${min}
+${enOrderCta(item, 'popular_menu_card_en')}
 </div>
 </div>`;
 }
@@ -534,13 +734,13 @@ ${min}
 function enListRowHtml(item, copy, emoji) {
   const price = item.price == null ? '' : `<span class="pm-price-unit">${item.price} THB / box</span>`;
   const min = minEnText(item) ? `<span class="pm-price-unit"> &middot; ${minEnText(item)}</span>` : '';
-  return `<div class="menu-item"><span class="menu-item-name">${emoji} ${escapeHtml(copy[item.id].name)}${price}${min}</span><span class="menu-item-dots"></span></div>`;
+  return `<div class="menu-item"><span class="menu-item-name">${emoji} ${escapeHtml(copy[item.id].name)}${price}${min}</span><span class="menu-item-dots"></span>${enOrderCta(item, 'popular_menu_row_en')}</div>`;
 }
 
 function enNameOnlyHtml(item, copy) {
   const price = item.price == null ? '' : `<span class="pm-price-unit">${item.price} THB / box</span>`;
   const min = minEnText(item) ? `<span class="pm-price-unit"> &middot; ${minEnText(item)}</span>` : '';
-  return `<div class="pm-name-only"><span class="pm-name-only-text">${escapeHtml(copy[item.id].name)}${price}${min}</span></div>`;
+  return `<div class="pm-name-only"><span class="pm-name-only-text">${escapeHtml(copy[item.id].name)}${price}${min}</span>${enOrderCta(item, 'popular_menu_card_en')}</div>`;
 }
 
 export function renderStaticMenuEn(items, copy) {
@@ -647,7 +847,7 @@ function replaceMainEntity(html, node) {
   return `${html.slice(0, anchor)}${key}: ${rendered}${html.slice(end)}`;
 }
 
-export function renderPopularMenuPageEn(html, { items, toppings, secondDish, desserts }, copy) {
+export function renderPopularMenuPageEn(html, { items, toppings, secondDish, desserts, classicFloor, minimumOrder }, copy) {
   const { grid, list } = renderStaticMenuEn(items, copy);
   const toppingsHtml = renderToppingsListEn(toppings, copy.toppings);
   let out = replaceBlock(html, GRID_START, GRID_END, grid);
@@ -655,6 +855,7 @@ export function renderPopularMenuPageEn(html, { items, toppings, secondDish, des
   out = replaceBlock(out, TOPPINGS_START, TOPPINGS_END, toppingsHtml);
   out = replaceBlock(out, SECOND_DISH_START, SECOND_DISH_END, renderSecondDishList(secondDish, true));
   out = replaceBlock(out, DESSERTS_START, DESSERTS_END, renderDessertsList(desserts, true));
+  out = replaceBlock(out, HEADCOUNT_START, HEADCOUNT_END, renderHeadcountPicker(classicFloor, minimumOrder, true));
   out = replaceMainEntity(out, buildEnItemList(items, copy));
   return out;
 }
