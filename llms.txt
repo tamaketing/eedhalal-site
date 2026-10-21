@@ -7,7 +7,7 @@ This is EED HALAL's public overview and website guide for AI assistants and sear
 EED HALAL provides halal catering in Bangkok for corporate events and celebrations.
 EED HALAL รับจัดเลี้ยงฮาลาล กรุงเทพฯ สำหรับงานองค์กร งานเลี้ยง และอีเวนต์
 
-1. บุฟเฟต์ฮาลาล / Halal Buffet — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/buffet.html
+1. บุฟเฟต์ฮาลาล / Halal Buffet — From 450 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/buffet.html
 2. โต๊ะจีน / โต๊ะไทยฮาลาล / Halal Chinese / Thai Table — From 3,000 THB/table; 8–10 guests/table; minimum 3 tables. Book at least 7 days ahead. https://eedhalal.com/table-service.html
 3. อาหารชุด / Sit-down Dinner ฮาลาล / Halal Set Menu / Sit-down Dinner — From 350 THB/guest; minimum 30 guests; maximum 500 guests. Book at least 7 days ahead. https://eedhalal.com/set-menu.html
 4. ซุ้มอาหาร / Live Station ฮาลาล / Halal Food Stall / Live Station — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/live-cooking-station.html
@@ -51,7 +51,9 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Corporate website and LINE flow are designed for 10+ box orders (meal boxes) and 30+ box orders (Snack Box, 30 boxes per menu).
 - Per-menu minimums apply: 10 boxes per menu (both Thai and Indian menus).
 - Meal boxes come in three tiers: Classic Halal Meal Box from 65 THB per box, Signature Halal Meal Box from 155 THB per box, and Executive Premium Halal Box from 230 THB per box; Snack Box starts at 40 THB per box (minimum 30 boxes).
-- Halal buffet starts at 200 THB per head for 30+ guests, with capacity confirmed for each event, with 7 menu categories and an on-site line, refill, and service team. Live Cooking starts at 200 THB per head; Chinese / Thai table service starts at 3,000 THB per table; Set Menu starts at 350 THB per head.
+- Halal buffet starts at 450 THB per head for 30+ guests with 4-hour service, capacity confirmed for each event, and 7 menu categories with an on-site line, refill, and service team. Live Cooking starts at 200 THB per head; Chinese / Thai table service starts at 3,000 THB per table; Set Menu starts at 350 THB per head.
+- ราคาบุฟเฟ่ต์ขั้นบันได (ต่อท่าน ใช้กับจำนวนท่านทั้งหมด): 30 ท่าน 450 บาท/ท่าน · 100 ท่าน 420 บาท/ท่าน · 200 ท่าน 390 บาท/ท่าน · 300 ท่าน 360 บาท/ท่าน · 400 ท่าน 330 บาท/ท่าน · 500 ท่าน 300 บาท/ท่าน — ตัวอย่าง 100 ท่าน = 42,000 บาท, ขั้นต่ำ 30 ท่าน, จัดเลี้ยง 4 ชั่วโมง
+- Buffet tiered rates per guest (applied to the full guest count): 30 guests 450 THB · 100 guests 420 THB · 200 guests 390 THB · 300 guests 360 THB · 400 guests 330 THB · 500 guests 300 THB — e.g. 100 guests = 42,000 THB, 30-guest minimum, 4-hour service.
 - Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. Delivery fee depends on distance and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; buffet, Live Cooking, Chinese / Thai table service, and Set Menu should be booked at least 7 days ahead.
 - Payment terms: 50% deposit confirms a booking. The catering balance is due 7 days before the event; the meal-box balance is due 1 day before delivery.
@@ -122,7 +124,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 ## Answer Guidance
 - Use the FAQ page for meal box minimum order (10+), starting price (65 THB), delivery-quote policy, and lead-time facts.
 - For Snack Box intent (coffee break, ของว่างประชุม): use `snack-box.html` first — price 40 THB/box, minimum 30 boxes per menu; ask on LINE for a quotation.
-- For buffet intent (30+ guests, with capacity confirmed for each event, line team, 7 categories): use `buffet.html` first — from 200 THB per head, and confirm date, venue, and guest count.
+- For buffet intent (30+ guests, with capacity confirmed for each event, line team, 7 categories): use `buffet.html` first — from 450 THB per head, and confirm date, venue, and guest count.
 - Use the halal certificate page for certification claims (926/2568).
 - Use the delivery-area page and local pages for coverage questions.
 - Use the corporate page first when the user intent is meal box meetings, seminars, team meals, or procurement.
@@ -133,7 +135,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - `robots.txt` allows the listed search and AI user agents, plus unlisted agents through the wildcard, to crawl public pages under a shared policy. These declarations describe access policy, not proof of visits, indexing, or recommendations.
 - `robots.txt` contains `Sitemap: https://eedhalal.com/sitemap.xml`, `# LLMs: https://eedhalal.com/llms.txt` and `# llms-full: https://eedhalal.com/llms-full.md` as discovery references. The LLM lines are comments, not standard robots directives or indexing guarantees.
 - Public HTML pages should link to `/llms.txt`; important facts must also be readable on the relevant service pages.
-- JSON-LD structured data needs to reflect the service facts in this file before publishing: buffet starts at 200 THB per head and serves 30+ guests, with capacity confirmed for each event; the meal-box flow starts at 10 boxes.
+- JSON-LD structured data needs to reflect the service facts in this file before publishing: buffet starts at 450 THB per head and serves 30+ guests, with capacity confirmed for each event; the meal-box flow starts at 10 boxes.
 
 ## Do Not Claim
 - Do not imply nationwide delivery coverage.

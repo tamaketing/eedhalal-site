@@ -86,6 +86,9 @@
   </url>
   <url>
     <loc>https://eedhalal.com/faq.html</loc>
+  <url>
+    <loc>https://eedhalal.com/privacy.html</loc>
+  </url>
     <lastmod>2026-09-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -242,6 +245,9 @@
   </url>
   <url>
     <loc>https://eedhalal.com/en/faq.html</loc>
+  <url>
+    <loc>https://eedhalal.com/en/privacy.html</loc>
+  </url>
     <lastmod>2026-08-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

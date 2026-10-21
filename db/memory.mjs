@@ -3,8 +3,10 @@
 // No I/O, no dependencies. Do not use for production persistence.
 
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { customerDefaults } from './customer-contract.mjs';
 import { inboundDefaults, inboundPatch, validateInboundRow } from './inbound-contract.mjs';
 import { exampleDefaults, examplePatch, validateExampleRow } from './examples-contract.mjs';
+import { memoryDefaults, validateMemoryRow } from './customer-memory-contract.mjs';
 
 function clone(value) {
   return value === undefined ? value : structuredClone(value);
@@ -25,6 +27,7 @@ export function createMemoryAdapter() {
     auditLogs: new Map(),
     inboundMessages: new Map(),
     responseExamples: new Map(),
+    customerMemories: new Map(),
   };
   const customers = {
     kind: 'customers',
@@ -35,17 +38,18 @@ export function createMemoryAdapter() {
           if (existing.lineUserId === row.lineUserId) throw conflict(`lineUserId ${row.lineUserId} already exists`);
         }
       }
-      const saved = withTimestamps({ ...row }, true, now);
+      const saved = withTimestamps(customerDefaults({ ...row }), true, now);
       tables.customers.set(saved.id, saved);
-      return clone(saved);
+      return customerDefaults(clone(saved));
     },
     async findById(id) {
-      return clone(tables.customers.get(id) || null);
+      const row = tables.customers.get(id);
+      return row ? customerDefaults(clone(row)) : null;
     },
     async findByLineUserId(lineUserId) {
       if (!lineUserId) return null;
       for (const row of tables.customers.values()) {
-        if (row.lineUserId === lineUserId) return clone(row);
+        if (row.lineUserId === lineUserId) return customerDefaults(clone(row));
       }
       return null;
     },
@@ -57,12 +61,12 @@ export function createMemoryAdapter() {
           if (row.id !== id && row.lineUserId === patch.lineUserId) throw conflict(`lineUserId ${patch.lineUserId} already exists`);
         }
       }
-      const next = withTimestamps({ ...current, ...patch, id }, false, now);
+      const next = withTimestamps(customerDefaults({ ...current, ...patch, id }), false, now);
       tables.customers.set(id, next);
-      return clone(next);
+      return customerDefaults(clone(next));
     },
     async list() {
-      return [...tables.customers.values()].map(clone);
+      return [...tables.customers.values()].map((row) => customerDefaults(clone(row)));
     },
   };
 
@@ -138,6 +142,14 @@ export function createMemoryAdapter() {
         .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
         .map(clone);
     },
+    async list() {
+      return [...tables.drafts.values()]
+        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+        .map(clone);
+    },
+    async remove(id) {
+      return tables.drafts.delete(id);
+    },
     async update(id, patch, now = new Date().toISOString()) {
       const current = tables.drafts.get(id);
       if (!current) return null;
@@ -176,6 +188,21 @@ export function createMemoryAdapter() {
     async findBySourceEventId(eventId) {
       return eventId == null ? null : clone([...tables.inboundMessages.values()].find((r) => r.sourceEventId === eventId) || null);
     },
+    async listByCustomer(customerId) {
+      if (!customerId) return [];
+      return [...tables.inboundMessages.values()]
+        .filter((r) => r.customerId === customerId)
+        .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
+        .map(clone);
+    },
+    async list() {
+      return [...tables.inboundMessages.values()]
+        .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
+        .map(clone);
+    },
+    async remove(id) {
+      return tables.inboundMessages.delete(id);
+    },
     async updateIfCurrent(id, patch, expected, now = new Date().toISOString()) {
       const row = tables.inboundMessages.get(id);
       if (!row || row.status !== expected.status || row.revision !== expected.revision) return null;
@@ -183,6 +210,46 @@ export function createMemoryAdapter() {
       validateInboundRow(saved, (table, key) => tables[table].has(key));
       tables.inboundMessages.set(id, saved);
       return clone(saved);
+    },
+  };
+
+  const customerMemories = {
+    kind: 'customerMemories',
+    async create(row, now = new Date().toISOString()) {
+      const memory = memoryDefaults({ ...row });
+      const errors = validateMemoryRow(memory);
+      if (errors.length) throw new Error(`invalid customer memory: ${errors.join('; ')}`);
+      if (tables.customerMemories.has(memory.id)) throw conflict(`customer memory ${memory.id} already exists`);
+      for (const existing of tables.customerMemories.values()) {
+        if (existing.customerId === memory.customerId) throw conflict(`customer memory for ${memory.customerId} already exists`);
+      }
+      const saved = withTimestamps(memory, true, now);
+      tables.customerMemories.set(saved.id, saved);
+      return memoryDefaults(clone(saved));
+    },
+    async findById(id) {
+      const row = tables.customerMemories.get(id);
+      return row ? memoryDefaults(clone(row)) : null;
+    },
+    async findByCustomerId(customerId) {
+      if (!customerId) return null;
+      for (const row of tables.customerMemories.values()) {
+        if (row.customerId === customerId) return memoryDefaults(clone(row));
+      }
+      return null;
+    },
+    async update(id, patch, now = new Date().toISOString()) {
+      const current = tables.customerMemories.get(id);
+      if (!current) return null;
+      const next = memoryDefaults({ ...current, ...patch, id });
+      const errors = validateMemoryRow(next);
+      if (errors.length) throw new Error(`invalid customer memory: ${errors.join('; ')}`);
+      const saved = withTimestamps(next, false, now);
+      tables.customerMemories.set(id, saved);
+      return memoryDefaults(clone(saved));
+    },
+    async list() {
+      return [...tables.customerMemories.values()].map((row) => memoryDefaults(clone(row)));
     },
   };
 
@@ -260,7 +327,7 @@ export function createMemoryAdapter() {
     queue = run.catch(() => {});
     return run;
   }
-  const repos = { customers, leads, drafts, auditLogs, inboundMessages, responseExamples };
+  const repos = { customers, leads, drafts, auditLogs, inboundMessages, responseExamples, customerMemories };
   for (const repo of Object.values(repos)) {
     for (const [key, fn] of Object.entries(repo)) {
       if (typeof fn === 'function') repo[key] = (...args) => exclusive(() => fn(...args));

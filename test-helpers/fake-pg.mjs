@@ -98,6 +98,13 @@ export function createFakePg() {
     if (/CREATE TABLE IF NOT EXISTS (customers|leads|drafts|audit_logs|inbound_messages|response_examples)/.test(clean)) return { rows: [] };
     if (/ALTER TABLE drafts ADD COLUMN IF NOT EXISTS/.test(clean)) return { rows: [] };
     if (/ALTER TABLE leads ADD COLUMN IF NOT EXISTS/.test(clean)) return { rows: [] };
+    // migrations 006-007: per-customer bot pause + profile sync columns.
+    if (/ALTER TABLE customers ADD COLUMN IF NOT EXISTS\s+(bot_paused_at|bot_pause_reason|profile_synced_at)(\s|;|$)/.test(clean)) return { rows: [] };
+    // migration 008: runtime role grants. The fake has no privilege model, so
+    // the statements are accepted without simulating their effect.
+    if (/\b(GRANT|REVOKE)\b[^;]*eedhalal_app/i.test(clean)) return { rows: [] };
+    // migration 010: dropping the customer_memories foreign key.
+    if (/ALTER TABLE customer_memories DROP CONSTRAINT/i.test(clean)) return { rows: [] };
     if (/CREATE UNIQUE INDEX IF NOT EXISTS/.test(clean)) return { rows: [] };
     throw new Error(`fake pg: unsupported query ${clean.slice(0, 80)}`);
   }

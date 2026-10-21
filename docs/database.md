@@ -12,6 +12,27 @@
   `postgres` (production; `pg` is lazily imported only on hosts with
   `DB_ADAPTER=postgres`).
 
+## Current state (2026-10-21 — PostgreSQL is the live store)
+
+- The LINE server runs on **PostgreSQL** (`DB_ADAPTER=postgres`). The file
+  adapter stays available as a fallback and as the pre-migration snapshot.
+- Connection + password live in `data/line-runtime/runtime.env` (gitignored,
+  machine-local). The launcher reads `.env` first, then that file, then the
+  real process environment.
+- The earlier conversations were merged into PostgreSQL by
+  `tools/line/import-file-data.mjs` (customers merge on `line_user_id`, every
+  other row keeps its id). Re-running the import is safe: existing rows are
+  skipped, never duplicated.
+- Inbound receipts are connected to their customer and their draft
+  (`attachCustomer` → `markProcessing` → `completeInbound`), so the receipt
+  ledger and the conversation are one thread instead of two halves.
+- Roles: `eedhalal_app` (runtime), `eedhalal_migrator` (schema),
+  `eedhalal_tester` (test database only). The runtime role can
+  SELECT/INSERT/UPDATE the tables it manages and SELECT/INSERT on
+  `audit_logs` (append-only) — never DELETE, TRUNCATE or DDL.
+  Migration `008_runtime_grants.sql` makes that set explicit for all six
+  tables; without it a fresh database left the app unable to write.
+
 ## Current (Phase 3 — implemented)
 
 ```
@@ -24,8 +45,28 @@ LINE userId
   → every important change → services/audit.mjs (append-only)
 ```
 
-Tables: `customers`, `leads`, `drafts`, `audit_logs`
-(`db/migrations/001_core.sql`, tracked by `schema_migrations`).
+Tables: `customers`, `leads`, `drafts`, `audit_logs` plus the later migrations
+`inbound_messages`, `response_examples` and `customer_memories`
+(`db/migrations/001_core.sql` … `010_customer_memories_no_fk.sql`, tracked by
+`schema_migrations`).
+
+### customer_memories (migration 009 + 010)
+
+One row per customer: what the bot remembers between messages.
+
+| Column | Meaning |
+|---|---|
+| `summary` | the customer's current situation, one short Thai line (written by the model, corrected by the owner) |
+| `facts` | the structured facts the rules read from the customer's own words (quantity, menu, date, location, budget, phone, tax id, dietary notes) |
+| `history` | the situations of jobs that are already closed (newest last) |
+| `status` | `OPEN` while the job runs, `CLOSED` once it is finished |
+| `source` | `rule` (generated), `ai` (model written) or `owner` (the owner typed it — the bot never overwrites that) |
+
+Migration 010 drops the foreign key to `customers`: PostgreSQL refuses to
+TRUNCATE a table another table's foreign key points at, which broke the
+real-PostgreSQL test suite. The integrity guarantee stays in the service
+layer — the Internal API refuses to write a memory for a customer that does
+not exist.
 
 ## Future (NOT IMPLEMENTED — schema must stay easy to extend)
 
@@ -79,8 +120,10 @@ node --test --test-concurrency=1 test/central-database.test.mjs
 2. `CREATE DATABASE eedhalal;` + least-privilege role (no superuser).
 3. Grant the runtime role `SELECT, INSERT, UPDATE` — but not `DELETE`,
    `TRUNCATE`, or DDL — on the application tables it manages (`customers`,
-   `leads`, `drafts`, `audit_logs`, `inbound_messages`, `response_examples`).
-   Run schema changes only with the migration role.
+   `leads`, `drafts`, `inbound_messages`, `response_examples`).
+   `audit_logs` is append-only, so it gets `SELECT, INSERT` only.
+   Run schema changes only with the migration role. Migration
+   `008_runtime_grants.sql` applies exactly this set.
 4. Set `DB_ADAPTER=postgres` and `DATABASE_URL` in the host secret manager
    (never in the repo; `.env.example` holds placeholders only).
 5. `node db/migrate.mjs status` → `node db/migrate.mjs up`.

@@ -74,13 +74,25 @@
       "minimumOrder": 30
     },
     "buffet": {
-      "priceFrom": 200,
+      "priceFrom": 450,
       "priceTo": null,
       "minimumGuests": 30,
       "maximumGuests": null,
+      "serviceHours": 4,
       "serviceCategories": 7,
       "leadTimeDays": 7,
-      "serviceTeam": "จัดไลน์ เติมอาหาร และดูแลหน้างาน"
+      "serviceTeam": "จัดไลน์ เติมอาหาร และดูแลหน้างาน",
+      "pricingModel": "flat-by-guest-count",
+      "pricingNoteTh": "ราคาต่อหัวของขั้นที่ได้ใช้กับจำนวนท่านทั้งหมด ไม่ใช่คิดแบบขั้นบันได marginal",
+      "pricingNoteEn": "The per-guest rate of the applied tier covers all guests; it is not a marginal tiered calculation.",
+      "priceTiers": [
+        { "minGuests": 30, "pricePerGuest": 450 },
+        { "minGuests": 100, "pricePerGuest": 420 },
+        { "minGuests": 200, "pricePerGuest": 390 },
+        { "minGuests": 300, "pricePerGuest": 360 },
+        { "minGuests": 400, "pricePerGuest": 330 },
+        { "minGuests": 500, "pricePerGuest": 300 }
+      ]
     },
     "liveCooking": {
       "priceFrom": 200,

@@ -31,19 +31,45 @@ export function verifyLineSignature(rawBody, signature, channelSecret) {
   return received.length === expected.length && timingSafeEqual(received, expected);
 }
 
-/** Keep only what the triage needs; drop everything else (stickers, joins...). */
+/** Keep only what the triage needs; drop everything else (joins, follows...).
+ *  Text messages pass through verbatim. Other message types (image, file, video,
+ *  audio, sticker) are turned into a short marker so the owner still sees them
+ *  in the queue instead of them being silently dropped. */
 export function normalizeLineEvents(body) {
   const events = Array.isArray(body?.events) ? body.events : [];
+  const MEDIA_MARKERS = {
+    image: '[ลูกค้าส่งรูปภาพ]',
+    video: '[ลูกค้าส่งวิดีโอ]',
+    audio: '[ลูกค้าส่งไฟล์เสียง]',
+    sticker: '[ลูกค้าส่งสติกเกอร์]',
+  };
   return events
-    .filter((event) => event && event.type === 'message' && event.message?.type === 'text')
-    .map((event) => ({
-      userId: event.source?.userId || '',
-      replyToken: event.replyToken || '',
-      webhookEventId: event.webhookEventId || '',
-      text: String(event.message.text || ''),
-      timestamp: Number(event.timestamp) || Date.now(),
-    }))
-    .filter((event) => event.userId && (event.replyToken || event.webhookEventId));
+    .filter((event) => event && event.type === 'message' && event.message && typeof event.message.type === 'string')
+    .map((event) => {
+      const type = event.message.type;
+      let text = '';
+      let messageType = type;
+      if (type === 'text') {
+        text = String(event.message.text || '');
+      } else if (type === 'file') {
+        const name = event.message.fileName ? String(event.message.fileName) : '';
+        text = name ? `[ลูกค้าส่งไฟล์: ${name}]` : '[ลูกค้าส่งไฟล์]';
+      } else if (MEDIA_MARKERS[type]) {
+        text = MEDIA_MARKERS[type];
+      } else {
+        // Unknown message type — keep a marker so nothing is lost.
+        text = `[ลูกค้าส่งข้อความประเภท ${type}]`;
+      }
+      return {
+        userId: event.source?.userId || '',
+        replyToken: event.replyToken || '',
+        webhookEventId: event.webhookEventId || '',
+        text,
+        messageType,
+        timestamp: Number(event.timestamp) || Date.now(),
+      };
+    })
+    .filter((event) => event.userId && (event.replyToken || event.webhookEventId) && event.text.trim());
 }
 
 function readBody(request, limit = MAX_BODY_BYTES) {

@@ -50,6 +50,11 @@ export function presentCustomer(customer) {
     taxId: customer.taxId,
     address: customer.address,
     notes: customer.notes,
+    // Owner-visible bot pause state (empty = the bot replies normally).
+    botPausedAt: customer.botPausedAt ?? null,
+    botPauseReason: customer.botPauseReason ?? null,
+    // When the LINE display name was last fetched (empty = not fetched yet).
+    profileSyncedAt: customer.profileSyncedAt ?? null,
     createdAt: customer.createdAt,
     updatedAt: customer.updatedAt,
   };
@@ -58,6 +63,25 @@ export function presentCustomer(customer) {
 export function presentLead(lead) {
   if (!lead) return null;
   return { ...lead };
+}
+
+// The customer memory: what the bot remembers about this customer, and what
+// the owner may correct. `facts` is structured data (never a transcript), so
+// the owner console can show it as a short list.
+export function presentMemory(memory) {
+  if (!memory) return null;
+  return {
+    id: memory.id,
+    customerId: memory.customerId,
+    summary: memory.summary || '',
+    facts: memory.facts || {},
+    history: memory.history || [],
+    status: memory.status || 'OPEN',
+    source: memory.source || 'rule',
+    ruleRevision: memory.ruleRevision || '',
+    createdAt: memory.createdAt,
+    updatedAt: memory.updatedAt,
+  };
 }
 
 export function presentDraft(draft) {

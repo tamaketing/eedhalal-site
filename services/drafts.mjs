@@ -309,7 +309,7 @@ export async function sendDraft(repos, id, { ownerId = '', expectedUpdatedAt, ex
       const recipient = customer && customer.lineUserId;
       if (!recipient) throw new ValidationError('draft customer has no LINE user identity');
       if (!token) throw new Error('line send not configured');
-      const fingerprint = fingerprintSendAttempt(recipient, finalText);
+    const fingerprint = fingerprintSendAttempt(recipient, finalText);
       const existing = readSendAttempt(current.metadata);
       // A retry reuses the stored attempt only when it still matches the
       // frozen text/recipient. Anything else freezes a fresh attempt — never
@@ -424,7 +424,7 @@ export async function autoReplyDraft(repos, id, { replyToken = '', expectedStatu
       return { row: fromDraftRow(saved), finalText };
     }).catch((error) => { throw toServiceError(error, id); });
 
-    // Phase 2: Reply API call outside any transaction.
+  // Phase 2: Reply API call outside any transaction.
     const result = await reply({ token, replyToken, text: frozen.finalText });
 
     // Phase 3: settle to SENT / FAILED under a fresh CAS guard.

@@ -372,6 +372,85 @@
       ]
     },
     {
+      "id": "buffet-price-from",
+      "description": "ราคาเริ่มต้นต่อท่านของบุฟเฟต์ฮาลาล = ขั้นแรกของตารางขั้นบันได (30 ท่าน) มาจาก business-rules.json ไม่ใช่ตัวเลขที่พิมพ์เอง",
+      "source": "services.buffet.priceFrom",
+      "variants": [
+        "เริ่ม {{services.buffet.priceFrom}} บาท/ท่าน",
+        "From {{services.buffet.priceFrom}} THB/guest",
+        "{{services.buffet.priceFrom}} บาท/หัว",
+        "{{services.buffet.priceFrom}} Baht per Guest"
+      ],
+      "files": [
+        "about.html",
+        "buffet.html",
+        "catering.html",
+        "faq.html",
+        "index.html",
+        "en/about.html",
+        "en/buffet.html",
+        "en/catering.html",
+        "en/faq.html",
+        "en/index.html",
+        "llms-full.md",
+        "llms.txt",
+        "data/rich-menu.json",
+        "blog/buffet-100-people-price.html",
+        "en/blog/buffet-100-people-price.html"
+      ]
+    },
+    {
+      "id": "buffet-price-tiers",
+      "description": "ตารางราคาบุฟเฟต์แบบขั้นบันไดตามจำนวนท่าน (ยิ่งมากยิ่งถูกลง) ราคาต่อหัวของขั้นนั้นใช้กับจำนวนท่านทั้งหมด ไม่ใช่คิดแบบ marginal ขั้นต่ำ 30 ท่าน",
+      "source": "services.buffet.priceTiers",
+      "variants": [
+        "{{services.buffet.priceTiers.0.minGuests}} ท่านขึ้นไป {{services.buffet.priceTiers.0.pricePerGuest}} บาท/ท่าน",
+        "{{services.buffet.priceTiers.1.minGuests}} ท่าน {{services.buffet.priceTiers.1.pricePerGuest}} บาท/ท่าน",
+        "{{services.buffet.priceTiers.2.minGuests}} ท่าน {{services.buffet.priceTiers.2.pricePerGuest}} บาท/ท่าน",
+        "{{services.buffet.priceTiers.3.minGuests}} ท่าน {{services.buffet.priceTiers.3.pricePerGuest}} บาท/ท่าน",
+        "{{services.buffet.priceTiers.4.minGuests}} ท่าน {{services.buffet.priceTiers.4.pricePerGuest}} บาท/ท่าน",
+        "{{services.buffet.priceTiers.5.minGuests}} ท่าน {{services.buffet.priceTiers.5.pricePerGuest}} บาท/ท่าน",
+        "{{services.buffet.priceTiers.0.minGuests}}+ guests {{services.buffet.priceTiers.0.pricePerGuest}} THB/guest",
+        "{{services.buffet.priceTiers.1.minGuests}} guests {{services.buffet.priceTiers.1.pricePerGuest}} THB/guest",
+        "{{services.buffet.priceTiers.2.minGuests}} guests {{services.buffet.priceTiers.2.pricePerGuest}} THB/guest",
+        "{{services.buffet.priceTiers.3.minGuests}} guests {{services.buffet.priceTiers.3.pricePerGuest}} THB/guest",
+        "{{services.buffet.priceTiers.4.minGuests}} guests {{services.buffet.priceTiers.4.pricePerGuest}} THB/guest",
+        "{{services.buffet.priceTiers.5.minGuests}} guests {{services.buffet.priceTiers.5.pricePerGuest}} THB/guest"
+      ],
+      "files": [
+        "buffet.html",
+        "en/buffet.html",
+        "llms.txt",
+        "llms-full.md",
+        "data/rich-menu.json",
+        "blog/buffet-100-people-price.html",
+        "en/blog/buffet-100-people-price.html"
+      ]
+    },
+    {
+      "id": "buffet-minimum-guests",
+      "description": "จำนวนแขกขั้นต่ำของบุฟเฟต์ฮาลาล",
+      "source": "services.buffet.minimumGuests",
+      "variants": [
+        "ขั้นต่ำ {{services.buffet.minimumGuests}} คน",
+        "minimum {{services.buffet.minimumGuests}} guests"
+      ],
+      "files": [
+        "about.html",
+        "buffet.html",
+        "catering.html",
+        "faq.html",
+        "index.html",
+        "en/about.html",
+        "en/buffet.html",
+        "en/catering.html",
+        "en/faq.html",
+        "en/index.html",
+        "llms-full.md",
+        "llms.txt"
+      ]
+    },
+    {
       "id": "quote-time",
       "description": "คำสัญญาใบเสนอราคา (นาทีหลังทัก LINE ในเวลาทำการ)",
       "source": "documents.quoteWithinMinutes",

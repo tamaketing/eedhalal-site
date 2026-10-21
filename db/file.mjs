@@ -10,14 +10,16 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { isUniqueViolation } from './memory.mjs';
+import { customerDefaults } from './customer-contract.mjs';
 import { inboundDefaults, inboundPatch, validateInboundRow } from './inbound-contract.mjs';
 import { exampleDefaults, examplePatch, validateExampleRow } from './examples-contract.mjs';
+import { memoryDefaults, validateMemoryRow } from './customer-memory-contract.mjs';
 
 function clone(value) {
   return value === undefined ? value : structuredClone(value);
 }
 
-const TABLES = ['customers', 'leads', 'drafts', 'auditLogs', 'inboundMessages', 'responseExamples'];
+const TABLES = ['customers', 'leads', 'drafts', 'auditLogs', 'inboundMessages', 'responseExamples', 'customerMemories'];
 
 export function createFileAdapter(dir) {
   if (!dir) throw new Error('DB_DIR is required for the file adapter.');
@@ -81,19 +83,23 @@ export function createFileAdapter(dir) {
         if (row.lineUserId && Object.values(tables.customers).some((r) => r.lineUserId === row.lineUserId)) {
           throw conflict(`lineUserId ${row.lineUserId} already exists`);
         }
-        tables.customers[row.id] = stamp({ ...row }, true, now);
+        tables.customers[row.id] = stamp(customerDefaults({ ...row }), true, now);
         await persist();
-        return clone(tables.customers[row.id]);
+        return customerDefaults(clone(tables.customers[row.id]));
       });
     },
     async findById(id) {
-      return exclusive(async () => clone((await load()).customers[id] || null));
+      return exclusive(async () => {
+        const row = (await load()).customers[id];
+        return row ? customerDefaults(clone(row)) : null;
+      });
     },
     async findByLineUserId(lineUserId) {
       if (!lineUserId) return null;
       return exclusive(async () => {
         const rows = Object.values((await load()).customers);
-        return clone(rows.find((r) => r.lineUserId === lineUserId) || null);
+        const found = rows.find((r) => r.lineUserId === lineUserId);
+        return found ? customerDefaults(clone(found)) : null;
       });
     },
     async update(id, patch, now = new Date().toISOString()) {
@@ -105,13 +111,13 @@ export function createFileAdapter(dir) {
           Object.values(tables.customers).some((r) => r.id !== id && r.lineUserId === patch.lineUserId)) {
           throw conflict(`lineUserId ${patch.lineUserId} already exists`);
         }
-        tables.customers[id] = stamp({ ...current, ...patch, id }, false, now);
+        tables.customers[id] = stamp(customerDefaults({ ...current, ...patch, id }), false, now);
         await persist();
-        return clone(tables.customers[id]);
+        return customerDefaults(clone(tables.customers[id]));
       });
     },
     async list() {
-      return exclusive(async () => Object.values((await load()).customers).map(clone));
+      return exclusive(async () => Object.values((await load()).customers).map((row) => customerDefaults(clone(row))));
     },
   };
 
@@ -198,6 +204,21 @@ export function createFileAdapter(dir) {
           .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
           .map(clone));
     },
+    async list() {
+      return exclusive(async () =>
+        Object.values((await load()).drafts)
+          .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+          .map(clone));
+    },
+    async remove(id) {
+      return exclusive(async () => {
+        const tables = await load();
+        if (!tables.drafts[id]) return false;
+        delete tables.drafts[id];
+        await persist();
+        return true;
+      });
+    },
     async update(id, patch, now = new Date().toISOString()) {
       return exclusive(async () => {
         const tables = await load();
@@ -245,6 +266,27 @@ export function createFileAdapter(dir) {
       return exclusive(async () => eventId == null ? null : clone(
         Object.values((await load()).inboundMessages).find((r) => r.sourceEventId === eventId) || null));
     },
+    async listByCustomer(customerId) {
+      if (!customerId) return [];
+      return exclusive(async () => Object.values((await load()).inboundMessages)
+        .filter((r) => r.customerId === customerId)
+        .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
+        .map(clone));
+    },
+    async list() {
+      return exclusive(async () => Object.values((await load()).inboundMessages)
+        .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
+        .map(clone));
+    },
+    async remove(id) {
+      return exclusive(async () => {
+        const tables = await load();
+        if (!tables.inboundMessages[id]) return false;
+        delete tables.inboundMessages[id];
+        await persist();
+        return true;
+      });
+    },
     async updateIfCurrent(id, patch, expected, now = new Date().toISOString()) {
       return exclusive(async () => {
         const tables = await load();
@@ -256,6 +298,54 @@ export function createFileAdapter(dir) {
         await persist();
         return clone(saved);
       });
+    },
+  };
+
+  const customerMemories = {
+    kind: 'customerMemories',
+    async create(row, now = new Date().toISOString()) {
+      return exclusive(async () => {
+        const tables = await load();
+        const memory = memoryDefaults({ ...row });
+        const errors = validateMemoryRow(memory);
+        if (errors.length) throw new Error(`invalid customer memory: ${errors.join('; ')}`);
+        if (tables.customerMemories[memory.id]) throw conflict(`customer memory ${memory.id} already exists`);
+        if (Object.values(tables.customerMemories).some((r) => r.customerId === memory.customerId)) {
+          throw conflict(`customer memory for ${memory.customerId} already exists`);
+        }
+        tables.customerMemories[memory.id] = stamp(memory, true, now);
+        await persist();
+        return memoryDefaults(clone(tables.customerMemories[memory.id]));
+      });
+    },
+    async findById(id) {
+      return exclusive(async () => {
+        const row = (await load()).customerMemories[id];
+        return row ? memoryDefaults(clone(row)) : null;
+      });
+    },
+    async findByCustomerId(customerId) {
+      if (!customerId) return null;
+      return exclusive(async () => {
+        const found = Object.values((await load()).customerMemories).find((r) => r.customerId === customerId);
+        return found ? memoryDefaults(clone(found)) : null;
+      });
+    },
+    async update(id, patch, now = new Date().toISOString()) {
+      return exclusive(async () => {
+        const tables = await load();
+        const current = tables.customerMemories[id];
+        if (!current) return null;
+        const next = memoryDefaults({ ...current, ...patch, id });
+        const errors = validateMemoryRow(next);
+        if (errors.length) throw new Error(`invalid customer memory: ${errors.join('; ')}`);
+        tables.customerMemories[id] = stamp(next, false, now);
+        await persist();
+        return memoryDefaults(clone(tables.customerMemories[id]));
+      });
+    },
+    async list() {
+      return exclusive(async () => Object.values((await load()).customerMemories).map((row) => memoryDefaults(clone(row))));
     },
   };
 
@@ -343,6 +433,7 @@ export function createFileAdapter(dir) {
     auditLogs,
     inboundMessages,
     responseExamples,
+    customerMemories,
     // Groups several repository calls into one exclusive section so no other
     // task in this process can interleave between them. Repos passed to fn
     // are re-entrant only in this async context, not in unrelated callers.
@@ -351,7 +442,7 @@ export function createFileAdapter(dir) {
       return exclusive(async () => {
         const snapshot = clone(await load());
         try {
-          const result = await transactionContext.run(true, () => fn({ customers, leads, drafts, auditLogs, inboundMessages, responseExamples }));
+          const result = await transactionContext.run(true, () => fn({ customers, leads, drafts, auditLogs, inboundMessages, responseExamples, customerMemories }));
           await persist();
           return result;
         } catch (error) {

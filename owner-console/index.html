@@ -8,93 +8,255 @@
 <title>EED HALAL — Owner Console (local only)</title>
 <link rel="stylesheet" href="/owner/styles.css">
 </head>
-<body>
-<header>
-  <h1>EED HALAL — Owner Console</h1>
-  <p class="subtitle">Local only · Human approval gate · No automatic sending</p>
-  <div class="topbar">
-    <button id="nav-queue" type="button" hidden>Waiting</button>
-    <button id="nav-sent" type="button" hidden>Sent</button>
-    <button id="nav-examples" type="button" hidden>Learning Examples</button>
-    <button id="nav-refresh" type="button" hidden>Refresh</button>
-    <button id="nav-lock" type="button" hidden>Lock</button>
+<body data-view="unlock">
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">EED</span>
+      <span class="brand-text">
+        <strong>EED HALAL</strong>
+        <small>หลังบ้านผู้จัดการ</small>
+      </span>
+    </div>
+
+    <p class="side-note">ใช้บนเครื่องนี้เท่านั้น · ทุกข้อความต้องเจ้าของกดส่งเอง · ไม่มีการส่งอัตโนมัติ</p>
+
+    <nav class="side-nav" aria-label="เมนูหลัก">
+      <button id="nav-queue" type="button" aria-label="คิวรอตอบ" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span>คิวรอตอบ</span>
+      </button>
+      <button id="nav-sent" type="button" aria-label="ส่งแล้ว" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>ส่งแล้ว</span>
+      </button>
+      <button id="nav-examples" type="button" aria-label="ตัวอย่างคำตอบ" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3l2.5 5.2 5.5.8-4 3.9 1 5.6-5-2.7-5 2.7 1-5.6-4-3.9 5.5-.8z"/></svg>
+        <span>ตัวอย่างคำตอบ</span>
+      </button>
+      <button id="nav-paused" type="button" aria-label="หยุดตอบอัตโนมัติ" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5v14M15 5v14"/></svg>
+        <span>หยุดตอบอัตโนมัติ</span>
+      </button>
+      <button id="nav-customers" type="button" aria-label="ลูกค้า" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <span>ลูกค้า</span>
+      </button>
+
+      <span class="side-sep" aria-hidden="true"></span>
+
+      <button id="nav-refresh" type="button" class="side-quiet" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 11a8 8 0 1 0-.9 4.6"/><path d="M20 5v6h-6"/></svg>
+        <span>โหลดใหม่</span>
+      </button>
+      <button id="nav-lock" type="button" class="side-quiet" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        <span>ล็อก</span>
+      </button>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <span class="topbar-where">หน้าจอเจ้าของ</span>
+      <span class="status-chip"><span class="dot" aria-hidden="true"></span> เจ้าของกดส่งเองทุกข้อความ</span>
+    </div>
+
+    <main>
+      <section id="view-unlock" class="unlock" aria-label="ปลดล็อก" hidden>
+        <div class="unlock-card">
+          <span class="brand-mark brand-mark--lg" aria-hidden="true">EED</span>
+          <h2>ใส่กุญแจเพื่อเข้าใช้งาน</h2>
+          <p>กุญแจคือค่า EED_INTERNAL_API_SECRET ในไฟล์ .env ระบบจำไว้แค่ในหน้านี้เท่านั้น และล้างทิ้งทุกครั้งที่กดล็อกหรือโหลดหน้าใหม่</p>
+          <form id="unlock-form">
+            <label for="secret-input">กุญแจ</label>
+            <div class="unlock-row">
+              <input id="secret-input" type="password" autocomplete="off" required placeholder="วางกุญแจที่นี่">
+              <button type="submit" class="btn btn-primary">เข้าใช้งาน</button>
+            </div>
+          </form>
+          <p id="unlock-error" class="error" role="alert"></p>
+        </div>
+      </section>
+
+      <section id="view-queue" class="panel" aria-label="คิวข้อความ" hidden>
+        <div class="panel-head">
+          <div class="panel-head__titles">
+            <span class="eyebrow">ข้อความจาก LINE</span>
+            <h2 id="queue-title">คิวรอตอบ <span id="queue-count" class="chip chip-count"></span></h2>
+          </div>
+          <p id="queue-status" role="status" class="status-line"></p>
+        </div>
+        <div id="queue-list" class="card-list"></div>
+      </section>
+
+      <section id="view-paused" class="panel" aria-label="ลูกค้าที่หยุดตอบอัตโนมัติอยู่" hidden>
+        <div class="panel-head">
+          <div class="panel-head__titles">
+            <span class="eyebrow">การควบคุมบอท</span>
+            <h2>ลูกค้าที่หยุดตอบอัตโนมัติอยู่ <span id="paused-count" class="chip chip-count"></span></h2>
+          </div>
+          <p id="paused-status" role="status" class="status-line"></p>
+        </div>
+        <p class="panel-note">ลูกค้ากลุ่มนี้บอทจะไม่ตอบให้อัตโนมัติ แต่ข้อความยังเข้าคิวให้เจ้าของเห็นตามปกติ ถ้าคุยกันจบแล้วอยากให้บอทช่วยตอบต่อ กดปุ่มเปิดตอบอัตโนมัติได้เลยครับ</p>
+        <div id="paused-list" class="card-list"></div>
+      </section>
+
+      <section id="view-examples" class="panel" aria-label="ตัวอย่างคำตอบ" hidden>
+        <div class="panel-head">
+          <div class="panel-head__titles">
+            <span class="eyebrow">บอทเรียนรู้จากคำตอบของเรา</span>
+            <h2>ตัวอย่างคำตอบที่เก็บไว้</h2>
+          </div>
+          <p id="examples-status" role="status" class="status-line"></p>
+        </div>
+        <p class="panel-note">ตัวอย่างการตอบที่บอทใช้เป็นแนวทาง — บอทยึดราคาและกฎธุรกิจปัจจุบันของ EED HALAL เสมอ ไม่ได้เรียนรู้ราคาใหม่จากตัวอย่างเหล่านี้</p>
+        <div id="examples-list" class="card-list"></div>
+      </section>
+
+      <section id="view-review" class="panel" aria-label="ตรวจข้อความก่อนส่ง" hidden>
+        <div class="panel-head">
+          <div class="panel-head__titles panel-head__titles--row">
+            <button id="back-queue" type="button" class="btn btn-ghost btn-sm">← กลับไปคิว</button>
+            <h2>ตรวจก่อนส่ง</h2>
+            <span id="review-draft-id" class="chip chip-id"></span>
+          </div>
+          <p id="review-status" role="status" class="status-line"></p>
+        </div>
+        <div id="review-attention" class="notice" hidden></div>
+
+        <div class="review-grid">
+          <div class="review-side">
+            <h3>ข้อมูลลูกค้า</h3>
+            <dl id="review-customer" class="kv"></dl>
+
+            <h3>ข้อความที่ลูกค้าส่งมา</h3>
+            <div id="review-incoming" class="prewrap bubble bubble--in"></div>
+            <div id="review-media-note" class="notice" hidden></div>
+
+            <h3>คำตอบที่บอทร่างให้ (อ่านอย่างเดียว)</h3>
+            <div id="review-ai" class="prewrap bubble bubble--ai"></div>
+          </div>
+
+          <div class="review-main">
+            <div class="editor">
+              <div class="editor-head">
+                <h3>คำตอบที่จะส่งจริง</h3>
+                <span class="hint">แก้ถ้อยคำได้ตามต้องการ ราคาและเงื่อนไขต้องตรงกับข้อมูลร้าน</span>
+              </div>
+              <textarea id="review-final" rows="10" spellcheck="true"></textarea>
+            </div>
+
+            <div class="actions">
+              <button id="btn-save" type="button" class="btn">บันทึกที่แก้</button>
+              <button id="btn-send" type="button" class="btn btn-primary">ส่งให้ลูกค้าทาง LINE</button>
+              <button id="btn-reject" type="button" class="btn btn-danger">ไม่ส่ง</button>
+            </div>
+
+            <div id="send-confirm" class="confirm" hidden>
+              <h3>ยืนยันก่อนส่งจริง</h3>
+              <p class="confirm-to">ส่งให้: <strong id="send-confirm-name"></strong></p>
+              <p class="confirm-label">ข้อความที่จะส่ง:</p>
+              <div id="send-confirm-preview" class="prewrap"></div>
+              <div class="actions actions--flush">
+                <button id="btn-send-confirm" type="button" class="btn btn-primary">ยืนยันส่ง</button>
+                <button id="btn-send-cancel" type="button" class="btn btn-ghost">ยกเลิก</button>
+              </div>
+            </div>
+
+            <div class="meta-block">
+              <h3>รายละเอียด</h3>
+              <dl id="review-meta" class="kv kv--wide"></dl>
+
+              <div id="review-lead-wrap" hidden>
+                <h3>ข้อมูลงานที่ตามอยู่</h3>
+                <dl id="review-lead" class="kv kv--wide"></dl>
+              </div>
+
+              <div id="review-learn" class="learn" hidden>
+                <h3>เก็บเป็นตัวอย่างคำตอบ</h3>
+                <p>บอทจะใช้คำตอบนี้เป็นแนวทางการเขียน แต่ราคาและกฎธุรกิจยังอ้างอิงจากข้อมูลปัจจุบันของ EED HALAL เสมอ</p>
+                <button id="btn-learn" type="button" class="btn">ใช้คำตอบนี้เป็นตัวอย่างในอนาคต</button>
+                <p id="learn-status" role="status" class="status-line"></p>
+                <div id="learn-detail"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="view-customer" class="panel" aria-label="ประวัติลูกค้า" hidden>
+        <button id="back-customers" type="button" class="btn btn-ghost btn-sm">← กลับไปรายชื่อลูกค้า</button>
+        <h2 id="customer-title">ประวัติลูกค้า</h2>
+        <span id="customer-chip" class="chip chip-id"></span>
+        <p id="customer-status" role="status" class="status-line"></p>
+
+        <div class="customer-grid">
+          <div class="customer-main">
+            <div class="card">
+              <h3>สรุปสถานะลูกค้า</h3>
+              <p class="hint">สิ่งที่บอทจำไว้เกี่ยวกับลูกค้าคนนี้ — แก้ได้ บอทจะไม่ทับ</p>
+              <textarea id="customer-summary" rows="3" spellcheck="true" placeholder="ยังไม่มีสรุป — ให้บอทสร้างจากแชท หรือพิมพ์เอง"></textarea>
+              <div class="row">
+                <button id="btn-save-summary" type="button" class="btn btn-primary">บันทึกสรุป</button>
+                <button id="btn-close-job" type="button" class="btn btn-ghost">ปิดงานนี้</button>
+              </div>
+              <div id="customer-facts" class="facts"></div>
+            </div>
+
+            <div class="card">
+              <h3>ประวัติแชท</h3>
+              <p class="hint">ทุกข้อความที่ลูกค้าส่งและคำตอบที่ร้านตอบ เรียงตามเวลา</p>
+              <div id="customer-thread" class="thread"></div>
+            </div>
+          </div>
+
+          <div class="customer-side">
+            <div class="card">
+              <h3>ข้อมูลลูกค้า</h3>
+              <form id="customer-profile-form" class="profile-form">
+                <label for="cp-displayName">ชื่อที่แสดง</label>
+                <input id="cp-displayName" type="text" autocomplete="off">
+                <label for="cp-phone">เบอร์โทร</label>
+                <input id="cp-phone" type="text" autocomplete="off" inputmode="tel">
+                <label for="cp-companyName">บริษัท</label>
+                <input id="cp-companyName" type="text" autocomplete="off">
+                <label for="cp-email">อีเมล</label>
+                <input id="cp-email" type="text" autocomplete="off">
+                <label for="cp-taxId">เลขประจำตัวผู้เสียภาษี</label>
+                <input id="cp-taxId" type="text" autocomplete="off">
+                <label for="cp-address">ที่อยู่จัดส่ง</label>
+                <input id="cp-address" type="text" autocomplete="off">
+                <label for="cp-notes">หมายเหตุ</label>
+                <input id="cp-notes" type="text" autocomplete="off">
+                <button type="submit" class="btn btn-primary">บันทึกข้อมูลลูกค้า</button>
+              </form>
+            </div>
+
+            <div class="card">
+              <h3>งานที่ตามอยู่</h3>
+              <div id="customer-leads" class="facts"></div>
+            </div>
+
+            <div class="card">
+              <h3>งานที่ปิดแล้ว</h3>
+              <div id="customer-history" class="facts"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-customers" class="panel" aria-label="รายชื่อลูกค้า" hidden>
+        <h2>ลูกค้า <span id="customers-count" class="chip chip-count"></span></h2>
+        <p id="customers-status" role="status" class="status-line"></p>
+        <div class="search-row">
+          <input id="customers-search" type="search" placeholder="ค้นหาชื่อ เบอร์ หรือบริษัท" autocomplete="off">
+        </div>
+        <div id="customers-list" class="card-list"></div>
+      </section>
+    </main>
   </div>
-</header>
-<main>
-  <section id="view-unlock" aria-label="Unlock">
-    <h2>Unlock</h2>
-    <p>Enter the Internal API secret. It stays in page memory only and is cleared on lock or refresh.</p>
-    <form id="unlock-form">
-      <label for="secret-input">API secret</label>
-      <input id="secret-input" type="password" autocomplete="off" required>
-      <button type="submit">Unlock</button>
-    </form>
-    <p id="unlock-error" class="error" role="alert"></p>
-  </section>
-
-  <section id="view-queue" aria-label="Draft queue" hidden>
-    <h2 id="queue-title">Waiting for human <span id="queue-count"></span></h2>
-    <p id="queue-status" role="status"></p>
-    <div id="queue-list"></div>
-  </section>
-
-  <section id="view-examples" aria-label="Learning examples" hidden>
-    <h2>Learning Examples</h2>
-    <p>ตัวอย่างการตอบที่ AI ใช้เป็นแนวทาง — AI ยึดข้อมูลราคาและกฎธุรกิจปัจจุบันของ EED HALAL เสมอ ไม่ได้เรียนรู้ราคาใหม่จากตัวอย่าง</p>
-    <p id="examples-status" role="status"></p>
-    <div id="examples-list"></div>
-  </section>
-
-  <section id="view-review" aria-label="Review draft" hidden>
-    <button id="back-queue" type="button">← Back to Queue</button>
-    <h2>Review draft <span id="review-draft-id"></span></h2>
-    <p id="review-status" role="status"></p>
-    <div id="review-attention" class="notice" hidden></div>
-
-    <h3>Customer</h3>
-    <dl id="review-customer"></dl>
-
-    <h3>Incoming message</h3>
-    <div id="review-incoming" class="prewrap"></div>
-
-    <h3>AI original draft (read-only)</h3>
-    <div id="review-ai" class="prewrap"></div>
-
-    <h3>Final response</h3>
-    <textarea id="review-final" rows="8" cols="60"></textarea>
-
-    <h3>Details</h3>
-    <dl id="review-meta"></dl>
-
-    <div id="review-lead-wrap" hidden>
-      <h3>Linked lead</h3>
-      <dl id="review-lead"></dl>
-    </div>
-
-    <div id="review-learn" hidden>
-      <h3>Learning example</h3>
-      <p>AI จะใช้เป็นตัวอย่างรูปแบบการตอบ แต่ข้อมูลราคาและกฎธุรกิจยังอ้างอิงจากข้อมูลปัจจุบันของ EED HALAL</p>
-      <button id="btn-learn" type="button">ใช้คำตอบนี้เป็นตัวอย่างในอนาคต</button>
-      <p id="learn-status" role="status"></p>
-      <div id="learn-detail"></div>
-    </div>
-
-    <div class="actions">
-      <button id="btn-save" type="button">Save Edit</button>
-      <button id="btn-send" type="button" class="send">Send to LINE</button>
-      <button id="btn-reject" type="button" class="danger">Reject</button>
-    </div>
-
-    <div id="send-confirm" hidden>
-      <h3>Confirm send to LINE</h3>
-      <p>Customer: <strong id="send-confirm-name"></strong></p>
-      <p>Message to send:</p>
-      <div id="send-confirm-preview" class="prewrap"></div>
-      <button id="btn-send-confirm" type="button" class="send">Confirm Send</button>
-      <button id="btn-send-cancel" type="button">Cancel</button>
-    </div>
-  </section>
-</main>
+</div>
 <script src="/owner/app.js"></script>
 </body>
 </html>

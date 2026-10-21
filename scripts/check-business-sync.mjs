@@ -19,9 +19,12 @@ const FORBIDDEN_SCAN_EXTENSIONS = new Set(['.html', '.js', '.json', '.txt', '.md
 // drift for content nobody is supposed to edit. demo/ is the owner's private
 // draft (gitignored, never published); the release flow publishes from it, so
 // policing it here would only confuse the owner with drift in their own notes.
+// line-runtime/ holds the customer's OWN words (LINE messages, drafts, saved
+// replies). A customer who writes "ส่งฟรี" is not the shop claiming free
+// delivery, so scanning private runtime data only produces false alarms.
 export const FORBIDDEN_SCAN_SKIP_DIRS = new Set([
   '.git', '.github', 'node_modules', 'img', 'img_archive_local', 'tmp-chrome-profile',
-  'artifacts', 'demo',
+  'artifacts', 'demo', 'line-runtime',
 ]);
 
 function getPath(obj, dotted) {

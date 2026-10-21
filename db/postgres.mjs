@@ -15,7 +15,7 @@
 // install it only on hosts that set DB_ADAPTER=postgres. Importing this module
 // never touches `pg`; the driver loads only when a pool query runs.
 
-const CUSTOMER_COLUMNS = ['id', 'line_user_id', 'display_name', 'phone', 'email', 'company_name', 'tax_id', 'address', 'notes', 'created_at', 'updated_at'];
+const CUSTOMER_COLUMNS = ['id', 'line_user_id', 'display_name', 'phone', 'email', 'company_name', 'tax_id', 'address', 'notes', 'created_at', 'updated_at', 'bot_paused_at', 'bot_pause_reason', 'profile_synced_at'];
 const LEAD_COLUMNS = ['id', 'customer_id', 'source', 'service_type', 'event_date', 'quantity', 'location', 'budget_per_person', 'status', 'summary', 'source_event_id', 'created_at', 'updated_at'];
 const DRAFT_COLUMNS = ['id', 'draft_id', 'customer_id', 'lead_id', 'channel', 'incoming_message', 'draft_response', 'owner_final_response', 'final_action', 'status', 'source', 'ai_model', 'rule_revision', 'metadata', 'history', 'source_event_id', 'created_at', 'updated_at', 'approved_at', 'sent_at'];
 const AUDIT_COLUMNS = ['id', 'entity_type', 'entity_id', 'action', 'actor_type', 'actor_id', 'before_data', 'after_data', 'created_at'];
@@ -31,6 +31,9 @@ const INBOUND_FIELDS = {
   revision: 'revision', leadId: 'lead_id', draftId: 'draft_id', metadata: 'metadata',
 };
 import { inboundDefaults, inboundPatch } from './inbound-contract.mjs';
+import { memoryDefaults } from './customer-memory-contract.mjs';
+
+const MEMORY_COLUMNS = ['id', 'customer_id', 'summary', 'facts', 'history', 'status', 'source', 'rule_revision', 'created_at', 'updated_at'];
 
 function toCamel(row) {
   if (!row) return row;
@@ -74,7 +77,7 @@ function buildRepos(run) {
     async update(id, patch) {
       const sets = [];
       const values = [];
-      const map = { lineUserId: 'line_user_id', displayName: 'display_name', phone: 'phone', email: 'email', companyName: 'company_name', taxId: 'tax_id', address: 'address', notes: 'notes' };
+      const map = { lineUserId: 'line_user_id', displayName: 'display_name', phone: 'phone', email: 'email', companyName: 'company_name', taxId: 'tax_id', address: 'address', notes: 'notes', botPausedAt: 'bot_paused_at', botPauseReason: 'bot_pause_reason', profileSyncedAt: 'profile_synced_at' };
       for (const [camel, column] of Object.entries(map)) {
         if (patch[camel] !== undefined) {
           sets.push(`${column} = $${values.length + 1}`);
@@ -153,6 +156,15 @@ function buildRepos(run) {
     async listByCustomer(customerId) {
       return mapAll(await run('SELECT * FROM drafts WHERE customer_id = $1 ORDER BY created_at ASC', [customerId]));
     },
+    async list() {
+      return mapAll(await run('SELECT * FROM drafts ORDER BY created_at ASC'));
+    },
+    // Erasure: a deletion request must be able to remove the row itself.
+    // Nothing else may call this.
+    async remove(id) {
+      const result = await run('DELETE FROM drafts WHERE id = $1', [id]);
+      return result.rowCount > 0;
+    },
     async update(id, patch) {
       return applyDraftUpdate(run, id, patch, {});
     },
@@ -197,6 +209,19 @@ function buildRepos(run) {
       if (eventId == null) return null;
       return mapOne(await run('SELECT * FROM inbound_messages WHERE source_event_id = $1', [eventId]));
     },
+    async listByCustomer(customerId) {
+      if (!customerId) return [];
+      return mapAll(await run('SELECT * FROM inbound_messages WHERE customer_id = $1 ORDER BY created_at ASC', [customerId]));
+    },
+    async list() {
+      return mapAll(await run('SELECT * FROM inbound_messages ORDER BY created_at ASC'));
+    },
+    // Erasure: a deletion request must be able to remove the row itself.
+    // Nothing else may call this.
+    async remove(id) {
+      const result = await run('DELETE FROM inbound_messages WHERE id = $1', [id]);
+      return result.rowCount > 0;
+    },
     async updateIfCurrent(id, patch, expected) {
       const fields = Object.entries(inboundPatch(patch));
       const values = [id, ...fields.map(([, value]) => value), expected.status, expected.revision];
@@ -205,6 +230,46 @@ function buildRepos(run) {
       return mapOne(await run(
         `UPDATE inbound_messages SET ${sets.join(', ')} WHERE id = $1 AND status = $${values.length - 1} AND revision = $${values.length} RETURNING *`, values,
       ));
+    },
+  };
+  const customerMemories = {
+    kind: 'customerMemories',
+    async create(row) {
+      const values = [row.id, row.customerId, row.summary ?? '', JSON.stringify(row.facts ?? {}), JSON.stringify(row.history ?? []), row.status ?? 'OPEN', row.source ?? 'rule', row.ruleRevision ?? ''];
+      return mapOne(await run(
+        `INSERT INTO customer_memories (${MEMORY_COLUMNS.slice(0, 8).join(', ')}) VALUES (${placeholders(8)}) RETURNING *`,
+        values,
+      ));
+    },
+    async findById(id) { return mapOne(await run('SELECT * FROM customer_memories WHERE id = $1', [id])); },
+    async findByCustomerId(customerId) {
+      if (!customerId) return null;
+      return mapOne(await run('SELECT * FROM customer_memories WHERE customer_id = $1', [customerId]));
+    },
+    async update(id, patch) {
+      const sets = [];
+      const values = [];
+      const map = { summary: 'summary', status: 'status', source: 'source', ruleRevision: 'rule_revision' };
+      for (const [camel, column] of Object.entries(map)) {
+        if (patch[camel] !== undefined) {
+          sets.push(`${column} = $${values.length + 1}`);
+          values.push(patch[camel]);
+        }
+      }
+      if (patch.facts !== undefined) {
+        sets.push(`facts = $${values.length + 1}`);
+        values.push(JSON.stringify(patch.facts));
+      }
+      if (patch.history !== undefined) {
+        sets.push(`history = $${values.length + 1}`);
+        values.push(JSON.stringify(patch.history));
+      }
+      sets.push('updated_at = now()');
+      values.push(id);
+      return mapOne(await run(`UPDATE customer_memories SET ${sets.join(', ')} WHERE id = $${values.length} RETURNING *`, values));
+    },
+    async list() {
+      return mapAll(await run('SELECT * FROM customer_memories ORDER BY updated_at DESC'));
     },
   };
   const responseExamples = {
@@ -249,7 +314,7 @@ function buildRepos(run) {
       ));
     },
   };
-  return { customers, leads, drafts, auditLogs, inboundMessages, responseExamples };
+  return { customers, leads, drafts, auditLogs, inboundMessages, responseExamples, customerMemories };
 }
 
 async function applyDraftUpdate(run, id, patch, expected) {

@@ -131,15 +131,15 @@ test('send request carries identity and concurrency only', () => {
 });
 
 test('stale 409 disables mutation until reload; 401 locks', () => {
-  assert.ok(appJs.includes('Reload before continuing'), 'stale message');
+  assert.ok(appJs.includes('กรุณาโหลดใหม่ก่อนทำต่อ'), 'stale message');
   assert.ok(appJs.includes('stale = true'), 'stale latch');
-  assert.ok(appJs.includes("lock('Session expired"), '401 lock path');
+  assert.ok(appJs.includes("lock('การใช้งานหมดอายุ"), '401 lock path');
 });
 
 test('SENT/REJECTED/FAILED render read-only; APPROVED shows retry', () => {
   assert.ok(appJs.includes("draft.status === 'SENT'"), 'sent branch');
-  assert.ok(appJs.includes('Retry Same Send'), 'approved retry UX');
-  assert.ok(appJs.includes('Previous send result is uncertain'), 'uncertain notice');
+  assert.ok(appJs.includes('ส่งอีกครั้ง'), 'approved retry UX');
+  assert.ok(appJs.includes('ผลการส่งครั้งก่อนยังไม่ชัดว่าถึงลูกค้าหรือไม่'), 'uncertain notice');
   assert.ok(appJs.includes('FAILED'), 'failed display path');
 });
 
@@ -182,7 +182,7 @@ test('opt-in handles success, dedupe, review-refusal, and 409 safely', () => {
 
 test('learning examples view renders safely with enable/disable', () => {
   assert.ok(appJs.includes('/api/v1/response-examples?limit=100'), 'examples list request');
-  assert.ok(appJs.includes('No learning examples yet'), 'empty state');
+  assert.ok(appJs.includes('ยังไม่มีตัวอย่างคำตอบ'), 'empty state');
   assert.ok(appJs.includes('Disable example') && appJs.includes('Enable example'), 'toggle actions');
   assert.ok(appJs.includes('/response-examples/${encodeURIComponent(example.id)}'), 'id-scoped PATCH path');
   assert.ok(!/DELETE|deleteExample|removeExample/i.test(appJs), 'no physical delete');
@@ -199,6 +199,6 @@ test('SEND never auto-creates an example', () => {
 });
 
 test('examples explain patterns-not-facts boundary', () => {
-  assert.ok(html.includes('AI จะใช้เป็นตัวอย่างรูปแบบการตอบ'), 'facts boundary note');
+  assert.ok(html.includes('บอทจะใช้คำตอบนี้เป็นแนวทางการเขียน'), 'facts boundary note');
   assert.ok(html.includes('กฎธุรกิจปัจจุบัน'), 'current-rules reference');
 });

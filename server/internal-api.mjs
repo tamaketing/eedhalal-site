@@ -6,6 +6,13 @@
 // Endpoints (all /api/v1 except healthz; mutations need JSON + auth):
 //   GET  /healthz
 //   POST /api/v1/customers/resolve { lineUserId, displayName? }
+//   GET  /api/v1/customers        (all customers, bot pause state included)
+//   POST /api/v1/customers/:id/bot-pause  { reason? } (owner stops the bot for
+//          one customer only; actor is always OWNER)
+//   POST /api/v1/customers/:id/bot-resume  (owner lets the bot reply again;
+//          actor is always OWNER)
+//   POST /api/v1/customers/:id/profile  { displayName, syncedAt? } (system
+//          stores the LINE display name fetched by the gateway)
 //   POST /api/v1/leads/evaluate    { customerId, message, context? }
 //   POST /api/v1/drafts            { customerId, leadId?, channel?, incomingMessage,
 //                                    draftResponse, source?, aiModel?, ruleRevision?,
@@ -38,14 +45,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createAdapter } from '../db/index.mjs';
 import { requireInternalAuth } from './auth.mjs';
-import { presentCustomer, presentDraft, presentLead, presentInboundMessage, presentResponseExample } from './present.mjs';
+import { presentCustomer, presentDraft, presentLead, presentInboundMessage, presentResponseExample, presentMemory } from './present.mjs';
 import { receiveInboundMessage, attachCustomer, markProcessing, markFailed, completeInbound, retryInbound,
   getInboundMessage, requireInboundObject } from '../services/inboundMessages.mjs';
 import { createResponseExampleFromDraft, getResponseExample, listResponseExamples,
   setResponseExampleReusable } from '../services/responseExamples.mjs';
 import { ConflictError, NotFoundError, UnauthorizedError, ValidationError } from '../services/errors.mjs';
-import { maybeCreateLead } from '../services/leads.mjs';
-import { resolveCustomer } from '../services/customers.mjs';
+import { maybeCreateLead, setLeadStatus } from '../services/leads.mjs';
+import { decryptCustomerRow, encryptCustomerRow } from '../services/encryption.mjs';
+import { closeJob, customerThread, saveOwnerMemory, upsertMemory } from '../services/customerMemory.mjs';
+import { applyProfileName, pauseBot, resolveCustomer, resumeBot } from '../services/customers.mjs';
 import { approveDraft, editDraft, persistDraftOnce, rejectDraft, sendDraft, autoReplyDraft } from '../services/drafts.mjs';
 import { clampLimit, findMealboxMenus, MEALBOX_SERVICE_TYPE, MEALBOX_SOURCE } from '../services/menus.mjs';
 
@@ -328,6 +337,175 @@ export function createInternalApi({ repos, env = process.env } = {}) {
         return;
       }
 
+      // GET /api/v1/customers — every customer, so the Owner Console can list
+      // who currently has the auto-reply bot paused (botPausedAt set).
+      if (request.method === 'GET' && pathname === '/api/v1/customers') {
+        const rows = await store.customers.list();
+        send(response, 200, { customers: rows.map((row) => presentCustomer(decryptCustomerRow(row))), total: rows.length });
+        return;
+      }
+
+      // POST /api/v1/customers/:id/bot-pause | bot-resume — the owner presses
+      // the button, so the audit actor is always OWNER (never SYSTEM/AI).
+      const botControlMatch = pathname.match(/^\/api\/v1\/customers\/([^/]+)\/(bot-pause|bot-resume)$/);
+      if (botControlMatch && request.method === 'POST') {
+        const customerId = decodeURIComponent(botControlMatch[1]);
+        const body = await readJsonBody(request);
+        const actor = { type: 'OWNER', id: body.ownerId ? String(body.ownerId) : '' };
+        const customer = botControlMatch[2] === 'bot-pause'
+          ? await pauseBot(store, { customerId, reason: body.reason ? String(body.reason) : '' }, actor)
+          : await resumeBot(store, { customerId }, actor);
+        send(response, 200, { customer: presentCustomer(customer) });
+        return;
+      }
+
+      // POST /api/v1/customers/:id/profile — store the LINE display name that
+      // the gateway (or the backfill script) fetched. Called by the system, not
+      // by the owner, so the actor is SYSTEM.
+      const profileMatch = pathname.match(/^\/api\/v1\/customers\/([^/]+)\/profile$/);
+      if (profileMatch && request.method === 'POST') {
+        const customerId = decodeURIComponent(profileMatch[1]);
+        const body = await readJsonBody(request);
+        const customer = await applyProfileName(store, {
+          customerId,
+          displayName: needString(body.displayName, 'displayName'),
+          syncedAt: body.syncedAt ? String(body.syncedAt) : null,
+        }, { type: 'SYSTEM', id: 'line-profile' });
+        send(response, 200, { customer: presentCustomer(customer) });
+        return;
+      }
+
+      // GET /api/v1/customers/:id — one customer with everything the owner
+      // needs: profile, memory (what the bot remembers) and open leads.
+      const customerDetailMatch = pathname.match(/^\/api\/v1\/customers\/([^/]+)$/);
+      if (customerDetailMatch && request.method === 'GET') {
+        const customerId = decodeURIComponent(customerDetailMatch[1]);
+        const customer = await store.customers.findById(customerId);
+        if (!customer) throw new NotFoundError('customer not found');
+        const memory = await store.customerMemories.findByCustomerId(customerId);
+        const leads = await store.leads.listByCustomer(customerId);
+        send(response, 200, {
+          customer: presentCustomer(decryptCustomerRow(customer)),
+          memory: presentMemory(memory),
+          leads: leads.map((lead) => presentLead(lead)),
+        });
+        return;
+      }
+
+      // GET /api/v1/customers/:id/thread — the whole conversation of one
+      // customer, oldest first: every message the customer sent and every
+      // answer the shop gave, including the ones that never became a draft.
+      const threadMatch = pathname.match(/^\/api\/v1\/customers\/([^/]+)\/thread$/);
+      if (threadMatch && request.method === 'GET') {
+        const customerId = decodeURIComponent(threadMatch[1]);
+        const customer = await store.customers.findById(customerId);
+        if (!customer) throw new NotFoundError('customer not found');
+        const memory = await store.customerMemories.findByCustomerId(customerId);
+        const thread = await customerThread(store, customerId);
+        const leads = await store.leads.listByCustomer(customerId);
+        send(response, 200, {
+          customer: presentCustomer(decryptCustomerRow(customer)),
+          memory: presentMemory(memory),
+          leads: leads.map((lead) => presentLead(lead)),
+          messages: thread.messages,
+          drafts: thread.drafts.map((draft) => presentDraft(draft)),
+        });
+        return;
+      }
+
+      // GET|PATCH /api/v1/customers/:id/memory — what the bot remembers about
+      // this customer. The owner may correct it; the bot never overwrites a
+      // summary the owner wrote.
+      const memoryMatch = pathname.match(/^\/api\/v1\/customers\/([^/]+)\/memory$/);
+      if (memoryMatch && (request.method === 'GET' || request.method === 'PATCH')) {
+        const customerId = decodeURIComponent(memoryMatch[1]);
+        const customer = await store.customers.findById(customerId);
+        if (!customer) throw new NotFoundError('customer not found');
+        if (request.method === 'GET') {
+          const memory = await store.customerMemories.findByCustomerId(customerId);
+          send(response, 200, { memory: presentMemory(memory) });
+          return;
+        }
+        const body = await readJsonBody(request);
+        const actor = { type: 'OWNER', id: body.ownerId ? String(body.ownerId) : '' };
+        const memory = await saveOwnerMemory(store, {
+          customerId,
+          summary: body.summary !== undefined ? String(body.summary) : undefined,
+          facts: body.facts && typeof body.facts === 'object' ? body.facts : undefined,
+          actor,
+        });
+        send(response, 200, { memory: presentMemory(memory) });
+        return;
+      }
+
+      // POST /api/v1/customers/:id/memory/close — the running job is done:
+      // the situation moves into the history and the next message starts fresh.
+      const closeMatch = pathname.match(/^\/api\/v1\/customers\/([^/]+)\/memory\/close$/);
+      if (closeMatch && request.method === 'POST') {
+        const customerId = decodeURIComponent(closeMatch[1]);
+        const body = await readJsonBody(request);
+        const actor = { type: 'OWNER', id: body.ownerId ? String(body.ownerId) : '' };
+        const memory = await closeJob(store, { customerId, actor, note: body.note ? String(body.note) : '' });
+        send(response, 200, { memory: presentMemory(memory) });
+        return;
+      }
+
+      // PATCH /api/v1/customers/:id — the owner confirms the customer details
+      // (company, phone, tax id, address). These are the facts the bot may
+      // never overwrite with a guess.
+      const customerPatchMatch = pathname.match(/^\/api\/v1\/customers\/([^/]+)$/);
+      if (customerPatchMatch && request.method === 'PATCH') {
+        const customerId = decodeURIComponent(customerPatchMatch[1]);
+        const body = await readJsonBody(request);
+        const patch = {};
+        const map = {
+          displayName: 'displayName', phone: 'phone', email: 'email', companyName: 'companyName',
+          taxId: 'taxId', address: 'address', notes: 'notes',
+        };
+        for (const [key, field] of Object.entries(map)) {
+          if (body[key] !== undefined) patch[field] = body[key] === null ? null : String(body[key]);
+        }
+        const customer = await store.customers.update(customerId, encryptCustomerRow(patch));
+        if (!customer) throw new NotFoundError('customer not found');
+        send(response, 200, { customer: presentCustomer(decryptCustomerRow(customer)) });
+        return;
+      }
+
+      // POST /api/v1/customers/:id/memory/observe — the bot records what
+      // the customer's message said. The message is the authority for the
+      // facts; the summary may be written by the model.
+      const observeMatch = pathname.match(/^\/api\/v1\/customers\/([^/]+)\/memory\/observe$/);
+      if (observeMatch && request.method === 'POST') {
+        const customerId = decodeURIComponent(observeMatch[1]);
+        const customer = await store.customers.findById(customerId);
+        if (!customer) throw new NotFoundError('customer not found');
+        const body = await readJsonBody(request);
+        const result = await upsertMemory(store, {
+          customerId,
+          customer,
+          message: body.message ? String(body.message) : '',
+          summary: body.summary ? String(body.summary) : '',
+          source: body.source ? String(body.source) : 'rule',
+          ruleRevision: body.ruleRevision ? String(body.ruleRevision) : '',
+          actor: { type: 'SYSTEM', id: 'line-gateway' },
+        });
+        send(response, 200, { memory: presentMemory(result.memory), changed: result.changed });
+        return;
+      }
+
+      // POST /api/v1/leads/:id/status — the owner moves a lead forward.
+      // The rules never move a lead on their own: only the owner decides
+      // that a job is qualified, won or lost.
+      const leadStatusMatch = pathname.match(/^\/api\/v1\/leads\/([^/]+)\/status$/);
+      if (leadStatusMatch && request.method === 'POST') {
+        const leadId = decodeURIComponent(leadStatusMatch[1]);
+        const body = await readJsonBody(request);
+        const to = needString(body.status, 'status');
+        const lead = await setLeadStatus(store, leadId, to, { type: 'OWNER', id: body.ownerId ? String(body.ownerId) : '' });
+        send(response, 200, { lead: presentLead(lead) });
+        return;
+      }
+
       // POST /api/v1/leads/evaluate
       if (request.method === 'POST' && pathname === '/api/v1/leads/evaluate') {
         const body = await readJsonBody(request);
@@ -427,7 +605,17 @@ export function createInternalApi({ repos, env = process.env } = {}) {
             // Body fields beyond owner/concurrency expectations are ignored.
             try {
               const result = await sendDraft(store, record.id, options, { token: env.LINE_CHANNEL_ACCESS_TOKEN });
-              send(response, 200, { draft: presentDraft(result.draft), send: result.send });
+              // A reply the owner rewrote is the answer we want next time. Store
+              // it as an example automatically so the bot can reuse the wording.
+              // Never let this fail the send that already succeeded.
+              let learned = null;
+              try {
+                const saved = await createResponseExampleFromDraft(store, record.id, { ownerId: options.ownerId });
+                learned = { saved: true, id: saved.example?.id ?? null, deduped: Boolean(saved.deduped) };
+              } catch (error) {
+                learned = { saved: false, reason: error?.code === 'example_requires_review' ? 'needs_review' : (error?.message || 'skipped') };
+              }
+              send(response, 200, { draft: presentDraft(result.draft), send: result.send, learned });
             } catch (error) {
               if (error && error.message === 'line send not configured') {
                 send(response, 503, { error: 'send_not_configured' });

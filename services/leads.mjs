@@ -43,9 +43,21 @@ const SERVICE_KEYWORDS = [
 
 const INTENT_PATTERNS = {
   quote: [/ใบเสนอราคา/, /quotation/i, /quote/i, /ราคา/, /กี่บาท/, /คิดยังไง/, /เท่าไหร่/],
-  order: [/สั่ง/, /จอง/, /order/i, /confirm/i, /ยืนยัน/, /เอาด้วย/],
+  // "ขอ 25 กล่อง" is an order, not a question: the customer states what
+  // they want. A request for information ("ขอดูเมนู", "ขอราคา") is NOT an
+  // order, so the number or the thing itself has to follow "ขอ".
+  order: [/สั่ง/, /จอง/, /order/i, /confirm/i, /ยืนยัน/, /เอาด้วย/, /ขอ\s*(?:\d|[ก-๙]{0,3}?(?:กล่อง|ชุด|คน|อาหาร|ข้าว))/],
   catering: [/จัดเลี้ยง/, /catering/i, /อีเวนต์/, /event/i, /งานเลี้ยง/, /งานบริษัท/, /สัมมนา/],
 };
+
+// A Thai short year is Buddhist minus 543 (69 -> 2026). Two-digit years below
+// 40 are treated as 20xx so a real 20xx date is not pushed 60 years out.
+export function normalizeThaiYear(year) {
+  const value = Number(year);
+  if (!Number.isInteger(value)) return null;
+  if (value >= 100) return value;
+  return value >= 40 ? 1957 + value : 2000 + value;
+}
 
 // Deterministic signal extraction from a Thai/English customer message.
 // Returns plain data only (safe to persist after sanitizeMetadata).
@@ -65,13 +77,20 @@ export function extractLeadSignals(text) {
   if (qty) signals.quantity = Number(qty[1]);
   const iso = input.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
   if (iso) {
-    const year = Number(iso[3]) < 100 ? 2000 + Number(iso[3]) : Number(iso[3]);
+    const year = Number(iso[3]) < 100 ? normalizeThaiYear(iso[3]) : Number(iso[3]);
     signals.eventDate = `${year}-${String(iso[2]).padStart(2, '0')}-${String(iso[1]).padStart(2, '0')}`;
   }
   const budget = input.replace(/,/g, '').match(/(\d+(?:\.\d+)?)\s*(บาท|฿|thb)/i);
   if (budget) signals.budget = Number(budget[1]);
-  const at = input.match(/(?:ส่ง|ที่|แถว|ย่าน)\s*([ก-๙a-zA-Z][ก-๙a-zA-Z .()-]{1,40})/);
-  if (at) signals.location = at[1].trim();
+  const at = input.match(/(?:ส่งที่|ส่ง|ไปที่|ที่|แถว|ย่าน)\s*([ก-๙a-zA-Z][ก-๙a-zA-Z .()-]{1,40})/);
+  if (at) {
+    // The place ends at the next topic: "BITEC BANGNA วันที่ 28/10" is a
+    // place plus a date, not a place called "BITEC BANGNA วันที่".
+    signals.location = at[1]
+      .split(/\s+(?:วันที่|เวลา|งบ|ครับ|ค่ะ|และ|กับ|ให้)\s*/)[0]
+      .replace(/^ที่\s*/, '')
+      .trim();
+  }
   return signals;
 }
 

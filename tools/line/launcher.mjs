@@ -17,7 +17,16 @@ import { existsSync } from 'node:fs';
 import { appendFile, readFile, mkdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import {
+  BOT_DB_ENV,
+  botStorePath,
+  compactBotStore,
+  openSqlite,
+  prepareBotStore,
+  pruneOldSessions,
+} from './bot-store.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
@@ -26,6 +35,47 @@ const ENV_PATH = path.join(ROOT, '.env');
 const GATEWAY_PORT = 5678;
 const API_PORT = 8788;
 const DB_DIR = path.join(ROOT, 'data', 'line-runtime');
+const RUNTIME_ENV = path.join(DB_DIR, 'runtime.env');
+const BOT_DB = path.join(DB_DIR, 'opencode-bot.db');
+/** How long a bot conversation stays in the bot's private store. */
+const BOT_SESSION_KEEP_DAYS = 7;
+
+/**
+ * Prepare the bot's private OpenCode store so customer LINE messages never
+ * create sessions in the owner's OpenCode chat list.
+ * Returns the env var value for the gateway, or null when the store could not
+ * be prepared (the bot then keeps the old shared-store behaviour).
+ */
+export async function prepareBotRuntime(env = process.env) {
+  const target = botStorePath({ ...env, [BOT_DB_ENV]: BOT_DB });
+  const prepared = await prepareBotStore({ target });
+  if (!prepared.ok) {
+    return { ok: false, path: target, reason: prepared.reason };
+  }
+  if (prepared.created) {
+    console.log(`    แยกที่เก็บแชทของบอทไว้ที่ ${target}`);
+  }
+
+  // Old bot conversations are pruned so the private store cannot grow forever.
+  const db = await openSqlite(target);
+  if (db) {
+    try {
+      const pruned = pruneOldSessions(db, { keepDays: BOT_SESSION_KEEP_DAYS });
+      if (pruned.removed) {
+        console.log(`    ล้างแชทเก่าของบอท ${pruned.removed} ห้อง (เก็บไว้ ${BOT_SESSION_KEEP_DAYS} วัน)`);
+        db.close();
+        // Deleting rows does not shrink the file: give the space back.
+        await compactBotStore(target);
+        return { ok: true, path: target, created: prepared.created };
+      }
+    } catch {
+      // Pruning is housekeeping; never block the launcher for it.
+    } finally {
+      try { db.close(); } catch { /* already closed */ }
+    }
+  }
+  return { ok: true, path: target, created: prepared.created };
+}
 
 const CLOUDFLARED_CANDIDATES = [
   process.env.CLOUDFLARED_PATH,
@@ -53,11 +103,16 @@ export function parseEnvFile(text) {
 }
 
 async function loadEnv() {
-  let parsed = {};
-  if (existsSync(ENV_PATH)) {
-    parsed = parseEnvFile(await readFile(ENV_PATH, 'utf8'));
-  }
-  // Real process environment wins over .env (operator override).
+  // Order: .env (owner config) -> runtime.env (machine-local secrets such as
+  // the PostgreSQL password) -> real process env (operator override).
+  // data/line-runtime/ is gitignored, so runtime.env never leaves the machine.
+  const parsed = {};
+  const fromFile = async (file) => {
+    if (!existsSync(file)) return {};
+    return parseEnvFile(await readFile(file, 'utf8'));
+  };
+  Object.assign(parsed, await fromFile(ENV_PATH), await fromFile(RUNTIME_ENV));
+  // Real process environment wins over any file (operator override).
   return { ...parsed, ...process.env };
 }
 
@@ -117,6 +172,28 @@ function runCloudflaredTunnel(cloudflared, env) {
   return { child, getUrl: () => url };
 }
 
+/** Open the owner console in the default browser once the API is up.
+ *  Best effort only: a headless machine (or a locked desktop) simply keeps the
+ *  printed URL. Set EED_OPEN_CONSOLE=0 to never open it. */
+function openOwnerConsole(env = process.env) {
+  const url = `http://127.0.0.1:${API_PORT}/owner/`;
+  console.log(`  หน้าจอเจ้าของ: ${url}`);
+  if (String(env.EED_OPEN_CONSOLE || '1').trim() === '0') {
+    console.log('  (เปิดเองไม่ได้ตามที่ตั้งไว้ — เปิดลิงก์เองได้จากที่อยู่ข้างบน)\n');
+    return;
+  }
+  const opener = process.platform === 'win32' ? { cmd: 'cmd', args: ['/c', 'start', '', url] }
+    : process.platform === 'darwin' ? { cmd: 'open', args: [url] }
+      : { cmd: 'xdg-open', args: [url] };
+  try {
+    const child = spawn(opener.cmd, opener.args, { stdio: 'ignore', windowsHide: true, detached: true });
+    child.on('error', () => {});
+    child.unref();
+  } catch {
+    // Never let a cosmetic convenience stop the server from coming up.
+  }
+}
+
 async function main() {
   await mkdir(DB_DIR, { recursive: true });
   const env = await loadEnv();
@@ -130,13 +207,15 @@ async function main() {
 
   console.log('=== EED HALAL LINE server (เครื่องเจ้าของ) ===\n');
 
-  // 1. Internal API (file DB = drafts/customers survive restart).
-  console.log(`[1/3] เริ่ม Internal API (file DB) ที่ 127.0.0.1:${API_PORT} …`);
+  // 1. Internal API (PostgreSQL when a connection is configured, else the
+  // file DB) — drafts/customers survive a restart either way.
+  const usePostgres = Boolean(env.DATABASE_URL);
+  console.log(`[1/3] เริ่ม Internal API (${usePostgres ? 'PostgreSQL' : 'file DB'}) ที่ 127.0.0.1:${API_PORT} …`);
   const api = spawn(process.execPath, [path.join(ROOT, 'server', 'internal-api.mjs')], {
     cwd: ROOT,
     env: childEnv(env, {
       EED_INTERNAL_API_SECRET: apiSecret,
-      DB_ADAPTER: 'file',
+      DB_ADAPTER: usePostgres ? 'postgres' : 'file',
       DB_DIR,
       INTERNAL_API_PORT: String(API_PORT),
     }),
@@ -151,9 +230,19 @@ async function main() {
   }
   console.log('    พร้อม ✓\n');
 
+  // The console is the owner's only window into the queue, so open it here
+  // instead of making them find the address in the log.
+  openOwnerConsole(env);
+
   // 2. LINE gateway.
   console.log(`[2/3] เริ่ม LINE gateway ที่ 127.0.0.1:${GATEWAY_PORT} …`);
   const auto = String(env.AUTO_REPLY || '0').trim() === '1';
+  // The bot writes its OpenCode sessions into its own private store, so
+  // customer messages never show up in the owner's OpenCode chat list.
+  const botRuntime = await prepareBotRuntime(env);
+  if (!botRuntime.ok) {
+    console.log(`    ⚠ แยกที่เก็บแชทของบอทไม่สำเร็จ (${botRuntime.reason}) — บอทจะใช้ที่เก็บแชทร่วมกับเจ้าของ`);
+  }
   const gateway = spawn(process.execPath, [path.join(ROOT, 'server', 'line-gateway.mjs')], {
     cwd: ROOT,
     env: childEnv(env, {
@@ -161,6 +250,7 @@ async function main() {
       INTERNAL_API_PORT: String(API_PORT),
       LINE_WEBHOOK_PORT: String(GATEWAY_PORT),
       AUTO_REPLY: auto ? '1' : '0',
+      ...(botRuntime.ok ? { [BOT_DB_ENV]: botRuntime.path } : {}),
     }),
     stdio: 'inherit',
   });
@@ -207,7 +297,12 @@ async function main() {
   });
 }
 
-main().catch((error) => {
-  process.stderr.write(`launcher ไม่สำเร็จ: ${error.message}\n`);
-  process.exitCode = 1;
-});
+// Running the module must not start the whole stack: only the CLI does.
+const isCli = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
+
+if (isCli) {
+  main().catch((error) => {
+    process.stderr.write(`launcher ไม่สำเร็จ: ${error.message}\n`);
+    process.exitCode = 1;
+  });
+}

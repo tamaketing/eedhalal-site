@@ -56,6 +56,21 @@ export const CHECKS = [
     script: 'scripts/sync-business-content.mjs',
     args: ['--check'],
   },
+  {
+    name: 'line-bot-store',
+    script: 'scripts/check-line-bot-store.mjs',
+    args: [],
+  },
+  {
+    name: 'customer-memory',
+    script: 'scripts/check-customer-memory.mjs',
+    args: [],
+  },
+  {
+    name: 'customer-privacy',
+    script: 'scripts/check-customer-privacy.mjs',
+    args: [],
+  },
 ];
 
 async function runCheck(check) {

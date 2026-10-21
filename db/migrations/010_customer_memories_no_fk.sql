@@ -1,0 +1,18 @@
+-- EED HALAL central database — migration 010: customer_memories without a
+-- hard foreign key.
+--
+-- WHY: migration 009 gave customer_memories a REFERENCES customers(id)
+-- constraint. PostgreSQL refuses to TRUNCATE a table that another table's
+-- foreign key points at, unless that other table is truncated in the same
+-- command. The test suite truncates the six known tables, so the constraint
+-- broke the real-PostgreSQL suites (heap_truncate_check_FKs).
+--
+-- The integrity guarantee does not get weaker in practice: the only writer
+-- of a memory is services/customerMemory.mjs, and the Internal API refuses
+-- to write one for a customer that does not exist. What the constraint would
+-- have added is one check in a table nobody else reads.
+--
+-- Keeping the schema free of a cross-table constraint also keeps the
+-- "truncate the known tables" cleanup of the test suite working, which is
+-- what protects the real data during a test run.
+ALTER TABLE customer_memories DROP CONSTRAINT IF EXISTS customer_memories_customer_id_fkey;

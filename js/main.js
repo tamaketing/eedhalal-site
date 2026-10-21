@@ -56,6 +56,7 @@
   var HALAL_CERT_PATH = fileAware(EN_PREFIX + '/halal-cert.html');
   var REVIEWS_PATH = fileAware(EN_PREFIX + '/reviews.html');
   var FAQ_PATH = fileAware(EN_PREFIX + '/faq.html');
+  var PRIVACY_PATH = fileAware(EN_PREFIX + '/privacy.html');
   var SATHORN_PATH = fileAware(EN_PREFIX + '/sathorn.html');
   var SILOM_PATH = fileAware(EN_PREFIX + '/silom.html');
   var SATHORN_SILOM_PATH = fileAware(EN_PREFIX + '/sathorn-silom.html');
@@ -751,6 +752,7 @@
         <a href="' + BLOG_CICOT_PATH + '">What is CICOT</a>\
         <a href="' + BLOG_HALAL_VS_NORMAL_PATH + '">Halal vs Regular</a>\
         <a href="' + GLOSSARY_PATH + '">Halal Glossary</a>\
+        <a href="' + PRIVACY_PATH + '">Privacy</a>\
       </div>\
     </div>\
     <div>\
@@ -828,6 +830,7 @@
         <a href="' + BLOG_CICOT_PATH + '">CICOT \u0e04\u0e37\u0e2d\u0e2d\u0e30\u0e44\u0e23</a>\
         <a href="' + BLOG_HALAL_VS_NORMAL_PATH + '">\u0e2e\u0e32\u0e25\u0e32\u0e25 vs \u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b</a>\
         <a href="' + GLOSSARY_PATH + '">อภิธานศัพท์ฮาลาล</a>\
+        <a href="' + PRIVACY_PATH + '">ความเป็นส่วนตัว</a>\
         <a href="' + BLOG_INDEX_PATH + '">บล็อกทั้งหมด</a>\
       </div>\
     </div>\

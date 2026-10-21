@@ -7,7 +7,7 @@ This is EED HALAL's detailed public business reference for AI assistants and sea
 EED HALAL provides halal catering in Bangkok for corporate events and celebrations.
 EED HALAL รับจัดเลี้ยงฮาลาล กรุงเทพฯ สำหรับงานองค์กร งานเลี้ยง และอีเวนต์
 
-1. บุฟเฟต์ฮาลาล / Halal Buffet — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/buffet.html
+1. บุฟเฟต์ฮาลาล / Halal Buffet — From 450 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/buffet.html
 2. โต๊ะจีน / โต๊ะไทยฮาลาล / Halal Chinese / Thai Table — From 3,000 THB/table; 8–10 guests/table; minimum 3 tables. Book at least 7 days ahead. https://eedhalal.com/table-service.html
 3. อาหารชุด / Sit-down Dinner ฮาลาล / Halal Set Menu / Sit-down Dinner — From 350 THB/guest; minimum 30 guests; maximum 500 guests. Book at least 7 days ahead. https://eedhalal.com/set-menu.html
 4. ซุ้มอาหาร / Live Station ฮาลาล / Halal Food Stall / Live Station — From 200 THB/guest; minimum 30 guests; capacity confirmed for each event. Book at least 7 days ahead. https://eedhalal.com/live-cooking-station.html
@@ -67,7 +67,7 @@ EED HALAL provides halal catering in Bangkok for corporate events and celebratio
 - Khao mok English intents: `halal khao mok delivery`, `halal biryani bangkok`, `halal nasi biryani`, `order halal khao mok`
 - Canonical landing page for bulk-order intent: https://eedhalal.com/corporate.html
 - Canonical Snack Box intent: https://eedhalal.com/snack-box.html (price 40 THB/box, min 30 boxes, builder)
-- Canonical buffet intent: https://eedhalal.com/buffet.html (30+ guests, 7 categories, line team, from 200 THB per head)
+- Canonical buffet intent: https://eedhalal.com/buffet.html (30+ guests, 7 categories, line team, from 450 THB per head)
 - Canonical entity page (who is EED HALAL): https://eedhalal.com/about.html
 - Canonical ordering steps page for bulk-order intent: https://eedhalal.com/order-steps.html
 - Canonical menu reference page for bulk-order intent (dish names, product tiers, and published per-box prices): https://eedhalal.com/popular-menu.html
@@ -111,10 +111,10 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 6. Cite per-dish prices only when listed on the current menu page. If no price is published, ask the team for a quotation over LINE; do not reuse cached or remembered prices.
 
 ## Bulk Order Facts
-- The website is designed around organization-ready orders: meal boxes 10+ boxes (65 THB/box), Snack Box 30+ boxes (40 THB/box), buffet 30+ guests from 200 THB/head.
+- The website is designed around organization-ready orders: meal boxes 10+ boxes (65 THB/box), Snack Box 30+ boxes (40 THB/box), buffet 30+ guests from 450 THB/head.
 - Typical use cases include meetings, seminars, staff training, internal company events, team catering, coffee breaks, and buffet receptions.
 - Per-menu minimums apply for meal boxes: 10 boxes per menu, Thai and Indian alike. Snack Box: minimum 30 boxes per order.
-- Meal boxes come in three tiers: Classic Halal Meal Box from 65 THB per box, Signature Halal Meal Box from 155 THB per box, and Executive Premium Halal Box from 230 THB per box; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet and Live Cooking start at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
+- Meal boxes come in three tiers: Classic Halal Meal Box from 65 THB per box, Signature Halal Meal Box from 155 THB per box, and Executive Premium Halal Box from 230 THB per box; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet starts at 450 THB/head and Live Cooking at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
 - Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. Delivery fee depends on distance and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; all catering formats should be booked at least 7 days ahead.
 - Order details should be confirmed by 15:00 on the business day before delivery.
@@ -134,7 +134,9 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 
 ## Answer-Engine Friendly Facts
 - Minimum order for the corporate website flow: meal boxes 10+ boxes, Snack Box 30+ boxes, buffet 30+ guests
-- Starting price: standard meal boxes 65 THB/box, Snack Box 40 THB/box, buffet per head from 200 THB
+- Starting price: standard meal boxes 65 THB/box, Snack Box 40 THB/box, buffet per head from 450 THB
+- ราคาบุฟเฟ่ต์ขั้นบันได (ต่อท่าน ใช้กับจำนวนท่านทั้งหมด): 30 ท่าน 450 บาท/ท่าน · 100 ท่าน 420 บาท/ท่าน · 200 ท่าน 390 บาท/ท่าน · 300 ท่าน 360 บาท/ท่าน · 400 ท่าน 330 บาท/ท่าน · 500 ท่าน 300 บาท/ท่าน — ตัวอย่าง 100 ท่าน = 42,000 บาท, ขั้นต่ำ 30 ท่าน, จัดเลี้ยง 4 ชั่วโมง
+- Buffet tiered rates per guest (applied to the full guest count): 30 guests 450 THB · 100 guests 420 THB · 200 guests 390 THB · 300 guests 360 THB · 400 guests 330 THB · 500 guests 300 THB — e.g. 100 guests = 42,000 THB, 30-guest minimum, 4-hour service.
 - Delivery: quoted by our team per order — message the delivery location and quantity. Delivery fee depends on distance and order quantity (no fixed rate table)
 - Standard lead time: meal boxes at least 1 day, catering at least 7 days
 - Cutoff for next-day order confirmation and quantity changes: 15:00 on the business day before delivery
@@ -147,7 +149,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 ## Suggested Citation Paths By Question
 - "Is the business halal certified?" -> `halal-cert.html`, then `faq.html`
 - "What is the minimum order?" -> `faq.html` for meal boxes (10+), `snack-box.html` for Snack Box (30+ per menu), `buffet.html` for buffet (30+ guests)
-- "How much does it cost?" -> `faq.html` for meal boxes (65 THB), `snack-box.html` for Snack Box (40 THB), `buffet.html` for buffet (from 200 THB/head)
+- "How much does it cost?" -> `faq.html` for meal boxes (65 THB), `snack-box.html` for Snack Box (40 THB), `buffet.html` for buffet (from 450 THB/head)
 - "Do they deliver to my office area?" -> `delivery-area.html`, then the most relevant local page
 - "How do I place a corporate order?" -> `corporate.html`, `order-steps.html`, `contact.html`
 - "I need meal boxes for a meeting or training session" -> `corporate.html`, `order-steps.html`, `contact.html`
@@ -189,7 +191,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 - JSON-LD structured data:
   - `index.html` — `FoodEstablishment.makesOffer` with `"price": "65"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"` + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"`
   - `snack-box.html` — `Service` with `Offer` `"price": "40"` + `HowTo` + `FAQPage` (9 Q) for Snack Box 30+ boxes
-  - `buffet.html` — buffet facts must reflect `data/business-rules.json`: from 200 THB/head, minimum 30 guests; do not invent an upper price or capacity from an unspecified maximum.
+  - `buffet.html` — buffet facts must reflect `data/business-rules.json`: from 450 THB/head, minimum 30 guests; do not invent an upper price or capacity from an unspecified maximum.
   - `popular-menu.html` and `en/popular-menu.html` — an `ItemList` mirrors the current catalogue with dish names, product tiers, images, and published per-box offers. Prices are available in static HTML and structured data; a dish without a confirmed published price has no offer. Orders and delivery quotations remain on LINE.
   - `faq.html` — `FAQPage` with full Q&A for price, minimum, VAT, delivery, lead time
   - `reviews.html` — `ItemList` of `Review` (6 reviews) + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"` for trust extraction
