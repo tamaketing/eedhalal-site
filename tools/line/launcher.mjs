@@ -236,7 +236,6 @@ async function main() {
 
   // 2. LINE gateway.
   console.log(`[2/3] เริ่ม LINE gateway ที่ 127.0.0.1:${GATEWAY_PORT} …`);
-  const auto = String(env.AUTO_REPLY || '0').trim() === '1';
   // The bot writes its OpenCode sessions into its own private store, so
   // customer messages never show up in the owner's OpenCode chat list.
   const botRuntime = await prepareBotRuntime(env);
@@ -249,12 +248,11 @@ async function main() {
       EED_INTERNAL_API_SECRET: apiSecret,
       INTERNAL_API_PORT: String(API_PORT),
       LINE_WEBHOOK_PORT: String(GATEWAY_PORT),
-      AUTO_REPLY: auto ? '1' : '0',
       ...(botRuntime.ok ? { [BOT_DB_ENV]: botRuntime.path } : {}),
     }),
     stdio: 'inherit',
   });
-  console.log(`    พร้อม ✓ (${auto ? 'AUTO-REPLY ON' : 'SHADOW โหมดเงา ไม่ส่ง'})\n`);
+  console.log(`    พร้อม ✓ (โหมดเงา — ไม่มีการส่งอัตโนมัติ ทุกข้อความรอเจ้าของกดส่ง)\n`);
 
   // 3. cloudflared tunnel.
   const cloudflared = findCloudflared();

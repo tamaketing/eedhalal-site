@@ -114,7 +114,7 @@ EED HALAL ตอนนี้ — ทั้งเรื่องที่เก�
 
 | ขั้นตอน | สถานะ |
 |---|---|
-| 4.1 สำรองอัตโนมัติ | ✅ `backup-postgres.mjs` — `pg_dump` → เข้ารหัส → `data/line-runtime/backups/` (เก็บ 30 วัน) · ใส่ `--dest "<โฟลเดอร์ My Drive>"` เพื่ออัปโหลดผ่านแอป Google Drive for Desktop |
+| 4.1 สำรองอัตโนมัติ | ✅ `backup-postgres.mjs` — `pg_dump` → เข้ารหัส → `data/line-runtime/backups/` (เก็บ 30 วัน) · ตั้ง Task Scheduler `EED HALAL - nightly backup` ทุกวัน 16:00 (ตอนเครื่องเปิด) · ใส่ `--dest "<โฟลเดอร์ My Drive>"` เพื่ออัปโหลดผ่านแอป Google Drive for Desktop |
 | 4.2 เก็บเวอร์ชัน | ✅ 30 วัน (ลบเก่าอัตโนมัติทุกครั้งที่สำรอง) |
 | 4.3 ทดสอบกู้คืน | ✅ `restore-backup.mjs` — ถอดรหัสแล้ว `pg_restore --clean` ได้จริง (ทดสอบกับ dump จริงแล้ว) · ไฟล์ plain ถูกลบทันทีหลังกู้ |
 | 4.4 เข้ารหัสด้วยกุญแจ | ✅ ไฟล์สำรองอ่านไม่ออกแม้อยู่บนคลาวด์ · กุญแจอยู่ใน `data/line-runtime/runtime.env` (ควรสำรองกุญแจไว้ที่อื่นด้วย) |

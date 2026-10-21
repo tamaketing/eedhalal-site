@@ -1,15 +1,19 @@
 // LINE reply gateway — the "dispatcher" between the webhook, the Internal
 // API, and the chat-replier agent.
 //
-// One inbound text message becomes one draft. In shadow mode (AUTO_REPLY unset)
-// every draft stays WAITING_FOR_HUMAN for the owner. When AUTO_REPLY=1, the
-// safe lanes (auto facts + confident agent answers) are sent immediately via
-// the LINE Reply API; money/order messages always stay for the owner.
+// One inbound text message becomes one draft. Nothing is ever sent from
+// here: every reply waits for the owner in the Owner Console.
+//
+// SENDING POLICY (decided 2026-10-21): the shop does not auto-send. There is
+// no AUTO_REPLY switch any more — it was misleading, because the message
+// pipeline already forced it off while the start-up banner still printed
+// "AUTO-REPLY ON". The branch that sends is kept below, guarded by
+// AUTO_SEND_ALLOWED, behind the outbound gate and the reply token, so turning
+// it on later is a one-line, reviewed change instead of a rewrite.
 //
 //   node server/line-gateway.mjs        (runs the webhook + this worker)
 //
-// The replyToken is used in-memory once and never persisted. Nothing is sent
-// unless AUTO_REPLY=1 AND LINE_CHANNEL_ACCESS_TOKEN is configured.
+// The replyToken is used in-memory once and never persisted.
 import { createLineWebhook } from './line-webhook.mjs';
 import { askChatReplier, askMemoryWriter, HISTORY_LIMIT } from '../tools/agent/line-chat.mjs';
 import { needsProfileRefresh } from '../services/lineProfile.mjs';
@@ -23,14 +27,17 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const isCli = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 
+/**
+ * The one switch that decides whether the shop answers on its own.
+ * false = โหมดเงา: ทุกข้อความกลายเป็น draft รอเจ้าของกดส่งที่ Owner Console
+ * See AGENTS.md "กติกาการตอบลูกค้าและการส่งข้อความ".
+ */
+const AUTO_SEND_ALLOWED = false;
+
+
 export const API_HOST = process.env.INTERNAL_API_HOST || '127.0.0.1';
 export const API_PORT = Number(process.env.INTERNAL_API_PORT || 8788);
 export const API_BASE = `http://${API_HOST}:${API_PORT}`;
-
-/** Kill switch: auto-reply is OFF unless the owner sets AUTO_REPLY=1. */
-export function autoReplyEnabled(env = process.env) {
-  return String(env.AUTO_REPLY || '').trim() === '1';
-}
 
 function apiSecret(env = process.env) {
   const secret = env.EED_INTERNAL_API_SECRET;
@@ -436,9 +443,9 @@ export async function handleLineMessage({ userId, text, webhookEventId, replyTok
   // earlier messages). It goes into the prompt so the bot never asks again
   // for a phone number or a date the customer already gave.
   const memory = await loadMemory(customerId).catch(() => null);
-  // Auto-send is disabled: every reply is drafted by the model and waits for
-  // the owner's approval. (AUTO_REPLY env is intentionally ignored here.)
-  const auto = false;
+  // Auto-send is disabled by policy: every reply is drafted and waits for the
+  // owner's approval in the Owner Console.
+  const auto = AUTO_SEND_ALLOWED;
 
   // Money/order/custom-price: never auto-answer, never auto-send.
   if (triage.route === 'human') {
@@ -550,8 +557,8 @@ export async function handleLineMessage({ userId, text, webhookEventId, replyTok
     result.gate = gate.reasons;
   }
 
-  // Auto-send only when: switch on, a reply token exists, the reply is a real
-  // (non-placeholder) answer, and the outbound gate passed.
+  // Auto-send only when: the policy allows it, a reply token exists, the reply
+  // is a real (non-placeholder) answer, and the outbound gate passed.
   if (auto && replyToken && reply && !reply.startsWith('เรื่องสั่งซื้อ') && gate.ok) {
     try {
       const sent = await autoReplyDraft({ draftId: result.draftId, replyToken });
@@ -572,8 +579,9 @@ async function main() {
     return;
   }
   const port = Number(process.env.LINE_WEBHOOK_PORT || 5678);
-  const auto = autoReplyEnabled();
-  const mode = auto ? 'AUTO-REPLY ON' : 'SHADOW (ไม่ส่ง)';
+  const mode = AUTO_SEND_ALLOWED
+    ? 'ส่งอัตโนมัติ (เปิดใช้ตามนโยบาย)'
+    : 'โหมดเงา — ส่งอัตโนมัติปิด ทุกข้อความรอเจ้าของกดส่งที่ Owner Console';
 
   const server = createLineWebhook({
     channelSecret: secret,
