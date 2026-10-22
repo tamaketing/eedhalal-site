@@ -10,6 +10,9 @@
 | เตรียมไฟล์ สร้างเนื้อหา ตรวจ และขึ้นเว็บ | [DEPLOY.md](DEPLOY.md) |
 | เปิดเครื่องมือแอดมิน สำรอง กู้คืน และย้ายเครื่อง | [คู่มือแอดมิน](tools/admin/README.md) |
 | ข้อมูลสาธารณะสำหรับ AI อ้างอิงเว็บไซต์ | [llms.txt](llms.txt) และ [llms-full.md](llms-full.md) |
+| โครงสร้างองค์กร AI ตำแหน่ง สิทธิ์ และแผนการทำงาน | [agent-org-v2-plan.md](docs/agent-org-v2-plan.md) |
+| รูปแบบมอบงานระหว่างตำแหน่ง และรูปแบบผลลัพธ์มาตรฐาน | [agent-handoff.md](docs/agent-handoff.md) |
+| KPI รายตำแหน่งและเกณฑ์คะแนน lead | [agent-kpi.md](docs/agent-kpi.md) |
 
 ## ต้นทางข้อมูล
 

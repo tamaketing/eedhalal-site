@@ -115,6 +115,9 @@ function buildRepos(run) {
     async listByCustomer(customerId) {
       return mapAll(await run('SELECT * FROM leads WHERE customer_id = $1 ORDER BY created_at ASC', [customerId]));
     },
+    async listByStatus(status) {
+      return mapAll(await run('SELECT * FROM leads WHERE status = $1 ORDER BY created_at ASC', [status]));
+    },
     async update(id, patch) {
       const sets = [];
       const values = [];

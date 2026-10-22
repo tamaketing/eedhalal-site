@@ -14,6 +14,8 @@
 //   POST /api/v1/customers/:id/profile  { displayName, syncedAt? } (system
 //          stores the LINE display name fetched by the gateway)
 //   POST /api/v1/leads/evaluate    { customerId, message, context? }
+//   GET  /api/v1/leads?status=     (the job funnel: counts per status)
+//   POST /api/v1/leads/:id/status { status } (owner moves a lead forward)
 //   POST /api/v1/drafts            { customerId, leadId?, channel?, incomingMessage,
 //                                    draftResponse, source?, aiModel?, ruleRevision?,
 //                                    sourceEventId?, metadata? } -> 201 (200 + deduped on retry)
@@ -35,9 +37,16 @@
 //   GET  /api/v1/menus/mealbox?price=&maxPrice=&tier=&q=&limit=
 //          (deterministic meal-box catalog from data/planner-overrides.json;
 //          price authority. Authenticated only, never on the public gateway.)
+//   POST /api/v1/quotations  { customerId, message, quoteText, sourceEventId?,
+//                             quantity?, eventDate?, location?, budgetPerPerson? }
+//          (A04 records a quotation: the deterministic rules create the lead,
+//          the draft holds the price text the owner approves. 201, 200 on retry)
+//   GET  /api/v1/quotations?status=&limit=
+//   GET  /api/v1/quotations/:id
 //
 // NOT IMPLEMENTED here: LINE sender, regenerate-with-AI, kitchen push,
-// quotation/order/job/payment/accounting.
+// accounting. A quotation is a draft the owner approves — no PDF, no invoice,
+// no payment state.
 
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -51,12 +60,13 @@ import { receiveInboundMessage, attachCustomer, markProcessing, markFailed, comp
 import { createResponseExampleFromDraft, getResponseExample, listResponseExamples,
   setResponseExampleReusable } from '../services/responseExamples.mjs';
 import { ConflictError, NotFoundError, UnauthorizedError, ValidationError } from '../services/errors.mjs';
-import { maybeCreateLead, setLeadStatus } from '../services/leads.mjs';
+import { maybeCreateLead, setLeadStatus, leadFunnel, listLeadsByStatus } from '../services/leads.mjs';
 import { decryptCustomerRow, encryptCustomerRow } from '../services/encryption.mjs';
 import { closeJob, customerThread, saveOwnerMemory, upsertMemory } from '../services/customerMemory.mjs';
 import { applyProfileName, pauseBot, resolveCustomer, resumeBot } from '../services/customers.mjs';
 import { approveDraft, editDraft, persistDraftOnce, rejectDraft, sendDraft, autoReplyDraft } from '../services/drafts.mjs';
 import { clampLimit, findMealboxMenus, MEALBOX_SERVICE_TYPE, MEALBOX_SOURCE } from '../services/menus.mjs';
+import { isQuotationDraft, loadBusinessRules, QUOTATION_DRAFT_SOURCE, QUOTATION_METADATA_KEY, quotationView } from '../services/quotations.mjs';
 
 const MAX_BODY_BYTES = 256 * 1024;
 const DEFAULT_LIMIT = 20;
@@ -628,7 +638,8 @@ export function createInternalApi({ repos, env = process.env } = {}) {
           if (action === 'auto-reply') {
             // Gateway-only auto-reply: the replyToken arrives in the body and
             // is used in-memory once, never persisted. Fails closed when the
-            // LINE token is unset.
+            // LINE token is unset. The shop does not auto-send today, so the
+            // gateway never calls this route — see AGENTS.md.
             try {
               const result = await autoReplyDraft(store, record.id, {
                 replyToken: typeof body.replyToken === 'string' ? body.replyToken : '',
@@ -651,6 +662,98 @@ export function createInternalApi({ repos, env = process.env } = {}) {
           send(response, 200, { draft: presentDraft(next) });
           return;
         }
+      }
+
+      // GET /api/v1/leads — the job funnel: how many jobs sit in each status.
+      // The owner moves a lead; this route only reads.
+      if (request.method === 'GET' && pathname === '/api/v1/leads') {
+        const status = url.searchParams.get('status');
+        const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || DEFAULT_LIMIT, 1), MAX_LIMIT);
+        const counts = await leadFunnel(store);
+        if (status) {
+          const rows = await listLeadsByStatus(store, status, { limit });
+          send(response, 200, { leads: rows.map((lead) => presentLead(lead)), counts, status, total: counts[status] ?? 0 });
+          return;
+        }
+        send(response, 200, { leads: [], counts, total: Object.values(counts).reduce((sum, value) => sum + value, 0) });
+        return;
+      }
+
+      // Quotation queue (A04). A quotation is the pair the shop already keeps:
+      // a lead with the structured job data + the draft holding the price text
+      // the owner approves. No new table, no automatic send, no price maths
+      // here — the menu catalogue owns prices.
+      if (request.method === 'POST' && pathname === '/api/v1/quotations') {
+        const body = await readJsonBody(request);
+        const customerId = needString(body.customerId, 'customerId');
+        const customer = await store.customers.findById(customerId);
+        if (!customer) throw new NotFoundError(`customer not found: ${customerId}`);
+        const message = needString(body.message, 'message');
+        const quoteText = needString(body.quoteText, 'quoteText');
+        const sourceEventId = typeof body.sourceEventId === 'string' ? body.sourceEventId : null;
+        // The lead comes from the deterministic rules, never from the model.
+        const { lead } = await maybeCreateLead(store, {
+          customerId,
+          message,
+          sourceEventId,
+          actor: { type: 'AI', id: 'quotation' },
+        });
+        // The lead holds the rule-extracted job data; explicit fields from the
+        // caller only fill what the rules could not read.
+        const structured = {
+          quantity: body.quantity == null ? (lead?.quantity ?? null) : Number(body.quantity),
+          eventDate: body.eventDate || lead?.eventDate || null,
+          location: body.location || lead?.location || null,
+          budgetPerPerson: body.budgetPerPerson == null ? (lead?.budgetPerPerson ?? null) : Number(body.budgetPerPerson),
+          serviceType: body.serviceType || lead?.serviceType || null,
+        };
+        const draft = await persistDraftOnce(store, {
+          customerId,
+          leadId: lead?.id || null,
+          channel: 'line',
+          incomingMessage: message,
+          draftResponse: quoteText,
+          source: QUOTATION_DRAFT_SOURCE,
+          aiModel: 'opencode-agent',
+          metadata: { [QUOTATION_METADATA_KEY]: structured, writtenBy: 'opencode-agent' },
+          ...(sourceEventId ? { sourceEventId } : {}),
+        }, { type: 'AI', id: 'A04' });
+        const rules = await loadBusinessRules();
+        send(response, draft.deduped ? 200 : 201, {
+          quotation: quotationView({ draft, lead, customer, rules }),
+          draft: presentDraft(draft),
+          lead: lead ? presentLead(lead) : null,
+          deduped: !!draft.deduped,
+        });
+        return;
+      }
+
+      if (request.method === 'GET' && pathname === '/api/v1/quotations') {
+        const status = url.searchParams.get('status') || 'WAITING_FOR_HUMAN';
+        const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || DEFAULT_LIMIT, 1), MAX_LIMIT);
+        const rows = await store.drafts.listByStatus(status);
+        const rules = await loadBusinessRules();
+        const quotations = [];
+        for (const row of rows) {
+          if (!isQuotationDraft(row)) continue;
+          const lead = row.leadId ? await store.leads.findById(row.leadId) : null;
+          const customer = row.customerId ? await store.customers.findById(row.customerId) : null;
+          quotations.push(quotationView({ draft: row, lead, customer, rules }));
+          if (quotations.length >= limit) break;
+        }
+        send(response, 200, { quotations, total: quotations.length, limit, status });
+        return;
+      }
+
+      const quotationMatch = pathname.match(/^\/api\/v1\/quotations\/([^/]+)$/);
+      if (quotationMatch && request.method === 'GET') {
+        const record = await findDraft(decodeURIComponent(quotationMatch[1]));
+        if (!record || !isQuotationDraft(record)) throw new NotFoundError('quotation not found');
+        const lead = record.leadId ? await store.leads.findById(record.leadId) : null;
+        const customer = record.customerId ? await store.customers.findById(record.customerId) : null;
+        const rules = await loadBusinessRules();
+        send(response, 200, { quotation: quotationView({ draft: record, lead, customer, rules }) });
+        return;
       }
 
       send(response, 404, { error: 'not_found' });

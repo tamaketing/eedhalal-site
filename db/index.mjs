@@ -8,7 +8,7 @@
 //                    | update(id, patch) | list()
 //   repos.leads:     create(row) | findById(id) | listByCustomer(customerId)
 //                    | findByCustomerAndEvent(customerId, sourceEventId)
-//                    | update(id, patch)
+//                    | listByStatus(status) | update(id, patch)
 //   repos.drafts:    create(row) | findById(id) | findByDraftId(draftId)
 //                    | findBySourceEventId(sourceEventId)
 //                    | listByStatus(status) | listByCustomer(customerId)

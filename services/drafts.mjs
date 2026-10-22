@@ -389,8 +389,12 @@ export async function sendDraft(repos, id, { ownerId = '', expectedUpdatedAt, ex
 
 // Auto-reply send (Phase 3). Mirrors sendDraft's three-phase CAS but uses the
 // LINE Reply API with the short-lived replyToken instead of Push. The token
-// lives only in memory — it is never persisted. Actor is SYSTEM, and this
-// path is only reachable when the gateway's AUTO_REPLY switch is on.
+// lives only in memory — it is never persisted. Actor is SYSTEM.
+//
+// Policy (2026-10-21): the shop does not auto-send, so the gateway never
+// calls this. The function stays as the single, gated place to turn sending on
+// later: it needs the API secret, a WAITING_FOR_HUMAN draft and a live
+// replyToken, and it is always behind the outbound gate in the gateway.
 export async function autoReplyDraft(repos, id, { replyToken = '', expectedStatus } = {}, deps = {}) {
   const reply = deps.reply || sendReplyMessage;
   const token = deps.token;

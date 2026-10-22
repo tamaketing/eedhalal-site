@@ -27,21 +27,45 @@ async function tryAdmin() {
   return body && typeof body === 'object' ? body : null;
 }
 
-async function tryDrafts() {
+async function apiGet(route) {
   const secret = process.env.EED_INTERNAL_API_SECRET;
-  if (!secret) return { available: false, reason: 'ยังไม่ได้ตั้ง EED_INTERNAL_API_SECRET' };
+  if (!secret) return { ok: false, reason: 'ยังไม่ได้ตั้ง EED_INTERNAL_API_SECRET' };
   const base = `http://${process.env.INTERNAL_API_HOST || '127.0.0.1'}:${Number(process.env.INTERNAL_API_PORT || 8788)}`;
   try {
-    const response = await fetch(`${base}/api/v1/drafts?status=WAITING_FOR_HUMAN&limit=1&order=desc`, {
+    const response = await fetch(`${base}${route}`, {
       headers: { Authorization: `Bearer ${secret}` },
       signal: AbortSignal.timeout(4000),
     });
-    if (!response.ok) return { available: false, reason: `Internal API ตอบกลับ ${response.status}` };
-    const payload = await response.json();
-    return { available: true, waiting: Number(payload?.total ?? 0) };
+    if (!response.ok) return { ok: false, reason: `Internal API ตอบกลับ ${response.status}` };
+    return { ok: true, body: await response.json() };
   } catch {
-    return { available: false, reason: 'Internal API ไม่ได้ทำงาน (เปิดด้วย npm run api:start)' };
+    return { ok: false, reason: 'Internal API ไม่ได้ทำงาน (เปิดด้วย npm run api:start)' };
   }
+}
+
+async function tryDrafts() {
+  const result = await apiGet('/api/v1/drafts?status=WAITING_FOR_HUMAN&limit=1&order=desc');
+  if (!result.ok) return { available: false, reason: result.reason };
+  return { available: true, waiting: Number(result.body?.total ?? 0) };
+}
+
+/** The work funnel: quotations waiting for the owner and jobs per lead status. */
+async function tryPipeline() {
+  const [quotes, leads] = await Promise.all([
+    apiGet('/api/v1/quotations?status=WAITING_FOR_HUMAN&limit=100'),
+    apiGet('/api/v1/leads'),
+  ]);
+  const quotation = quotes.ok
+    ? {
+        available: true,
+        waiting: Number(quotes.body?.total ?? 0),
+        ready: (quotes.body?.quotations || []).filter((item) => item.readyForOwner).length,
+      }
+    : { available: false, reason: quotes.reason };
+  const funnel = leads.ok
+    ? { available: true, counts: leads.body?.counts || {} }
+    : { available: false, reason: leads.reason };
+  return { quotation, funnel };
 }
 
 async function tryGit() {
@@ -57,11 +81,12 @@ async function tryGit() {
 }
 
 export async function buildReport() {
-  const [rules, planner, admin, drafts, git] = await Promise.all([
+  const [rules, planner, admin, drafts, pipeline, git] = await Promise.all([
     readJson('data/business-rules.json').catch(() => null),
     readJson('data/planner-overrides.json').catch(() => null),
     tryAdmin().catch(() => null),
     tryDrafts(),
+    tryPipeline(),
     tryGit(),
   ]);
 
@@ -102,6 +127,7 @@ export async function buildReport() {
         }
       : { available: false, reason: `เครื่องมือจัดการเมนู (${adminBase()}) ไม่ได้ทำงาน — เปิดด้วย start-server.bat` },
     inbox: drafts,
+    pipeline,
     workingTree: git,
   };
 }
@@ -138,6 +164,22 @@ function render(report) {
     lines.push(`  รอเจ้าของตอบ : ${report.inbox.waiting} รายการ (ดูด้วย node tools/agent/inbox.mjs drafts)`);
   } else {
     lines.push(`  ดูไม่ได้ — ${report.inbox.reason}`);
+  }
+
+  const pipeline = report.pipeline || {};
+  lines.push('');
+  lines.push('งานที่รอ');
+  if (pipeline.quotation?.available) {
+    lines.push(`  ใบเสนอราคารอเจ้าของอนุมัติ : ${pipeline.quotation.waiting} ฉบับ (ข้อมูลครบ ${pipeline.quotation.ready} ฉบับ)`);
+  } else if (pipeline.quotation) {
+    lines.push(`  ใบเสนอราคา : ดูไม่ได้ — ${pipeline.quotation.reason}`);
+  }
+  if (pipeline.funnel?.available) {
+    const counts = pipeline.funnel.counts || {};
+    const parts = Object.entries(counts).filter(([, value]) => value > 0).map(([status, value]) => `${status} ${value}`);
+    lines.push(`  งานที่ค้างในแต่ละสถานะ : ${parts.length ? parts.join(' · ') : 'ไม่มีงานค้าง'}`);
+  } else if (pipeline.funnel) {
+    lines.push(`  งานที่ค้าง : ดูไม่ได้ — ${pipeline.funnel.reason}`);
   }
 
   lines.push('');

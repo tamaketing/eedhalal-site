@@ -149,6 +149,13 @@ export function createFileAdapter(dir) {
       return exclusive(async () =>
         Object.values((await load()).leads).filter((r) => r.customerId === customerId).map(clone));
     },
+    async listByStatus(status) {
+      return exclusive(async () =>
+        Object.values((await load()).leads)
+          .filter((r) => r.status === status)
+          .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
+          .map(clone));
+    },
     async update(id, patch, now = new Date().toISOString()) {
       return exclusive(async () => {
         const tables = await load();

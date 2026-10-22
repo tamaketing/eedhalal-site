@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { isUniqueViolation } from '../db/index.mjs';
 import { recordAudit } from './audit.mjs';
 import { sanitizeMetadata } from './sanitize.mjs';
+import { ValidationError } from './errors.mjs';
 
 export const LEAD_STATUSES = Object.freeze([
   'NEW',
@@ -29,6 +30,27 @@ const LEAD_TRANSITIONS = Object.freeze({
 
 export function allowedLeadTransitionsFrom(status) {
   return [...(LEAD_TRANSITIONS[status] || [])];
+}
+
+/**
+ * How many jobs sit in each lead status. The funnel is what the owner reads
+ * to know which jobs are waiting for a decision, so it counts by status rather
+ * than listing every row.
+ */
+export async function leadFunnel(repos) {
+  const counts = {};
+  for (const status of LEAD_STATUSES) {
+    const rows = await repos.leads.listByStatus(status);
+    counts[status] = rows.length;
+  }
+  return counts;
+}
+
+/** The jobs in one status, newest last. */
+export async function listLeadsByStatus(repos, status, { limit = 50 } = {}) {
+  if (!LEAD_STATUSES.includes(status)) throw new ValidationError(`unknown lead status: ${status}`);
+  const rows = await repos.leads.listByStatus(status);
+  return rows.slice(0, Math.max(Number(limit) || 50, 1));
 }
 
 const SERVICE_KEYWORDS = [
@@ -75,10 +97,28 @@ export function extractLeadSignals(text) {
   }
   const qty = input.replace(/,/g, '').match(/(\d+(?:\.\d+)?)\s*(กล่อง|คน|ท่าน|หัว|ที่|โต๊ะ|ชุด|ท่าน)/);
   if (qty) signals.quantity = Number(qty[1]);
-  const iso = input.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
-  if (iso) {
-    const year = Number(iso[3]) < 100 ? normalizeThaiYear(iso[3]) : Number(iso[3]);
-    signals.eventDate = `${year}-${String(iso[2]).padStart(2, '0')}-${String(iso[1]).padStart(2, '0')}`;
+  // Date first: an ISO date (2026-12-01) must not be read as day 26 of month
+  // 12 of year 01. Then the Thai day/month/year form (20/12/2026), where a
+  // first number above 12 can only be the day.
+  const isoFull = input.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+  let eventDate = null;
+  if (isoFull) {
+    eventDate = { year: Number(isoFull[1]), month: Number(isoFull[2]), day: Number(isoFull[3]) };
+  } else {
+    const parts = input.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
+    if (parts) {
+      const first = Number(parts[1]);
+      const second = Number(parts[2]);
+      // Default is day/month. A second number above 12 can only be the day,
+      // so that order is month/day.
+      const day = second > 12 && first <= 12 ? second : first;
+      const month = second > 12 && first <= 12 ? first : second;
+      const year = Number(parts[3]) < 100 ? normalizeThaiYear(parts[3]) : Number(parts[3]);
+      eventDate = { year, month, day };
+    }
+  }
+  if (eventDate && eventDate.month >= 1 && eventDate.month <= 12 && eventDate.day >= 1 && eventDate.day <= 31) {
+    signals.eventDate = `${eventDate.year}-${String(eventDate.month).padStart(2, '0')}-${String(eventDate.day).padStart(2, '0')}`;
   }
   const budget = input.replace(/,/g, '').match(/(\d+(?:\.\d+)?)\s*(บาท|฿|thb)/i);
   if (budget) signals.budget = Number(budget[1]);

@@ -17,9 +17,9 @@ let stale = false;
 let currentBotCustomer = null;
 let pausedNotice = '';
 // Thai copy for the bot switch (same salesperson voice as the rest of the page).
-const BOT_PAUSE_PROMPT = 'หยุดตอบอัตโนมัติให้ลูกค้าคนนี้ชั่วคราว เพราะอะไรครับ?\nเช่น กำลังคุยกับลูกค้าเองอยู่ / ลูกค้าขอคุยกับพนักงาน';
-const BOT_PAUSED_NOTE = 'หยุดตอบอัตโนมัติให้แล้ว ลูกค้าคนนี้จะไม่ได้รับคำตอบอัตโนมัติจนกว่าจะเปิดตอบอัตโนมัติ';
-const BOT_RESUMED_NOTE = 'เปิดตอบอัตโนมัติให้แล้ว บอทตอบลูกค้าคนนี้ตามปกติ';
+const BOT_PAUSE_PROMPT = 'หยุดให้บอทช่วยร่างคำตอบให้ลูกค้าคนนี้ชั่วคราว เพราะอะไรครับ?\nเช่น กำลังคุยกับลูกค้าเองอยู่ / ลูกค้าขอคุยกับพนักงาน';
+const BOT_PAUSED_NOTE = 'หยุดให้บอทช่วยร่างคำตอบให้แล้ว ลูกค้าคนนี้จะได้แค่ข้อความว่ารอเจ้าของตอบ จนกว่าจะเปิดให้บอทช่วยร่างคำตอบ';
+const BOT_RESUMED_NOTE = 'เปิดให้บอทช่วยร่างคำตอบให้แล้ว บอทจะร่างคำตอบให้ลูกค้าคนนี้ตามปกติ (เจ้าของกดส่งเอง)';
 
 const $ = (id) => document.getElementById(id);
 
@@ -76,19 +76,19 @@ function isMediaRequest(text) {
   return /(ขอรูป|ขอไฟล์|ขอนำรูป|ขอนำไฟล์|ขอรูปภาพ|ขอภาพ)/.test(String(text || ''));
 }
 function showView(name) {
-  for (const view of ['unlock', 'queue', 'review', 'examples', 'paused', 'customers', 'customer']) {
+  for (const view of ['unlock', 'queue', 'quotes', 'review', 'examples', 'paused', 'customers', 'customer']) {
     const view = $(`view-${view}`);
     if (view) view.hidden = view.id !== `view-${name}`;
   }
   document.body.dataset.view = name;
   const loggedIn = name !== 'unlock';
-  for (const id of ['nav-queue', 'nav-sent', 'nav-examples', 'nav-paused', 'nav-customers', 'nav-refresh', 'nav-lock']) {
+  for (const id of ['nav-queue', 'nav-quotes', 'nav-sent', 'nav-examples', 'nav-paused', 'nav-customers', 'nav-refresh', 'nav-lock']) {
     $(id).hidden = !loggedIn;
   }
   // Highlight the sidebar entry for the open view (review keeps the queue lit).
-  const navFor = { queue: currentTab === 'SENT' ? 'nav-sent' : 'nav-queue', review: 'nav-queue', examples: 'nav-examples', paused: 'nav-paused', customers: 'nav-customers', customer: 'nav-customers' };
+  const navFor = { queue: currentTab === 'SENT' ? 'nav-sent' : 'nav-queue', quotes: 'nav-quotes', review: 'nav-queue', examples: 'nav-examples', paused: 'nav-paused', customers: 'nav-customers', customer: 'nav-customers' };
   const active = loggedIn ? navFor[name] : null;
-  for (const id of ['nav-queue', 'nav-sent', 'nav-examples', 'nav-paused', 'nav-customers']) {
+  for (const id of ['nav-queue', 'nav-quotes', 'nav-sent', 'nav-examples', 'nav-paused', 'nav-customers']) {
     $(id).classList.toggle('is-active', id === active);
   }
 }
@@ -263,8 +263,15 @@ async function loadQueue(status) {
     if (draft.customer && draft.customer.botPausedAt) {
       const bot = document.createElement('span');
       bot.className = 'note-warn';
-      bot.textContent = 'ลูกค้าคนนี้อยู่ในรายชื่อที่หยุดตอบอัตโนมัติอยู่ครับ — รอเจ้าของตอบเอง (เปิดตอบอัตโนมัติได้ในหน้ารายละเอียด)';
+      bot.textContent = 'ลูกค้าคนนี้อยู่ในรายชื่อที่หยุดให้บอทช่วยร่างคำตอบอยู่ครับ — รอเจ้าของตอบเอง (เปิดให้บอทช่วยร่างคำตอบได้ในหน้ารายละเอียด)';
       card.appendChild(bot);
+    }
+
+    if (draft.metadata && draft.metadata.quotation) {
+      const tag = document.createElement('span');
+      tag.className = 'meta';
+      tag.textContent = 'ใบเสนอราคา — ดูรายละเอียดงานได้ที่แท็บ “ใบเสนอราคา”';
+      card.appendChild(tag);
     }
 
     const foot = document.createElement('div');
@@ -284,6 +291,95 @@ async function loadQueue(status) {
       history.className = 'btn btn-sm btn-ghost';
       history.textContent = 'ประวัติลูกค้า';
       history.addEventListener('click', () => openCustomer(draft.customer.id));
+      foot.appendChild(history);
+    }
+    foot.appendChild(open);
+    card.appendChild(foot);
+
+    list.appendChild(card);
+  }
+}
+
+/** The quotation queue: jobs the agent prepared a price for, with what is missing. */
+async function loadQuotes() {
+  const statusEl = $('quotes-status');
+  const list = $('quotes-list');
+  statusEl.textContent = 'กำลังโหลด…';
+  list.textContent = '';
+  let data;
+  try {
+    data = await api('/api/v1/quotations?status=WAITING_FOR_HUMAN&limit=100');
+  } catch (error) {
+    if (error.locked) return;
+    statusEl.textContent = 'ดูใบเสนอราคาไม่สำเร็จ ตรวจว่าเซิร์ฟเวอร์ทำงานอยู่แล้วลองใหม่อีกครั้ง';
+    return;
+  }
+  const quotations = data.quotations || [];
+  $('quotes-count').textContent = `(${data.total || quotations.length})`;
+  if (!quotations.length) {
+    statusEl.textContent = 'No quotations waiting';
+    return;
+  }
+  statusEl.textContent = '';
+  for (const quote of quotations) {
+    const card = document.createElement('article');
+    card.className = 'qcard';
+
+    const top = document.createElement('div');
+    top.className = 'qcard-top';
+    const who = document.createElement('div');
+    who.className = 'qcard-who';
+    const title = document.createElement('strong');
+    title.textContent = quote.customerName || 'ไม่ระบุชื่อ';
+    who.appendChild(title);
+    const job = [];
+    if (quote.quantity != null) job.push(`${quote.quantity} คน/กล่อง`);
+    if (quote.eventDate) job.push(quote.eventDate);
+    if (quote.location) job.push(quote.location);
+    if (quote.budgetPerPerson != null) job.push(`งบ ${quote.budgetPerPerson} บาท/กล่อง`);
+    who.appendChild(metaLine(job.join(' · ') || 'ยังไม่มีข้อมูลงาน'));
+    top.appendChild(avatarFor(quote.customerName));
+    top.appendChild(who);
+    top.appendChild(pill(quote.status));
+    card.appendChild(top);
+
+    if (quote.quoteText) {
+      const preview = document.createElement('div');
+      preview.className = 'prewrap';
+      preview.textContent = quote.quoteText.slice(0, 240);
+      card.appendChild(preview);
+    }
+
+    for (const gap of quote.blocking || []) {
+      const missing = document.createElement('span');
+      missing.className = 'note-warn';
+      missing.textContent = `ขาด${gap.label} — ${gap.why}`;
+      card.appendChild(missing);
+    }
+    for (const gap of quote.advisory || []) {
+      const note = document.createElement('span');
+      note.className = 'meta';
+      note.textContent = `${gap.label}: ${gap.why}`;
+      card.appendChild(note);
+    }
+
+    const foot = document.createElement('div');
+    foot.className = 'qcard-foot';
+    const idLine = document.createElement('span');
+    idLine.className = 'qcard-id';
+    idLine.textContent = quote.quotationId || quote.draftId || '';
+    const open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'btn btn-sm btn-primary';
+    open.textContent = 'เปิดดู';
+    open.addEventListener('click', () => openDraft(quote.draftId));
+    foot.appendChild(idLine);
+    if (quote.customerId) {
+      const history = document.createElement('button');
+      history.type = 'button';
+      history.className = 'btn btn-sm btn-ghost';
+      history.textContent = 'ประวัติลูกค้า';
+      history.addEventListener('click', () => openCustomer(quote.customerId));
       foot.appendChild(history);
     }
     foot.appendChild(open);
@@ -714,7 +810,7 @@ function renderBotState(customer) {
   action.textContent = '';
   currentBotCustomer = customer && customer.id ? { id: customer.id, paused: !!customer.botPausedAt } : null;
   if (!currentBotCustomer) {
-    status.textContent = 'ไม่พบข้อมูลลูกค้าคนนี้ เลยยังสั่งหยุดหรือเปิดตอบอัตโนมัติไม่ได้ครับ';
+    status.textContent = 'ไม่พบข้อมูลลูกค้าคนนี้ เลยยังสั่งหยุดหรือเปิดให้บอทช่วยร่างคำตอบไม่ได้ครับ';
     reasonEl.textContent = '';
     button.hidden = true;
     button.disabled = true;
@@ -722,12 +818,12 @@ function renderBotState(customer) {
   }
   button.hidden = false;
   button.disabled = pending;
-  button.textContent = currentBotCustomer.paused ? 'เปิดตอบอัตโนมัติ' : 'หยุดตอบอัตโนมัติ';
+  button.textContent = currentBotCustomer.paused ? 'เปิดให้บอทช่วยร่างคำตอบ' : 'หยุดให้บอทช่วยร่างคำตอบ';
   if (currentBotCustomer.paused) {
-    status.textContent = `บอทหยุดตอบอัตโนมัติอยู่ ตั้งแต่ ${fmtTime(customer.botPausedAt)} ครับ — รอเจ้าของตอบเอง`;
+    status.textContent = `บอทหยุดช่วยร่างคำตอบอยู่ ตั้งแต่ ${fmtTime(customer.botPausedAt)} ครับ — รอเจ้าของตอบเอง`;
     reasonEl.textContent = `เหตุผลที่แจ้งไว้: ${customer.botPauseReason || 'ไม่ได้ระบุ'}`;
   } else {
-    status.textContent = 'ตอนนี้บอทตอบลูกค้าคนนี้อยู่ ถ้าคุณจะคุยเองก่อน กด “หยุดตอบอัตโนมัติ” ได้เลยครับ';
+    status.textContent = 'ตอนนี้บอทช่วยร่างคำตอบให้ลูกค้าคนนี้อยู่ ถ้าคุณจะคุยเองก่อน กด “หยุดให้บอทช่วยร่างคำตอบ” ได้เลยครับ';
     reasonEl.textContent = '';
   }
 }
@@ -736,7 +832,7 @@ async function setBotState(customerId, pause, reason, button, statusEl) {
   if (pending) return false;
   pending = true;
   if (button) button.disabled = true;
-  if (statusEl) statusEl.textContent = pause ? 'กำลังหยุดตอบอัตโนมัติ…' : 'กำลังเปิดตอบอัตโนมัติ…';
+  if (statusEl) statusEl.textContent = pause ? 'กำลังหยุดให้บอทช่วยร่างคำตอบ…' : 'กำลังเปิดให้บอทช่วยร่างคำตอบ…';
   try {
     if (pause) {
       await api(`/api/v1/customers/${encodeURIComponent(customerId)}/bot-pause`, 'POST', { reason: reason || '' });
@@ -747,7 +843,7 @@ async function setBotState(customerId, pause, reason, button, statusEl) {
     return true;
   } catch (error) {
     if (error.locked) return false;
-    if (statusEl) statusEl.textContent = `${pause ? 'หยุดตอบอัตโนมัติ' : 'เปิดตอบอัตโนมัติ'}ไม่สำเร็จ: ${error.message}`;
+    if (statusEl) statusEl.textContent = `${pause ? 'หยุดให้บอทช่วยร่างคำตอบ' : 'เปิดให้บอทช่วยร่างคำตอบ'}ไม่สำเร็จ: ${error.message}`;
     return false;
   } finally {
     pending = false;
@@ -764,7 +860,7 @@ async function toggleBotFromReview() {
     const answer = window.prompt(BOT_PAUSE_PROMPT, '');
     if (answer === null) return;
     reason = answer.trim();
-  } else if (!window.confirm('เปิดตอบอัตโนมัติให้ลูกค้าคนนี้กลับมาตอบอัตโนมัติเหมือนเดิมใช่ไหมครับ?')) {
+  } else if (!window.confirm('เปิดให้บอทช่วยร่างคำตอบให้ลูกค้าคนนี้กลับมาเหมือนเดิมใช่ไหมครับ?')) {
     return;
   }
   const ok = await setBotState(target.id, pause, reason, $('btn-bot-toggle'), $('review-bot-action-status'));
@@ -795,7 +891,7 @@ async function loadPaused() {
   const paused = (data.customers || []).filter((row) => row && row.botPausedAt);
   $('paused-count').textContent = `(${paused.length})`;
   if (!paused.length) {
-    statusEl.textContent = pausedNotice || 'ตอนนี้ไม่มีลูกค้าคนไหนหยุดตอบอัตโนมัติไว้ บอทตอบทุกคนตามปกติครับ';
+    statusEl.textContent = pausedNotice || 'ตอนนี้ไม่มีลูกค้าคนไหนหยุดให้บอทช่วยร่างคำตอบไว้ บอทช่วยร่างคำตอบให้ทุกคนตามปกติครับ';
     pausedNotice = '';
     return;
   }
@@ -818,13 +914,13 @@ async function loadPaused() {
     top.appendChild(who);
     const state = document.createElement('span');
     state.className = 'pill pill--wait';
-    state.textContent = 'หยุดตอบอัตโนมัติอยู่';
+    state.textContent = 'หยุดให้บอทช่วยร่างคำตอบอยู่';
     top.appendChild(state);
     card.appendChild(top);
 
     const when = document.createElement('div');
     when.className = 'note-warn';
-    when.textContent = 'บอทหยุดตอบอัตโนมัติอยู่ — รอเจ้าของตอบเอง';
+    when.textContent = 'บอทหยุดช่วยร่างคำตอบอยู่ — รอเจ้าของตอบเอง';
     card.appendChild(when);
 
     const reason = document.createElement('div');
@@ -837,16 +933,16 @@ async function loadPaused() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn btn-sm btn-primary';
-    button.textContent = 'เปิดตอบอัตโนมัติ';
+    button.textContent = 'เปิดให้บอทช่วยร่างคำตอบ';
     const rowStatus = document.createElement('p');
     rowStatus.className = 'status-line';
     rowStatus.setAttribute('role', 'status');
     button.addEventListener('click', async () => {
       if (pending) return;
-      if (!window.confirm(`เปิดตอบอัตโนมัติให้ ${customerName(customer)} กลับมาตอบอัตโนมัติเหมือนเดิมใช่ไหมครับ?`)) return;
+      if (!window.confirm(`เปิดให้บอทช่วยร่างคำตอบให้ ${customerName(customer)} กลับมาเหมือนเดิมใช่ไหมครับ?`)) return;
       const ok = await setBotState(customer.id, false, '', button, rowStatus);
       if (!ok) return;
-      pausedNotice = `${customerName(customer)} เปิดตอบอัตโนมัติแล้ว บอทจะตอบลูกค้าคนนี้ตามปกติ`;
+      pausedNotice = `${customerName(customer)} เปิดให้บอทช่วยร่างคำตอบแล้ว บอทจะตอบลูกค้าคนนี้ตามปกติ`;
       await loadPaused();
     });
     card.appendChild(foot);
@@ -1141,6 +1237,7 @@ async function saveCustomerProfile(event) {
 
 document.getElementById('unlock-form').addEventListener('submit', unlock);
 document.getElementById('nav-queue').addEventListener('click', () => { showView('queue'); loadQueue('WAITING_FOR_HUMAN'); });
+document.getElementById('nav-quotes').addEventListener('click', () => { showView('quotes'); loadQuotes(); });
 document.getElementById('nav-sent').addEventListener('click', () => { showView('queue'); loadQueue('SENT'); });
 document.getElementById('nav-examples').addEventListener('click', () => { showView('examples'); loadExamples(); });
 document.getElementById('nav-paused').addEventListener('click', () => { showView('paused'); loadPaused(); });
@@ -1151,7 +1248,8 @@ document.getElementById('btn-save-summary').addEventListener('click', saveCustom
 document.getElementById('btn-close-job').addEventListener('click', closeCustomerJob);
 document.getElementById('customer-profile-form').addEventListener('submit', saveCustomerProfile);
 document.getElementById('nav-refresh').addEventListener('click', () => {
-  if (!$('view-examples').hidden) loadExamples();
+  if (!$('view-quotes').hidden) loadQuotes();
+  else if (!$('view-examples').hidden) loadExamples();
   else if (!$('view-paused').hidden) loadPaused();
   else if (!$('view-customer').hidden) { if (currentCustomer) openCustomer(currentCustomer.customer.id); }
   else if (!$('view-customers').hidden) loadCustomers();

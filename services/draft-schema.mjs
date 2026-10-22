@@ -11,8 +11,15 @@
 // This module is the SINGLE schema definition so storage changes only remap
 // fields — business logic and status transitions stay unchanged.
 //
-// DO NOT DO YET (out of scope): Accounting, Finance, Quotation PDF,
-// Receipt, Invoice, Supplier, Job Costing, extra AI agents, full dashboard.
+// DO NOT DO YET (out of scope): Accounting, Quotation PDF,
+// Receipt, Invoice, Supplier, Job Costing, full dashboard.
+//
+// Scope note (2026-10-21): the operating plan does add agent positions for
+// sales/CRM, quotation and finance — see docs/agent-org-v2-plan.md. Those
+// positions work on the data that exists: a quotation is a draft the owner
+// approves, and finance reports only on cost data the owner supplies. The
+// features above (PDF quotations, invoices, accounting, job costing) remain
+// out of scope and must not be inferred from the agent positions.
 
 export const DRAFT_STATUSES = Object.freeze([
   'WAITING_FOR_HUMAN',

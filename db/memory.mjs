@@ -94,6 +94,10 @@ export function createMemoryAdapter() {
     async listByCustomer(customerId) {
       return [...tables.leads.values()].filter((row) => row.customerId === customerId).map(clone);
     },
+    async listByStatus(status) {
+      const rows = [...tables.leads.values()].filter((row) => row.status === status);
+      return rows.sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || ''))).map(clone);
+    },
     async update(id, patch, now = new Date().toISOString()) {
       const current = tables.leads.get(id);
       if (!current) return null;
