@@ -80,14 +80,64 @@ async function tryGit() {
   }
 }
 
+const COSTS_PATH = path.join(ROOT, 'demo', 'owner-set-builder', 'owner-costs.json');
+// A05 has data only when the owner's cost file exists (tools/admin/README.md).
+// This report only checks that the source exists — the numbers stay inside
+// finance.mjs so cost figures never travel through other tools.
+async function hasCostsFile() {
+  try {
+    await readFile(COSTS_PATH);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Run one project script (read-only checker) and keep the raw stdout. */
+async function runNode(script, args = []) {
+  try {
+    const { stdout } = await execFileAsync(process.execPath, [path.join(ROOT, script), ...args], {
+      cwd: ROOT,
+      timeout: 30000,
+      maxBuffer: 1024 * 1024,
+    });
+    return { ok: true, stdout };
+  } catch (error) {
+    return { ok: false, stdout: error.stdout || '', reason: `ตัวตรวจล้มเหลว (exit ${(error.code ?? 'ไม่ทราบ')}) — ${script}` };
+  }
+}
+
+/** Live measurements report.mjs can gather on its own: checks + sync + SEO discovery. */
+async function tryKpiSources() {
+  const [checks, sync, discovery, costsFile] = await Promise.all([
+    runNode('tools/agent/checks.mjs'),
+    runNode('scripts/check-business-sync.mjs', ['--check']),
+    runNode('scripts/check-search-discovery.mjs'),
+    hasCostsFile(),
+  ]);
+  return {
+    systemChecks: checks.ok
+      ? { ok: true, total: Number((checks.stdout.match(/ตรวจทั้ง (\d+) รายการ/) || [])[1]) || null }
+      : { ok: false, reason: checks.reason },
+    businessSync: sync.ok ? { ok: true } : { ok: false, reason: sync.reason },
+    searchDiscovery: discovery.ok
+      ? { ok: true, pages: Number((discovery.stdout.match(/Search discovery passed: (\d+) pages/) || [])[1]) || null }
+      : { ok: false, reason: discovery.reason },
+    ownerCostsFile: costsFile
+      ? { available: true }
+      : { available: false, reason: 'ยังไม่มีไฟล์ต้นทุน demo/owner-set-builder/owner-costs.json' },
+  };
+}
+
 export async function buildReport() {
-  const [rules, planner, admin, drafts, pipeline, git] = await Promise.all([
+  const [rules, planner, admin, drafts, pipeline, git, kpiSources] = await Promise.all([
     readJson('data/business-rules.json').catch(() => null),
     readJson('data/planner-overrides.json').catch(() => null),
     tryAdmin().catch(() => null),
     tryDrafts(),
     tryPipeline(),
     tryGit(),
+    tryKpiSources(),
   ]);
 
   const draftCentral = admin?.central?.version ?? null;
@@ -128,8 +178,126 @@ export async function buildReport() {
       : { available: false, reason: `เครื่องมือจัดการเมนู (${adminBase()}) ไม่ได้ทำงาน — เปิดด้วย start-server.bat` },
     inbox: drafts,
     pipeline,
+    kpi: buildKpiLayout({ inbox: drafts, pipeline, kpiSources }),
     workingTree: git,
   };
+}
+
+/**
+ * Per-position KPI rows, following docs/agent-kpi.md:
+ * - a measured row carries the value and the source it came from;
+ * - a live-unavailable source is reported as unavailable with the reason;
+ * - a KPI with no source in the system yet never gets a number — it is listed
+ *   under "รอข้อมูล" exactly as the KPI rules require (no zeros, no guesses).
+ */
+export function buildKpiLayout({ inbox, pipeline, kpiSources }) {
+  const measured = [];
+  const unavailable = [];
+  const push = (condition, position, kpi, value, source, fallbackPosition, fallbackKpi, reason) => {
+    if (condition) measured.push({ position, kpi, value, source });
+    else unavailable.push([fallbackPosition, fallbackKpi, reason]);
+  };
+
+  const quotation = pipeline?.quotation || {};
+  push(
+    quotation.available,
+    'A04 ใบเสนอราคา',
+    'ความครบถ้วนของข้อมูลที่ดึงได้',
+    quotation.available
+      ? { waiting: quotation.waiting, ready: quotation.ready, incomplete: Math.max(quotation.waiting - quotation.ready, 0) }
+      : undefined,
+    'GET /api/v1/quotations',
+    'A04 ใบเสนอราคา', 'ความครบถ้วนของข้อมูลที่ดึงได้', quotation.reason || 'ดูไม่ได้',
+  );
+
+  const funnel = pipeline?.funnel || {};
+  push(
+    funnel.available,
+    'A02 ขาย & CRM',
+    'งานที่ค้างในแต่ละสถานะ (funnel)',
+    funnel.available ? funnel.counts || {} : undefined,
+    'GET /api/v1/leads',
+    'A02 ขาย & CRM', 'งานที่ค้างในแต่ละสถานะ (funnel)', funnel.reason || 'ดูไม่ได้',
+  );
+
+  const drafts = inbox || {};
+  push(
+    drafts.available,
+    'A02 ขาย & CRM',
+    'draft ที่รอเจ้าของตอบ',
+    drafts.available ? drafts.waiting : undefined,
+    'GET /api/v1/drafts?status=WAITING_FOR_HUMAN',
+    'A02 ขาย & CRM', 'draft ที่รอเจ้าของตอบ', drafts.reason || 'ดูไม่ได้',
+  );
+
+  const discovery = kpiSources?.searchDiscovery || {};
+  push(
+    discovery.ok,
+    'A03 การตลาด & SEO',
+    'การค้นหามองเห็นเว็บ (จำนวนหน้าที่ผ่าน)',
+    discovery.ok ? discovery.pages : undefined,
+    'node scripts/check-search-discovery.mjs',
+    'A03 การตลาด & SEO', 'การค้นหามองเห็นเว็บ', discovery.reason || 'ตรวจไม่ได้',
+  );
+
+  const checks = kpiSources?.systemChecks || {};
+  push(
+    checks.ok,
+    'A06 ระบบ & คุณภาพ',
+    'ตัวตรวจระบบผลักผ่านทั้งหมด',
+    checks.ok ? checks.total : undefined,
+    'node tools/agent/checks.mjs',
+    'A06 ระบบ & คุณภาพ', 'ตัวตรวจระบบผลักผ่านทั้งหมด', checks.reason || 'รันไม่ได้',
+  );
+
+  const sync = kpiSources?.businessSync || {};
+  push(
+    sync.ok,
+    'A06 ระบบ & คุณภาพ',
+    'ข้อมูลธุรกิจตรงกันทุกช่องทาง',
+    sync.ok ? 'ผ่าน' : undefined,
+    'node scripts/check-business-sync.mjs --check',
+    'A06 ระบบ & คุณภาพ', 'ข้อมูลธุรกิจตรงกันทุกช่องทาง', sync.reason || 'ตรวจไม่ได้',
+  );
+
+  const costs = kpiSources?.ownerCostsFile || {};
+  push(
+    costs.available,
+    'A05 การเงิน & ต้นทุน',
+    'ไฟล์ต้นทุนของเจ้าของ (ต่อยอดได้ด้วย finance.mjs report)',
+    costs.available ? 'มีไฟล์' : undefined,
+    'demo/owner-set-builder/owner-costs.json',
+    'A05 การเงิน & ต้นทุน', 'ต้นทุน/กำไร/เมนูเสี่ยงขาดทุน',
+    costs.reason || 'ยังไม่มีแหล่งข้อมูล — รอไฟล์ต้นทุนของเจ้าของ (สร้างด้วย node tools/agent/finance.mjs template)',
+  );
+
+  // KPIs that no source exists for today — listed by name, never with a number.
+  const pending = [
+    ['A01 วิจัยตลาด', 'จำนวนโอกาสที่คัดกรองและบันทึกที่มา', 'ยังไม่มีแหล่งข้อมูล — ผลคัดกรองของ A01 ยังไม่ถูกบันทึกในระบบ'],
+    ['A02 ขาย & CRM', 'ลูกค้าที่กลับมาสั่งซื้อซ้ำ', 'ยังไม่มีแหล่งข้อมูล — ต้องมีประวัติออเดอร์จริง'],
+    ['A02 ขาย & CRM', 'เวลาตอบเฉลี่ย', 'ยังไม่มีแหล่งข้อมูล — ต้องมีเวลาที่เจ้าของกดส่งจริง'],
+    ['A03 การตลาด & SEO', 'ต้นทุนต่อ lead / อัตราผู้เข้าชม→ผู้ติดต่อ', 'ยังไม่มีแหล่งข้อมูล — รอตัวเลขใน marketing/ads-performance.csv'],
+    ['A04 ใบเสนอราคา', 'เวลาตั้งแต่รับบรีฟจนพร้อมเสนอราคา', 'ยังไม่มีแหล่งข้อมูล — ต้องมีประวัติตามเวลาของใบเสนอราคา'],
+    ['ทั้งทีม', 'งานเปิดค้างที่มี jobId', 'ยังไม่มีแหล่งข้อมูลกลางที่รวบเอกสารมอบงาน'],
+  ];
+
+  return { measured, unavailable, pending };
+}
+
+/** KPI values render as their natural Thai shape; unknown shapes never crash the report. */
+function renderKpiValue(value) {
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object') {
+    if (typeof value.waiting === 'number' && typeof value.ready === 'number') {
+      return `รอ ${value.waiting} ฉบับ (ข้อมูลครบ ${value.ready} · ตกหล่น ${value.incomplete})`;
+    }
+    const parts = Object.entries(value)
+      .filter(([, v]) => typeof v === 'number' && v > 0)
+      .map(([k, v]) => `${k} ${v}`);
+    return parts.join(' · ') || 'ไม่มีงานค้าง';
+  }
+  return '-';
 }
 
 function render(report) {
@@ -180,6 +348,21 @@ function render(report) {
     lines.push(`  งานที่ค้างในแต่ละสถานะ : ${parts.length ? parts.join(' · ') : 'ไม่มีงานค้าง'}`);
   } else if (pipeline.funnel) {
     lines.push(`  งานที่ค้าง : ดูไม่ได้ — ${pipeline.funnel.reason}`);
+  }
+
+  const kpi = report.kpi || { measured: [], unavailable: [], pending: [] };
+  lines.push('');
+  lines.push('KPI รายตำแหน่ง (เกณฑ์ที่ docs/agent-kpi.md)');
+  if (kpi.measured.length || kpi.unavailable.length || kpi.pending.length) {
+    for (const row of kpi.measured) {
+      lines.push(`  ${row.position} · ${row.kpi} : ${renderKpiValue(row.value)}  — ที่มา ${row.source}`);
+    }
+    for (const [position, kpiName, reason] of kpi.unavailable) {
+      lines.push(`  ${position} · ${kpiName} : ดูไม่ได้ — ${reason}`);
+    }
+    for (const [position, kpiName, reason] of kpi.pending) {
+      lines.push(`  ${position} · ${kpiName} : ${reason}`);
+    }
   }
 
   lines.push('');

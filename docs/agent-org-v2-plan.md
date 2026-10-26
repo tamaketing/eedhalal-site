@@ -225,9 +225,9 @@ CEO — เจ้าของกิจการ (มนุษย์)
 
 ### P4 — ปิดของเดิมและวัดผล
 - ปิด agent ที่ถูกแทนที่ (โดยไม่ลบไฟล์ทันที เก็บไว้ใน `docs/` เป็น snapshot ถ้าจำเป็น)
-- ขยาย `tools/agent/report.mjs` เป็นรายงาน KPI รายตำแหน่ง
-- ตั้ง `/kpi` คำสั่งลัด
-- **ผ่านเมื่อ:** รายงาน KPI ออกมาได้ครบ 6 ตำแหน่ง และ `node scripts/check-all.mjs` ผ่าน
+- ✅ ขยาย `tools/agent/report.mjs` เป็นรายงาน KPI รายตำแหน่ง (2026-10-26 — ส่วน `kpi` ใน report.mjs ครบทั้ง 6 ตำแหน่ง ตามกติกาของ `docs/agent-kpi.md`: วัดได้แสดงที่มา · ไม่มีแหล่งข้อมูลพูดว่ายังไม่มีแหล่งข้อมูล ห้ามใส่ 0 · เทสต์ 3 เคสใน `tools/agent/tests/report-kpi.test.mjs`)
+- ✅ ตั้ง `/kpi` คำสั่งลัด
+- **ผ่านเมื่อ:** ✅ รายงาน KPI ออกมาได้ครบ 6 ตำแหน่ง (A01–A06 ถูกเรียกชื่อครบในหัวข้อ KPI ของรายงาน) และ `node scripts/check-all.mjs` ผ่าน (12/12 ตรวจ 2026-10-26)
 
 ### คำสั่งตรวจที่ต้องรันทุกเฟส
 
@@ -407,7 +407,7 @@ A01 / A03 (โฆษณา) / A05 → ทำเมื่อ G1–G3 ได้ร
 | **C2** | A02 + `crm-followup` + claim draft + เอกสารมอบงาน + KPI รายตำแหน่งแรก | `tools/agent/inbox.mjs`, `services/audit.mjs`, `services/draft-schema.mjs` (คอมเมนต์), `eed-manager.md`, `opencode.jsonc` | ไม่มี draft ซ้ำในคิว, A02 รายงาน KPI ได้, เทสต์ใหม่ผ่าน |
 | **C3** | A04 + `quotation-order` + ที่เก็บใบเสนอราคา/ออเดอร์ (G4) | `db/migrations/011_*.sql`, `server/internal-api.mjs`, `tools/agent/quotation.mjs` | migration ผ่าน, ใบเสนอราคาตรงกับ `budget-match`, `check-business-sync` ผ่าน |
 | **C4** | A03 + `marketing-plan` (คู่กับ `research`/`content`/`uxui`/`frontend`) | `marketing/ads-performance.csv` (ใหม่), `scripts/check-search-discovery.mjs` | A03 ออกแผนได้โดยไม่แตะไฟล์เอง, รายงานช่องว่าง SEO/AEO ได้ |
-| **C5** | A06 + รายงาน KPI รวม | `tools/agent/report.mjs`, `verify.md` (เรียก `qa-preflight`) | รายงานเดียวครบทุกสาย, guardian ยัง veto ได้แยก |
+| **C5** | A06 + รายงาน KPI รวม (✅ 2026-10-26) | `tools/agent/report.mjs`, `verify.md` (เรียก `qa-preflight`) | รายงานเดียวครบทุกสาย, guardian ยัง veto ได้แยก |
 | **C6** | A01 / A05 | — | รอ G1 / G3 |
 
 ### 12.8 ความเสี่ยงและตัวชี้วัดว่า “ร่วมกันสำเร็จ”
