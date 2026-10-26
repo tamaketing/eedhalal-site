@@ -20,7 +20,7 @@
       </span>
     </div>
 
-    <p class="side-note">ใช้บนเครื่องนี้เท่านั้น · ทุกข้อความต้องเจ้าของกดส่งเอง · ไม่มีการส่งอัตโนมัติ</p>
+    <p class="side-note">ใช้บนเครื่องนี้เท่านั้น · ข้อความลูกค้าทุกข้อความต้องเจ้าของกดส่งเอง · ข้อความกระจายข้อมูลรายสัปดาห์รอเจ้าของอนุมัติก่อนส่งเสมอ</p>
 
     <nav class="side-nav" aria-label="เมนูหลัก">
       <button id="nav-queue" type="button" aria-label="คิวรอตอบ" hidden>
@@ -46,6 +46,10 @@
       <button id="nav-customers" type="button" aria-label="ลูกค้า" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
         <span>ลูกค้า</span>
+      </button>
+      <button id="nav-broadcast" type="button" aria-label="กระจายข้อมูลรายสัปดาห์ไปยังผู้ติดตาม LINE" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 3a6 6 0 0 0-6 6v3h-6V9a6 6 0 0 0-6-6H3v12h18V3zM9 9v3H6V9zM3 3h6v3H3zM21 12v3h-3v-3z"/></svg>
+        <span>กระจายข้อมูล</span>
       </button>
 
       <span class="side-sep" aria-hidden="true"></span>
@@ -269,6 +273,39 @@
           <input id="customers-search" type="search" placeholder="ค้นหาชื่อ เบอร์ หรือบริษัท" autocomplete="off">
         </div>
         <div id="customers-list" class="card-list"></div>
+      </section>
+
+      <section id="view-broadcast" class="panel" aria-label="กระจายข้อมูลรายสัปดาห์ไปยังผู้ติดตาม LINE" hidden>
+        <div class="panel-head">
+          <div class="panel-head__titles">
+            <button id="back-queue-from-broadcast" type="button" class="btn btn-ghost btn-sm">← กลับไปคิว</button>
+            <h2>กระจายข้อมูลรายสัปดาห์</h2>
+            <span id="broadcast-count" class="chip chip-count"></span>
+          </div>
+          <p id="broadcast-status" role="status" class="status-line"></p>
+        </div>
+
+        <div id="broadcast-pending-wrap">
+          <h3>ร่างสัปดาห์นี้ — รอเจ้าของอนุมัติ</h3>
+          <div id="broadcast-pending"></div>
+          <div id="broadcast-pending-actions" class="actions"></div>
+          <p id="broadcast-pending-status" role="status" class="status-line"></p>
+        </div>
+
+        <div id="broadcast-scheduled-wrap">
+          <h3>อนุมัติแล้ว รอเวลาส่ง</h3>
+          <div id="broadcast-scheduled" class="card-list"></div>
+        </div>
+
+        <div id="broadcast-history-wrap">
+          <h3>ประวัติการส่ง</h3>
+          <div id="broadcast-history" class="card-list"></div>
+        </div>
+
+        <section id="broadcast-quota-wrap" class="panel" aria-label="โควตาการส่ง LINE">
+          <div class="panel-head"><div class="panel-head__titles"><h3>โควตาการส่ง LINE</h3></div></div>
+          <p id="broadcast-quota" class="status-line">กำลังตรวจสอบ…</p>
+        </section>
       </section>
     </main>
   </div>

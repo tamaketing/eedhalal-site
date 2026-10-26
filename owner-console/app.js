@@ -10,6 +10,7 @@
 let secret = null;
 let currentDraft = null;
 let pending = false;
+let broadcastPending = false;
 let stale = false;
 // Bot pause state of the customer shown in the review screen, plus a short
 // Thai message kept for the next render of the paused list (so a resume
@@ -63,6 +64,7 @@ async function api(path, method, body) {
   if (!response.ok) {
     const error = new Error((json && json.error) || `request failed (${response.status})`);
     error.status = response.status;
+    if (json && json.code) error.code = json.code;
     throw error;
   }
   return json;
@@ -76,17 +78,17 @@ function isMediaRequest(text) {
   return /(ขอรูป|ขอไฟล์|ขอนำรูป|ขอนำไฟล์|ขอรูปภาพ|ขอภาพ)/.test(String(text || ''));
 }
 function showView(name) {
-  for (const view of ['unlock', 'queue', 'quotes', 'review', 'examples', 'paused', 'customers', 'customer']) {
-    const view = $(`view-${view}`);
-    if (view) view.hidden = view.id !== `view-${name}`;
+  for (const available of ['unlock', 'queue', 'quotes', 'review', 'examples', 'paused', 'customers', 'customer', 'broadcast']) {
+    const panel = $(`view-${available}`);
+    if (panel) panel.hidden = panel.id !== `view-${name}`;
   }
   document.body.dataset.view = name;
   const loggedIn = name !== 'unlock';
-  for (const id of ['nav-queue', 'nav-quotes', 'nav-sent', 'nav-examples', 'nav-paused', 'nav-customers', 'nav-refresh', 'nav-lock']) {
+  for (const id of ['nav-queue', 'nav-quotes', 'nav-sent', 'nav-examples', 'nav-paused', 'nav-customers', 'nav-broadcast', 'nav-refresh', 'nav-lock']) {
     $(id).hidden = !loggedIn;
   }
   // Highlight the sidebar entry for the open view (review keeps the queue lit).
-  const navFor = { queue: currentTab === 'SENT' ? 'nav-sent' : 'nav-queue', quotes: 'nav-quotes', review: 'nav-queue', examples: 'nav-examples', paused: 'nav-paused', customers: 'nav-customers', customer: 'nav-customers' };
+  const navFor = { queue: currentTab === 'SENT' ? 'nav-sent' : 'nav-queue', quotes: 'nav-quotes', review: 'nav-queue', examples: 'nav-examples', paused: 'nav-paused', customers: 'nav-customers', customer: 'nav-customers', broadcast: 'nav-broadcast' };
   const active = loggedIn ? navFor[name] : null;
   for (const id of ['nav-queue', 'nav-quotes', 'nav-sent', 'nav-examples', 'nav-paused', 'nav-customers']) {
     $(id).classList.toggle('is-active', id === active);
@@ -292,6 +294,17 @@ async function loadQueue(status) {
       history.textContent = 'ประวัติลูกค้า';
       history.addEventListener('click', () => openCustomer(draft.customer.id));
       foot.appendChild(history);
+    }
+    // Rejecting straight from the queue list — same action as the detail
+    // view's “ไม่ส่ง”, without opening the draft first. Sent tabs never show
+    // it: an already-sent message cannot be unsent.
+    if (draft.status === 'WAITING_FOR_HUMAN') {
+      const skip = document.createElement('button');
+      skip.type = 'button';
+      skip.className = 'btn btn-sm btn-danger';
+      skip.textContent = 'ไม่ส่ง';
+      skip.addEventListener('click', () => rejectQueueDraft(draft));
+      foot.appendChild(skip);
     }
     foot.appendChild(open);
     card.appendChild(foot);
@@ -604,6 +617,34 @@ async function rejectDraft() {
   } finally {
     pending = false;
     if (currentDraft && !stale) setMutationButtons(currentDraft.draft);
+  }
+}
+
+// “ไม่ส่ง” from the queue list itself: the owner closes a draft without
+// sending it, straight from the card — same endpoint as the detail view.
+async function rejectQueueDraft(draft) {
+  if (pending) return;
+  if (!window.confirm('ไม่ส่งข้อความนี้ใช่ไหมครับ? ระบบจะไม่ส่งอะไรออกไปหาลูกค้า')) return;
+  const statusEl = $('queue-status');
+  pending = true;
+  statusEl.textContent = 'กำลังปฏิเสธ…';
+  try {
+    await api(`/api/v1/drafts/${encodeURIComponent(draft.id)}/reject`, 'POST', {
+      ...concurrencyOf(draft),
+      ownerId: 'owner-1',
+    });
+    statusEl.textContent = 'บันทึกแล้วครับ — ไม่ได้ส่งข้อความออกไป';
+    await loadQueue();
+  } catch (error) {
+    if (error.locked) return;
+    if (error.status === 409) {
+      statusEl.textContent = 'การ์ดนี้เปลี่ยนไปแล้ว กำลังโหลดใหม่ให้ครับ';
+      await loadQueue();
+    } else {
+      statusEl.textContent = `ปฏิเสธไม่สำเร็จ: ${error.message}`;
+    }
+  } finally {
+    pending = false;
   }
 }
 
@@ -1253,6 +1294,7 @@ document.getElementById('nav-refresh').addEventListener('click', () => {
   else if (!$('view-paused').hidden) loadPaused();
   else if (!$('view-customer').hidden) { if (currentCustomer) openCustomer(currentCustomer.customer.id); }
   else if (!$('view-customers').hidden) loadCustomers();
+  else if (!$('view-broadcast').hidden) loadBroadcasts();
   else if ($('view-review').hidden) loadQueue();
   else if (currentDraft) openDraft(currentDraft.draft.id);
 });
@@ -1264,4 +1306,461 @@ document.getElementById('btn-send').addEventListener('click', openSendConfirm);
 document.getElementById('btn-send-confirm').addEventListener('click', confirmSend);
 document.getElementById('btn-send-cancel').addEventListener('click', () => { $('send-confirm').hidden = true; });
 document.getElementById('btn-learn').addEventListener('click', learnExample);
+
+// ---------- Broadcast: weekly LINE announcement (owner approves before anything sends) ----------
+
+const BROADCAST_STATUS_LABELS = {
+  PENDING_REVIEW: 'รอเจ้าของอนุมัติ',
+  SCHEDULED: 'อนุมัติแล้ว รอส่ง',
+  SENT: 'ส่งแล้ว',
+  FAILED: 'ส่งไม่สำเร็จ',
+  MISSED: 'ข้าม (เครื่องปิดเกินเวลา)',
+  CANCELLED: 'ยกเลิกแล้ว',
+};
+
+function broadcastStatusTone(status) {
+  switch (status) {
+    case 'PENDING_REVIEW': return 'pill--wait';
+    case 'SCHEDULED': return 'pill--wait';
+    case 'SENT': return 'pill--ok';
+    case 'FAILED': return 'pill--bad';
+    case 'MISSED': return 'pill--off';
+    case 'CANCELLED': return 'pill--off';
+    default: return 'pill--off';
+  }
+}
+
+function broadcastPill(status) {
+  const el = document.createElement('span');
+  el.className = `pill ${broadcastStatusTone(status)}`;
+  el.textContent = BROADCAST_STATUS_LABELS[status] || status || '—';
+  el.title = status || '';
+  return el;
+}
+
+function fmtPrice(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return '—';
+  return String(Number.isInteger(n) ? n : n.toFixed(2).replace(/\.00$/, '')) + ' บาท';
+}
+
+function broadcastConcurrency(broadcast) {
+  return { expectedUpdatedAt: broadcast.updatedAt, expectedStatus: broadcast.status };
+}
+
+async function loadBroadcasts() {
+  const statusEl = $('broadcast-status');
+  const listP = $('broadcast-pending');
+  const listS = $('broadcast-scheduled');
+  const listH = $('broadcast-history');
+  const countEl = $('broadcast-count');
+  statusEl.textContent = 'กำลังโหลด…';
+  listP.textContent = '';
+  listS.textContent = '';
+  listH.textContent = '';
+  let data;
+  try {
+    data = await api('/api/v1/broadcasts?limit=100');
+  } catch (error) {
+    if (error.locked) return;
+    statusEl.textContent = 'ดูรายการกระจายข้อมูลไม่สำเร็จ ลองโหลดใหม่อีกครั้งครับ';
+    return;
+  }
+  const rows = data.broadcasts || [];
+  countEl.textContent = `(${rows.length})`;
+  if (!rows.length) {
+    statusEl.textContent = 'ยังไม่มีร่างกระจายข้อมูล ระบบจะสร้างร่างใหม่ให้เจ้าของอนุมัติทุกสัปดาห์ครับ';
+    return;
+  }
+  statusEl.textContent = '';
+  const pending = rows.filter((r) => r.status === 'PENDING_REVIEW');
+  const scheduled = rows.filter((r) => r.status === 'SCHEDULED');
+  const history = rows.filter((r) => r.status !== 'PENDING_REVIEW' && r.status !== 'SCHEDULED');
+
+  if (pending.length) {
+    renderBroadcastCard(pending[0], listP, 'pending');
+    renderPendingActions(pending[0]);
+  } else {
+    const empty = document.createElement('p');
+    empty.className = 'hint';
+    empty.textContent = 'สัปดาห์นี้ยังไม่มีร่างให้อนุมัติ — ระบบจะสร้างร่างใหม่จากเมนูจริงให้ทุกสัปดาห์ครับ';
+    listP.appendChild(empty);
+    $('broadcast-pending-actions').textContent = '';
+  }
+  if (scheduled.length) {
+    for (const row of scheduled) renderBroadcastCard(row, listS, 'scheduled');
+  } else {
+    const empty = document.createElement('p');
+    empty.className = 'hint';
+    empty.textContent = 'ไม่มีข้อความที่อนุมัติไว้รอส่ง';
+    listS.appendChild(empty);
+  }
+  if (history.length) {
+    for (const row of history) renderBroadcastCard(row, listH, 'history');
+  } else {
+    const empty = document.createElement('p');
+    empty.className = 'hint';
+    empty.textContent = 'ยังไม่มีประวัติการส่ง';
+    listH.appendChild(empty);
+  }
+  await loadQuota();
+}
+
+function renderBroadcastCard(row, container, mode) {
+  const card = document.createElement('article');
+  card.className = 'broadcast-card';
+
+  const imgWrap = document.createElement('div');
+  imgWrap.className = 'bc-img';
+  if (row.imageUrl) {
+    const img = document.createElement('img');
+    img.className = 'preview-img';
+    img.src = row.imageUrl;
+    img.alt = row.menuName || 'รูปเมนูแนะนำ';
+    img.loading = 'lazy';
+    imgWrap.appendChild(img);
+  } else {
+    const box = document.createElement('div');
+    box.className = 'no-img';
+    box.textContent = 'ไม่มีรูปประกอบ';
+    imgWrap.appendChild(box);
+  }
+  card.appendChild(imgWrap);
+
+  const body = document.createElement('div');
+  body.className = 'bc-body';
+
+  const head = document.createElement('div');
+  head.className = 'bc-head';
+  const title = document.createElement('div');
+  title.className = 'bc-title';
+  title.textContent = row.menuName ? `แนะนำ: ${row.menuName}` : 'ร่างข้อความสัปดาห์นี้';
+  head.appendChild(title);
+  head.appendChild(broadcastPill(row.status));
+  body.appendChild(head);
+
+  const text = document.createElement('div');
+  text.className = 'bc-text';
+  text.textContent = row.finalText || row.draftText || '(ยังไม่มีข้อความ)';
+  body.appendChild(text);
+
+  const meta = document.createElement('dl');
+  meta.className = 'bc-meta kv';
+  if (row.menuName) {
+    addKvRow(meta, 'เมนู', `${row.menuName} ${row.menuPrice != null ? '(' + fmtPrice(row.menuPrice) + ')' : ''}`);
+  }
+  addKvRow(meta, 'สถานะ', BROADCAST_STATUS_LABELS[row.status] || row.status);
+  if (row.scheduledAt) addKvRow(meta, 'เวลาส่ง', fmtTime(row.scheduledAt));
+  if (row.approvedAt) addKvRow(meta, 'อนุมัติเมื่อ', fmtTime(row.approvedAt));
+  body.appendChild(meta);
+
+  card.appendChild(body);
+
+  if (mode !== 'pending') {
+    addBroadcastCardActions(card, row);
+  }
+  container.appendChild(card);
+}
+
+function addKvRow(dl, term, value) {
+  const dt = document.createElement('dt');
+  dt.textContent = term;
+  const dd = document.createElement('dd');
+  dd.textContent = value == null || value === '' ? '—' : String(value);
+  dl.appendChild(dt);
+  dl.appendChild(dd);
+}
+
+function addBroadcastCardActions(card, row) {
+  const actions = document.createElement('div');
+  actions.className = 'bc-actions';
+  const status = row.status;
+  const canSend = status === 'PENDING_REVIEW' || status === 'SCHEDULED' || status === 'FAILED' || status === 'MISSED';
+  if (canSend) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm btn-primary';
+    if (status === 'PENDING_REVIEW') btn.textContent = 'อนุมัติ (ส่งอังคาร 09:00)';
+    else if (status === 'SCHEDULED') btn.textContent = 'ส่งทันที';
+    else btn.textContent = 'ส่งใหม่ (อังคาร 09:00)';
+    btn.addEventListener('click', () => {
+      if (status === 'PENDING_REVIEW') approveBroadcastUI(row);
+      else sendOrResendBroadcastUI(row);
+    });
+    actions.appendChild(btn);
+  }
+  if (status === 'PENDING_REVIEW') {
+    const btnNow = document.createElement('button');
+    btnNow.type = 'button';
+    btnNow.className = 'btn btn-sm';
+    btnNow.textContent = 'ส่งทันที';
+    btnNow.addEventListener('click', () => sendNowBroadcastUI(row));
+    actions.appendChild(btnNow);
+    const btnPost = document.createElement('button');
+    btnPost.type = 'button';
+    btnPost.className = 'btn btn-sm btn-ghost';
+    btnPost.textContent = 'เลื่อนเป็นอังคารหน้า';
+    btnPost.addEventListener('click', () => postponeBroadcastUI(row));
+    actions.appendChild(btnPost);
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button';
+    btnDel.className = 'btn btn-sm btn-danger';
+    btnDel.textContent = 'ยกเลิกร่าง';
+    btnDel.addEventListener('click', () => discardBroadcastUI(row));
+    actions.appendChild(btnDel);
+  } else if (status === 'SCHEDULED' || status === 'FAILED' || status === 'MISSED') {
+    const btnPost = document.createElement('button');
+    btnPost.type = 'button';
+    btnPost.className = 'btn btn-sm btn-ghost';
+    btnPost.textContent = 'เลื่อนเป็นอังคารหน้า';
+    btnPost.addEventListener('click', () => postponeBroadcastUI(row));
+    actions.appendChild(btnPost);
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button';
+    btnDel.className = 'btn btn-sm btn-danger';
+    btnDel.textContent = 'ยกเลิก';
+    btnDel.addEventListener('click', () => discardBroadcastUI(row));
+    actions.appendChild(btnDel);
+  }
+  card.appendChild(actions);
+}
+
+function renderPendingActions(broadcast) {
+  const wrap = $('broadcast-pending-actions');
+  wrap.textContent = '';
+  const editNotice = document.createElement('p');
+  editNotice.className = 'hint';
+  editNotice.textContent = 'ถ้าอยากแก้ข้อความก่อนอนุมัติ กด “แก้ไขข้อความ” แล้วพิมพ์ใหม่ ร่างเดิมจะยังคงอยู่ไม่ถูกทับครับ';
+  wrap.appendChild(editNotice);
+
+  const btnEdit = document.createElement('button');
+  btnEdit.type = 'button';
+  btnEdit.className = 'btn btn-sm btn-ghost';
+  btnEdit.textContent = 'แก้ไขข้อความ';
+  let editing = false;
+  let ta = null;
+  let btnSave = null;
+  btnEdit.addEventListener('click', () => {
+    editing = !editing;
+    if (editing) {
+      ta = document.createElement('textarea');
+      ta.id = 'bc-edit-text';
+      ta.rows = 6;
+      ta.spellcheck = true;
+      ta.value = broadcast.finalText || broadcast.draftText || '';
+      wrap.parentNode.insertBefore(ta, wrap);
+      btnSave = document.createElement('button');
+      btnSave.id = 'bc-btn-save-edit';
+      btnSave.type = 'button';
+      btnSave.className = 'btn btn-sm btn-primary';
+      btnSave.textContent = 'บันทึกการแก้ข้อความ';
+      btnSave.addEventListener('click', () => saveBroadcastEdit(broadcast));
+      wrap.parentNode.insertBefore(btnSave, wrap);
+      btnEdit.textContent = 'ยกเลิกแก้ไข';
+    } else {
+      if (ta) ta.remove();
+      if (btnSave) btnSave.remove();
+      btnEdit.textContent = 'แก้ไขข้อความ';
+      ta = null;
+      btnSave = null;
+    }
+  });
+  wrap.appendChild(btnEdit);
+
+  const btnApproved = document.createElement('button');
+  btnApproved.type = 'button';
+  btnApproved.className = 'btn btn-sm btn-primary';
+  btnApproved.textContent = 'อนุมัติ (ส่งอังคาร 09:00)';
+  btnApproved.addEventListener('click', () => approveBroadcastUI(broadcast));
+  wrap.appendChild(btnApproved);
+
+  const btnNow = document.createElement('button');
+  btnNow.type = 'button';
+  btnNow.className = 'btn btn-sm';
+  btnNow.textContent = 'ส่งทันที';
+  btnNow.addEventListener('click', () => sendNowBroadcastUI(broadcast));
+  wrap.appendChild(btnNow);
+
+  const btnPost = document.createElement('button');
+  btnPost.type = 'button';
+  btnPost.className = 'btn btn-sm btn-ghost';
+  btnPost.textContent = 'เลื่อนเป็นอังคารหน้า';
+  btnPost.addEventListener('click', () => postponeBroadcastUI(broadcast));
+  wrap.appendChild(btnPost);
+
+  const btnDel = document.createElement('button');
+  btnDel.type = 'button';
+  btnDel.className = 'btn btn-sm btn-danger';
+  btnDel.textContent = 'ยกเลิกร่าง';
+  btnDel.addEventListener('click', () => discardBroadcastUI(broadcast));
+  wrap.appendChild(btnDel);
+}
+
+async function saveBroadcastEdit(broadcast) {
+  if (broadcastPending) return;
+  broadcastPending = true;
+  const btn = $('bc-btn-save-edit');
+  if (btn) btn.disabled = true;
+  $('broadcast-pending-status').textContent = 'กำลังบันทึก…';
+  try {
+    await api(`/api/v1/broadcasts/${encodeURIComponent(broadcast.id)}/edit`, 'POST', {
+      ...broadcastConcurrency(broadcast),
+      finalText: $('bc-edit-text').value,
+    });
+    broadcastPending = false;
+    if (btn) btn.disabled = false;
+    $('broadcast-pending-status').textContent = 'บันทึกที่แก้ไขแล้ว';
+    await loadBroadcasts();
+  } catch (error) {
+    broadcastPending = false;
+    if (btn) btn.disabled = false;
+    if (error.locked) return;
+    if (error.status === 409) {
+      $('broadcast-pending-status').textContent = 'ร่างนี้เปลี่ยนไปแล้ว กรุณาโหลดใหม่ก่อนทำต่อ';
+      await loadBroadcasts();
+      return;
+    }
+    $('broadcast-pending-status').textContent = `บันทึกไม่สำเร็จ: ${error.message}`;
+  }
+}
+
+async function approveBroadcastUI(row) {
+  if (broadcastPending) return;
+  broadcastPending = true;
+  $('broadcast-pending-status').textContent = 'กำลังอนุมัติ…';
+  try {
+    await api(`/api/v1/broadcasts/${encodeURIComponent(row.id)}/approve`, 'POST', {
+      ...broadcastConcurrency(row),
+      ownerId: 'owner-1',
+    });
+    broadcastPending = false;
+    $('broadcast-pending-status').textContent = 'อนุมัติแล้ว — รอส่งวันอังคาร 09:00 กรุงเทพฯ ครับ';
+    await loadBroadcasts();
+  } catch (error) {
+    broadcastPending = false;
+    if (error.locked) return;
+    if (error.status === 409) {
+      $('broadcast-pending-status').textContent = 'ร่างนี้เปลี่ยนไปแล้ว กรุณาโหลดใหม่ก่อนทำต่อ';
+      await loadBroadcasts();
+      return;
+    }
+    $('broadcast-pending-status').textContent = `อนุมัติไม่สำเร็จ: ${error.message}`;
+  }
+}
+
+async function sendNowBroadcastUI(row) {
+  if (!window.confirm('ส่งข้อความนี้ทันทีเลยหรือครับ? ผู้ติดตาม LINE จะได้รับข้อความนี้ภายในไม่กี่นาที')) return;
+  if (broadcastPending) return;
+  broadcastPending = true;
+  const statusEl = row.status === 'PENDING_REVIEW' ? $('broadcast-pending-status') : $('broadcast-status');
+  statusEl.textContent = 'กำลังบันทึก…';
+  try {
+    await api(`/api/v1/broadcasts/${encodeURIComponent(row.id)}/send-now`, 'POST', {
+      ...broadcastConcurrency(row),
+      ownerId: 'owner-1',
+    });
+    broadcastPending = false;
+    statusEl.textContent = 'บันทึกแล้วครับ — ตัววิ่งจะส่งให้เองในไม่เกิน 1 นาทีข้างหน้า';
+    await loadBroadcasts();
+  } catch (error) {
+    broadcastPending = false;
+    if (error.locked) return;
+    statusEl.textContent = `ส่งไม่สำเร็จ: ${error.message}`;
+  }
+}
+
+async function sendOrResendBroadcastUI(row) {
+  if (!window.confirm('ส่งข้อความนี้ให้ผู้ติดตาม LINE เลยหรือครับ? ได้รับภายในไม่กี่นาที')) return;
+  if (broadcastPending) return;
+  broadcastPending = true;
+  $('broadcast-status').textContent = 'กำลังบันทึก…';
+  try {
+    await api(`/api/v1/broadcasts/${encodeURIComponent(row.id)}/send-now`, 'POST', {
+      ...broadcastConcurrency(row),
+      ownerId: 'owner-1',
+    });
+    broadcastPending = false;
+    $('broadcast-status').textContent = 'บันทึกแล้วครับ — ตัววิ่งจะส่งให้เองในไม่เกิน 1 นาทีข้างหน้า';
+    await loadBroadcasts();
+  } catch (error) {
+    broadcastPending = false;
+    if (error.locked) return;
+    $('broadcast-status').textContent = `ส่งไม่สำเร็จ: ${error.message}`;
+  }
+}
+
+async function postponeBroadcastUI(row) {
+  if (broadcastPending) return;
+  broadcastPending = true;
+  const statusEl = row.status === 'PENDING_REVIEW' ? $('broadcast-pending-status') : $('broadcast-status');
+  statusEl.textContent = 'กำลังเลื่อนเวลา…';
+  try {
+    await api(`/api/v1/broadcasts/${encodeURIComponent(row.id)}/postpone`, 'POST', {
+      ...broadcastConcurrency(row),
+      ownerId: 'owner-1',
+    });
+    broadcastPending = false;
+    statusEl.textContent = 'เลื่อนเป็นอังคารถัดไป 09:00 กรุงเทพฯ เรียบร้อยแล้วครับ';
+    await loadBroadcasts();
+  } catch (error) {
+    broadcastPending = false;
+    if (error.locked) return;
+    statusEl.textContent = `เลื่อนเวลาไม่สำเร็จ: ${error.message}`;
+  }
+}
+
+async function discardBroadcastUI(row) {
+  if (!window.confirm('ยกเลิกร่างนี้ใช่ไหมครับ? ระบบจะไม่ส่งข้อความนี้ออกไป')) return;
+  if (broadcastPending) return;
+  broadcastPending = true;
+  const statusEl = row.status === 'PENDING_REVIEW' ? $('broadcast-pending-status') : $('broadcast-status');
+  statusEl.textContent = 'กำลังยกเลิก…';
+  try {
+    await api(`/api/v1/broadcasts/${encodeURIComponent(row.id)}/discard`, 'POST', {
+      ...broadcastConcurrency(row),
+      ownerId: 'owner-1',
+    });
+    broadcastPending = false;
+    statusEl.textContent = 'ยกเลิกร่างแล้วครับ';
+    await loadBroadcasts();
+  } catch (error) {
+    broadcastPending = false;
+    if (error.locked) return;
+    statusEl.textContent = `ยกเลิกไม่สำเร็จ: ${error.message}`;
+  }
+}
+
+async function loadQuota() {
+  const el = $('broadcast-quota');
+  el.textContent = 'กำลังตรวจสอบ…';
+  try {
+    const data = await api('/api/v1/broadcasts/quota');
+    const q = data.quota;
+    if (!q || !q.ok) {
+      if (q && q.code === 'NOT_CONFIGURED') {
+        el.textContent = 'ยังไม่ได้ตั้งค่าการส่ง LINE (LINE_CHANNEL_ACCESS_TOKEN) บนเครื่องนี้ — ร่างยังสร้างตามปกติ รอเจ้าของตั้งค่าแล้วค่อยส่งครับ';
+      } else {
+        el.textContent = `ตรวจโควตาไม่สำเร็จ (${(q && q.code) || 'ไม่ทราบสาเหตุ'})`;
+      }
+      return;
+    }
+    if (q.type === 'limited') {
+      el.textContent = `โควตาเดือนนี้ใช้ไป ${q.used ?? '-'} จาก ${q.limit} ข้อความ เหลือ ${q.remaining ?? '-'}`;
+    } else {
+      el.textContent = 'แพ็กเกจของร้านไม่จำกัดโควตาการกระจายข้อมูล (ใช้ไปรวม ' + (q.used ?? '-') + ' ข้อความ)';
+    }
+  } catch (error) {
+    if (error.locked) return;
+    if (error.status === 503 && (!error.code || error.code === 'NOT_CONFIGURED')) {
+      el.textContent = 'ยังไม่ได้ตั้งค่าการส่ง LINE บนเครื่องนี้ (ยังไม่มี LINE_CHANNEL_ACCESS_TOKEN) — ร่างยังสร้างตามปกติ รอเจ้าของตั้งค่าแล้วค่อยส่งครับ';
+    } else if (error.status === 503) {
+      el.textContent = `ตรวจโควตาไม่สำเร็จ (${error.code})`;
+    } else {
+      el.textContent = `ตรวจโควตาไม่สำเร็จ: ${error.message}`;
+    }
+  }
+}
+
+document.getElementById('nav-broadcast').addEventListener('click', () => { showView('broadcast'); loadBroadcasts(); });
+document.getElementById('back-queue-from-broadcast').addEventListener('click', () => { showView('queue'); loadQueue(); });
 showView('unlock');

@@ -124,6 +124,26 @@ test('edit sends concurrency fields; reject/send require confirmation', () => {
   assert.ok(appJs.includes('send-confirm') && appJs.includes('btn-send-confirm'), 'explicit send-confirm modal');
 });
 
+test('queue cards offer the same reject action without opening the draft', () => {
+  const queueFn = functionSource(appJs, 'async function loadQueue');
+  assert.ok(queueFn.includes("'ไม่ส่ง'"), 'queue reject button exists');
+  assert.ok(queueFn.includes('rejectQueueDraft'), 'queue reject handler is wired');
+  assert.ok(queueFn.includes("draft.status === 'WAITING_FOR_HUMAN'"), 'gated on waiting drafts only (sent tabs stay clean)');
+  const rejectFn = functionSource(appJs, 'async function rejectQueueDraft');
+  assert.ok(rejectFn.includes('window.confirm('), 'queue reject asks first');
+  assert.ok(rejectFn.includes('/api/v1/drafts/'), 'queue reject calls the drafts endpoint');
+  assert.ok(rejectFn.includes(`drafts/${'${encodeURIComponent(draft.id)}'}/reject`), 'id-scoped reject path');
+  assert.ok(rejectFn.includes('concurrencyOf'), 'queue reject posts concurrency fields');
+  assert.ok(rejectFn.includes('loadQueue()'), 'queue reloads after a reject');
+});
+
+test('broadcast pending card is a container, not a nested broadcast-card', () => {
+  assert.ok(html.includes('<div id="broadcast-pending"></div>'), 'pending container is plain; renderBroadcastCard supplies the card');
+  assert.ok(!/id="broadcast-pending"[^>]*broadcast-card/.test(html), 'container must not carry broadcast-card (nested [150px,1fr] grid collapses the card)');
+  const renderFn = functionSource(appJs, 'function renderBroadcastCard');
+  assert.ok(renderFn.includes("'broadcast-card'"), 'the real card class comes from the renderer');
+});
+
 test('send request carries identity and concurrency only', () => {
   const sendBlock = functionSource(appJs, 'async function confirmSend');
   assert.ok(!/lineUserId|retryKey|X-Line-Retry-Key|resizeImage|message:\s*finalText/i.test(sendBlock), 'no recipient/message/key in send body');
