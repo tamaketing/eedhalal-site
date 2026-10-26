@@ -123,6 +123,13 @@ test('the provider classifies LINE answers without guessing delivery', async () 
     'NON_RETRYABLE_FAILURE');
   assert.equal((await sendBroadcastMessages({ ...base, fetchImpl: stubFetch(429) })).outcome,
     'RETRYABLE_FAILURE');
+  assert.deepEqual(
+    await sendBroadcastMessages({
+      ...base,
+      fetchImpl: stubFetch(429, '{"message":"You have reached your monthly limit."}'),
+    }),
+    { outcome: 'NON_RETRYABLE_FAILURE', code: 'QUOTA_EXHAUSTED', httpStatus: 429 },
+  );
   assert.equal((await sendBroadcastMessages({ ...base, fetchImpl: stubFetch(503) })).outcome,
     'RETRYABLE_FAILURE');
   assert.equal((await sendBroadcastMessages({ ...base, fetchImpl: stubFetch(400, 'bad request') })).outcome,
@@ -503,7 +510,7 @@ test('LINE quota and consumption probes parse the real API response shapes', asy
 
   const consumption = await getMessageConsumption({
     token: 'tok',
-    fetchImpl: async () => ({ ok: true, json: async () => ({ total: 42 }) }),
+    fetchImpl: async () => ({ ok: true, json: async () => ({ totalUsage: 42 }) }),
   });
   assert.equal(consumption.ok, true);
   assert.equal(consumption.total, 42);

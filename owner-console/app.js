@@ -1330,11 +1330,16 @@ function broadcastStatusTone(status) {
   }
 }
 
-function broadcastPill(status) {
+function broadcastStatusText(status, errorCode) {
+  if (status === 'FAILED' && errorCode === 'QUOTA_EXHAUSTED') return 'โควตาเดือนนี้หมด';
+  return BROADCAST_STATUS_LABELS[status] || status || '—';
+}
+
+function broadcastPill(status, errorCode) {
   const el = document.createElement('span');
   el.className = `pill ${broadcastStatusTone(status)}`;
-  el.textContent = BROADCAST_STATUS_LABELS[status] || status || '—';
-  el.title = status || '';
+  el.textContent = broadcastStatusText(status, errorCode);
+  el.title = errorCode ? `${status} (${errorCode})` : (status || '');
   return el;
 }
 
@@ -1403,7 +1408,7 @@ async function loadBroadcasts() {
     empty.textContent = 'ยังไม่มีประวัติการส่ง';
     listH.appendChild(empty);
   }
-  await loadQuota();
+  await loadQuota(rows);
 }
 
 function renderBroadcastCard(row, container, mode) {
@@ -1436,7 +1441,7 @@ function renderBroadcastCard(row, container, mode) {
   title.className = 'bc-title';
   title.textContent = row.menuName ? `แนะนำ: ${row.menuName}` : 'ร่างข้อความสัปดาห์นี้';
   head.appendChild(title);
-  head.appendChild(broadcastPill(row.status));
+  head.appendChild(broadcastPill(row.status, row.errorCode));
   body.appendChild(head);
 
   const text = document.createElement('div');
@@ -1449,7 +1454,7 @@ function renderBroadcastCard(row, container, mode) {
   if (row.menuName) {
     addKvRow(meta, 'เมนู', `${row.menuName} ${row.menuPrice != null ? '(' + fmtPrice(row.menuPrice) + ')' : ''}`);
   }
-  addKvRow(meta, 'สถานะ', BROADCAST_STATUS_LABELS[row.status] || row.status);
+  addKvRow(meta, 'สถานะ', broadcastStatusText(row.status, row.errorCode));
   if (row.scheduledAt) addKvRow(meta, 'เวลาส่ง', fmtTime(row.scheduledAt));
   if (row.approvedAt) addKvRow(meta, 'อนุมัติเมื่อ', fmtTime(row.approvedAt));
   body.appendChild(meta);
@@ -1730,13 +1735,18 @@ async function discardBroadcastUI(row) {
   }
 }
 
-async function loadQuota() {
+async function loadQuota(rows = []) {
   const el = $('broadcast-quota');
   el.textContent = 'กำลังตรวจสอบ…';
+  const quotaBlocked = rows.some((row) => row.status === 'FAILED' && row.errorCode === 'QUOTA_EXHAUSTED');
   try {
     const data = await api('/api/v1/broadcasts/quota');
     const q = data.quota;
     if (!q || !q.ok) {
+      if (quotaBlocked) {
+        el.textContent = 'โควตาเดือนนี้หมด — ส่งถึงผู้ติดตามทุกคนไม่ได้ในเดือนนี้ครับ';
+        return;
+      }
       if (q && q.code === 'NOT_CONFIGURED') {
         el.textContent = 'ยังไม่ได้ตั้งค่าการส่ง LINE (LINE_CHANNEL_ACCESS_TOKEN) บนเครื่องนี้ — ร่างยังสร้างตามปกติ รอเจ้าของตั้งค่าแล้วค่อยส่งครับ';
       } else {
@@ -1744,7 +1754,11 @@ async function loadQuota() {
       }
       return;
     }
-    if (q.type === 'limited') {
+    if (q.type === 'limited' && q.remaining === 0) {
+      el.textContent = `โควตาเดือนนี้หมด — ใช้ไป ${q.used ?? q.limit} จาก ${q.limit} ข้อความแล้ว เดือนหน้าค่อยส่งใหม่ได้ครับ`;
+    } else if (q.type === 'limited' && quotaBlocked) {
+      el.textContent = `โควตาเดือนนี้หมด สำหรับส่งถึงผู้ติดตามทุกคน — ใช้ไป ${q.used ?? '-'} จาก ${q.limit} เหลือ ${q.remaining ?? '-'} ซึ่งไม่พอสำหรับข้อความนี้ครับ`;
+    } else if (q.type === 'limited') {
       el.textContent = `โควตาเดือนนี้ใช้ไป ${q.used ?? '-'} จาก ${q.limit} ข้อความ เหลือ ${q.remaining ?? '-'}`;
     } else {
       el.textContent = 'แพ็กเกจของร้านไม่จำกัดโควตาการกระจายข้อมูล (ใช้ไปรวม ' + (q.used ?? '-') + ' ข้อความ)';

@@ -14,7 +14,7 @@ import { ValidationError } from './errors.mjs';
 
 export const BROADCAST_URL = 'https://api.line.me/v2/bot/message/broadcast';
 export const QUOTA_URL = 'https://api.line.me/v2/bot/message/quota';
-export const CONSUMPTION_URL = 'https://api.line.me/v2/bot/message/consumption';
+export const CONSUMPTION_URL = 'https://api.line.me/v2/bot/message/quota/consumption';
 export const TIMEOUT_MS = 10000;
 export const MAX_MESSAGES = 5;
 export const MAX_TEXT_LENGTH = 5000;
@@ -90,9 +90,14 @@ export async function sendBroadcastMessages({ token, messages, retryKey, timeout
   if (status === 409 && ACCEPTED_409_RE.test(detail)) {
     return { outcome: 'ALREADY_ACCEPTED', code: 'HTTP_409_ACCEPTED', httpStatus: status };
   }
-  // 429 rate/quota limit is transient from the schedule's point of view: the
-  // runner retries with the same frozen key and the owner sees FAILED only
-  // after the retry budget is exhausted.
+  // A monthly-limit 429 will not clear by retrying. Fail closed as
+  // QUOTA_EXHAUSTED so the owner sees the real reason instead of three
+  // identical retries ending in RETRY_EXHAUSTED.
+  if (status === 429 && /monthly limit/i.test(detail)) {
+    return { outcome: 'NON_RETRYABLE_FAILURE', code: 'QUOTA_EXHAUSTED', httpStatus: status };
+  }
+  // Other 429s (short rate limits) and 5xx stay retryable: the runner replays
+  // the same frozen key and the owner sees FAILED only after the budget.
   if (status === 429 || status >= 500) return { outcome: 'RETRYABLE_FAILURE', code: `HTTP_${status}`, httpStatus: status };
   return { outcome: 'NON_RETRYABLE_FAILURE', code: `HTTP_${status}`, httpStatus: status };
 }
@@ -119,7 +124,9 @@ export async function getMessageConsumption({ token, fetchImpl = fetch } = {}) {
     const response = await fetchImpl(CONSUMPTION_URL, { headers: { Authorization: `Bearer ${token}` } });
     if (!response.ok) return { ok: false, code: `HTTP_${response.status}` };
     const body = await response.json();
-    return { ok: true, total: Number(body.total) || 0 };
+    // LINE returns { totalUsage: N } from /v2/bot/message/quota/consumption.
+    const total = Number(body.totalUsage);
+    return { ok: true, total: Number.isFinite(total) ? total : 0 };
   } catch {
     return { ok: false, code: 'NETWORK_ERROR' };
   }

@@ -137,6 +137,15 @@ test('queue cards offer the same reject action without opening the draft', () =>
   assert.ok(rejectFn.includes('loadQueue()'), 'queue reloads after a reject');
 });
 
+test('a quota-exhausted broadcast says so in the owner console', () => {
+  assert.ok(appJs.includes('โควตาเดือนนี้หมด'), 'owner sees the monthly-limit wording');
+  assert.ok(appJs.includes("errorCode === 'QUOTA_EXHAUSTED'"), 'the label is tied to the quota failure code');
+  const renderFn = functionSource(appJs, 'function renderBroadcastCard');
+  assert.ok(renderFn.includes('row.errorCode'), 'the card reads the failure code');
+  const quotaFn = functionSource(appJs, 'async function loadQuota');
+  assert.ok(quotaFn.includes('โควตาเดือนนี้หมด'), 'the quota panel uses the same wording');
+});
+
 test('broadcast pending card is a container, not a nested broadcast-card', () => {
   assert.ok(html.includes('<div id="broadcast-pending"></div>'), 'pending container is plain; renderBroadcastCard supplies the card');
   assert.ok(!/id="broadcast-pending"[^>]*broadcast-card/.test(html), 'container must not carry broadcast-card (nested [150px,1fr] grid collapses the card)');
