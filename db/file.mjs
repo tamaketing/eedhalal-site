@@ -12,6 +12,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { isUniqueViolation } from './memory.mjs';
 import { customerDefaults } from './customer-contract.mjs';
 import { inboundDefaults, inboundPatch, validateInboundRow } from './inbound-contract.mjs';
+import { broadcastDefaults, broadcastPatch, validateBroadcastRow, BROADCAST_STATUSES } from './broadcast-contract.mjs';
 import { exampleDefaults, examplePatch, validateExampleRow } from './examples-contract.mjs';
 import { memoryDefaults, validateMemoryRow } from './customer-memory-contract.mjs';
 
@@ -19,7 +20,7 @@ function clone(value) {
   return value === undefined ? value : structuredClone(value);
 }
 
-const TABLES = ['customers', 'leads', 'drafts', 'auditLogs', 'inboundMessages', 'responseExamples', 'customerMemories'];
+const TABLES = ['customers', 'leads', 'drafts', 'auditLogs', 'inboundMessages', 'responseExamples', 'customerMemories', 'broadcastMessages'];
 
 export function createFileAdapter(dir) {
   if (!dir) throw new Error('DB_DIR is required for the file adapter.');
@@ -308,6 +309,61 @@ export function createFileAdapter(dir) {
     },
   };
 
+  const broadcastMessages = {
+    kind: 'broadcastMessages',
+    async create(input, now = new Date().toISOString()) {
+      return exclusive(async () => {
+        const tables = await load();
+        const row = broadcastDefaults(input);
+        const existing = !(tables.broadcastMessages[row.id]) ? null : tables.broadcastMessages[row.id];
+        if (existing) throw conflict('broadcast already exists');
+        if (row.weekKey != null &&
+            Object.values(tables.broadcastMessages).some((r) => r.weekKey === row.weekKey)) {
+          throw conflict('broadcast already exists');
+        }
+        const errors = validateBroadcastRow(row);
+        if (errors.length) throw new Error(`invalid broadcast: ${errors.join('; ')}`);
+        tables.broadcastMessages[row.id] = stamp(row, true, now);
+        await persist();
+        return clone(tables.broadcastMessages[row.id]);
+      });
+    },
+    async findById(id) { return exclusive(async () => clone((await load()).broadcastMessages[id] || null)); },
+    async findByWeekKey(weekKey) {
+      return exclusive(async () => weekKey == null ? null : clone(
+        Object.values((await load()).broadcastMessages).find((r) => r.weekKey === weekKey) || null));
+    },
+    async listByStatus(status) {
+      return exclusive(async () => {
+        if (!status || !BROADCAST_STATUSES.includes(status)) return [];
+        return Object.values((await load()).broadcastMessages)
+          .filter((r) => r.status === status)
+          .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+          .map(clone);
+      });
+    },
+    async list() {
+      return exclusive(async () => Object.values((await load()).broadcastMessages)
+        .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+        .map(clone));
+    },
+    async updateIfCurrent(id, patch, expected = {}, now = new Date().toISOString()) {
+      return exclusive(async () => {
+        const tables = await load();
+        const row = tables.broadcastMessages[id];
+        if (!row) return null;
+        if (expected.status !== undefined && row.status !== expected.status) return null;
+        if (expected.updatedAt !== undefined && row.updatedAt !== expected.updatedAt) return null;
+        const saved = stamp({ ...row, ...broadcastPatch(patch), id }, false, now);
+        const errors = validateBroadcastRow(saved);
+        if (errors.length) throw new Error(`invalid broadcast: ${errors.join('; ')}`);
+        tables.broadcastMessages[id] = saved;
+        await persist();
+        return clone(saved);
+      });
+    },
+  };
+
   const customerMemories = {
     kind: 'customerMemories',
     async create(row, now = new Date().toISOString()) {
@@ -441,6 +497,7 @@ export function createFileAdapter(dir) {
     inboundMessages,
     responseExamples,
     customerMemories,
+    broadcastMessages,
     // Groups several repository calls into one exclusive section so no other
     // task in this process can interleave between them. Repos passed to fn
     // are re-entrant only in this async context, not in unrelated callers.
@@ -449,7 +506,7 @@ export function createFileAdapter(dir) {
       return exclusive(async () => {
         const snapshot = clone(await load());
         try {
-          const result = await transactionContext.run(true, () => fn({ customers, leads, drafts, auditLogs, inboundMessages, responseExamples, customerMemories }));
+          const result = await transactionContext.run(true, () => fn({ customers, leads, drafts, auditLogs, inboundMessages, responseExamples, customerMemories, broadcastMessages }));
           await persist();
           return result;
         } catch (error) {

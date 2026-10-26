@@ -43,6 +43,7 @@
 | ข้อมูลธุรกิจ เมนู และ Snack Box ที่หน้าเว็บใช้ | `scripts/check-system.mjs` |
 | ข้อความนอกบล็อกอัตโนมัติ เช่น FAQ บทความ และบางส่วนของ llms | แก้ด้วยมือจากต้นทาง ตามกฎการเขียนใน AGENTS |
 | LINE OA rich menu และ keyword replies | ตรวจ [data/rich-menu.json](data/rich-menu.json) และข้อความในช่องทางที่เกี่ยวข้องพร้อมกัน |
+| ข้อความกระจายข้อมูลรายสัปดาห์ (LINE OA broadcast) | สร้างจาก `data/business-rules.json` และเมนูกลางโดย `tools/line/broadcast-drafts.mjs` — เจ้าของตรวจและอนุมัติที่ Owner Console ก่อนส่งทุกครั้ง ไม่มีสำเนาข้อเท็จจริงเก็บไว้ที่อื่น |
 
 ลำดับคำสั่งอยู่ที่ [DEPLOY.md](DEPLOY.md) ตัวตรวจซิงก์ตรวจตาม manifest และรูปแบบข้อความต้องห้าม จึงไม่ทดแทนการอ่านทวนความหมายทุกประโยค
 

@@ -6,10 +6,10 @@
 // JS values so contract tests stay deterministic (integration tests cover
 // the real driver behavior).
 
-const JSON_COLS = new Set(['metadata', 'history', 'before_data', 'after_data', 'style_tags']);
+const JSON_COLS = new Set(['metadata', 'history', 'before_data', 'after_data', 'style_tags', 'send_attempt']);
 
 export function createFakePg() {
-  const tables = { customers: new Map(), leads: new Map(), drafts: new Map(), audit_logs: new Map(), inbound_messages: new Map(), response_examples: new Map() };
+  const tables = { customers: new Map(), leads: new Map(), drafts: new Map(), audit_logs: new Map(), inbound_messages: new Map(), response_examples: new Map(), broadcast_messages: new Map() };
   const uniques = { customers: ['line_user_id'], drafts: ['draft_id'] };
   const duplicate = () => Object.assign(new Error('duplicate key value'), { code: '23505' });
   const decode = (col, value) => (JSON_COLS.has(col) && typeof value === 'string' ? JSON.parse(value) : value);
@@ -50,6 +50,7 @@ export function createFakePg() {
         [...store.values()].some((r) => r.customer_id === row.customer_id && r.source_event_id === row.source_event_id)) {
         throw duplicate();
       }
+      if (table === 'broadcast_messages') validateBroadcast(row);
       if (table === 'inbound_messages') validateInbound(row);
       if (table === 'response_examples') validateExample(row);
       store.set(row.id, row);
@@ -84,6 +85,7 @@ export function createFakePg() {
       }
       if (table === 'inbound_messages') validateInbound(row);
       if (table === 'response_examples') validateExample(row);
+      if (table === 'broadcast_messages') validateBroadcast(row);
       store.set(row.id, row);
       return { rows: [{ ...row }] };
     }
@@ -105,7 +107,9 @@ export function createFakePg() {
     if (/\b(GRANT|REVOKE)\b[^;]*eedhalal_app/i.test(clean)) return { rows: [] };
     // migration 010: dropping the customer_memories foreign key.
     if (/ALTER TABLE customer_memories DROP CONSTRAINT/i.test(clean)) return { rows: [] };
-    if (/CREATE UNIQUE INDEX IF NOT EXISTS/.test(clean)) return { rows: [] };
+    if (/CREATE TABLE IF NOT EXISTS (customers|leads|drafts|audit_logs|inbound_messages|response_examples|broadcast_messages)/.test(clean)) return { rows: [] };
+    // migration 011: partial unique + plain indexes on broadcast_messages.
+    if (/CREATE (UNIQUE )?INDEX IF NOT EXISTS/.test(clean)) return { rows: [] };
     throw new Error(`fake pg: unsupported query ${clean.slice(0, 80)}`);
   }
 
@@ -118,6 +122,18 @@ export function createFakePg() {
     }
     for (const [col, table] of [['customer_id', 'customers'], ['lead_id', 'leads'], ['draft_id', 'drafts']]) {
       if (row[col] != null && !tables[table].has(row[col])) throw Object.assign(new Error('missing reference'), { code: '23503' });
+    }
+  }
+
+  function validateBroadcast(row) {
+    // Migration 011: one draft per ISO week (partial unique on week_key) plus
+    // the status/retry_count/created_by CHECK constraints.
+    if (row.week_key != null && [...tables.broadcast_messages.values()].some(
+      (r) => r.id !== row.id && r.week_key === row.week_key)) throw duplicate();
+    if (!['PENDING_REVIEW', 'SCHEDULED', 'SENT', 'FAILED', 'MISSED', 'CANCELLED'].includes(row.status) ||
+        !Number.isInteger(row.retry_count) || row.retry_count < 0 ||
+        !['SYSTEM', 'OWNER'].includes(row.created_by)) {
+      throw Object.assign(new Error('invalid broadcast state'), { code: '23514' });
     }
   }
 

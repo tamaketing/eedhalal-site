@@ -31,7 +31,16 @@ const INBOUND_FIELDS = {
   revision: 'revision', leadId: 'lead_id', draftId: 'draft_id', metadata: 'metadata',
 };
 import { inboundDefaults, inboundPatch } from './inbound-contract.mjs';
+import { broadcastDefaults, broadcastPatch } from './broadcast-contract.mjs';
 import { memoryDefaults } from './customer-memory-contract.mjs';
+
+const BROADCAST_FIELDS = {
+  id: 'id', weekKey: 'week_key', theme: 'theme', menuId: 'menu_id', menuName: 'menu_name',
+  menuPrice: 'menu_price', imageUrl: 'image_url', draftText: 'draft_text', finalText: 'final_text',
+  status: 'status', scheduledAt: 'scheduled_at', approvedAt: 'approved_at', sentAt: 'sent_at',
+  sendAttempt: 'send_attempt', retryCount: 'retry_count', errorCode: 'error_code',
+  metadata: 'metadata', createdBy: 'created_by',
+};
 
 const MEMORY_COLUMNS = ['id', 'customer_id', 'summary', 'facts', 'history', 'status', 'source', 'rule_revision', 'created_at', 'updated_at'];
 
@@ -235,6 +244,36 @@ function buildRepos(run) {
       ));
     },
   };
+  const broadcastMessages = {
+    kind: 'broadcastMessages',
+    async create(input) {
+      const row = broadcastDefaults(input);
+      const stringify = (key) =>
+        key === 'sendAttempt' ? JSON.stringify(row[key]) : key === 'metadata' ? JSON.stringify(row[key]) : row[key];
+      const values = Object.keys(BROADCAST_FIELDS).map(stringify);
+      return mapOne(await run(
+        `INSERT INTO broadcast_messages (${Object.values(BROADCAST_FIELDS).join(', ')}) VALUES (${placeholders(values.length)}) RETURNING *`,
+        values,
+      ));
+    },
+    async findById(id) { return mapOne(await run('SELECT * FROM broadcast_messages WHERE id = $1', [id])); },
+    async findByWeekKey(weekKey) {
+      if (weekKey == null) return null;
+      return mapOne(await run('SELECT * FROM broadcast_messages WHERE week_key = $1', [weekKey]));
+    },
+    async listByStatus(status) {
+      if (!status) return [];
+      return mapAll(await run('SELECT * FROM broadcast_messages WHERE status = $1 ORDER BY created_at DESC', [status]));
+    },
+    async list() {
+      return mapAll(await run('SELECT * FROM broadcast_messages ORDER BY created_at DESC'));
+    },
+    // Owner/tool actions run under a CAS on updatedAt (plus optional status)
+    // so two runners or a runner + console action cannot race one send.
+    async updateIfCurrent(id, patch, expected = {}) {
+      return applyBroadcastUpdate(run, id, patch, expected);
+    },
+  };
   const customerMemories = {
     kind: 'customerMemories',
     async create(row) {
@@ -317,7 +356,7 @@ function buildRepos(run) {
       ));
     },
   };
-  return { customers, leads, drafts, auditLogs, inboundMessages, responseExamples, customerMemories };
+  return { customers, leads, drafts, auditLogs, inboundMessages, responseExamples, customerMemories, broadcastMessages };
 }
 
 async function applyDraftUpdate(run, id, patch, expected) {
@@ -357,6 +396,39 @@ async function applyDraftUpdate(run, id, patch, expected) {
   const renumbered = sets.map((clause) => clause.replace(/\$(\d+)/g, (_, n) => `$${Number(n) + 1}`));
   const result = await run(
     `UPDATE drafts SET ${renumbered.join(', ')} WHERE ${conditions.join(' AND ')} RETURNING *`,
+    params,
+  );
+  const row = result.rows?.[0];
+  return row ? toCamel(row) : null;
+}
+
+async function applyBroadcastUpdate(run, id, patch, expected) {
+  const sets = [];
+  const values = [];
+  for (const [camel, value] of Object.entries(broadcastPatch(patch))) {
+    const column = BROADCAST_FIELDS[camel];
+    if (!column) continue;
+    sets.push(`${column} = $${values.length + 1}`);
+    const json = camel === 'sendAttempt' || camel === 'metadata';
+    values.push(json ? JSON.stringify(value) : value);
+  }
+  sets.push('updated_at = now()');
+  const conditions = ['id = $1'];
+  const params = [id, ...values];
+  if (expected.status !== undefined) {
+    conditions.push(`status = $${params.length + 1}`);
+    params.push(expected.status);
+  }
+  if (expected.updatedAt !== undefined) {
+    // Same millisecond-truncation rationale as drafts: postgres now() carries
+    // microseconds, JS ISO strings round-trip at millisecond precision.
+    conditions.push(`date_trunc('milliseconds', updated_at) = date_trunc('milliseconds', $${params.length + 1}::timestamptz)`);
+    params.push(expected.updatedAt);
+  }
+  // Renumber SET placeholders to follow $1 (id).
+  const renumbered = sets.map((clause) => clause.replace(/\$(\d+)/g, (_, n) => `$${Number(n) + 1}`));
+  const result = await run(
+    `UPDATE broadcast_messages SET ${renumbered.join(', ')} WHERE ${conditions.join(' AND ')} RETURNING *`,
     params,
   );
   const row = result.rows?.[0];

@@ -210,7 +210,7 @@ async function main() {
   // 1. Internal API (PostgreSQL when a connection is configured, else the
   // file DB) — drafts/customers survive a restart either way.
   const usePostgres = Boolean(env.DATABASE_URL);
-  console.log(`[1/3] เริ่ม Internal API (${usePostgres ? 'PostgreSQL' : 'file DB'}) ที่ 127.0.0.1:${API_PORT} …`);
+  console.log(`[1/4] เริ่ม Internal API (${usePostgres ? 'PostgreSQL' : 'file DB'}) ที่ 127.0.0.1:${API_PORT} …`);
   const api = spawn(process.execPath, [path.join(ROOT, 'server', 'internal-api.mjs')], {
     cwd: ROOT,
     env: childEnv(env, {
@@ -235,7 +235,7 @@ async function main() {
   openOwnerConsole(env);
 
   // 2. LINE gateway.
-  console.log(`[2/3] เริ่ม LINE gateway ที่ 127.0.0.1:${GATEWAY_PORT} …`);
+  console.log(`[2/4] เริ่ม LINE gateway ที่ 127.0.0.1:${GATEWAY_PORT} …`);
   // The bot writes its OpenCode sessions into its own private store, so
   // customer messages never show up in the owner's OpenCode chat list.
   const botRuntime = await prepareBotRuntime(env);
@@ -252,15 +252,15 @@ async function main() {
     }),
     stdio: 'inherit',
   });
-  console.log(`    พร้อม ✓ (โหมดเงา — ไม่มีการส่งอัตโนมัติ ทุกข้อความรอเจ้าของกดส่ง)\n`);
+  console.log(`    พร้อม ✓ (โหมดเงา — ตอบลูกค้าไม่มีการส่งอัตโนมัติ ทุกข้อความรอเจ้าของกดส่ง · ข้อความกระจายข้อมูลรายสัปดาห์รอเจ้าของอนุมัติก่อนส่ง)\n`);
 
   // 3. cloudflared tunnel.
   const cloudflared = findCloudflared();
   if (!cloudflared) {
-    console.log('[3/3] ไม่พบ cloudflared — ข้าม tunnel (LINE ยิง webhook ไม่ได้จนกว่าจะติดตั้ง)\n');
+    console.log('[3/4] ไม่พบ cloudflared — ข้าม tunnel (LINE ยิง webhook ไม่ได้จนกว่าจะติดตั้ง)\n');
     console.log('ติดตั้งจาก https://developers.cloudflare.com/cloudflared/ หรือใช้ ngrok แทน\n');
   } else {
-    console.log('[3/3] เปิด cloudflared quick tunnel …');
+    console.log('[3/4] เปิด cloudflared quick tunnel …');
     const tunnel = runCloudflaredTunnel(cloudflared, env);
     await new Promise((resolve) => setTimeout(resolve, 4000));
     if (tunnel.getUrl()) {
@@ -274,6 +274,20 @@ async function main() {
     }
   }
 
+  // 4. Broadcast runner (สัปดาห์ละข้อความ ต้องรอเจ้าของอนุมัติร่างก่อนทุกครั้ง —
+  //    อยู่ภายนอก server/services/db ตามกฎ Q+R ของโปรเจกต์).
+  console.log('[4/4] เริ่มตัววิ่งกระจายข้อมูลรายสัปดาห์ …');
+  const runner = spawn(process.execPath, [path.join(ROOT, 'tools', 'line', 'broadcast-runner.mjs')], {
+    cwd: ROOT,
+    env: childEnv(env, {
+      EED_INTERNAL_API_SECRET: apiSecret,
+      DB_ADAPTER: usePostgres ? 'postgres' : 'file',
+      DB_DIR,
+    }),
+    stdio: 'inherit',
+  });
+  console.log('    พร้อม ✓ (ทุกวันอังคาร 09:00 กรุงเทพฯ · เครื่องต้องเปิดอยู่จึงส่งได้ · ถ้าเครื่องปิดเกินกำหนด รอวันถัดไปได้)\n');
+
   if (!env.LINE_CHANNEL_ACCESS_TOKEN) {
     console.log('⚠ ยังไม่ได้ตั้ง LINE_CHANNEL_ACCESS_TOKEN ใน .env');
     console.log('  → รับข้อความได้ แต่ส่งตอบไม่ได้ (fail closed)');
@@ -283,7 +297,7 @@ async function main() {
   console.log('ปิดหน้าต่างนี้ = หยุดทั้งระบบ (API + gateway + tunnel)\n');
 
   const shutdown = () => {
-    for (const child of [api, gateway]) {
+    for (const child of [api, gateway, runner]) {
       try { child.kill(); } catch { /* already gone */ }
     }
   };
@@ -292,6 +306,7 @@ async function main() {
   await new Promise((resolve) => {
     gateway.once('exit', () => { shutdown(); resolve(); });
     api.once('exit', () => { shutdown(); resolve(); });
+    runner.once('exit', () => { shutdown(); resolve(); });
   });
 }
 

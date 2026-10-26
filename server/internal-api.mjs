@@ -43,6 +43,18 @@
 //          the draft holds the price text the owner approves. 201, 200 on retry)
 //   GET  /api/v1/quotations?status=&limit=
 //   GET  /api/v1/quotations/:id
+//   GET  /api/v1/broadcasts?status=&limit=        (weekly broadcast queue)
+//   GET  /api/v1/broadcasts/:id
+//   GET  /api/v1/broadcasts/quota                 (LINE quota + usage)
+//   POST /api/v1/broadcasts/:id/approve   { finalText?, scheduledAt?, ownerId?, expectedUpdatedAt? }
+//   POST /api/v1/broadcasts/:id/edit      { finalText, ownerId?, expectedUpdatedAt? }
+//   POST /api/v1/broadcasts/:id/send-now  { ownerId?, expectedUpdatedAt? }
+//   POST /api/v1/broadcasts/:id/postpone  { scheduledAt, ownerId?, expectedUpdatedAt? }
+//   POST /api/v1/broadcasts/:id/discard   { ownerId?, expectedUpdatedAt? }
+//          (Owner-approved weekly broadcast. Drafts are built ONLY by
+//          tools/line/broadcast-runner.mjs via ensureWeeklyBroadcast; here
+//          the owner reviews, schedules or resends. Delivered by the runner,
+//          never by this server — see AGENTS.md "Sending Rules".)
 //
 // NOT IMPLEMENTED here: LINE sender, regenerate-with-AI, kitchen push,
 // accounting. A quotation is a draft the owner approves — no PDF, no invoice,
@@ -54,7 +66,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createAdapter } from '../db/index.mjs';
 import { requireInternalAuth } from './auth.mjs';
-import { presentCustomer, presentDraft, presentLead, presentInboundMessage, presentResponseExample, presentMemory } from './present.mjs';
+import { presentCustomer, presentDraft, presentLead, presentInboundMessage, presentResponseExample, presentMemory, presentBroadcast } from './present.mjs';
 import { receiveInboundMessage, attachCustomer, markProcessing, markFailed, completeInbound, retryInbound,
   getInboundMessage, requireInboundObject } from '../services/inboundMessages.mjs';
 import { createResponseExampleFromDraft, getResponseExample, listResponseExamples,
@@ -65,6 +77,8 @@ import { decryptCustomerRow, encryptCustomerRow } from '../services/encryption.m
 import { closeJob, customerThread, saveOwnerMemory, upsertMemory } from '../services/customerMemory.mjs';
 import { applyProfileName, pauseBot, resolveCustomer, resumeBot } from '../services/customers.mjs';
 import { approveDraft, editDraft, persistDraftOnce, rejectDraft, sendDraft, autoReplyDraft } from '../services/drafts.mjs';
+import { approveBroadcast, broadcastQuotaSummary, discardBroadcast, editPendingBroadcast, getBroadcast,
+  listBroadcasts, postponeBroadcast, sendNowBroadcast } from '../services/broadcasts.mjs';
 import { clampLimit, findMealboxMenus, MEALBOX_SERVICE_TYPE, MEALBOX_SOURCE } from '../services/menus.mjs';
 import { isQuotationDraft, loadBusinessRules, QUOTATION_DRAFT_SOURCE, QUOTATION_METADATA_KEY, quotationView } from '../services/quotations.mjs';
 
@@ -202,7 +216,8 @@ export function createInternalApi({ repos, env = process.env } = {}) {
           const body = await readFile(new URL(`../owner-console/${asset.file}`, import.meta.url), 'utf8');
           response.writeHead(200, {
             'content-type': asset.type,
-            'content-security-policy': OWNER_CSP,
+            'content-security-policy': OWNER_CSP.replace("connect-src 'self'", "connect-src 'self' https://eedhalal.com")
+    .replace("img-src 'self' data:", "img-src 'self' data: https://eedhalal.com"),
             'x-content-type-options': 'nosniff',
             'referrer-policy': 'no-referrer',
             'cache-control': 'no-store',
@@ -753,6 +768,55 @@ export function createInternalApi({ repos, env = process.env } = {}) {
         const customer = record.customerId ? await store.customers.findById(record.customerId) : null;
         const rules = await loadBusinessRules();
         send(response, 200, { quotation: quotationView({ draft: record, lead, customer, rules }) });
+        return;
+      }
+
+      // Broadcast (กระจายข้อมูลรายสัปดาห์) — ร่างระบบสร้างจากข้อมูลจริง เจ้าของ
+      // กดอนุมัติก่อนเสมอ แล้วตัวรันนอกชั้นเซิร์ฟเวอร์ (tools/line/
+      // broadcast-runner.mjs) ค่อยส่งตามเวลา ไม่มีหน้าสร้างร่างผ่าน HTTP:
+      // คิวรายสัปดาห์เป็นของตัวรัน หน้านี้เป็นหน้าตัดสินใจของเจ้าของเท่านั้น
+      if (request.method === 'GET' && pathname === '/api/v1/broadcasts/quota') {
+        const summary = await broadcastQuotaSummary({ token: env.LINE_CHANNEL_ACCESS_TOKEN });
+        send(response, summary.ok ? 200 : 503, summary.ok ? { quota: summary } : { error: 'quota_unavailable', code: summary.code });
+        return;
+      }
+      if (request.method === 'GET' && pathname === '/api/v1/broadcasts') {
+        const status = url.searchParams.get('status');
+        if (status && !['PENDING_REVIEW', 'SCHEDULED', 'SENT', 'FAILED', 'MISSED', 'CANCELLED'].includes(status)) {
+          throw new ValidationError('invalid status');
+        }
+        const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || DEFAULT_LIMIT, 1), MAX_LIMIT);
+        const rows = await listBroadcasts(store, { status: status || undefined, limit });
+        send(response, 200, { broadcasts: rows.map((row) => presentBroadcast(row)), total: rows.length, limit });
+        return;
+      }
+      if (request.method === 'GET' && pathname.startsWith('/api/v1/broadcasts/')) {
+        const id = decodeURIComponent(pathname.slice('/api/v1/broadcasts/'.length));
+        send(response, 200, { broadcast: presentBroadcast(await getBroadcast(store, id)) });
+        return;
+      }
+      const broadcastMatch = pathname.match(/^\/api\/v1\/broadcasts\/([^/]+)\/(approve|edit|send-now|postpone|discard)$/);
+      if (broadcastMatch && request.method === 'POST') {
+        const recordId = decodeURIComponent(broadcastMatch[1]);
+        const action = broadcastMatch[2];
+        const body = await readJsonBody(request);
+        const options = {
+          ownerId: body.ownerId ? String(body.ownerId) : '',
+          expectedUpdatedAt: body.expectedUpdatedAt,
+        };
+        let broadcast;
+        if (action === 'approve') {
+          broadcast = await approveBroadcast(store, recordId, { ...options, finalText: body.finalText, scheduledAt: body.scheduledAt });
+        } else if (action === 'edit') {
+          broadcast = await editPendingBroadcast(store, recordId, { ...options, finalText: needString(body.finalText, 'finalText') });
+        } else if (action === 'send-now') {
+          broadcast = await sendNowBroadcast(store, recordId, options);
+        } else if (action === 'postpone') {
+          broadcast = await postponeBroadcast(store, recordId, { ...options, scheduledAt: needString(body.scheduledAt, 'scheduledAt') });
+        } else {
+          broadcast = await discardBroadcast(store, recordId, options);
+        }
+        send(response, 200, { broadcast: presentBroadcast(broadcast) });
         return;
       }
 

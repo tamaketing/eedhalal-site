@@ -5,6 +5,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { customerDefaults } from './customer-contract.mjs';
 import { inboundDefaults, inboundPatch, validateInboundRow } from './inbound-contract.mjs';
+import { broadcastDefaults, broadcastPatch, validateBroadcastRow, BROADCAST_STATUSES } from './broadcast-contract.mjs';
 import { exampleDefaults, examplePatch, validateExampleRow } from './examples-contract.mjs';
 import { memoryDefaults, validateMemoryRow } from './customer-memory-contract.mjs';
 
@@ -28,6 +29,7 @@ export function createMemoryAdapter() {
     inboundMessages: new Map(),
     responseExamples: new Map(),
     customerMemories: new Map(),
+    broadcastMessages: new Map(),
   };
   const customers = {
     kind: 'customers',
@@ -300,6 +302,51 @@ export function createMemoryAdapter() {
     },
   };
 
+  const broadcastMessages = {
+    kind: 'broadcastMessages',
+    async create(input, now = new Date().toISOString()) {
+      const row = broadcastDefaults(input);
+      if (tables.broadcastMessages.has(row.id)) throw conflict('broadcast already exists');
+      if (row.weekKey != null &&
+          [...tables.broadcastMessages.values()].some((r) => r.weekKey === row.weekKey)) {
+        throw conflict('broadcast already exists');
+      }
+      const errors = validateBroadcastRow(row);
+      if (errors.length) throw new Error(`invalid broadcast: ${errors.join('; ')}`);
+      const saved = withTimestamps(row, true, now);
+      tables.broadcastMessages.set(row.id, saved);
+      return clone(saved);
+    },
+    async findById(id) { return clone(tables.broadcastMessages.get(id) || null); },
+    async findByWeekKey(weekKey) {
+      return weekKey == null ? null : clone(
+        [...tables.broadcastMessages.values()].find((r) => r.weekKey === weekKey) || null);
+    },
+    async listByStatus(status) {
+      if (!status || !BROADCAST_STATUSES.includes(status)) return [];
+      return [...tables.broadcastMessages.values()]
+        .filter((r) => r.status === status)
+        .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+        .map(clone);
+    },
+    async list() {
+      return [...tables.broadcastMessages.values()]
+        .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+        .map(clone);
+    },
+    async updateIfCurrent(id, patch, expected = {}, now = new Date().toISOString()) {
+      const row = tables.broadcastMessages.get(id);
+      if (!row) return null;
+      if (expected.status !== undefined && row.status !== expected.status) return null;
+      if (expected.updatedAt !== undefined && row.updatedAt !== expected.updatedAt) return null;
+      const saved = withTimestamps({ ...row, ...broadcastPatch(patch), id }, false, now);
+      const errors = validateBroadcastRow(saved);
+      if (errors.length) throw new Error(`invalid broadcast: ${errors.join('; ')}`);
+      tables.broadcastMessages.set(id, saved);
+      return clone(saved);
+    },
+  };
+
   // Append-only by construction: no update/delete methods exist.
   const auditLogs = {
     kind: 'auditLogs',
@@ -331,7 +378,7 @@ export function createMemoryAdapter() {
     queue = run.catch(() => {});
     return run;
   }
-  const repos = { customers, leads, drafts, auditLogs, inboundMessages, responseExamples, customerMemories };
+  const repos = { customers, leads, drafts, auditLogs, inboundMessages, responseExamples, customerMemories, broadcastMessages };
   for (const repo of Object.values(repos)) {
     for (const [key, fn] of Object.entries(repo)) {
       if (typeof fn === 'function') repo[key] = (...args) => exclusive(() => fn(...args));

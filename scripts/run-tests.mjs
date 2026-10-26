@@ -22,6 +22,7 @@ export const TEST_CATEGORIES = {
     'admin-runtime-clean.test.mjs',
     'agent-menu-set.test.mjs',
     'budget-match.test.mjs',
+    'broadcast.test.mjs',
     'business-data-runtime.test.mjs',
     'business-facts-vat.test.mjs',
     'business-sync-manifest.test.mjs',

@@ -65,6 +65,33 @@ export function presentLead(lead) {
   return { ...lead };
 }
 
+// Broadcast announcements: the composed draft + schedule the owner sees.
+// sendAttempt (LINE retry key material) never leaves the storage layer — the
+// console does not need it and replay keys are internal dedupe state.
+export function presentBroadcast(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    weekKey: row.weekKey ?? null,
+    theme: row.theme,
+    menuId: row.menuId ?? null,
+    menuName: row.menuName ?? null,
+    menuPrice: row.menuPrice == null ? null : Number(row.menuPrice),
+    imageUrl: row.imageUrl ?? null,
+    draftText: row.draftText ?? '',
+    finalText: row.finalText ?? null,
+    status: row.status,
+    scheduledAt: row.scheduledAt ?? null,
+    approvedAt: row.approvedAt ?? null,
+    sentAt: row.sentAt ?? null,
+    retryCount: row.retryCount ?? 0,
+    errorCode: row.errorCode ?? null,
+    createdBy: row.createdBy,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
 // The customer memory: what the bot remembers about this customer, and what
 // the owner may correct. `facts` is structured data (never a transcript), so
 // the owner console can show it as a short list.

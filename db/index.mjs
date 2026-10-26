@@ -20,6 +20,10 @@
 //   repos.inboundMessages: create(row) | findById(id) | findBySourceEventId(id)
 //                    | updateIfCurrent(id, patch, {status, revision})
 //                      -> null on conflict; immutable transport fields
+//   repos.broadcastMessages: create(row) | findById(id) | findByWeekKey(weekKey)
+//                    | listByStatus(status) | list() (newest first)
+//                    | updateIfCurrent(id, patch, {status?, updatedAt?})
+//                      -> null on conflict (caller maps to 409)
 //   repos.responseExamples: create(row) | findById(id)
 //                    | findBySourceDraftId(sourceDraftId) | findByFingerprint(fp)
 //                    | list({reusable?, intent?, serviceType?, limit?}) (newest first)

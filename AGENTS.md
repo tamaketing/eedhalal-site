@@ -216,6 +216,14 @@ Need → Solution → Why EED → Options → Proof → How it works → Objecti
 - ปุ่ม “หยุดให้บอทช่วยร่างคำตอบ” ใช้ได้เสมอ แม้แต่ลูกค้าคนเดียว
 - ถ้าจะเปลี่ยนนโยบายนี้ ต้องแก้โค้ด (`server/line-gateway.mjs`) เอกสาร (`tools/line/README.md`)
   และข้อความใน Owner Console ให้ตรงกัน แล้วผ่านผู้คุมกฎ
+- การตัดสินใจของเจ้าของวันที่ 2026-10-26 เพิ่ม **ข้อความกระจายข้อมูลรายสัปดาห์** (LINE broadcast) หนึ่งข้อความ
+  ต่อสัปดาห์ (วันอังคาร 09:00 กรุงเทพฯ) เป็นข้อยกเว้นหนึ่งเดียวของกฎ “ไม่มีการส่งอัตโนมัติ” ข้างต้น:
+  ระบบสร้างร่างจากข้อมูลจริงในเมนูกลางและกฎร้านเท่านั้น ร่างขึ้นเป็น `PENDING_REVIEW` ใน Owner Console และ
+  เจ้าของต้องกดอนุมัติทุกครั้งก่อนส่ง ตัววิ่งอยู่ภายนอก `server/services/db` (`tools/line/broadcast-runner.mjs`)
+  จะส่งเฉพาะแถวที่อนุมัติแล้วเมื่อเวลาถึง (หรือชดเชยภายในหน้าต่างวันเดียวถึง 21:00 กรุงเทพฯ) ถ้าเครื่องปิดเกิน
+  หน้าต่างดังกล่าว ข้อความนั้นจะข้ามเป็น `MISSED` ไม่ส่งล่าช้าเอง ปิดใช้ได้ด้วย `BROADCAST_ENABLED=false`
+  ใน `.env` รายละเอียดทางเทคนิคอยู่ใน `services/broadcasts.mjs`, `services/broadcast-schema.mjs`,
+  `tools/line/broadcast-runner.mjs` และ `tools/line/broadcast-drafts.mjs`
   
 ## Proactive Website Improvement
 

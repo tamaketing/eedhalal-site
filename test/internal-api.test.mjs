@@ -181,12 +181,22 @@ test('P: responses expose no secret or replyToken', async () => {
   assert.ok(!dump.includes(SECRET));
 });
 
-test('Q+R: no LINE sender or kitchen push anywhere in server/domain/db code', async () => {
-  const roots = ['server', 'services', 'db'];
-  // Exactly two reviewed senders are approved: the owner-invoked Push
-  // provider, and the single-message Reply provider (auto-reply to the
-  // message that just arrived, one-shot replyToken, kill-switch gated).
-  const approvedSenders = new Set(['services/linePush.mjs', 'services/lineReply.mjs']);
+test('Q+R: no LINE sender or kitchen push anywhere in server/domain/db/tools code', async () => {
+  const roots = ['server', 'services', 'db', 'tools/line'];
+  // Reviewed senders approved by the owner (2026-10-26): the owner-invoked
+  // Push provider, the single-message Reply provider (auto-reply, one-shot
+  // replyToken, kill-switch gated), the weekly broadcast provider (allowed
+  // ONLY for the one weekly owner-approved announcement), and profile.mjs
+  // (read-only profile GET for backfill — never sends a message).
+  const approvedSenders = new Set([
+    'services/linePush.mjs',
+    'services/lineReply.mjs',
+    'services/lineBroadcast.mjs',
+    'tools/line/profile.mjs',
+  ]);
+  // Reviewed schedulers: only the weekly broadcast runner may run a timer
+  // (owner-approved policy — it sends only rows the owner approved).
+  const approvedSchedulers = new Set(['tools/line/broadcast-runner.mjs']);
   const offenders = [];
   async function walk(relative) {
     for (const entry of await readdir(relative, { withFileTypes: true })) {
@@ -200,11 +210,10 @@ test('Q+R: no LINE sender or kitchen push anywhere in server/domain/db code', as
         if (/lineMessaging|api(-data)?\.line\.me|Push to Kitchen|kitchen.?group|oaMessage/i.test(content)) {
           if (!approvedSenders.has(full)) offenders.push(full);
         }
-        // Only the single-message reply endpoint is allowed now; mass-send
-        // (multicast/broadcast) and any self-scheduling stay forbidden even
-        // for approved providers.
-        if (/\/v2\/bot\/message\/(multicast|broadcast)|setInterval|cron/i.test(content)) {
-          offenders.push(`${full} (forbidden endpoint/scheduler)`);
+        // Mass-send multicast and any self-scheduling stay forbidden even for
+        // approved providers, except the one reviewed scheduler above.
+        if (/\/v2\/bot\/message\/multicast|setInterval|cron/i.test(content)) {
+          if (!approvedSchedulers.has(full)) offenders.push(`${full} (forbidden endpoint/scheduler)`);
         }
       }
     }
