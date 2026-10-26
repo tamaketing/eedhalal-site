@@ -36,6 +36,8 @@ import {
   nextTuesday0900Bangkok,
 } from '../services/broadcast-schema.mjs';
 import {
+  getMessageConsumption,
+  getMessageQuota,
   sendBroadcastMessages,
   validateBroadcastMessages,
 } from '../services/lineBroadcast.mjs';
@@ -479,6 +481,32 @@ test('retry budget closes loudly after three unknown outcomes', async () => {
   const resent = await postponeBroadcast(repos, broadcast.id, { scheduledAt: WEEK44_SLOT, ownerId: 'owner-1' });
   assert.equal(resent.status, 'SCHEDULED');
   assert.equal(resent.errorCode, null, 'a resend clears the failure code');
+  assert.equal(resent.retryCount, 0, 'a resend resets the retry budget so the runner can try again');
+});
+
+test('LINE quota and consumption probes parse the real API response shapes', async () => {
+  const limitedQuota = await getMessageQuota({
+    token: 'tok',
+    fetchImpl: async () => ({ ok: true, json: async () => ({ type: 'limited', value: 1000 }) }),
+  });
+  assert.equal(limitedQuota.ok, true);
+  assert.equal(limitedQuota.type, 'limited');
+  assert.equal(limitedQuota.limit, 1000);
+
+  const unlimitedQuota = await getMessageQuota({
+    token: 'tok',
+    fetchImpl: async () => ({ ok: true, json: async () => ({ type: 'none' }) }),
+  });
+  assert.equal(unlimitedQuota.ok, true);
+  assert.equal(unlimitedQuota.type, 'none');
+  assert.equal(unlimitedQuota.limit, null);
+
+  const consumption = await getMessageConsumption({
+    token: 'tok',
+    fetchImpl: async () => ({ ok: true, json: async () => ({ total: 42 }) }),
+  });
+  assert.equal(consumption.ok, true);
+  assert.equal(consumption.total, 42);
 });
 
 test('quota summary reports real math and keeps NOT_CONFIGURED honest', async () => {

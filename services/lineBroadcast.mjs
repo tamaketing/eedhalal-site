@@ -105,7 +105,9 @@ export async function getMessageQuota({ token, fetchImpl = fetch } = {}) {
     const response = await fetchImpl(QUOTA_URL, { headers: { Authorization: `Bearer ${token}` } });
     if (!response.ok) return { ok: false, code: `HTTP_${response.status}` };
     const body = await response.json();
-    return { ok: true, type: body.type, limit: body.type === 'limited' ? Number(body.limit) : null };
+    // LINE returns { type: 'limited', value: N }; keep our internal shape as
+    // { ok: true, type: 'limited', limit: N } so callers have a stable field.
+    return { ok: true, type: body.type, limit: body.type === 'limited' ? Number(body.value) : null };
   } catch {
     return { ok: false, code: 'NETWORK_ERROR' };
   }

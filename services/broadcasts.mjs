@@ -320,7 +320,7 @@ export function postponeBroadcast(repos, id, { scheduledAt, ownerId = '', expect
       };
       const saved = await tx.broadcastMessages.updateIfCurrent(
         current.id,
-        { ...toBroadcastRow({ ...next, id: current.id }), sendAttempt: attempt, errorCode: null },
+        { ...toBroadcastRow({ ...next, id: current.id }), sendAttempt: attempt, errorCode: null, retryCount: 0 },
         { status: current.status, updatedAt: current.updatedAt },
       );
       if (!saved) throw new ConflictError('stale broadcast: changed concurrently, refresh and retry');
