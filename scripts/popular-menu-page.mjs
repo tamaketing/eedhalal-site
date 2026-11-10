@@ -53,7 +53,7 @@ const HEADCOUNT_END = '<!-- MENU:HEADCOUNT:END -->';
 const JSONLD_START = '<!-- MENU:JSONLD:START -->';
 const JSONLD_END = '<!-- MENU:JSONLD:END -->';
 const PAGE = 'popular-menu.html';
-const LINE_URL = 'https://lin.ee/CfvqJTd';
+const LINE_URL = 'https://line.me/R/ti/p/%40eedhalal';
 
 /**
  * A LINE deep link with the message already typed in.

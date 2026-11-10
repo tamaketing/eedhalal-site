@@ -232,7 +232,7 @@ var DEFAULT_EMOJI = '🍽';
    * would be left with a catalogue and no way to act on the dish they just read.
    * The message is the dish they clicked, pre-typed; see lineHref() in
    * scripts/popular-menu-page.mjs for why the name is worth carrying across. */
-  var LINE_URL = 'https://lin.ee/CfvqJTd';
+  var LINE_URL = 'https://line.me/R/ti/p/%40eedhalal';
   var CTA_STYLE = 'display:block;margin-top:auto;padding:12px 20px;border:1px solid #1d6b3e;border-radius:3px;background:transparent;color:#1d6b3e;font-weight:700;font-size:14px;text-align:center;text-decoration:none;white-space:nowrap';
   var CTA_HOVER = 'onmouseover="this.style.background=\'#1d6b3e\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'transparent\';this.style.color=\'#1d6b3e\'"';
   function orderMessage(m, en){

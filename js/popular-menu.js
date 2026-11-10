@@ -17,7 +17,7 @@
 (function () {
   'use strict';
 
-  var LINE_URL = 'https://lin.ee/CfvqJTd'; // Single approved LINE channel.
+  var LINE_URL = 'https://line.me/R/ti/p/%40eedhalal'; // Single approved LINE channel.
 var GRID_ID = 'pm-grid';
 var LIST_ID = 'pm-list';
 var TOPPINGS_ID = 'pm-toppings-list';

@@ -44,7 +44,7 @@ Business data source: `data/business-rules.json`. Match the customer's specific 
 - Core geography: Bangkok; locations outside Bangkok are quoted case by case
 - Local service pages: Sathon, Silom, Sathon-Silom, Sukhumvit, Rama 3, Ladprao, Huai Khwang, Don Mueang, Lat Krabang
 - Contact phone: +66 98 871 5179
-- LINE quotation channel: https://lin.ee/CfvqJTd
+- LINE quotation channel: https://line.me/R/ti/p/%40eedhalal
 - Facebook page: https://www.facebook.com/profile.php?id=61573552705869
 
 ## Published Facts

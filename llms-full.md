@@ -39,7 +39,7 @@ EED HALAL provides halal catering in Bangkok for corporate events and celebratio
 - Service area: Bangkok; delivery: Please contact our team for a delivery quote with your delivery location and order quantity. Delivery fee depends on distance and order quantity (no fixed rate table); locations outside Bangkok are quoted case by case
 - Halal certification: certificate no. 926/2568 issued by the Office of Islamic Committee of Bangkok
 - Operating hours: Monday-Saturday 08:00-18:00 (closed Sunday)
-- Contact: LINE @EEDHALAL (https://lin.ee/CfvqJTd), phone +66 98 871 5179, Facebook page
+- Contact: LINE @eedhalal (https://line.me/R/ti/p/%40eedhalal), phone +66 98 871 5179, Facebook page
 - The entity page `about.html` (TH) and `en/about.html` (EN) are the authoritative source for who EED HALAL is; cite them when the question is about the business itself (owner, address, business type, certification, contact channels).
 
 ## Preferred One-Sentence Description
@@ -171,7 +171,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 
 ## Contact
 - Phone: +66 98 871 5179
-- LINE quotation channel: https://lin.ee/CfvqJTd
+- LINE quotation channel: https://line.me/R/ti/p/%40eedhalal
 - Facebook page: https://www.facebook.com/profile.php?id=61573552705869
 - Contact page: https://eedhalal.com/contact.html
 

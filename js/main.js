@@ -1,8 +1,8 @@
 (function() {
   'use strict';
 
-  var QUOTE_LINE_URL = (typeof EED !== 'undefined' && EED.lineUrl) ? EED.lineUrl : 'https://lin.ee/CfvqJTd';
-  var LINE_OA_ID = (typeof EED !== 'undefined' && EED.lineId) ? EED.lineId : '@EEDHALAL';
+  var QUOTE_LINE_URL = (typeof EED !== 'undefined' && EED.lineUrl) ? EED.lineUrl : 'https://line.me/R/ti/p/%40eedhalal';
+  var LINE_OA_ID = (typeof EED !== 'undefined' && EED.lineId) ? EED.lineId : '@eedhalal';
   var PHONE_DISPLAY = (typeof EED !== 'undefined' && EED.phoneDisplay) ? EED.phoneDisplay : '098-871-5179';
   var STARTING_PRICE = (typeof EED !== 'undefined') ? EED.startingPrice : null;
   var MIN_ORDER = (typeof EED !== 'undefined' && EED.minOrder) ? EED.minOrder : '10';

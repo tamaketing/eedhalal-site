@@ -122,7 +122,7 @@ test('the price switch is not surfaced on the catalogue page', () => {
     assert.ok(!/pm-quote-note/.test(block), `menu ${item.id} must carry no price-state label`);
     assert.ok(!/สอบถามราคา/.test(block), `menu ${item.id} must use the same CTA as every other dish`);
     assert.ok(block.includes('สั่งเมนูนี้'), `menu ${item.id} must still route to LINE`);
-    assert.ok(block.includes('https://lin.ee/CfvqJTd'), `menu ${item.id} must link LINE`);
+    assert.ok(block.includes('https://line.me/R/ti/p/%40eedhalal'), `menu ${item.id} must link LINE`);
   }
   assert.ok(!markup.includes('pm-quote-note'), 'no ask-for-quote label anywhere on the page');
   assert.ok(!markup.includes('ราคาขอสอบถามทาง LINE'), 'no ask-for-quote wording anywhere on the page');

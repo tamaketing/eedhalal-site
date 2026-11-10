@@ -247,7 +247,7 @@ export function tierAnchorHref(en, tierId) {
 }
 
 export function lineUrl(rules, { source, medium, content }) {
-  const base = String(rules?.urls?.line || 'https://lin.ee/CfvqJTd');
+  const base = String(rules?.urls?.line || 'https://line.me/R/ti/p/%40eedhalal');
   const params = new URLSearchParams({ utm_source: 'site', utm_medium: medium, utm_content: content });
   return `${base}?${params.toString()}` + (source ? `#${source}` : '');
 }

@@ -26,7 +26,7 @@ function cardMarkup(id, tier) {
   return `<article class="pm-card" id="menu-${id}" data-menu-id="${id}" data-tier="${tier}">`
     + `<img class="pm-photo" src="img/a.jpg" alt=""><div class="pm-card-body">`
     + `<p class="pm-card-cat">cat</p><h3 class="pm-card-name">menu ${id}</h3>`
-    + '<a class="pm-card-cta" href="https://lin.ee/CfvqJTd">สอบถาม</a></div></article>';
+    + '<a class="pm-card-cta" href="https://line.me/R/ti/p/%40eedhalal">สอบถาม</a></div></article>';
 }
 
 function rowMarkup(id, tier) {

@@ -21,9 +21,9 @@ PostgreSQL (production target)
 
 ## Customer-facing channel
 
-Customers reach the shop on the LINE Official Account (`@EEDHALAL`) and are
+Customers reach the shop on the LINE Official Account (`@eedhalal`) and are
 answered by a person. The website deep-links into that OA
-(`https://lin.ee/CfvqJTd`) from every CTA, and `data/rich-menu.json` holds the
+(`https://line.me/R/ti/p/%40eedhalal`) from every CTA, and `data/rich-menu.json` holds the
 OA rich menu plus its keyword replies.
 
 ## Endpoint contract
