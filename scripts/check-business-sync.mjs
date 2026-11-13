@@ -22,9 +22,10 @@ const FORBIDDEN_SCAN_EXTENSIONS = new Set(['.html', '.js', '.json', '.txt', '.md
 // line-runtime/ holds the customer's OWN words (LINE messages, drafts, saved
 // replies). A customer who writes "ส่งฟรี" is not the shop claiming free
 // delivery, so scanning private runtime data only produces false alarms.
+// tmp/ contains local release copies; each release validates its own root.
 export const FORBIDDEN_SCAN_SKIP_DIRS = new Set([
   '.git', '.github', 'node_modules', 'img', 'img_archive_local', 'tmp-chrome-profile',
-  'artifacts', 'demo', 'line-runtime',
+  'artifacts', 'demo', 'line-runtime', 'tmp',
 ]);
 
 function getPath(obj, dotted) {

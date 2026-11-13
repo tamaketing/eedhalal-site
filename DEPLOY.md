@@ -43,7 +43,7 @@ node scripts/check-starting-price.mjs
 node scripts/check-business-sync.mjs --check
 node scripts/check-public-site.mjs
 node scripts/check-search-discovery.mjs
-node --test --test-concurrency=1
+node --test --test-concurrency=1 "test/*.test.mjs" "tools/**/*.test.mjs"
 ```
 
 ใช้ `--test-concurrency=1` เพราะบางชุดทดสอบแก้ข้อความในไฟล์จริงชั่วคราวเพื่อพิสูจน์ว่าตัวตรวจจับข้อมูลผิดได้ หากรันพร้อมกัน ตัวตรวจอีกชุดอาจอ่านจังหวะที่ไฟล์ยังไม่ถูกคืนค่า

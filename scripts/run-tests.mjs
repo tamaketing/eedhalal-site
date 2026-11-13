@@ -1,6 +1,6 @@
 // EED HALAL — supplemental test runner (tracked, no secrets).
 //
-// `node --test --test-concurrency=1` remains the release command. This helper
+// The release command in DEPLOY.md covers test/ and tools/ explicitly. This helper
 // only groups the same files for focused runs. `all` always discovers the
 // current test directory instead of trusting a frozen list, so a renamed test
 // cannot silently stop running. Every category validates that its entries

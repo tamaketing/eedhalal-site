@@ -11,12 +11,18 @@ const ORIGIN = 'https://eedhalal.com';
 // message from business-rules.json. Zone rates, vehicle fees, and quantity
 // free-delivery thresholds are retired everywhere.
 
-async function listHtml(directory, relative = '') {
+// Match the directories copied by the Pages workflow; local release copies
+// and owner tools are not public source pages.
+const PUBLIC_DIRECTORIES = new Set(['blog', 'css', 'img', 'en', 'data', 'js']);
+export async function listHtml(directory, relative = '') {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = await Promise.all(entries.map(async (entry) => {
     const nextRelative = path.posix.join(relative, entry.name);
     const nextPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) return listHtml(nextPath, nextRelative);
+    if (entry.isDirectory()) {
+      if (!relative && !PUBLIC_DIRECTORIES.has(entry.name)) return [];
+      return listHtml(nextPath, nextRelative);
+    }
     return entry.isFile() && entry.name.endsWith('.html') ? [nextRelative] : [];
   }));
   return files.flat();

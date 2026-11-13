@@ -16,6 +16,13 @@ for (const file of ['.github/workflows/pages.yml', '.github/workflows/system-dat
         command.includes('--test-concurrency=1'),
         `${file} must serialize test files (${command.trim()})`,
       );
+      assert.ok(command.includes('"test/*.test.mjs"'), `${file} must exclude temporary test copies`);
+      assert.ok(command.includes('"tools/**/*.test.mjs"'), `${file} must retain tool tests`);
     }
   });
 }
+
+test('npm test serializes the same project-only suite', async () => {
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(pkg.scripts.test, 'node --test --test-concurrency=1 "test/*.test.mjs" "tools/**/*.test.mjs"');
+});

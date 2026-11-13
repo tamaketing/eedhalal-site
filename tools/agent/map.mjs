@@ -113,7 +113,7 @@ export async function buildMap(section = 'all') {
 
   if (want('tests')) {
     const tests = await listing('test', (name) => name.endsWith('.test.mjs'));
-    out.push(`เทสต์ ${tests.length} ไฟล์ใน test/ · รันด้วย node --test --test-concurrency=1`);
+    out.push(`เทสต์ ${tests.length} ไฟล์ใน test/ · รันชุดทดสอบทั้งหมดด้วย npm test`);
     out.push('');
   }
 

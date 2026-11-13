@@ -147,6 +147,7 @@ test('generated snapshots and the owner\'s private draft are not scanned for dri
   // check, so a forbidden string in them must not be reported as drift.
   assert.ok(FORBIDDEN_SCAN_SKIP_DIRS.has('artifacts'));
   assert.ok(FORBIDDEN_SCAN_SKIP_DIRS.has('demo'));
+  assert.ok(FORBIDDEN_SCAN_SKIP_DIRS.has('tmp'));
   const summary = await checkBusinessSync();
   assert.ok(summary.scanned > 0);
   assert.ok(summary.cataloguePages >= 2);
