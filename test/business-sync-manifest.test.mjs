@@ -20,16 +20,21 @@ test('every business fact is present in all registered files (edit ALL files on 
 });
 
 // The khao-mok landing pages once advertised four different numbers for the same
-// three dishes: 85 in prose, 90 in JSON-LD prices, 90 in the offer range and 100
+// dish family: 85 in prose, 90 in JSON-LD prices, 90 in the offer range and 100
 // in offer names. These tests pin the guard so that cannot happen again.
-const khaoMokPrices = plannerPricesWhereNameStartsWith(planner, 'ข้าวหมก');
+// Follow the prefix registered for this catalogue snapshot: older releases use
+// "ข้าวหมก", while newer sets use "Classic Halal Meal Box + ข้าวหมก...".
+// Never add or rename a dish just to satisfy the test.
+const KHAO_MOK_PREFIX = manifest.cataloguePrices?.find((entry) => entry.id === 'khao-mok')?.prefix;
+assert.ok(typeof KHAO_MOK_PREFIX === 'string' && KHAO_MOK_PREFIX.includes('ข้าวหมก'), 'the manifest must declare the khao-mok catalogue family');
+const khaoMokPrices = plannerPricesWhereNameStartsWith(planner, KHAO_MOK_PREFIX);
 
 test('the khao-mok starting price resolves from the published catalogue', () => {
-  const min = plannerMinPriceWhereNameStartsWith(planner, 'ข้าวหมก');
+  const min = plannerMinPriceWhereNameStartsWith(planner, KHAO_MOK_PREFIX);
   assert.equal(min, 85);
   // It must be the cheapest, taken from real data rather than restated.
   const khaoMok = Object.entries(planner.names)
-    .filter(([, name]) => name.startsWith('ข้าวหมก'))
+    .filter(([, name]) => name.startsWith(KHAO_MOK_PREFIX))
     .map(([id]) => Number(planner.prices[id]));
   assert.equal(min, Math.min(...khaoMok));
   assert.ok(khaoMok.length >= 2, 'fixture must have more than one khao-mok dish');
@@ -56,7 +61,7 @@ test('the catalogue price set for a dish family is exactly what is sold', () => 
 test('both khao-mok landing pages are guarded against invented prices', async () => {
   const rule = manifest.cataloguePrices?.find((entry) => entry.id === 'khao-mok');
   assert.ok(rule, 'the khao-mok landing pages must be guarded by cataloguePrices');
-  assert.equal(rule.prefix, 'ข้าวหมก');
+  assert.equal(rule.prefix, KHAO_MOK_PREFIX);
   for (const file of ['khao-mok.html', 'en/khao-mok.html']) {
     assert.ok(rule.files.includes(file), `${file} quotes prices and must be registered`);
   }
@@ -79,7 +84,10 @@ test('every registered tier price is the catalogue floor for that tier', async (
   // The figures are never typed: they are whatever the published sets produce.
   assert.equal(tierPriceFromPlanner(planner, 'classic'), classicFrom);
   assert.equal(tierPriceFromPlanner(planner, 'executive'), executiveFrom);
-  const premiumNames = plannerPricesWhereNameStartsWith(planner, 'เซ็ตพรีเมียม');
+  // Accept the published family label in either supported catalogue snapshot.
+  const premiumNames = Object.entries(planner.names).some(([, name]) => name.startsWith('กล่องพรีเมียม'))
+    ? plannerPricesWhereNameStartsWith(planner, 'กล่องพรีเมียม')
+    : plannerPricesWhereNameStartsWith(planner, 'เซ็ตพรีเมียม');
   if (executiveFrom !== null) {
     assert.ok(premiumNames.includes(executiveFrom), 'the executive floor must be a set the catalogue sells');
     for (const price of premiumNames) {

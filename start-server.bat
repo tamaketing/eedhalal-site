@@ -1,12 +1,10 @@
 @echo off
 setlocal
-rem Owner entry point for the local admin tools (menu API + budget matcher).
-rem This only starts http://127.0.0.1:4185/ through tools\admin\start-admin.cmd.
-rem For a public website preview, use preview-public.bat instead.
-call "%~dp0tools\admin\start-admin.cmd" %*
-set EXITCODE=%ERRORLEVEL%
-if not "%EXITCODE%"=="0" (
-  echo Admin tools stopped with exit code %EXITCODE%.
-  pause
-)
-exit /b %EXITCODE%
+rem Compatibility alias — ONE entry point for the whole local system.
+rem tools\line\start-line.cmd starts: Internal API (127.0.0.1:8788) + Owner
+rem Console, LINE gateway, cloudflared webhook tunnel and the weekly runner.
+rem Keeping this file lets old instructions keep working without starting a
+rem second backend on the same port.
+chcp 65001 >nul
+call "%~dp0tools\line\start-line.cmd" %*
+exit /b %ERRORLEVEL%

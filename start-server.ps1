@@ -1,11 +1,6 @@
-# Owner entry point for the local admin tools (menu API + budget matcher).
-# This only starts http://127.0.0.1:4185/ through tools/admin/start-admin.cmd.
-# For a public website preview, use preview-public.ps1 instead.
-$admin = Join-Path $PSScriptRoot 'tools/admin/start-admin.cmd'
-& $admin @args
+# Compatibility alias — see start-server.bat / tools\line\start-line.cmd.
+# Both now start the same single stack: Internal API + Owner Console + LINE gateway.
+$here = Split-Path -Parent $MyInvocation.MyCommand.Path
+& (Join-Path $here 'tools\line\start-line.cmd') @args
 $code = $LASTEXITCODE
-if ($code -ne 0) {
-  Write-Host "Admin tools stopped with exit code $code." -ForegroundColor Red
-  pause
-}
 exit $code

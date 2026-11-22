@@ -34,7 +34,10 @@ test('inbound real PostgreSQL migration, contracts, races and least privilege', 
   const runtime = new pg.Client({ connectionString: runtimeUrl, connectionTimeoutMillis: 5000 });
   let repos;
   let migrated = false;
-  const cleanup = () => admin.query('TRUNCATE response_examples, inbound_messages, audit_logs, drafts, leads, customers');
+  // Newer migrations add dependants (slip_verifications → inbound_messages,
+  // jobs/orders/... → customers). CASCADE keeps this test-only cleanup correct
+  // as the schema grows; the guard above already pins the target database.
+  const cleanup = () => admin.query('TRUNCATE response_examples, inbound_messages, audit_logs, drafts, leads, customers CASCADE');
   t.after(async () => {
     try { if (migrated) await cleanup(); }
     finally { await repos?.close(); await runtime.end(); await admin.end(); }
