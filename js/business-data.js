@@ -79,7 +79,10 @@ var EED = {
      scripts/mealbox-tiers.mjs) ไม่มีตัวเลขสำรอง: ระดับไหนไม่มีชุดจริง
      จะได้ null และหน้าเว็บจะขอใบเสนอราคาแทนการเดาราคา */
   loadTiers: function () {
-    var urls = ['data/planner-overrides.json', '../data/planner-overrides.json'];
+    var isFile = window.location.protocol === 'file:';
+    var urls = isFile
+      ? ['data/planner-overrides.json', '../data/planner-overrides.json', '../../data/planner-overrides.json']
+      : ['/data/planner-overrides.json', '../data/planner-overrides.json', '../../data/planner-overrides.json'];
     var attempt = function (index) {
       if (index >= urls.length) return Promise.resolve(null);
       return fetch(urls[index] + '?t=' + Date.now(), { cache: 'no-store' })

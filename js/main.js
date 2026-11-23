@@ -1070,8 +1070,10 @@
       return {
         cssClass: 'banner-q3',
         icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-        text: '\u0e24\u0e14\u0e39\u0e2a\u0e31\u0e21\u0e21\u0e19\u0e32 Q3 \u2014 \u0e08\u0e2d\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2a\u0e31\u0e21\u0e21\u0e19\u0e32\u0e25\u0e48\u0e27\u0e07\u0e2b\u0e19\u0e49\u0e32 \u0e23\u0e31\u0e1a\u0e2a\u0e48\u0e27\u0e19\u0e25\u0e14\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e17\u0e35\u0e48\u0e2a\u0e31\u0e48\u0e07\u0e01\u0e48\u0e2d\u0e19\u0e2a\u0e34\u0e49\u0e19\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e01\u0e31\u0e19\u0e22\u0e32\u0e22\u0e19',
-        linkText: '\u0e17\u0e31\u0e01 LINE \u0e02\u0e2d\u0e42\u0e1b\u0e23\u0e42\u0e21\u0e0a\u0e31\u0e48\u0e19',
+        text: 'กำลังเตรียมงานประชุมหรือสัมมนา? แจ้งวัน จำนวน และสถานที่ให้ทีมช่วยจัดเมนูและเสนอราคาได้ครับ',
+        textEn: 'Planning a meeting or seminar? Share your date, guest count and venue so our team can suggest menus and prepare a quotation.',
+        linkText: 'ให้ทีมช่วยจัดเมนู',
+        linkTextEn: 'Message LINE for a quote',
         linkHref: QUOTE_LINE_URL
       };
     }
@@ -1081,7 +1083,9 @@
         cssClass: 'banner-year-end',
         icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
         text: '\u0e2a\u0e34\u0e49\u0e19\u0e1b\u0e35\u0e07\u0e1a\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 \u2014 \u0e43\u0e0a\u0e49\u0e2a\u0e34\u0e17\u0e18\u0e34\u0e4c\u0e07\u0e1a\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d \u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e2e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23\u0e14\u0e48\u0e27\u0e19 ออกใบเสนอราคา+ใบเสร็จรับเงินได้ทันที',
+        textEn: 'Year-end parties and company trips are coming — order meal boxes early. Quotations and receipts available.',
         linkText: '\u0e17\u0e31\u0e01 LINE \u0e40\u0e25\u0e22',
+        linkTextEn: 'Message LINE now',
         linkHref: QUOTE_LINE_URL
       };
     }
@@ -1092,7 +1096,11 @@
       text: STARTING_PRICE
         ? '\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e0e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 \u0e23\u0e32\u0e04\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21 ' + STARTING_PRICE + ' \u0e1a\u0e32\u0e17 ออกใบเสนอราคา+ใบเสร็จรับเงินได้'
         : '\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e49\u0e32\u0e27\u0e01\u0e25\u0e48\u0e2d\u0e07\u0e0e\u0e32\u0e25\u0e32\u0e25\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 ขอใบเสนอราคา+ใบเสร็จรับเงินได้ทันที',
+      textEn: STARTING_PRICE
+        ? 'Order halal meal boxes for your company. Starting from ' + STARTING_PRICE + ' THB — quotations and receipts available.'
+        : 'Order halal meal boxes for your company — quotations and receipts available right away.',
       linkText: '\u0e17\u0e31\u0e01 LINE \u0e02\u0e2d\u0e43\u0e1a\u0e40\u0e2a\u0e19\u0e2d\u0e23\u0e32\u0e04\u0e32',
+      linkTextEn: 'Message LINE for a quotation',
       linkHref: QUOTE_LINE_URL
     };
   }
@@ -1106,11 +1114,12 @@
       var config = getSeasonalUrgencyConfig();
       var banner = document.createElement('div');
       banner.className = 'urgency-banner ' + config.cssClass;
+      banner.setAttribute('aria-label', isEN ? 'Announcement' : '\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28');
       banner.innerHTML = '\
         <span class="urgency-icon">' + config.icon + '</span>\
-        <span class="urgency-text">' + config.text + '</span>\
-        <a href="' + config.linkHref + '" target="_blank" rel="noopener noreferrer" class="urgency-link" data-track-event="lead_line_click" data-track-section="urgency_banner" data-track-source="seasonal_banner">' + config.linkText + '</a>\
-        <button class="urgency-close" aria-label="\u0e1b\u0e34\u0e14">\
+        <span class="urgency-text">' + (isEN ? config.textEn : config.text) + '</span>\
+        <a href="' + config.linkHref + '" target="_blank" rel="noopener noreferrer" class="urgency-link" data-track-event="lead_line_click" data-track-section="urgency_banner" data-track-source="seasonal_banner">' + (isEN ? config.linkTextEn : config.linkText) + '</a>\
+        <button class="urgency-close" aria-label="' + (isEN ? 'Close' : '\u0e1b\u0e34\u0e14') + '">\
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>\
         </button>';
 
