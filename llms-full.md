@@ -117,6 +117,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 - Meal boxes come in three tiers: Classic Halal Meal Box from 65 THB per box, Signature Halal Meal Box from 155 THB per box, and Executive Premium Halal Box from 230 THB per box; Snack Box starts at 40 THB per box (snack 1+drink or 1+fruit); buffet starts at 450 THB/head and Live Cooking at 200 THB/head; Chinese / Thai tables start at 3,000 THB/table; Set Menu starts at 350 THB/head.
 - Delivery: Please contact our team for a delivery quote with your delivery location and order quantity. Delivery fee depends on distance and order quantity. There is no fixed delivery rate table. For a neighbourhood, road, building, or landmark, request the address or location so the team can quote.
 - Meal boxes should be ordered at least 1 day ahead; all catering formats should be booked at least 7 days ahead.
+- Payment terms: a 50% deposit confirms a booking. The catering balance is due 7 days before the event; the meal-box balance is due 2 days before delivery.
 - Order details should be confirmed by 15:00 on the business day before delivery.
 - Quantity changes are normally accepted until 15:00 on the business day before delivery.
 - After ingredient preparation starts, order reductions or cancellations may incur actual cost, confirmed by the team before proceeding.
@@ -139,6 +140,7 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 - Buffet tiered rates per guest (applied to the full guest count): 30 guests 450 THB · 100 guests 420 THB · 200 guests 390 THB · 300 guests 360 THB · 400 guests 330 THB · 500 guests 300 THB — e.g. 100 guests = 42,000 THB, 30-guest minimum, 4-hour service.
 - Delivery: quoted by our team per order — message the delivery location and quantity. Delivery fee depends on distance and order quantity (no fixed rate table)
 - Standard lead time: meal boxes at least 1 day, catering at least 7 days
+- Payment terms: 50% deposit to confirm; catering balance 7 days before the event; meal-box balance 2 days before delivery
 - Cutoff for next-day order confirmation and quantity changes: 15:00 on the business day before delivery
 - VAT status: published prices are final and no VAT is added; EED HALAL is not VAT-registered
 - Procurement documents: quotation and regular receipt are supported (no VAT tax invoice)
