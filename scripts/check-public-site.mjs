@@ -304,14 +304,27 @@ export async function checkPublicSite(root = ROOT) {
   const publicFiles = files.filter((file) => !htmlHasNoindex(contents.get(file)));
   const failures = [];
   const canonicalUrls = new Set();
+  // Approved meta-refresh redirects: GitHub Pages is Jekyll-disabled, so these
+  // legacy URLs cannot return a server-side 301. They point their canonical at
+  // the real destination instead of themselves (Google's 0-second meta refresh
+  // guidance), and must not be counted as duplicate canonical URLs.
+  const redirectCanonicals = new Map([
+    ['blog/catering.html', 'https://eedhalal.com/catering.html'],
+    ['blog/contact.html', 'https://eedhalal.com/contact.html'],
+    ['blog/sukhumvit.html', 'https://eedhalal.com/sukhumvit.html'],
+    ['buffet-menu.html', 'https://eedhalal.com/buffet.html'],
+    ['delivery-terms.html', 'https://eedhalal.com/delivery-area.html'],
+    ['delivery.html', 'https://eedhalal.com/delivery-area.html'],
+  ]);
   const banned = [/100[–-]150/, /POPULARMENU_START89/, /within one day/i, /กรุงเทพฯ(?:ฯ)?\s*และปริมณฑล/, /Bangkok\s*(?:&amp;|and)\s*(?:the\s*)?metropolitan area/i];
 
   for (const file of publicFiles) {
     const html = contents.get(file);
     const canonical = getCanonical(html);
+    const expectedCanonical = redirectCanonicals.get(file) || pageUrl(file);
     if (!canonical) failures.push(`${file}: missing canonical URL`);
-    else if (canonical !== pageUrl(file)) failures.push(`${file}: canonical must be ${pageUrl(file)}`);
-    else canonicalUrls.add(canonical);
+    else if (canonical !== expectedCanonical) failures.push(`${file}: canonical must be ${expectedCanonical}`);
+    else if (!redirectCanonicals.has(file)) canonicalUrls.add(canonical);
 
     const counterpart = file.startsWith('en/') ? file.slice(3) : `en/${file}`;
     if (contents.has(counterpart)) {
