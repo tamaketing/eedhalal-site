@@ -191,12 +191,12 @@ There is **no online ordering**: the site has no cart and no checkout. Every ord
 - `robots.txt` has `Sitemap: https://eedhalal.com/sitemap.xml`, `# LLMs: https://eedhalal.com/llms.txt` and `# llms-full: https://eedhalal.com/llms-full.md` as discovery references. The LLM lines are comments, not standard robots directives or indexing guarantees.
 - Public HTML pages should link to `/llms.txt`; important facts must also be readable on the relevant service pages.
 - JSON-LD structured data:
-  - `index.html` — `FoodEstablishment.makesOffer` with `"price": "65"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"` + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"`
+  - `index.html` — `FoodEstablishment.makesOffer` with `"price": "65"`, `"priceCurrency": "THB"`, `"description": "ราคาเริ่มต้นสำหรับเมนูมาตรฐาน"`; no self-serving `AggregateRating`
   - `snack-box.html` — `Service` with `Offer` `"price": "40"` + `HowTo` + `FAQPage` (9 Q) for Snack Box 30+ boxes
   - `buffet.html` — buffet facts must reflect `data/business-rules.json`: from 450 THB/head, minimum 30 guests; do not invent an upper price or capacity from an unspecified maximum.
   - `popular-menu.html` and `en/popular-menu.html` — an `ItemList` mirrors the current catalogue with dish names, product tiers, images, and published per-box offers. Prices are available in static HTML and structured data; a dish without a confirmed published price has no offer. Orders and delivery quotations remain on LINE.
   - `faq.html` — `FAQPage` with full Q&A for price, minimum, VAT, delivery, lead time
-  - `reviews.html` — `ItemList` of `Review` (6 reviews) + `AggregateRating` `"ratingValue": "4.8"`, `"ratingCount": "286"` for trust extraction
+  - `reviews.html` — `ItemList` of `Review` (6 real reviews shown on the page); no self-serving `AggregateRating` markup
   - Local area pages — `FAQPage` with area-specific minimum, delivery-quote policy, and pricing
 
 ## Trust and Data Use

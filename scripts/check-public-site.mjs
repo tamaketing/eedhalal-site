@@ -303,6 +303,17 @@ export async function checkPublicSite(root = ROOT) {
   const contents = new Map(await Promise.all(files.map(async (file) => [file, await readFile(path.join(ROOT, file), 'utf8')])));
   const publicFiles = files.filter((file) => !htmlHasNoindex(contents.get(file)));
   const failures = [];
+  // Google makes self-serving aggregate ratings ineligible when the reviewed
+  // entity controls its own reviews (and forbids aggregating ratings from
+  // other sites). Keep real reviews on the page, but never reintroduce
+  // AggregateRating markup into public HTML or the runtime schema generator.
+  const selfServingRating = /"aggregateRating"\s*:/;
+  for (const [file, html] of contents) {
+    if (selfServingRating.test(html)) failures.push(`${file}: self-serving AggregateRating markup is not allowed`);
+  }
+  const runtimeJs = await readFile(path.join(ROOT, 'js', 'main.js'), 'utf8');
+  if (selfServingRating.test(runtimeJs)) failures.push('js/main.js: runtime AggregateRating markup is not allowed');
+
   const canonicalUrls = new Set();
   // Approved meta-refresh redirects: GitHub Pages is Jekyll-disabled, so these
   // legacy URLs cannot return a server-side 301. They point their canonical at
